@@ -1,0 +1,65 @@
+const ProductCard = ({ product, onEdit }) => {
+  // Calcular porcentaje para la barra de cantidades
+  const quantityPercentage = Math.min(100, Math.max(0, (product.currentQuantity / product.maxQuantity) * 100));
+
+  return (
+    <div className="flex bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+      <div className="w-1/3 bg-[#9C6026] text-white p-4 flex flex-col items-center justify-between relative">
+        <div className="w-full text-left">
+          <p className="text-[10px] uppercase tracking-wider opacity-80">{product.brand}</p>
+          <h3 className="text-xl font-bold leading-tight">{product.name}</h3>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center py-4 w-full">
+          <img 
+            src={product.image} 
+            alt={product.name} 
+            className="max-h-32 object-contain filter drop-shadow-lg"
+          />
+        </div>
+        
+        <div className="text-xs text-center border-t border-white/20 pt-2 w-full">
+          PV: ${product.pv.toFixed(2)} | PVP: ${product.pvp.toFixed(2)}
+        </div>
+      </div>
+
+      <div className="w-2/3 p-4 flex flex-col relative">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <p className="text-xs text-gray-500">Proveedor: {product.provider}</p>
+            <h4 className="text-lg font-bold text-gray-900">{product.category}</h4>
+          </div>
+          
+          <div className="text-right">
+            <p className="text-xs font-medium text-gray-700 mb-1">Cantidades</p>
+            <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-[#E07A2B]" 
+                style={{ width: `${quantityPercentage}%` }}
+              ></div>
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1">{product.currentQuantity}/{product.maxQuantity}</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-600 line-clamp-3 mb-4 leading-relaxed">
+          {product.description}
+        </p>
+
+        <div className="mt-auto flex justify-between items-end">
+          <p className="text-xs font-medium text-gray-800">
+            Fecha de expiración: {product.expirationDate}
+          </p>
+          <button 
+            onClick={() => onEdit(product)}
+            className="bg-[#4A4A4A] hover:bg-gray-800 text-white text-xs px-4 py-1.5 rounded-full transition-colors"
+          >
+            Editar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductCard;
