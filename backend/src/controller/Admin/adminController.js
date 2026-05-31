@@ -1,5 +1,5 @@
 import adminModel from '../../models/admin.js';
-import mongoose from "mongoose"; // <--- ESTO ES LO QUE FALTA
+import mongoose from "mongoose";
 
 const adminController = {};
 
