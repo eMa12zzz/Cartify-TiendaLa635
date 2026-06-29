@@ -14,7 +14,7 @@ import productRoutes from "./src/routes/product.js";
 import registerClientRoutes from "./src/routes/registerClient.js";
 import promotionRoutes from "./src/routes/promotion.js";
 import shoppingRoutes from "./src/routes/shopping.js";
-
+//cosas
 const app = express();
 
 app.use(
