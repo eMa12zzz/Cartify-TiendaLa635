@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 const BROWN = '#8B5A2B';
+const BROWN_DARK = '#5a3a1a';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -23,6 +24,7 @@ const TopBar = styled.div`
 
 const BrandCenter = styled.div`
   text-align: center;
+  cursor: pointer;
 `;
 
 const BrandSmall = styled.span`
@@ -63,6 +65,8 @@ const Body = styled.div`
   padding: 40px 32px;
   width: 100%;
   box-sizing: border-box;
+  max-width: 800px;
+  margin: 0 auto;
 `;
 
 const SectionTitle = styled.h2`
@@ -88,7 +92,7 @@ const ServiceCard = styled.div`
 
   &:hover {
     transform: translateY(-2px);
-    background: #7a4e26;
+    background: ${BROWN_DARK};
   }
 `;
 
@@ -127,10 +131,18 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  const handleIrTienda = () => {
+    navigate('/store');
+  };
+
+  const handleIrImpresiones = () => {
+    navigate('/impresiones');
+  };
+
   return (
     <Container>
       <TopBar>
-        <BrandCenter>
+        <BrandCenter onClick={() => navigate('/tienda-dashboard')}>
           <BrandSmall>Tienda</BrandSmall>
           <BrandName>la 635</BrandName>
         </BrandCenter>
@@ -141,12 +153,12 @@ const Dashboard = () => {
         <SectionTitle>Servicios</SectionTitle>
 
         <ServiceGrid>
-          <ServiceCard onClick={() => navigate('/store')}>
+          <ServiceCard onClick={handleIrTienda}>
             <ServiceTitle>Tienda</ServiceTitle>
             <ServiceDesc>Compra tus productos aquí!!!!</ServiceDesc>
           </ServiceCard>
 
-          <ServiceCard onClick={() => alert('Impresiones - Próximamente')}>
+          <ServiceCard onClick={handleIrImpresiones}>
             <ServiceTitle>Impresiones</ServiceTitle>
             <ServiceDesc>Imprime tus archivos aquí!!!!</ServiceDesc>
           </ServiceCard>
