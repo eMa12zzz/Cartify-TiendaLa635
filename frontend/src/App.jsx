@@ -14,6 +14,9 @@ import Modules from './pages/Modules';
 import Brands from './pages/Brands';
 import Employees from './pages/Employees';
 import Customers from './pages/Customers';
+import impresiones from './pages/impresiones';
+import Impresiones from './pages/impresiones';
+
 
 function App() {
   return (
@@ -26,7 +29,8 @@ function App() {
         <Route path="/login-password" element={<LoginPassword />} />
         <Route path="/tienda-dashboard" element={<Dashboard />} />
         <Route path="/store" element={<Store />} />
-        
+        <Route path="/impresiones" element={<Impresiones/>} />
+
         {/* Admin Layout */}
         <Route element={<AdminLayout />}>
           <Route path="/dashboard" element={<AdminDashboard />} />

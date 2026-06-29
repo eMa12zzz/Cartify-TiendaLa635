@@ -184,7 +184,7 @@ const CreatePassword = () => {
     localStorage.setItem('users', JSON.stringify(users));
     localStorage.setItem('token', 'mock-token');
     localStorage.setItem('user', JSON.stringify({ identifier }));
-    navigate('/dashboard');
+    navigate('/tienda-dashboard');
   };
 
   return (
