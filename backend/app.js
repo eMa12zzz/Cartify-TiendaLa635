@@ -10,6 +10,8 @@ import limiter from "./src/middlewares/limiter.js";
 import brandRoutes from "./src/routes/brand.js";
 import productRoutes from "./src/routes/product.js";
 import registerClientRoutes from "./src/routes/registerClient.js";
+import promotionRoutes from "./src/routes/promotion.js";
+import shoppingRoutes from "./src/routes/shopping.js";
 
 const app = express();
 
@@ -34,5 +36,7 @@ app.use("/api/productType", productTypeRoutes);
 app.use("/api/brand", brandRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/registerClient", registerClientRoutes);
+app.use("/api/promotion", promotionRoutes);
+app.use("/api/shopping", shoppingRoutes);
 
 export default app;
