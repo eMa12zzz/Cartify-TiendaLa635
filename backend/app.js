@@ -27,6 +27,7 @@ app.use(limiter);
 app.use(cookieParser());
 
 app.use(express.json());
+//endpoint
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/employee", employeeRoutes);
