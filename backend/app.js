@@ -38,5 +38,7 @@ app.use("/api/product", productRoutes);
 app.use("/api/registerClient", registerClientRoutes);
 app.use("/api/promotion", promotionRoutes);
 app.use("/api/shopping", shoppingRoutes);
+//enpoint
+
 
 export default app;
