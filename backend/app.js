@@ -10,6 +10,10 @@ import limiter from "./src/middlewares/limiter.js";
 import brandRoutes from "./src/routes/brand.js";
 import productRoutes from "./src/routes/product.js";
 import registerClientRoutes from "./src/routes/registerClient.js";
+import loginClientRoutes from "./src/routes/loginClient.js";
+import logoutClientRoutes from "./src/routes/logoutClient.js";
+import recoveryPasswordClientRoutes from "./src/routes/recoveryPasswordClient.js";
+import clientRoutes from "./src/routes/client.js";
 
 const app = express();
 
@@ -34,5 +38,9 @@ app.use("/api/productType", productTypeRoutes);
 app.use("/api/brand", brandRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/registerClient", registerClientRoutes);
+app.use("/api/loginClient", loginClientRoutes);
+app.use("/api/logoutClient", logoutClientRoutes);
+app.use("/api/recoveryPasswordClient", recoveryPasswordClientRoutes);
+app.use("/api/client", clientRoutes);
 
 export default app;

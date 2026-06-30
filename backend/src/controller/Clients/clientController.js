@@ -1,0 +1,133 @@
+import clientModel from "../../models/client.js";
+import { v2 as cloudinary } from "cloudinary";
+
+const clientController = {};
+
+// GET ALL CLIENTS
+clientController.getClients = async (req, res) => {
+  try {
+    const clients = await clientModel.find();
+
+    return res.status(200).json(clients);
+
+  } catch (error) {
+    console.log("error " + error);
+
+    return res.status(500).json({
+      message: "Internal Server Error get Clients",
+    });
+  }
+};
+
+// UPDATE CLIENT
+clientController.updateClient = async (req, res) => {
+  try {
+
+    let {
+      fullnName,
+      dui,
+      phoneNumber,
+      ClientAddress,
+      email,
+      userName,
+      password,
+    } = req.body;
+
+    email = email?.trim();
+    userName = userName?.trim();
+
+    if (
+      !fullnName ||
+      !dui ||
+      !phoneNumber ||
+      !ClientAddress ||
+      !email ||
+      !userName ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "Required fields",
+      });
+    }
+
+    const clientFound = await clientModel.findById(req.params.id);
+
+    if (!clientFound) {
+      return res.status(404).json({
+        message: "Client not found",
+      });
+    }
+
+    const updatedData = {
+      fullnName,
+      dui,
+      phoneNumber,
+      ClientAddress,
+      email,
+      userName,
+      password,
+    };
+
+    // Si viene una nueva imagen
+    if (req.file) {
+
+      if (clientFound.public_id) {
+        await cloudinary.uploader.destroy(clientFound.public_id);
+      }
+
+      updatedData.image = req.file.path;
+      updatedData.public_id = req.file.filename;
+    }
+
+    await clientModel.findByIdAndUpdate(
+      req.params.id,
+      updatedData,
+      { new: true }
+    );
+
+    return res.status(200).json({
+      message: "Client updated successfully",
+    });
+
+  } catch (error) {
+    console.log("error " + error);
+
+    return res.status(500).json({
+      message: "Internal Server Error update Client",
+    });
+  }
+};
+
+// DELETE CLIENT
+clientController.deleteClient = async (req, res) => {
+  try {
+
+    const clientFound = await clientModel.findById(req.params.id);
+
+    if (!clientFound) {
+      return res.status(404).json({
+        message: "Client not found",
+      });
+    }
+
+    // Eliminar imagen de Cloudinary
+    if (clientFound.public_id) {
+      await cloudinary.uploader.destroy(clientFound.public_id);
+    }
+
+    await clientModel.findByIdAndDelete(req.params.id);
+
+    return res.status(200).json({
+      message: "Client deleted successfully",
+    });
+
+  } catch (error) {
+    console.log("error " + error);
+
+    return res.status(500).json({
+      message: "Internal Server Error delete Client",
+    });
+  }
+};
+
+export default clientController;
