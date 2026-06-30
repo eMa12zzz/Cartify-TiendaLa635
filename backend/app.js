@@ -1,3 +1,5 @@
+//Alex
+//bryan
 import express from "express";
 import cors from "cors";
 import adminRoutes from "./src/routes/admin.js";
@@ -14,7 +16,9 @@ import loginClientRoutes from "./src/routes/loginClient.js";
 import logoutClientRoutes from "./src/routes/logoutClient.js";
 import recoveryPasswordClientRoutes from "./src/routes/recoveryPasswordClient.js";
 import clientRoutes from "./src/routes/client.js";
-
+import promotionRoutes from "./src/routes/promotion.js";
+import shoppingRoutes from "./src/routes/shopping.js";
+//cosas
 const app = express();
 
 app.use(
@@ -29,6 +33,7 @@ app.use(limiter);
 app.use(cookieParser());
 
 app.use(express.json());
+//endpoint
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/employee", employeeRoutes);
@@ -42,5 +47,9 @@ app.use("/api/loginClient", loginClientRoutes);
 app.use("/api/logoutClient", logoutClientRoutes);
 app.use("/api/recoveryPasswordClient", recoveryPasswordClientRoutes);
 app.use("/api/client", clientRoutes);
+app.use("/api/promotion", promotionRoutes);
+app.use("/api/shopping", shoppingRoutes);
+//enpoint
+
 
 export default app;
