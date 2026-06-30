@@ -30,10 +30,10 @@ productTypeController.insertProductType = async (req, res) => {
         console.log("Nombre de la DB actual:", mongoose.connection.name);
 
         // 1- Pedimos datos
-        const { type, subtype } = req.body;
+        const {moduleId, type, subtype } = req.body;
 
         // Validación
-        if (!type || !subtype) {
+        if (!moduleId || !type || !subtype) {
             return res.status(400).json({
                 message: 'Required fields'
             });
@@ -41,6 +41,7 @@ productTypeController.insertProductType = async (req, res) => {
 
         // 2- Creamos instancia
         const newProductType = new productTypeModel({
+            moduleId,
             type,
             subtype
         });
@@ -67,10 +68,10 @@ productTypeController.updateProductType = async (req, res) => {
 
     try {
 
-        const { type, subtype } = req.body;
+        const {moduleId, type, subtype } = req.body;
 
         // Validación
-        if (!type || !subtype) {
+        if (!moduleId || !type || !subtype) {
             return res.status(400).json({
                 message: 'Required fields'
             });
@@ -79,6 +80,7 @@ productTypeController.updateProductType = async (req, res) => {
         const updatedProductType = await productTypeModel.findByIdAndUpdate(
             req.params.id,
             {
+                moduleId,
                 type,
                 subtype
             },

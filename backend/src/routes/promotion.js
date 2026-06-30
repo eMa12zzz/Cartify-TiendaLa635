@@ -1,5 +1,5 @@
 import express from 'express';
-import promotionController from '../controller/promotion.js';
+import promotionController from '../controller/promotionController.js';
 
 const router = express.Router();
 

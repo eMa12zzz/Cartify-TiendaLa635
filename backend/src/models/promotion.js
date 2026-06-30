@@ -20,14 +20,11 @@ const promotionSchema = new mongoose.Schema(
     },
     isActive: {
       type: Boolean,
-      required: true,
       default: true, 
     }
   },
   {
-    timestamps: true, 
-    versionKey: false 
-  }
+    timestamps: true, strict: false  }
 );
 
 export default mongoose.model("Promotion", promotionSchema);
