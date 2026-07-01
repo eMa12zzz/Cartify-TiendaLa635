@@ -1,7 +1,13 @@
-import { Schema, model } from 'mongoose';
+import mongoose, { Schema, model } from 'mongoose';
 
 const productTypeSchema = new Schema({
-
+    
+    moduleId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Module", 
+        required: true,
+      
+    },
     type: {
         type: String,
         required: true
