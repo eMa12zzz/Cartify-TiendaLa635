@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, {Schema, model} from "mongoose";
 
 const promotionSchema = new mongoose.Schema(
   {
@@ -27,4 +27,4 @@ const promotionSchema = new mongoose.Schema(
     timestamps: true, strict: false  }
 );
 
-export default mongoose.model("Promotion", promotionSchema);
+export default model('promotionModel', promotionSchema, 'Promotions');

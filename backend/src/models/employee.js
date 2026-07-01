@@ -21,7 +21,7 @@ const employeeSchema = new Schema({
     email: { type:"String"},
     userName: { type:"String"},
     password: { type:"String"},
-    isActive: { type:"Boolean"}
+    isActive: { type:"Boolean", default:true}
 },
 {
     timestamps: true,
