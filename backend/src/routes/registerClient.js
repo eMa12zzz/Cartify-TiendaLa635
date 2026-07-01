@@ -14,5 +14,6 @@ router.route("/").post(
 );
 
 router.route("/verifyCodeEmail").post(registerclients.verifyCode);
+router.route("/all").get(registerclients.getAll);
 
 export default router;

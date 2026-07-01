@@ -1,21 +1,28 @@
+import { useState, useEffect } from 'react';
 import { Filter } from 'lucide-react';
 import DataTable from '../components/UI/DataTable';
-
-const mockCustomers = [
-  { id: 1, name: 'Richard Martin', phone: '5555-5555', address: '43 Street', email: 'richard@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-  { id: 2, name: 'Tom Homan', phone: '5555-5555', address: '43 Street', email: 'tomhoman@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-  { id: 3, name: 'Veandir', phone: '5555-5555', address: '43 Street', email: 'veandier@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'No activo' },
-  { id: 4, name: 'Charin', phone: '5555-5555', address: '43 Street', email: 'charin@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-  { id: 5, name: 'Hoffman', phone: '5555-5555', address: '43 Street', email: 'hoffman@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-  { id: 6, name: 'Fainden Juke', phone: '5555-5555', address: '43 Street', email: 'fainden@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'No activo' },
-  { id: 7, name: 'Martin', phone: '5555-5555', address: '43 Street', email: 'martin@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-  { id: 8, name: 'Joe Nike', phone: '5555-5555', address: '43 Street', email: 'joenike@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-  { id: 9, name: 'Dender Luke', phone: '5555-5555', address: '43 Street', email: 'dender@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-  { id: 10, name: 'Martin', phone: '5555-5555', address: '43 Street', email: 'martin@gmail.com', dui: '012345678-9', username: 'Elpepe', verified: 'Verificado', points: 50, status: 'Activo' },
-];
+import { customerService } from '../api/customerService';
 
 const Customers = () => {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
   const columns = ['Nombre', 'Número de Teléfono', 'Dirección', 'Correo', 'DUI', 'Nombre de Usuario', 'Verificado', 'Puntos', 'Estatus'];
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const data = await customerService.getCustomers();
+      setCustomers(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
@@ -31,25 +38,29 @@ const Customers = () => {
           </button>
         </div>
 
-        <DataTable 
-          columns={columns}
-          data={mockCustomers}
-          renderRow={(item) => (
-            <>
-              <td className="py-4 px-4 text-sm text-gray-800">{item.name}</td>
-              <td className="py-4 px-4 text-sm text-gray-600">{item.phone}</td>
-              <td className="py-4 px-4 text-sm text-gray-600">{item.address}</td>
-              <td className="py-4 px-4 text-sm text-gray-600">{item.email}</td>
-              <td className="py-4 px-4 text-sm text-gray-600">{item.dui}</td>
-              <td className="py-4 px-4 text-sm text-gray-600">{item.username}</td>
-              <td className="py-4 px-4 text-sm text-gray-600">{item.verified}</td>
-              <td className="py-4 px-4 text-sm text-gray-600">{item.points}</td>
-              <td className={`py-4 px-4 text-sm font-medium ${item.status === 'Activo' ? 'text-green-500' : 'text-red-500'}`}>
-                {item.status}
-              </td>
-            </>
-          )}
-        />
+        {loading ? (
+          <p className="text-gray-500">Cargando clientes...</p>
+        ) : (
+          <DataTable 
+            columns={columns}
+            data={customers}
+            renderRow={(item) => (
+              <>
+                <td className="py-4 px-4 text-sm text-gray-800">{item.fullName}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{item.phoneNumber}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{Array.isArray(item.clientAddress) ? item.clientAddress.join(', ') : item.clientAddress}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{item.email}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{item.dui}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{item.userName}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{item.isVerified ? 'Verificado' : 'No verificado'}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{item.lolayitypoints || 0}</td>
+                <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>
+                  {item.isActive ? 'Activo' : 'Inactivo'}
+                </td>
+              </>
+            )}
+          />
+        )}
       </div>
     </div>
   );

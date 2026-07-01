@@ -136,5 +136,14 @@ registerClientController.verifyCode = async (req, res) => {
     return res.status(500).json({message: "Internal server error or Invalid Token"});
   }
 };
+registerClientController.getAll = async (req, res) => {
+  try {
+    const clients = await clientModel.find();
+    return res.status(200).json(clients);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error fetching clients" });
+  }
+};
 
 export default registerClientController;
