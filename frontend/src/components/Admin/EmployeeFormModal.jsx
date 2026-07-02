@@ -1,14 +1,16 @@
 import { useForm } from 'react-hook-form';
 import { UploadCloud } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset, watch } = useForm();
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   
   const isEditing = !!employee;
+  const watchIsActive = watch('isActive');
 
   useEffect(() => {
     if (isOpen) {
@@ -19,7 +21,8 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           phoneNumber: employee.phoneNumber || '',
           dui: employee.dui || '',
           userName: employee.userName || '',
-          password: '' // Don't pre-fill password for security
+          password: '', // Don't pre-fill password for security
+          isActive: employee.isActive !== false
         });
         setImagePreview(employee.image || null);
         setSelectedImage(null);
@@ -30,15 +33,14 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           phoneNumber: '',
           dui: '',
           userName: '',
-          password: ''
+          password: '',
+          isActive: true
         });
         setImagePreview(null);
         setSelectedImage(null);
       }
     }
   }, [isOpen, employee, reset]);
-
-  if (!isOpen) return null;
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -70,6 +72,8 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
       formData.append('password', data.password);
     }
     
+    formData.append('isActive', data.isActive);
+
     if (selectedImage) {
       formData.append('image', selectedImage);
     }
@@ -82,8 +86,23 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex overflow-hidden relative">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/40"
+          onClick={onClose}
+        />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex overflow-hidden relative z-10"
+      >
         <div className="w-1/3 bg-[#9C6026] text-white p-6 flex flex-col">
           <h2 className="text-2xl font-bold mb-6">
             {isEditing ? 'Editar Empleado' : 'Nuevo Empleado'}
@@ -178,6 +197,21 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
               </div>
             </div>
 
+            {isEditing && (
+              <div className="pt-4 border-t border-gray-100">
+                <label className="flex items-center cursor-pointer w-max">
+                  <div className="relative">
+                    <input type="checkbox" className="sr-only" {...register('isActive')} />
+                    <div className={`block w-10 h-6 rounded-full transition-colors ${watchIsActive ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${watchIsActive ? 'transform translate-x-4' : ''}`}></div>
+                  </div>
+                  <div className="ml-3 text-sm font-medium text-gray-700">
+                    Estado: {watchIsActive ? 'Activo' : 'Inactivo'}
+                  </div>
+                </label>
+              </div>
+            )}
+
           </form>
           
           <div className="mt-8 flex justify-end gap-3 w-full">
@@ -197,8 +231,10 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
             </button>
           </div>
         </div>
+        </motion.div>
       </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };
 

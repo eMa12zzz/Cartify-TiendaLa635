@@ -1,14 +1,29 @@
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Trash2, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const GenericConfirmModal = ({ isOpen, onClose, onConfirm, data, actionType, entityName }) => {
-  if (!isOpen) return null;
 
   const isDelete = actionType === 'delete';
   const title = isDelete ? `¿Eliminar ${entityName}?` : `¿Guardar ${entityName}?`;
   
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/50"
+          onClick={onClose}
+        />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
+      >
         
         <div className={`p-4 text-white flex justify-center items-center gap-2 ${isDelete ? 'bg-red-500' : 'bg-[#9C6026]'}`}>
           {isDelete ? <AlertTriangle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
@@ -40,8 +55,10 @@ const GenericConfirmModal = ({ isOpen, onClose, onConfirm, data, actionType, ent
             </button>
           </div>
         </div>
+        </motion.div>
       </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };
 

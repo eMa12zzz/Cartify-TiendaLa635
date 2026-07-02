@@ -12,7 +12,9 @@ const supplierSchema = new Schema({
     name: { type:"String"},
     phoneNumber: { type:"String"},
     email: { type:"String"},
-    creditDays: { type:"String"}
+    creditDays: { type:"String"},
+    brandIds: { type: [Schema.Types.ObjectId], ref: "brandsModel", default: [] },
+    isActive: { type: Boolean, default: true }
 },
 {
     timestamps: true,

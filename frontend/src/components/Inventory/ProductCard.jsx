@@ -1,14 +1,22 @@
-const ProductCard = ({ product, onEdit }) => {
+import { motion } from 'framer-motion';
+import TableActions from '../UI/TableActions';
+
+const ProductCard = ({ product, onEdit, onDelete, onView }) => {
   // Calcular porcentaje para la barra de cantidades (asumimos maximo de 100 si no existe)
   const maxStock = product.maxQuantity || 100;
   const currentStock = product.stock || 0;
   const quantityPercentage = Math.min(100, Math.max(0, (currentStock / maxStock) * 100));
 
   const imageUrl = Array.isArray(product.image) ? product.image[0] : product.image;
-
   return (
-    <div className="flex bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
-      <div className="w-1/3 bg-[#9C6026] text-white p-4 flex flex-col items-center justify-between relative">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4, transition: { duration: 0.15 } }}
+      transition={{ duration: 0.2 }}
+      className="flex bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all"
+    >
+      <div className="w-1/3 bg-[#9C6026] text-white p-4 flex flex-col items-center justify-between relative rounded-l-xl">
         <div className="w-full text-left">
           <p className="text-[10px] uppercase tracking-wider opacity-80">{product.brandId?.name}</p>
           <h3 className="text-xl font-bold leading-tight">{product.name}</h3>
@@ -56,15 +64,14 @@ const ProductCard = ({ product, onEdit }) => {
           <p className="text-xs font-medium text-gray-800">
             Fecha de exp: {new Date(product.expirationDate).toLocaleDateString()}
           </p>
-          <button 
-            onClick={() => onEdit(product)}
-            className="bg-[#4A4A4A] hover:bg-gray-800 text-white text-xs px-4 py-1.5 rounded-full transition-colors"
-          >
-            Editar
-          </button>
+          <TableActions 
+            onView={onView ? () => onView(product) : undefined}
+            onEdit={() => onEdit(product)}
+            onDelete={() => onDelete && onDelete(product)}
+          />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

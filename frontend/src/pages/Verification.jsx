@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginStep2 } from '../api/authApi';
 import styled from 'styled-components';
 
 const BROWN = '#8B5A2B';
@@ -154,8 +155,10 @@ const Verification = () => {
   const navigate = useNavigate();
   const [code, setCode] = useState(['', '', '', '']);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const identifier = localStorage.getItem('tempIdentifier') || 'emanuel@yahoo.com';
+  const identifier = localStorage.getItem('tempIdentifier') || 'Usuario';
+  const pendingToken = localStorage.getItem('pendingToken');
 
   const handleChange = (index, value) => {
     if (value.length > 1) return;
@@ -173,22 +176,41 @@ const Verification = () => {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const fullCode = code.join('');
     if (fullCode.length !== 4) {
       setError('Ingresa el código de 4 dígitos');
       return;
     }
-    if (fullCode === '0000') {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const exists = users.find(u => u.identifier === identifier);
-      if (exists) {
-        navigate('/login-password');
-      } else {
-        navigate('/create-password');
-      }
-    } else {
-      setError('Código incorrecto. Usa: 0000');
+    
+    if (!pendingToken) {
+      setError('Sesión inválida, vuelve a iniciar sesión');
+      setTimeout(() => navigate('/'), 2000);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await loginStep2({
+        pendingToken,
+        otpCode: fullCode
+      });
+      
+      // Store final token and user data
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user', JSON.stringify(res.user));
+      
+      // Clean up temporary auth data
+      localStorage.removeItem('tempIdentifier');
+      localStorage.removeItem('tempMethod');
+      localStorage.removeItem('pendingToken');
+      
+      // Redirect to admin or home based on role
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setError(err.message || 'Código incorrecto');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -226,7 +248,9 @@ const Verification = () => {
 
           {error && <ErrorMsg>{error}</ErrorMsg>}
 
-          <Button onClick={handleVerify}>Verificar</Button>
+          <Button onClick={handleVerify} disabled={loading}>
+            {loading ? 'Verificando...' : 'Verificar'}
+          </Button>
 
           <ResendRow>
             ¿No has recibido el código aún?{' '}
