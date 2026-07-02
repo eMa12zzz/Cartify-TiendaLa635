@@ -28,7 +28,7 @@ const productSchema = new Schema({
     description: { type:"String"},
     barCode: { type:"String"},
     stock: { type: Number},
-    maxQuantity: { type: Number },
+    moduleId: { type: Schema.Types.ObjectId, ref: "moduleModel"},
     supplierId: { type: Schema.Types.ObjectId, ref: "supplierModel"},
     isActive: { type: Boolean, default: true}
 },

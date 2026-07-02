@@ -1,5 +1,5 @@
 import express from "express";
-import wompiController from "../controller/wompiController.js";
+import wompiController from "../controllers/wompiController.js";
 
 const router = express.Router()
 

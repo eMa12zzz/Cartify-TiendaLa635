@@ -20,9 +20,9 @@ supplierController.insertSupplier = async (req, res) => {
     console.log("Nombre de la DB actual:", mongoose.connection.name);
     
     //1- Pedimos los datos para insertar
-    const { name, phoneNumber, email, creditDays, brandIds, isActive } = req.body;
+    const { name, phoneNumber, email, creditDays } = req.body;
     //2- Lleno una instancia de mi Schema
-    const newSupplier = new supplierModel({ name, phoneNumber, email, creditDays, brandIds, isActive });
+    const newSupplier = new supplierModel({ name, phoneNumber, email, creditDays });
     //3- Guardamos en la base de datos
     await newSupplier.save();
     res.status(201).json({ message: 'Supplier created successfully' });
@@ -34,7 +34,7 @@ supplierController.insertSupplier = async (req, res) => {
 supplierController.updateSupplier = async (req, res) => {
     try {
         //1- Pedimos los datos para actualizar
-        let { name, phoneNumber, email, creditDays, brandIds, isActive } = req.body;
+        let { name, phoneNumber, email, creditDays } = req.body;
 
         //Valores requeridos
         if (!name || !phoneNumber || !email || !creditDays) {
@@ -43,7 +43,7 @@ supplierController.updateSupplier = async (req, res) => {
 
         const updateSupplier = await supplierModel.findByIdAndUpdate(
             req.params.id,
-            { name, phoneNumber, email, creditDays, brandIds, isActive },
+            { name, phoneNumber, email, creditDays },
             { new: true }
         );
         

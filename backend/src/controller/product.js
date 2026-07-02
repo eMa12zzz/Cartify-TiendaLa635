@@ -12,6 +12,7 @@ productController.getProduct = async (req, res) => {
     const products = await productModel.find()
       .populate("typeId")
       .populate("brandId")
+      .populate("moduleId")
       .populate("supplierId");
 
     return res.status(200).json(products);
@@ -44,6 +45,7 @@ productController.insertProduct = async (req, res) => {
       description,
       barCode,
       stock,
+      moduleId,
       supplierId
     } = req.body;
 
@@ -58,6 +60,7 @@ productController.insertProduct = async (req, res) => {
       !description ||
       !barCode ||
       !stock ||
+      !moduleId ||
       !supplierId ||
       !req.file
     ) {
@@ -78,7 +81,7 @@ productController.insertProduct = async (req, res) => {
       description,
       barCode,
       stock,
-      maxQuantity: stock,
+      moduleId,
       supplierId
     });
 
@@ -113,6 +116,7 @@ productController.updateProduct = async (req, res) => {
       description,
       barCode,
       stock,
+      moduleId,
       supplierId
     } = req.body;
 
@@ -127,6 +131,7 @@ productController.updateProduct = async (req, res) => {
       !description ||
       !barCode ||
       !stock ||
+      !moduleId ||
       !supplierId
     ) {
       return res.status(400).json({
@@ -152,7 +157,7 @@ productController.updateProduct = async (req, res) => {
       description,
       barCode,
       stock,
-      maxQuantity: stock,
+      moduleId,
       supplierId
     };
 

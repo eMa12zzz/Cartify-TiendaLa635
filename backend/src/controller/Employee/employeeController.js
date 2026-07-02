@@ -2,86 +2,43 @@ import employeeModel from '../../models/employee.js';
 import mongoose from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
 
+
 const employeeController = {};
 
-// Select
+//Select
 employeeController.getEmployees = async (req, res) => {
     try {
-        // Soporte para filtros por query params (nombre, estado, rol)
-        const filter = {};
-        if (req.query.isActive !== undefined) {
-            filter.isActive = req.query.isActive === 'true';
-        }
-        if (req.query.role) {
-            filter.role = req.query.role;
-        }
-        if (req.query.search) {
-            // Búsqueda case-insensitive por nombre
-            filter.fullName = { $regex: req.query.search, $options: 'i' };
-        }
-
-        const employee = await employeeModel.find(filter).select('-password'); // No devolver la contraseña
+        const employee = await employeeModel.find();
         res.status(200).json(employee);
     } catch (error) {
-        console.log("error " + error);
+        console.log("error" + error);
         res.status(500).json({ message: 'Internal Server Error get Employee' });
     }
 };
 
-// Select by ID
-employeeController.getEmployeeById = async (req, res) => {
-    try {
-        const employee = await employeeModel.findById(req.params.id).select('-password');
-        if (!employee) return res.status(404).json({ message: 'Employee not found' });
-        res.status(200).json(employee);
-    } catch (error) {
-        console.log("error " + error);
-        res.status(500).json({ message: 'Internal Server Error get Employee' });
-    }
-};
-
-// Insert
+//Insert
 employeeController.insertEmployee = async (req, res) => {
-    try {
-        // 1- Pedimos los datos para insertar
-        const { fullName, dui, phoneNumber, email, userName, password, role } = req.body;
-        
-        // Validación básica
-        if (!fullName || !dui || !phoneNumber || !email || !userName || !password || !req.file) {
-             return res.status(400).json({ message: "All fields and image are required" });
-        }
+    
+    //1- Pedimos los datos para insertar
+    const { fullName, dui, phoneNumber, image, email, userName, password } = req.body;
+    //2- Lleno una instancia de mi Schema
+    const newEmployee = new employeeModel({ fullName, dui, phoneNumber, image: req.file.path, public_id: req.file.filename, email, userName, password });
+    //3- Guardamos en la base de datos
+    await newEmployee.save();
+    res.status(201).json({ message: 'Employee created successfully' });
 
-        // 2- Lleno una instancia de mi Schema. El password se encriptará automáticamente por el hook pre-save.
-        const newEmployee = new employeeModel({ 
-            fullName, 
-            dui, 
-            phoneNumber, 
-            image: req.file.path, 
-            public_id: req.file.filename, 
-            email, 
-            userName, 
-            password,
-            role
-        });
-        
-        // 3- Guardamos en la base de datos
-        await newEmployee.save();
-        res.status(201).json({ message: 'Employee created successfully' });
-    } catch (error) {
-        console.log("error " + error);
-        res.status(500).json({ message: 'Internal Server Error insert Employee' });
-    }
+
 };
 
-// Update
 employeeController.updateEmployee = async (req, res) => {
   try {
-    let { fullName, dui, phoneNumber, email, userName, password, role, isActive } = req.body;
+
+    let { fullName, dui, phoneNumber, email, userName, password } = req.body;
 
     email = email?.trim();
     userName = userName?.trim();
 
-    if (!email || !userName || !fullName || !dui || !phoneNumber) {
+    if (!email || !userName || !password || !fullName || !dui || !phoneNumber) {
       return res.status(400).json({
         message: "Required fields"
       });
@@ -95,31 +52,29 @@ employeeController.updateEmployee = async (req, res) => {
       });
     }
 
-    employeeFound.fullName = fullName;
-    employeeFound.dui = dui;
-    employeeFound.phoneNumber = phoneNumber;
-    employeeFound.email = email;
-    employeeFound.userName = userName;
-    
-    if (role) employeeFound.role = role;
-    if (isActive !== undefined) employeeFound.isActive = isActive;
-    
-    // Si viene una contraseña nueva, la actualizamos y el hook pre-save se encarga de hacer el hash.
-    if (password) {
-        employeeFound.password = password;
-    }
+    const updatedData = {
+      fullName,
+      dui,
+      phoneNumber,
+      email,
+      userName,
+      password
+    };
 
-    // Si viene una nueva imagen
+    //Si viene una nueva imagen
     if (req.file) {
-      if (employeeFound.public_id) {
-          await cloudinary.uploader.destroy(employeeFound.public_id);
-      }
-      employeeFound.image = req.file.path;
-      employeeFound.public_id = req.file.filename;
+
+      await cloudinary.uploader.destroy(employeeFound.public_id);
+
+      updatedData.image = req.file.path;
+      updatedData.public_id = req.file.filename;
     }
 
-    // Usamos .save() en lugar de findByIdAndUpdate para que se ejecute el hook pre-save del schema
-    await employeeFound.save();
+    await employeeModel.findByIdAndUpdate(
+      req.params.id,
+      updatedData,
+      { new: true }
+    );
 
     return res.status(200).json({
       message: "Employee updated successfully"
@@ -134,43 +89,17 @@ employeeController.updateEmployee = async (req, res) => {
   }
 };
 
-// Toggle Active
-employeeController.toggleActive = async (req, res) => {
-    try {
-        const employee = await employeeModel.findById(req.params.id);
-        if (!employee) {
-            return res.status(404).json({ message: 'Employee not found' });
-        }
-        
-        employee.isActive = !employee.isActive;
-        // No necesitamos validar ni hacer nada con el password aquí, .save() no re-hasheará si no se modifica.
-        await employee.save();
-        
-        return res.status(200).json({ message: `Employee status updated to ${employee.isActive ? 'active' : 'inactive'}` });
-    } catch (error) {
-        console.log("error " + error);
-        res.status(500).json({ message: 'Internal Server Error toggle Employee' });
-    }
-};
-
-// Delete
+//Delete
 employeeController.deleteEmployee = async (req, res) => {
     try {
-        const employeeFound = await employeeModel.findById(req.params.id);
-        if (!employeeFound) {
+        const deleteEmployee = await employeeModel.findByIdAndDelete(req.params.id);
+        if (!deleteEmployee) {
             return res.status(404).json({ message: 'Employee not found' });
         }
-
-        if (employeeFound.public_id) {
-            await cloudinary.uploader.destroy(employeeFound.public_id);
-        }
-
-        await employeeModel.findByIdAndDelete(req.params.id);
-        
         return res.status(200).json({ message: 'Employee deleted successfully' });
     } catch (error) {
-        console.log("error " + error);
-        res.status(500).json({ message: 'Internal Server Error delete Employee' });
+        console.log("error" + error);
+        res.status(500).json({ message: 'Internal Server Error deleteAdmin' });
     }
 };
 

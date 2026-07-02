@@ -4,8 +4,9 @@ const productTypeSchema = new Schema({
     
     moduleId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "moduleModel", 
+        ref: "Module", 
         required: true,
+      
     },
     type: {
         type: String,
@@ -14,13 +15,6 @@ const productTypeSchema = new Schema({
 
     subtype: {
         type: [String],
-        default: []
-    },
-
-    // Array de proveedores que surten esta categoría — permite filtrado en cascada en el formulario de productos
-    supplierIds: {
-        type: [mongoose.Schema.Types.ObjectId],
-        ref: "supplierModel",
         default: []
     },
 
@@ -35,4 +29,4 @@ const productTypeSchema = new Schema({
     strict: false
 });
 
-export default model('productTypeModel', productTypeSchema, 'ProductTypes');
+export default model('productTypeModel', productTypeSchema, 'ProductTypes');

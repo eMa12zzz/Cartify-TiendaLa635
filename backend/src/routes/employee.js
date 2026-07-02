@@ -10,9 +10,7 @@ router.route("/")
 
 router.route("/:id")
     .put(upload.single('image'), employeeController.updateEmployee)
-    .get(employeeController.getEmployeeById)
+    .get(employeeController.getEmployees)
     .delete(employeeController.deleteEmployee);
-
-router.patch("/:id/toggle", employeeController.toggleActive);
 
 export default router;
