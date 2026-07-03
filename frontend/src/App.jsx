@@ -1,4 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/Layout/ProtectedRoute';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Verification from './pages/Verification';
@@ -24,32 +28,39 @@ import AccountSettings from './pages/AccountSettings';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verification" element={<Verification />} />
-        <Route path="/create-password" element={<CreatePassword />} />
-        <Route path="/login-password" element={<LoginPassword />} />
-        <Route path="/tienda-dashboard" element={<Dashboard />} />
-        <Route path="/store" element={<Store />} />
-        <Route path="/impresiones" element={<Impresiones/>} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Toaster position="top-right" />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verification" element={<Verification />} />
+          <Route path="/create-password" element={<CreatePassword />} />
+          <Route path="/login-password" element={<LoginPassword />} />
+          <Route path="/tienda-dashboard" element={<Dashboard />} />
+          <Route path="/store" element={<Store />} />
+          <Route path="/impresiones" element={<Impresiones/>} />
 
-        <Route element={<AdminLayout />}>
-          <Route path="/dashboard" element={<AdminDashboard />} />
-          <Route path="/inventario" element={<Inventory />} />
-          <Route path="/pedidos" element={<Orders />} />
-          <Route path="/modulos" element={<Modules />} />
-          <Route path="/marcas" element={<Brands />} />
-          <Route path="/empleados" element={<Employees />} />
-          <Route path="/clientes" element={<Customers />} />
-          <Route path="/proveedores" element={<Suppliers />} />
-          <Route path="/categorias" element={<Categories />} />
-          <Route path="/cuenta" element={<AccountSettings />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          {/* Protected Admin Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/dashboard" element={<AdminDashboard />} />
+              <Route path="/inventario" element={<Inventory />} />
+              <Route path="/pedidos" element={<Orders />} />
+              <Route path="/modulos" element={<Modules />} />
+              <Route path="/marcas" element={<Brands />} />
+              <Route path="/empleados" element={<Employees />} />
+              <Route path="/clientes" element={<Customers />} />
+              <Route path="/proveedores" element={<Suppliers />} />
+              <Route path="/categorias" element={<Categories />} />
+              <Route path="/cuenta" element={<AccountSettings />} />
+            </Route>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
