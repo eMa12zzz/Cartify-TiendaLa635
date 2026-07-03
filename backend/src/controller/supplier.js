@@ -16,18 +16,36 @@ supplierController.getSupplier = async (req, res) => {
 
 //Insert
 supplierController.insertSupplier = async (req, res) => {
-        // Agrega esto justo después de guardar el admin
-    console.log("Nombre de la DB actual:", mongoose.connection.name);
-    
-    //1- Pedimos los datos para insertar
-    const { name, phoneNumber, email, creditDays } = req.body;
-    //2- Lleno una instancia de mi Schema
-    const newSupplier = new supplierModel({ name, phoneNumber, email, creditDays });
-    //3- Guardamos en la base de datos
-    await newSupplier.save();
-    res.status(201).json({ message: 'Supplier created successfully' });
+    try {
+        console.log("Nombre de la DB actual:", mongoose.connection.name);
 
+        const { name, phoneNumber, email, creditDays } = req.body;
 
+        if (!name || !name.trim()) {
+            return res.status(400).json({ message: 'El nombre del proveedor es obligatorio' });
+        }
+        if (!email || !email.trim()) {
+            return res.status(400).json({ message: 'El correo del proveedor es obligatorio' });
+        }
+
+        // Validar formato de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'El formato del correo no es válido' });
+        }
+
+        const existing = await supplierModel.findOne({ name: name.trim() });
+        if (existing) {
+            return res.status(400).json({ message: 'Ya existe un proveedor con ese nombre' });
+        }
+
+        const newSupplier = new supplierModel({ name: name.trim(), phoneNumber, email: email.trim(), creditDays });
+        await newSupplier.save();
+        res.status(201).json({ message: 'Supplier created successfully' });
+    } catch (error) {
+        console.log("error" + error);
+        res.status(500).json({ message: 'Internal Server Error insertSupplier' });
+    }
 };
 
 //Update

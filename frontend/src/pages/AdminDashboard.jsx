@@ -49,33 +49,160 @@ const AdminDashboard = () => {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text(`Reporte de Rendimiento - ${pdfTimeFilter}`, 14, 22);
-    
-    doc.setFontSize(12);
-    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    // Summary Table
+    const brown = [180, 124, 77];       // #B47C4D
+    const brownDark = [156, 96, 38];     // #9C6026
+    const brownLight = [194, 140, 93];   // #C28C5D
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // ── Header / Logo ──
+    doc.setFillColor(...brownDark);
+    doc.rect(0, 0, pageWidth, 38, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text('Tienda', 14, 14);
+    doc.setFontSize(26);
+    doc.setFont(undefined, 'bold');
+    doc.text('la 635', 14, 28);
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Reporte: ${pdfTimeFilter}`, pageWidth - 14, 16, { align: 'right' });
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-SV')}`, pageWidth - 14, 24, { align: 'right' });
+
+    // ── Sección: Resumen General ──
+    doc.setTextColor(...brownDark);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Resumen General', 14, 50);
+
     autoTable(doc, {
-      startY: 40,
+      startY: 55,
       head: [['Métrica', 'Valor']],
       body: [
         ['Total de Pedidos', '78'],
         ['Pedidos Entregados', '185'],
-        ['Total de Ganancias', '$405'],
+        ['Total de Ganancias', '$405.00'],
         ['Productos Bajos en Stock', '28'],
       ],
+      theme: 'grid',
+      headStyles: { fillColor: brown, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+      bodyStyles: { fontSize: 10 },
+      alternateRowStyles: { fillColor: [250, 245, 240] },
+      styles: { cellPadding: 4 },
     });
 
-    // Top Products Table
-    doc.text('Productos Más Vendidos', 14, doc.lastAutoTable.finalY + 15);
+    // ── Sección: Productos Más Vendidos ──
+    const y1 = doc.lastAutoTable.finalY + 12;
+    doc.setTextColor(...brownDark);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Productos Más Vendidos', 14, y1);
+
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 20,
-      head: [['Nombre', 'Vendidos', 'Stock', 'Precio']],
-      body: topProducts.map(p => [p.name, p.sold, p.remaining, p.price]),
+      startY: y1 + 5,
+      head: [['#', 'Producto', 'Vendidos', 'Stock Restante', 'Precio']],
+      body: topProducts.map((p, i) => [i + 1, p.name, p.sold, p.remaining, p.price]),
+      theme: 'grid',
+      headStyles: { fillColor: brownDark, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+      bodyStyles: { fontSize: 10 },
+      alternateRowStyles: { fillColor: [250, 245, 240] },
+      styles: { cellPadding: 4 },
     });
 
-    doc.save('reporte-dashboard.pdf');
+    // ── Sección: Ventas y Compras por Mes ──
+    const y2 = doc.lastAutoTable.finalY + 12;
+    doc.setTextColor(...brownDark);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Ventas y Compras por Mes', 14, y2);
+
+    autoTable(doc, {
+      startY: y2 + 5,
+      head: [['Mes', 'Compras ($)', 'Ventas ($)', 'Diferencia ($)']],
+      body: barData.map(d => [d.name, d.Compras.toLocaleString(), d.Ventas.toLocaleString(), (d.Ventas - d.Compras).toLocaleString()]),
+      theme: 'grid',
+      headStyles: { fillColor: brown, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+      bodyStyles: { fontSize: 10 },
+      alternateRowStyles: { fillColor: [250, 245, 240] },
+      styles: { cellPadding: 4 },
+    });
+
+    // ── Sección: Pedidos vs Entregas ──
+    const y3 = doc.lastAutoTable.finalY + 12;
+
+    // Revisar si hay espacio para una tabla más, si no, nueva página
+    if (y3 > 240) {
+      doc.addPage();
+      doc.setTextColor(...brownDark);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('Pedidos vs Entregas', 14, 20);
+
+      autoTable(doc, {
+        startY: 25,
+        head: [['Mes', 'Pedidos', 'Entregados', 'Pendientes']],
+        body: lineData.map(d => [d.name, d.Pedidos, d.Entregado, d.Pedidos - d.Entregado]),
+        theme: 'grid',
+        headStyles: { fillColor: brownDark, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+        bodyStyles: { fontSize: 10 },
+        alternateRowStyles: { fillColor: [250, 245, 240] },
+        styles: { cellPadding: 4 },
+      });
+    } else {
+      doc.setTextColor(...brownDark);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('Pedidos vs Entregas', 14, y3);
+
+      autoTable(doc, {
+        startY: y3 + 5,
+        head: [['Mes', 'Pedidos', 'Entregados', 'Pendientes']],
+        body: lineData.map(d => [d.name, d.Pedidos, d.Entregado, d.Pedidos - d.Entregado]),
+        theme: 'grid',
+        headStyles: { fillColor: brownDark, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+        bodyStyles: { fontSize: 10 },
+        alternateRowStyles: { fillColor: [250, 245, 240] },
+        styles: { cellPadding: 4 },
+      });
+    }
+
+    // ── Sección: Productos con Bajo Stock ──
+    const y4 = doc.lastAutoTable.finalY + 12;
+    if (y4 > 250) doc.addPage();
+    const startY4 = y4 > 250 ? 20 : y4;
+
+    doc.setTextColor(...brownDark);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Productos con Bajo Stock', 14, startY4);
+
+    autoTable(doc, {
+      startY: startY4 + 5,
+      head: [['#', 'Producto', 'Stock Restante']],
+      body: lowStockProducts.map((p, i) => [i + 1, p.name, p.remaining]),
+      theme: 'grid',
+      headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+      bodyStyles: { fontSize: 10 },
+      alternateRowStyles: { fillColor: [254, 242, 242] },
+      styles: { cellPadding: 4 },
+    });
+
+    // ── Footer ──
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      const pageHeight = doc.internal.pageSize.getHeight();
+      doc.setFillColor(...brownDark);
+      doc.rect(0, pageHeight - 14, pageWidth, 14, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text('Tienda la 635 — Reporte Generado Automáticamente', 14, pageHeight - 5);
+      doc.text(`Página ${i} de ${totalPages}`, pageWidth - 14, pageHeight - 5, { align: 'right' });
+    }
+
+    doc.save(`reporte-dashboard-${pdfTimeFilter.toLowerCase()}.pdf`);
     setIsPDFModalOpen(false);
   };
 

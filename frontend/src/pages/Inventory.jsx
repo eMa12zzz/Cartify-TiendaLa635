@@ -72,15 +72,19 @@ const Inventory = () => {
   };
 
   const handleConfirmAction = async (data) => {
+    let success = false;
     if (pendingAction.type === 'save') {
-      await saveProduct(data);
+      success = await saveProduct(data);
     } else if (pendingAction.type === 'delete') {
-      await deleteProduct(data._id);
+      success = await deleteProduct(data._id);
     }
     
     setIsConfirmOpen(false);
-    setIsFormOpen(false); 
-    setPendingAction({ type: null, data: null });
+    
+    if (success) {
+      setIsFormOpen(false); 
+      setPendingAction({ type: null, data: null });
+    }
   };
 
   return (

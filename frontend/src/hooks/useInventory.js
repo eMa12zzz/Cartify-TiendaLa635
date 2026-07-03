@@ -74,6 +74,8 @@ export const useInventory = () => {
       return true;
     } catch (error) {
       console.error(error);
+      const msg = error.response?.data?.message || 'Error al guardar el producto';
+      toast.error(msg);
       return false;
     } finally {
       setIsLoading(false);
@@ -89,6 +91,8 @@ export const useInventory = () => {
       return true;
     } catch (error) {
       console.error(error);
+      const msg = error.response?.data?.message || 'Error al eliminar el producto';
+      toast.error(msg);
       return false;
     } finally {
       setIsLoading(false);

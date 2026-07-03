@@ -54,7 +54,6 @@ productController.insertProduct = async (req, res) => {
       !name ||
       !typeId ||
       !brandId ||
-      !expirationDate ||
       !priceCost ||
       !salePrice ||
       !description ||
@@ -66,6 +65,13 @@ productController.insertProduct = async (req, res) => {
     ) {
       return res.status(400).json({
         message: "All fields are required"
+      });
+    }
+
+    const existingProduct = await productModel.findOne({ barCode });
+    if (existingProduct) {
+      return res.status(400).json({
+        message: "El código de barras ya está en uso."
       });
     }
 
@@ -125,7 +131,6 @@ productController.updateProduct = async (req, res) => {
       !name ||
       !typeId ||
       !brandId ||
-      !expirationDate ||
       !priceCost ||
       !salePrice ||
       !description ||
@@ -136,6 +141,13 @@ productController.updateProduct = async (req, res) => {
     ) {
       return res.status(400).json({
         message: "All fields are required"
+      });
+    }
+
+    const existingProduct = await productModel.findOne({ barCode, _id: { $ne: req.params.id } });
+    if (existingProduct) {
+      return res.status(400).json({
+        message: "El código de barras ya está en uso por otro producto."
       });
     }
 

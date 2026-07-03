@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { loginStep1 } from '../api/authApi';
+import { loginAdminDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { login, logout } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Limpiar sesión previa si el usuario entra al login
@@ -30,22 +30,23 @@ const Login = () => {
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      const res = await loginStep1({ email: data.email, password: data.password });
+      // Validamos con el backend real de administradores
+      const res = await loginAdminDB({ email: data.email, password: data.password });
       
-      localStorage.setItem('tempIdentifier', data.email);
-      localStorage.setItem('tempMethod', 'email');
-      localStorage.setItem('pendingToken', res.pendingToken);
+      // Guardamos el token real y los datos del admin en el contexto
+      login(res.token, 'admin', res.admin); // Pasamos 'admin' como userType y los datos
       
-      toast.success('Credenciales validadas. Redirigiendo a verificación...', {
+      toast.success('¡Bienvenido! Inicio de sesión exitoso', {
         style: {
           borderRadius: '10px',
           background: '#333',
           color: '#fff',
         },
       });
-      navigate('/verification');
+      // Redirigimos directo al panel
+      navigate('/dashboard');
     } catch (err) {
-      toast.error(err.message || 'Credenciales inválidas', {
+      toast.error(err.message || 'Credenciales inválidas o cuenta bloqueada', {
         style: {
           borderRadius: '10px',
           background: '#ff4d4f',

@@ -36,7 +36,15 @@ adminController.insertAdmin = async (req, res) => {
     // Que no venga nada vacío
     if (!email || !userName || !password) {
       return res.status(400).json({
-        message: "Required fields",
+        message: "Todos los campos son obligatorios",
+      });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "El formato del correo no es válido",
       });
     }
 
@@ -87,7 +95,15 @@ adminController.updateAdmin = async (req, res) => {
     // Solo estos son obligatorios
     if (!email || !userName) {
       return res.status(400).json({
-        message: "Required fields",
+        message: "El email y nombre de usuario son obligatorios",
+      });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "El formato del correo no es válido",
       });
     }
 

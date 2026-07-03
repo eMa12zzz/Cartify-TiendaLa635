@@ -16,18 +16,27 @@ brandController.getBrand = async (req, res) => {
 
 //Insert
 brandController.insertBrand = async (req, res) => {
-        // Agrega esto justo después de guardar el admin
-    console.log("Nombre de la DB actual:", mongoose.connection.name);
-    
-    //1- Pedimos los datos para insertar
-    const { name } = req.body;
-    //2- Lleno una instancia de mi Schema
-    const newBrand = new brandsModel({ name });
-    //3- Guardamos en la base de datos
-    await newBrand.save();
-    res.status(201).json({ message: 'Brand created successfully' });
+    try {
+        console.log("Nombre de la DB actual:", mongoose.connection.name);
 
+        const { name } = req.body;
 
+        if (!name || !name.trim()) {
+            return res.status(400).json({ message: 'El nombre de la marca es obligatorio' });
+        }
+
+        const existing = await brandsModel.findOne({ name: name.trim() });
+        if (existing) {
+            return res.status(400).json({ message: 'Ya existe una marca con ese nombre' });
+        }
+
+        const newBrand = new brandsModel({ name: name.trim() });
+        await newBrand.save();
+        res.status(201).json({ message: 'Brand created successfully' });
+    } catch (error) {
+        console.log("error" + error);
+        res.status(500).json({ message: 'Internal Server Error insertBrand' });
+    }
 };
 
 //Update

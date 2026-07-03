@@ -309,7 +309,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
               </label>
               <input 
                 type="date" 
-                {...register('expirationDate', { required: true })}
+                {...register('expirationDate')}
                 className="w-1/2 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]"
               />
             </div>

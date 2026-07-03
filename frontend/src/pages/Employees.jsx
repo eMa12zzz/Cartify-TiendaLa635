@@ -85,14 +85,15 @@ const Employees = () => {
         await employeeService.deleteEmployee(payload._id);
         toast.success("Empleado eliminado");
       }
-      
       fetchEmployees();
-    } catch (error) {
-      console.error(error);
-    } finally {
       setIsConfirmOpen(false);
       setIsFormOpen(false);
       setPendingAction({ type: null, data: null });
+    } catch (error) {
+      console.error(error);
+      const msg = error.response?.data?.message || 'Error en la operación';
+      toast.error(msg);
+      setIsConfirmOpen(false);
     }
   };
 

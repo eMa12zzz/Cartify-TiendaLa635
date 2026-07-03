@@ -25,3 +25,16 @@ export const loginStep2 = async (data) => {
   }
   return response.json();
 };
+
+export const loginAdminDB = async (data) => {
+  const response = await fetch(`http://localhost:4000/api/loginAdmin/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || 'Error en inicio de sesión de admin');
+  }
+  return response.json();
+};

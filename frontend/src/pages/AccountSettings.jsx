@@ -1,25 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useTheme, palettes } from '../context/ThemeContext';
-import { Check, Palette, User, CheckCircle2 } from 'lucide-react';
+import { Check, Palette, User, CheckCircle2, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const AccountSettings = () => {
   const { paletteId, setPaletteId, palette } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
-  const [userType, setUserType] = useState('employee');
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const type = localStorage.getItem('userType');
-    if (type) setUserType(type);
-  }, []);
+  const userType = user?.type || 'employee';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   const [formData, setFormData] = useState({
-    firstName: 'Mehrab',
-    lastName: 'Bozorgi',
-    email: 'mehrabbozorgi.business@gmail.com',
-    username: '33062 Zboncak isle',
-    phone: '58077.79',
-    dui: 'Mehrab',
-    password: 'sbdfbnd65sfdvb s'
+    fullnName: user?.fullnName || '',
+    userName: user?.userName || '',
+    email: user?.email || '',
+    phone: user?.phoneNumber || '',
+    dui: user?.dui || '',
+    password: ''
   });
 
   const handleChange = (e) => {
@@ -35,9 +39,17 @@ const AccountSettings = () => {
     <div className="flex-1 w-full max-w-5xl pb-10" style={{ backgroundColor: 'var(--theme-main-bg)' }}>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>Cuenta</h1>
-        <div className="text-xs px-3 py-1 rounded-full font-medium capitalize" 
-             style={{ backgroundColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }}>
-          Vista: {userType === 'admin' ? 'Administrador' : 'Empleado'}
+        <div className="flex items-center gap-4">
+          <div className="text-xs px-3 py-1 rounded-full font-medium capitalize" 
+               style={{ backgroundColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }}>
+            Vista: {userType === 'admin' ? 'Administrador' : 'Empleado'}
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-full transition-colors border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-600"
+          >
+            <LogOut size={16} /> Cerrar Sesión
+          </button>
         </div>
       </div>
 
@@ -69,19 +81,20 @@ const AccountSettings = () => {
         <div className="flex flex-col md:flex-row gap-10">
           <div className="flex-1 max-w-2xl">
             <form className="space-y-6">
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-2">
-                  <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Nombre</label>
-                  <input type="text" name="firstName" value={formData.firstName} onChange={handleChange}
+              {userType === 'employee' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Nombre Completo</label>
+                  <input type="text" name="fullnName" value={formData.fullnName} onChange={handleChange}
                     className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
                     style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
                 </div>
-                <div className="flex-1 space-y-2">
-                  <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Apellido</label>
-                  <input type="text" name="lastName" value={formData.lastName} onChange={handleChange}
+              )}
+
+              <div className="space-y-2">
+                <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Nombre de usuario</label>
+                <input type="text" name="userName" value={formData.userName} onChange={handleChange}
                     className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
                     style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
-                </div>
               </div>
 
               <div className="space-y-2 relative">
@@ -94,33 +107,28 @@ const AccountSettings = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Nombre de usuario</label>
-                <input type="text" name="username" value={formData.username} onChange={handleChange}
-                    className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
-                    style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Teléfono</label>
-                <input type="text" name="phone" value={formData.phone} onChange={handleChange}
-                    className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
-                    style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
-              </div>
-
               {userType === 'employee' && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>DUI</label>
-                  <input type="text" name="dui" value={formData.dui} onChange={handleChange}
-                    className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
-                    style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Teléfono</label>
+                    <input type="text" name="phone" value={formData.phone} onChange={handleChange}
+                        className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
+                        style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>DUI</label>
+                    <input type="text" name="dui" value={formData.dui} onChange={handleChange}
+                      className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
+                      style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
+                  </div>
+                </>
               )}
 
               <div className="space-y-2 relative">
                 <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Contraseña</label>
                 <div className="relative">
-                  <input type="password" name="password" value={formData.password} onChange={handleChange}
+                  <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••"
                     className="w-full px-5 py-2.5 rounded-full border focus:outline-none pr-12 tracking-wider transition-colors"
                     style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
                   <CheckCircle2 className="w-5 h-5 text-green-500 absolute right-4 top-1/2 -translate-y-1/2" />
@@ -146,8 +154,8 @@ const AccountSettings = () => {
           <div className="flex-none pt-8">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center shadow-md mx-auto"
                  style={{ backgroundColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }}>
-              <span className="text-3xl font-bold opacity-50">
-                {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
+              <span className="text-3xl font-bold uppercase opacity-50">
+                {formData.userName ? formData.userName.substring(0, 2) : 'U'}
               </span>
             </div>
             <p className="text-center text-xs mt-4 cursor-pointer hover:underline" style={{ color: 'var(--theme-text-secondary)' }}>

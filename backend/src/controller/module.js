@@ -16,18 +16,27 @@ moduleController.getModule = async (req, res) => {
 
 //Insert
 moduleController.insertModule = async (req, res) => {
-        // Agrega esto justo después de guardar el admin
-    console.log("Nombre de la DB actual:", mongoose.connection.name);
-    
-    //1- Pedimos los datos para insertar
-    const { name, description } = req.body;
-    //2- Lleno una instancia de mi Schema
-    const newModule = new moduleModel({ name, description });
-    //3- Guardamos en la base de datos
-    await newModule.save();
-    res.status(201).json({ message: 'Module created successfully' });
+    try {
+        console.log("Nombre de la DB actual:", mongoose.connection.name);
 
+        const { name, description } = req.body;
 
+        if (!name || !name.trim()) {
+            return res.status(400).json({ message: 'El nombre del módulo es obligatorio' });
+        }
+
+        const existing = await moduleModel.findOne({ name: name.trim() });
+        if (existing) {
+            return res.status(400).json({ message: 'Ya existe un módulo con ese nombre' });
+        }
+
+        const newModule = new moduleModel({ name: name.trim(), description });
+        await newModule.save();
+        res.status(201).json({ message: 'Module created successfully' });
+    } catch (error) {
+        console.log("error" + error);
+        res.status(500).json({ message: 'Internal Server Error insertModule' });
+    }
 };
 
 //Update
