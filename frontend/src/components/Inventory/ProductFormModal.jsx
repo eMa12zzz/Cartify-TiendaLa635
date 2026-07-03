@@ -19,7 +19,10 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
   const isStoreModule = selectedModuleObj?.name?.toLowerCase() === 'tienda';
   const isPrintModule = selectedModuleObj?.name?.toLowerCase() === 'impresiones';
 
-  const filteredCategories = categories.filter(c => c.moduleId === watchModuleId);
+  const filteredCategories = categories.filter(c => {
+    const catModuleId = typeof c.moduleId === 'object' ? c.moduleId?._id : c.moduleId;
+    return catModuleId === watchModuleId;
+  });
   
   // Marca (Brand) filtrada por Proveedor (Supplier)
   const selectedSupplierObj = suppliers.find(s => s._id === watchSupplierId);
@@ -34,13 +37,13 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
     if (isOpen) {
       if (product) {
         reset({
-          brandId: product.brandId?._id || '',
+          brandId: product.brandId?._id || product.brandId || '',
           name: product.name,
           priceCost: product.priceCost,
           salePrice: product.salePrice,
-          supplierId: product.supplierId?._id || '',
-          typeId: product.typeId?._id || '',
-          moduleId: product.moduleId?._id || '',
+          supplierId: product.supplierId?._id || product.supplierId || '',
+          typeId: product.typeId?._id || product.typeId || '',
+          moduleId: product.moduleId?._id || product.moduleId || '',
           description: product.description,
           expirationDate: product.expirationDate ? new Date(product.expirationDate).toISOString().split('T')[0] : '',
           stock: product.stock,
@@ -61,7 +64,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
           description: '',
           expirationDate: '',
           stock: 0,
-          barCode: Math.floor(1000000000000 + Math.random() * 9000000000000).toString(),
+          barCode: '',
           isActive: true
         });
         setImagePreview(null);
@@ -271,13 +274,21 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-1">Código Barra</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-bold text-gray-900">Código Barra</label>
+                    <button 
+                      type="button" 
+                      onClick={() => setValue('barCode', Math.floor(1000000000000 + Math.random() * 9000000000000).toString())}
+                      className="text-xs text-[#C28C5D] hover:underline"
+                    >
+                      Generar
+                    </button>
+                  </div>
                   <input 
                     type="text" 
                     {...register('barCode', { required: true })}
-                    readOnly
-                    className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none bg-gray-100 text-gray-500 cursor-not-allowed"
-                    placeholder="Generando..."
+                    className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]"
+                    placeholder="Escanear o generar..."
                   />
                 </div>
               </div>

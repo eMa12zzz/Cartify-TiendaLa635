@@ -17,7 +17,7 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
       if (category) {
         reset({ 
           type: category.type || '', 
-          moduleId: category.moduleId || category.moduleId?._id || '',
+          moduleId: category.moduleId?._id || category.moduleId || '',
           supplierIds: category.supplierIds || [],
           isActive: category.isActive !== false 
         });

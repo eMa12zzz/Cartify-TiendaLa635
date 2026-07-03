@@ -430,6 +430,7 @@ function ProductThumbs({ count, extra }) {
 /* ── Main component ── */
 export default function MisPedidos() {
   const [activeTab, setActiveTab] = useState("todas");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const tabs = [
     { id: "todas",     label: "Todas" },
@@ -438,9 +439,14 @@ export default function MisPedidos() {
     { id: "cancelado", label: "Cancelado" },
   ];
 
-  const filtered = activeTab === "todas"
-    ? orders
-    : orders.filter(o => o.status === activeTab);
+  const filtered = orders.filter(o => {
+    const matchesTab = activeTab === "todas" ? true : o.status === activeTab;
+    const searchString = searchTerm.toLowerCase();
+    const matchesSearch = o.title.toLowerCase().includes(searchString) || 
+                          o.id.toString().includes(searchString) ||
+                          o.amount.toLowerCase().includes(searchString);
+    return matchesTab && matchesSearch;
+  });
 
   return (
     <>
@@ -498,17 +504,32 @@ export default function MisPedidos() {
         <main className="main">
           <h1 className="main-title">Mis ordenes</h1>
 
-          {/* Tabs */}
-          <div className="tabs">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                className={`tab${activeTab === tab.id ? " active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* Tabs and Search */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="tabs" style={{ marginBottom: 0 }}>
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  className={`tab${activeTab === tab.id ? " active" : ""}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ position: 'relative', width: '300px', maxWidth: '100%' }}>
+              <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }}>
+                <IconSearch />
+              </div>
+              <input 
+                type="text" 
+                placeholder="Buscar pedido por título, monto o ID..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px 8px 36px', border: '1px solid #e0e0e0', borderRadius: '8px', outline: 'none', fontSize: '13px' }}
+              />
+            </div>
           </div>
 
           {/* Order cards */}
