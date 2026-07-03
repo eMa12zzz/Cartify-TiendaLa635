@@ -1,79 +1,158 @@
-import adminModel from '../../models/admin.js';
+import adminModel from "../../models/admin.js";
 import mongoose from "mongoose";
+import bcryptjs from "bcryptjs";
 
 const adminController = {};
 
-//Select
+// Traer todos los admins
 adminController.getAdmins = async (req, res) => {
-    try {
-        const admins = await adminModel.find();
-        res.status(200).json(admins);
-    } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error getAdmins' });
-    }
+  try {
+
+    const admins = await adminModel.find();
+
+    return res.status(200).json(admins);
+
+  } catch (error) {
+    console.log("Error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error getAdmins",
+    });
+  }
 };
 
-//Insert
+// Crear un admin
 adminController.insertAdmin = async (req, res) => {
-        // Agrega esto justo después de guardar el admin
-console.log("Nombre de la DB actual:", mongoose.connection.name);
-    
-    //1- Pedimos los datos para insertar
-    const { email, userName, password } = req.body;
-    //2- Lleno una instancia de mi Schema
-    const newAdmin = new adminModel({ email, userName, password });
-    //3- Guardamos en la base de datos
+  try {
+
+    console.log("Nombre de la DB actual:", mongoose.connection.name);
+
+    // Sacamos los datos que manda el front
+    let { email, userName, password } = req.body;
+
+    email = email?.trim();
+    userName = userName?.trim();
+
+    // Que no venga nada vacío
+    if (!email || !userName || !password) {
+      return res.status(400).json({
+        message: "Required fields",
+      });
+    }
+
+    // Revisamos que no exista otro admin con ese correo
+    const adminExists = await adminModel.findOne({ email });
+
+    if (adminExists) {
+      return res.status(400).json({
+        message: "Administrator already exists",
+      });
+    }
+
+    // Encriptamos la contraseña antes de guardarla
+    const passwordHashed = await bcryptjs.hash(password, 10);
+
+    // Creamos el admin
+    const newAdmin = new adminModel({
+      email,
+      userName,
+      password: passwordHashed,
+      isActive: true,
+    });
+
     await newAdmin.save();
-    res.status(201).json({ message: 'Admin created successfully' });
 
+    return res.status(201).json({
+      message: "Admin created successfully",
+    });
 
+  } catch (error) {
+    console.log("Error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error insertAdmin",
+    });
+  }
 };
 
-//Update
+// Editar un admin
 adminController.updateAdmin = async (req, res) => {
-    try {
-        //1- Pedimos los datos para actualizar
-        let { email, userName, password } = req.body;
+  try {
 
-        //Validaciones
-        email = email?.trim();
-        userName = userName?.trim();
+    let { email, userName, password } = req.body;
 
-        //Valores requeridos
-        if (!email || !userName || !password) {
-            return res.status(400).json({ message: 'required fields' });
-        }
+    email = email?.trim();
+    userName = userName?.trim();
 
-        const updateAdmin = await adminModel.findByIdAndUpdate(
-            req.params.id,
-            { email, userName, password },
-            { new: true }
-        );
-        
-        if (!updateAdmin) {
-            return res.status(404).json({ message: 'Admin not found' });
-        }
-        return res.status(200).json({ message: 'Admin updated successfully' });
-
-    } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error updateAdmin' });
+    // Solo estos son obligatorios
+    if (!email || !userName) {
+      return res.status(400).json({
+        message: "Required fields",
+      });
     }
+
+    // Buscamos el admin
+    const adminFound = await adminModel.findById(req.params.id);
+
+    if (!adminFound) {
+      return res.status(404).json({
+        message: "Admin not found",
+      });
+    }
+
+    // Lo que siempre se puede editar
+    const updatedData = {
+      email,
+      userName,
+    };
+
+    // Si escribió una contraseña nueva, la encriptamos
+    if (password && password.trim() !== "") {
+      updatedData.password = await bcryptjs.hash(password, 10);
+    }
+
+    await adminModel.findByIdAndUpdate(
+      req.params.id,
+      updatedData,
+      { new: true }
+    );
+
+    return res.status(200).json({
+      message: "Admin updated successfully",
+    });
+
+  } catch (error) {
+    console.log("Error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error updateAdmin",
+    });
+  }
 };
 
-//Delete
+// Borrar un admin
 adminController.deleteAdmin = async (req, res) => {
-    try {
-        const deleteAdmin = await adminModel.findByIdAndDelete(req.params.id);
-        if (!deleteAdmin) {
-            return res.status(404).json({ message: 'Admin not found' });
-        }
-        return res.status(200).json({ message: 'Admin deleted successfully' });
-    } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error deleteAdmin' });
+  try {
+
+    const deleteAdmin = await adminModel.findByIdAndDelete(req.params.id);
+
+    if (!deleteAdmin) {
+      return res.status(404).json({
+        message: "Admin not found",
+      });
     }
+
+    return res.status(200).json({
+      message: "Admin deleted successfully",
+    });
+
+  } catch (error) {
+    console.log("Error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error deleteAdmin",
+    });
+  }
 };
 
 export default adminController;

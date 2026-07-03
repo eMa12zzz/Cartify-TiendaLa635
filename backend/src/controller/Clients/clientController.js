@@ -1,5 +1,7 @@
 import clientModel from "../../models/client.js";
 import { v2 as cloudinary } from "cloudinary";
+import bcryptjs from "bcryptjs";
+
 
 const clientController = {};
 
@@ -22,7 +24,6 @@ clientController.getClients = async (req, res) => {
 // UPDATE CLIENT
 clientController.updateClient = async (req, res) => {
   try {
-
     let {
       fullName,
       dui,
@@ -36,14 +37,14 @@ clientController.updateClient = async (req, res) => {
     email = email?.trim();
     userName = userName?.trim();
 
+    // La contraseña ya NO es obligatoria
     if (
       !fullName ||
       !dui ||
       !phoneNumber ||
       !ClientAddress ||
       !email ||
-      !userName ||
-      !password
+      !userName
     ) {
       return res.status(400).json({
         message: "Required fields",
@@ -65,12 +66,17 @@ clientController.updateClient = async (req, res) => {
       ClientAddress,
       email,
       userName,
-      password,
     };
+
+    // Solo actualizar la contraseña si viene una nueva
+    if (password && password.trim() !== "") {
+      updatedData.password = await bcryptjs.hash(password, 10);
+    }
 
     // Si viene una nueva imagen
     if (req.file) {
 
+      // Eliminar la imagen anterior
       if (clientFound.public_id) {
         await cloudinary.uploader.destroy(clientFound.public_id);
       }
@@ -79,7 +85,7 @@ clientController.updateClient = async (req, res) => {
       updatedData.public_id = req.file.filename;
     }
 
-    await clientModel.findByIdAndUpdate(
+    const updatedClient = await clientModel.findByIdAndUpdate(
       req.params.id,
       updatedData,
       { new: true }
@@ -87,10 +93,11 @@ clientController.updateClient = async (req, res) => {
 
     return res.status(200).json({
       message: "Client updated successfully",
+      client: updatedClient,
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error:", error);
 
     return res.status(500).json({
       message: "Internal Server Error update Client",
