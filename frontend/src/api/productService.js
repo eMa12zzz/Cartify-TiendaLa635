@@ -1,30 +1,46 @@
 import api from './api';
 
+/*
+ * ============================================================
+ * SERVICIO DE PRODUCTOS — productService.js
+ * ============================================================
+ * Centraliza todas las peticiones HTTP relacionadas con productos.
+ * Usa la instancia de Axios (api) que ya tiene el baseURL y
+ * los interceptores de errores configurados.
+ *
+ * Nota sobre FormData:
+ *  Los métodos de creación y actualización usan FormData (en vez
+ *  de JSON) porque el producto puede llevar una imagen adjunta.
+ *  En ese caso, el Content-Type debe ser 'multipart/form-data'
+ *  para que el servidor reciba el archivo correctamente.
+ * ============================================================
+ */
 export const productService = {
+  // 1- Obtener todos los productos (SELECT)
   getProducts: async () => {
     const response = await api.get('/product');
     return response.data;
   },
 
+  // 2- Crear un nuevo producto con imagen (INSERT)
+  //    Se usa FormData porque lleva un archivo (imagen) adjunto
   createProduct: async (formData) => {
-    // Necesita formData porque lleva archivo de imagen
     const response = await api.post('/product', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   },
 
+  // 3- Actualizar un producto existente por su ID (UPDATE)
+  //    También usa FormData en caso de que se cambie la imagen
   updateProduct: async (id, formData) => {
     const response = await api.put(`/product/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   },
 
+  // 4- Eliminar un producto por su ID (DELETE)
   deleteProduct: async (id) => {
     const response = await api.delete(`/product/${id}`);
     return response.data;

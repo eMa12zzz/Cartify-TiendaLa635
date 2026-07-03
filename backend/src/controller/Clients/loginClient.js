@@ -25,7 +25,7 @@ loginClientController.login = async (req, res) => {
     const clientFound = await clientModel.findOne({ email });
 
     if (!clientFound) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(401).json({ message: "El correo o contraseña son incorrectos" });
     }
 
     // Verificar si está activo

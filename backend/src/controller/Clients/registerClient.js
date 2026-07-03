@@ -10,7 +10,7 @@ const registerClientController = {};
 registerClientController.register = async (req, res) => {
   // 1. Extraer los datos de texto del body 
   const { 
-    fullnName, 
+    fullName, 
     dui, 
     phoneNumber, 
     ClientAddress, 
@@ -37,7 +37,7 @@ registerClientController.register = async (req, res) => {
     const token = jsonwebtoken.sign(
       {
         randomNumber,
-        fullnName,
+        fullName,
         dui,
         phoneNumber,
         ClientAddress,
@@ -63,10 +63,59 @@ registerClientController.register = async (req, res) => {
     });
 
     const mailOptions = {
-      from: config.email.user_email,
+      from: `"Tienda la 635" <${config.email.user_email}>`,
       to: email,
-      subject: "Verificación de cuenta",
-      text: "Para verificar tu cuenta, utiliza este código: " + randomNumber + " expira en 15 minutos",
+      subject: "Verificación de cuenta — Tienda la 635",
+      html: `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+          <title>Verificación de cuenta</title>
+        </head>
+        <body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 0;">
+            <tr>
+              <td align="center">
+                <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                  <!-- HEADER -->
+                  <tr>
+                    <td style="background:#8B5A2B;padding:32px 40px;text-align:center;">
+                      <p style="margin:0;font-size:12px;color:#f5dfc0;letter-spacing:2px;text-transform:uppercase;">Tienda</p>
+                      <h1 style="margin:4px 0 0;font-size:30px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">la 635</h1>
+                    </td>
+                  </tr>
+                  <!-- BODY -->
+                  <tr>
+                    <td style="padding:40px 40px 32px;">
+                      <h2 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#1a1a1a;">Verifica tu cuenta</h2>
+                      <p style="margin:0 0 28px;font-size:15px;color:#555;line-height:1.6;">
+                        Gracias por registrarte. Usa el siguiente código de 6 caracteres para confirmar tu correo electrónico. <strong>Expira en 15 minutos.</strong>
+                      </p>
+                      <!-- CÓDIGO -->
+                      <div style="background:#fdf6ee;border:2px dashed #d4a96a;border-radius:10px;padding:24px;text-align:center;margin-bottom:28px;">
+                        <p style="margin:0 0 8px;font-size:12px;color:#888;letter-spacing:1px;text-transform:uppercase;">Tu código de verificación</p>
+                        <span style="font-size:36px;font-weight:800;color:#8B5A2B;letter-spacing:10px;">${randomNumber}</span>
+                      </div>
+                      <p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
+                        Si no solicitaste esta verificación, puedes ignorar este correo con seguridad. Nadie ha accedido a tu cuenta.
+                      </p>
+                    </td>
+                  </tr>
+                  <!-- FOOTER -->
+                  <tr>
+                    <td style="background:#f9f9f9;padding:20px 40px;border-top:1px solid #eeeeee;text-align:center;">
+                      <p style="margin:0;font-size:12px;color:#bbb;">© ${new Date().getFullYear()} Tienda la 635. Todos los derechos reservados.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {

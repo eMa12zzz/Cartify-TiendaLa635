@@ -25,9 +25,14 @@ El sistema administra dos grandes áreas (Módulos): **Tienda** (productos físi
 - Gestión de **Marcas** (Brands).
 - Gestión de **Categorías** (Product Types) asignadas a módulos específicos.
 - Gestión de **Empleados** y **Clientes**.
+- Generación de **Reportes PDF** profesionales del Dashboard usando `jsPDF` y `jspdf-autotable`.
+- Notificaciones en tiempo real en operaciones CRUD mediante `react-hot-toast`.
+- Validaciones en backend (duplicidad, correos, etc.) y manejo de errores visible para el usuario.
 - Opción universal de activación/inactivación (`isActive`) en todos los catálogos.
 
 ### Autenticación y Seguridad
+- Inicio de sesión con validación de roles (**Admin** vs **Employee**).
+- Persistencia de sesión segura y lógica de cierre de sesión global.
 - Diseño preparado para **Autenticación en Dos Pasos (2FA)** mediante envío de códigos por correo electrónico.
 - Diferenciación clara entre accesos de **Administración / Empleados** y el E-commerce para **Clientes**.
 
@@ -43,6 +48,7 @@ El sistema administra dos grandes áreas (Módulos): **Tienda** (productos físi
 - **React Router DOM**: Enrutamiento para crear una Single Page Application (SPA).
 - **React Hook Form**: Manejo eficiente y optimizado de formularios complejos.
 - **Axios**: Para la comunicación HTTP con el backend.
+- **jsPDF & AutoTable**: Para la generación dinámica de reportes en PDF.
 - **Lucide React**: Biblioteca de iconos consistentes y modernos.
 - **React Hot Toast**: Notificaciones amigables y no intrusivas en pantalla.
 

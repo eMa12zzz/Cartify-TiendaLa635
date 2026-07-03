@@ -26,8 +26,8 @@ const Modules = () => {
     const matchesSearch = mod.name?.toLowerCase().includes(searchString);
     
     if (statusFilter === 'Todos') return matchesSearch;
-    if (statusFilter === 'Activo') return matchesSearch && mod.isActive !== false;
-    if (statusFilter === 'Inactivo') return matchesSearch && mod.isActive === false;
+    if (statusFilter === 'Activo') return matchesSearch && String(mod.isActive) !== 'false';
+    if (statusFilter === 'Inactivo') return matchesSearch && String(mod.isActive) === 'false';
     
     return matchesSearch;
   });

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginStep2 } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import styled from 'styled-components';
 import toast from 'react-hot-toast';
+import api from '../api/api';
 
 const BROWN = '#8B5A2B';
 
@@ -95,22 +96,23 @@ const InfoPhone = styled.p`
 
 const CodeContainer = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: flex-start;
   margin-top: 8px;
 `;
 
 const CodeInput = styled.input`
-  width: 54px;
-  height: 58px;
+  width: 48px;
+  height: 54px;
   text-align: center;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   border: 1.5px solid #e0e0e0;
   border-radius: 8px;
   outline: none;
   color: #000;
   transition: border-color 0.2s;
+  text-transform: uppercase;
 
   &:focus {
     border-color: ${BROWN};
@@ -132,6 +134,11 @@ const Button = styled.button`
 
   &:hover {
     background: #7a4e26;
+  }
+  
+  &:disabled {
+    background: #d8c5af;
+    cursor: not-allowed;
   }
 `;
 
@@ -156,11 +163,16 @@ const ErrorMsg = styled.div`
 const Verification = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [code, setCode] = useState(['', '', '', '']);
+  
+  // Dependiendo del flujo, necesitamos 4 (2FA empleado) o 6 (registro/recuperación hex) dígitos
+  const flow = localStorage.getItem('verificationFlow') || '2fa'; 
+  const codeLength = flow === '2fa' ? 4 : 6;
+  
+  const [code, setCode] = useState(Array(codeLength).fill(''));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const identifier = localStorage.getItem('tempIdentifier') || 'Usuario';
+  const identifier = localStorage.getItem('tempIdentifier') || 'tu correo';
   const pendingToken = localStorage.getItem('pendingToken');
 
   const handleChange = (index, value) => {
@@ -168,7 +180,7 @@ const Verification = () => {
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-    if (value && index < 3) {
+    if (value && index < codeLength - 1) {
       document.getElementById(`code-${index + 1}`).focus();
     }
   };
@@ -181,45 +193,58 @@ const Verification = () => {
 
   const handleVerify = async () => {
     const fullCode = code.join('');
-    if (fullCode.length !== 4) {
-      setError('Ingresa el código de 4 dígitos');
-      return;
-    }
-    
-    if (!pendingToken) {
-      setError('Sesión inválida, vuelve a iniciar sesión');
-      setTimeout(() => navigate('/'), 2000);
+    if (fullCode.length !== codeLength) {
+      setError(`Ingresa el código de ${codeLength} caracteres`);
       return;
     }
 
     try {
       setLoading(true);
-      const res = await loginStep2({
-        pendingToken,
-        otpCode: fullCode
-      });
-      
-      // Usa el hook global para guardar el token de sesión final
-      const userType = identifier.includes('admin') ? 'admin' : 'employee';
-      login(res.token, userType);
-      
-      // Clean up temporary auth data
-      localStorage.removeItem('tempIdentifier');
-      localStorage.removeItem('tempMethod');
-      localStorage.removeItem('pendingToken');
-      
-      toast.success('¡Autenticación completada con éxito!', {
-        style: {
-          borderRadius: '10px',
-          background: '#333',
-          color: '#fff',
-        },
-      });
+      setError('');
 
-      // Redirect to admin or home based on role
-      navigate('/dashboard');
+      if (flow === 'register') {
+        // 1- Verificamos el código para Registro de Cliente
+        await api.post('/registerClient/verifyCodeEmail', {
+          verificationCodeRequest: fullCode
+        });
+        toast.success('¡Registro exitoso! Ya puedes iniciar sesión.');
+        localStorage.removeItem('verificationFlow');
+        navigate('/');
+      } 
+      else if (flow === 'recovery') {
+        // 2- Verificamos el código para Recuperación de contraseña
+        await api.post('/recoveryPasswordClient/verifyCode', {
+          code: fullCode
+        });
+        toast.success('Código verificado correctamente.');
+        navigate('/create-password');
+      } 
+      else {
+        // 3- Flujo 2FA de Empleado (Por defecto)
+        if (!pendingToken) {
+          setError('Sesión inválida, vuelve a iniciar sesión');
+          setTimeout(() => navigate('/'), 2000);
+          return;
+        }
+        
+        const res = await loginStep2({
+          pendingToken,
+          otpCode: fullCode
+        });
+        
+        const userType = identifier.includes('admin') ? 'admin' : 'employee';
+        login(res.token, userType);
+        
+        localStorage.removeItem('tempIdentifier');
+        localStorage.removeItem('tempMethod');
+        localStorage.removeItem('pendingToken');
+        
+        toast.success('¡Autenticación completada con éxito!');
+        navigate('/dashboard');
+      }
+
     } catch (err) {
-      setError(err.message || 'Código incorrecto');
+      setError('Código incorrecto o expirado.');
     } finally {
       setLoading(false);
     }
@@ -234,13 +259,12 @@ const Verification = () => {
 
       <Body>
         <Card>
-          <BackButton onClick={() => navigate('/')}>←</BackButton>
+          <BackButton onClick={() => navigate(-1)}>←</BackButton>
 
           <SectionTitle>Ingresa el código de verificación</SectionTitle>
 
           <InfoBox>
-            <InfoText>Código de 4 dígitos enviado a {identifier}</InfoText>
-            <InfoPhone>+503 5555-5555</InfoPhone>
+            <InfoText>Se ha enviado un código a {identifier}</InfoText>
 
             <CodeContainer>
               {code.map((digit, idx) => (
@@ -265,7 +289,7 @@ const Verification = () => {
 
           <ResendRow>
             ¿No has recibido el código aún?{' '}
-            <ResendLink onClick={() => alert('Código reenviado: 0000')}>
+            <ResendLink onClick={() => alert('Solicita un nuevo código.')}>
               Solicitar código nuevo
             </ResendLink>
           </ResendRow>

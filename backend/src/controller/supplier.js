@@ -19,7 +19,7 @@ supplierController.insertSupplier = async (req, res) => {
     try {
         console.log("Nombre de la DB actual:", mongoose.connection.name);
 
-        const { name, phoneNumber, email, creditDays } = req.body;
+        const { name, phoneNumber, email, creditDays, brandIds, isActive } = req.body;
 
         if (!name || !name.trim()) {
             return res.status(400).json({ message: 'El nombre del proveedor es obligatorio' });
@@ -39,7 +39,7 @@ supplierController.insertSupplier = async (req, res) => {
             return res.status(400).json({ message: 'Ya existe un proveedor con ese nombre' });
         }
 
-        const newSupplier = new supplierModel({ name: name.trim(), phoneNumber, email: email.trim(), creditDays });
+        const newSupplier = new supplierModel({ name: name.trim(), phoneNumber, email: email.trim(), creditDays, brandIds: brandIds || [], isActive: isActive !== undefined ? isActive : true });
         await newSupplier.save();
         res.status(201).json({ message: 'Supplier created successfully' });
     } catch (error) {
@@ -52,7 +52,7 @@ supplierController.insertSupplier = async (req, res) => {
 supplierController.updateSupplier = async (req, res) => {
     try {
         //1- Pedimos los datos para actualizar
-        let { name, phoneNumber, email, creditDays } = req.body;
+        let { name, phoneNumber, email, creditDays, brandIds, isActive } = req.body;
 
         //Valores requeridos
         if (!name || !phoneNumber || !email || !creditDays) {
@@ -61,7 +61,7 @@ supplierController.updateSupplier = async (req, res) => {
 
         const updateSupplier = await supplierModel.findByIdAndUpdate(
             req.params.id,
-            { name, phoneNumber, email, creditDays },
+            { name, phoneNumber, email, creditDays, brandIds, isActive },
             { new: true }
         );
         

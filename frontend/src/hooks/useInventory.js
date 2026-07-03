@@ -17,6 +17,7 @@ export const useInventory = () => {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isLoading, setIsLoading] = useState(false);
 
+  // 1- Obtener datos (SELECT)
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -60,6 +61,7 @@ export const useInventory = () => {
         (product) => product.typeId?.type?.toLowerCase() === selectedCategory.toLowerCase()
       );
 
+  // 2- Guardar o Actualizar un Producto (INSERT / UPDATE)
   const saveProduct = async (productData) => {
     setIsLoading(true);
     try {
@@ -82,6 +84,7 @@ export const useInventory = () => {
     }
   };
 
+  // 3- Eliminar un Producto (DELETE)
   const deleteProduct = async (productId) => {
     setIsLoading(true);
     try {

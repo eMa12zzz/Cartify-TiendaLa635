@@ -21,6 +21,7 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
 
+  // 1- Filtrado de empleados basado en la búsqueda y el estado
   const filteredEmployees = employees.filter(emp => {
     const searchString = searchTerm.toLowerCase();
     const fullName = emp.fullName || emp.name || '';
@@ -35,6 +36,7 @@ const Employees = () => {
     return matchesSearch;
   });
 
+  // 2- Obtener la lista de empleados (SELECT)
   const fetchEmployees = async () => {
     try {
       setLoading(true);
@@ -71,6 +73,7 @@ const Employees = () => {
     setIsConfirmOpen(true);
   };
 
+  // 3- Ejecutar la acción confirmada (INSERT, UPDATE o DELETE)
   const handleConfirmAction = async (payload) => {
     try {
       if (pendingAction.type === 'save') {

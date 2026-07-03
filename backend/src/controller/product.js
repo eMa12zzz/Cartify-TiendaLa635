@@ -87,6 +87,7 @@ productController.insertProduct = async (req, res) => {
       description,
       barCode,
       stock,
+      maxQuantity: stock,
       moduleId,
       supplierId
     });
@@ -169,6 +170,7 @@ productController.updateProduct = async (req, res) => {
       description,
       barCode,
       stock,
+      maxQuantity: Math.max(stock, productFound.maxQuantity || stock),
       moduleId,
       supplierId
     };

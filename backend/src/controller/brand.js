@@ -19,7 +19,7 @@ brandController.insertBrand = async (req, res) => {
     try {
         console.log("Nombre de la DB actual:", mongoose.connection.name);
 
-        const { name } = req.body;
+        const { name, isActive } = req.body;
 
         if (!name || !name.trim()) {
             return res.status(400).json({ message: 'El nombre de la marca es obligatorio' });
@@ -30,7 +30,7 @@ brandController.insertBrand = async (req, res) => {
             return res.status(400).json({ message: 'Ya existe una marca con ese nombre' });
         }
 
-        const newBrand = new brandsModel({ name: name.trim() });
+        const newBrand = new brandsModel({ name: name.trim(), isActive: isActive !== undefined ? isActive : true });
         await newBrand.save();
         res.status(201).json({ message: 'Brand created successfully' });
     } catch (error) {
@@ -43,7 +43,7 @@ brandController.insertBrand = async (req, res) => {
 brandController.updateBrand = async (req, res) => {
     try {
         //1- Pedimos los datos para actualizar
-        let { name } = req.body;
+        let { name, isActive } = req.body;
 
         //Valores requeridos
         if (!name) {
@@ -52,7 +52,7 @@ brandController.updateBrand = async (req, res) => {
 
         const updateBrand = await brandsModel.findByIdAndUpdate(
             req.params.id,
-            { name },
+            { name, isActive },
             { new: true }
         );
         

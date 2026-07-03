@@ -19,7 +19,7 @@ moduleController.insertModule = async (req, res) => {
     try {
         console.log("Nombre de la DB actual:", mongoose.connection.name);
 
-        const { name, description } = req.body;
+        const { name, description, isActive } = req.body;
 
         if (!name || !name.trim()) {
             return res.status(400).json({ message: 'El nombre del módulo es obligatorio' });
@@ -30,7 +30,7 @@ moduleController.insertModule = async (req, res) => {
             return res.status(400).json({ message: 'Ya existe un módulo con ese nombre' });
         }
 
-        const newModule = new moduleModel({ name: name.trim(), description });
+        const newModule = new moduleModel({ name: name.trim(), description, isActive: isActive !== undefined ? isActive : true });
         await newModule.save();
         res.status(201).json({ message: 'Module created successfully' });
     } catch (error) {
@@ -43,7 +43,7 @@ moduleController.insertModule = async (req, res) => {
 moduleController.updateModule = async (req, res) => {
     try {
         //1- Pedimos los datos para actualizar
-        let { name, description } = req.body;
+        let { name, description, isActive } = req.body;
 
         //Valores requeridos
         if (!name || !description) {
@@ -52,7 +52,7 @@ moduleController.updateModule = async (req, res) => {
 
         const updateModule = await moduleModel.findByIdAndUpdate(
             req.params.id,
-            { name, description },
+            { name, description, isActive },
             { new: true }
         );
         

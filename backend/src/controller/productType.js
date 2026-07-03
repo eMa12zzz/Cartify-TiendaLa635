@@ -30,7 +30,7 @@ productTypeController.insertProductType = async (req, res) => {
         console.log("Nombre de la DB actual:", mongoose.connection.name);
 
         // 1- Pedimos datos
-        const {moduleId, type, subtype } = req.body;
+        const {moduleId, type, subtype, supplierIds, isActive } = req.body;
 
         // Validación
         if (!moduleId || !type || !subtype) {
@@ -43,7 +43,9 @@ productTypeController.insertProductType = async (req, res) => {
         const newProductType = new productTypeModel({
             moduleId,
             type,
-            subtype
+            subtype,
+            supplierIds: supplierIds || [],
+            isActive: isActive !== undefined ? isActive : true
         });
 
         // 3- Guardamos
@@ -68,7 +70,7 @@ productTypeController.updateProductType = async (req, res) => {
 
     try {
 
-        const {moduleId, type, subtype } = req.body;
+        const {moduleId, type, subtype, supplierIds, isActive } = req.body;
 
         // Validación
         if (!moduleId || !type || !subtype) {
@@ -82,7 +84,9 @@ productTypeController.updateProductType = async (req, res) => {
             {
                 moduleId,
                 type,
-                subtype
+                subtype,
+                supplierIds,
+                isActive
             },
             {
                 new: true

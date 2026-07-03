@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
+import toast from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
+import api from '../api/api';
 
 const BROWN = '#8B5A2B';
 
@@ -79,22 +83,24 @@ const Label = styled.label`
 const Input = styled.input`
   width: 100%;
   padding: 13px 14px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid ${({ $error }) => ($error ? '#ff4d4f' : '#e0e0e0')};
   border-radius: 8px;
   font-size: 15px;
   box-sizing: border-box;
   outline: none;
   color: #000;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   transition: border-color 0.2s;
 
   &:focus {
     border-color: ${BROWN};
   }
+`;
 
-  &::placeholder {
-    color: #bbb;
-  }
+const ErrorMsg = styled.div`
+  color: #ff4d4f;
+  font-size: 13px;
+  margin-bottom: 16px;
 `;
 
 const Button = styled.button`
@@ -107,6 +113,7 @@ const Button = styled.button`
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  margin-top: 10px;
   margin-bottom: 24px;
   display: flex;
   align-items: center;
@@ -117,74 +124,44 @@ const Button = styled.button`
   &:hover {
     background: #7a4e26;
   }
-`;
-
-const RequirementsBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const ReqItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: ${({ $met }) => ($met ? '#22c55e' : '#aaa')};
-  transition: color 0.2s;
-`;
-
-const ReqDot = styled.div`
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1.5px solid ${({ $met }) => ($met ? '#22c55e' : '#ccc')};
-  background: ${({ $met }) => ($met ? '#22c55e' : 'transparent')};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-  font-size: 10px;
-  color: white;
-`;
-
-const ErrorMsg = styled.div`
-  color: #ff4d4f;
-  font-size: 13px;
-  margin-bottom: 10px;
+  
+  &:disabled {
+    background: #d8c5af;
+    cursor: not-allowed;
+  }
 `;
 
 const CreatePassword = () => {
   const navigate = useNavigate();
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+  
+  // 1- Observamos el valor de la nueva contraseña para validar la confirmación
+  const newPassword = watch("newPassword");
 
-  const identifier = localStorage.getItem('tempIdentifier');
+  // 2- Enviar datos al backend
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true);
+      
+      // 3- Llamada a la API para actualizar la contraseña
+      await api.post('/recoveryPasswordClient/newPassword', {
+        newPassword: data.newPassword,
+        confirmNewPassword: data.confirmNewPassword
+      });
 
-  const checks = {
-    len: password.length >= 8,
-    upper: /[A-Z]/.test(password),
-    noSpace: password.length > 0 && !/\s/.test(password),
-    num: /[0-9]/.test(password),
-  };
+      toast.success('¡Contraseña actualizada con éxito!');
+      
+      // Limpiamos los rastros y redirigimos a iniciar sesión
+      localStorage.removeItem('verificationFlow');
+      navigate('/');
 
-  const handleSubmit = () => {
-    if (!password) {
-      setError('Ingrese una contraseña');
-      return;
+    } catch (error) {
+      console.error(error);
+      // Los toasts de error los muestra el interceptor de api.js
+    } finally {
+      setLoading(false);
     }
-    if (!checks.len || !checks.upper || !checks.noSpace || !checks.num) {
-      setError('La contraseña no cumple todos los requisitos');
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    users.push({ identifier, password });
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('token', 'mock-token');
-    localStorage.setItem('user', JSON.stringify({ identifier }));
-    navigate('/tienda-dashboard');
   };
 
   return (
@@ -200,38 +177,37 @@ const CreatePassword = () => {
 
           <SectionTitle>Crea una contraseña</SectionTitle>
 
-          <Label>Contraseña</Label>
-          <Input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setError(''); }}
-          />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            
+            <Label>Nueva Contraseña</Label>
+            <Input
+              type="password"
+              placeholder="Nueva Contraseña"
+              $error={!!errors.newPassword}
+              {...register("newPassword", { 
+                required: "La contraseña es obligatoria",
+                minLength: { value: 6, message: "Mínimo 6 caracteres" }
+              })}
+            />
+            {errors.newPassword && <ErrorMsg>{errors.newPassword.message}</ErrorMsg>}
 
-          {error && <ErrorMsg>{error}</ErrorMsg>}
+            <Label>Confirmar Contraseña</Label>
+            <Input
+              type="password"
+              placeholder="Confirmar Contraseña"
+              $error={!!errors.confirmNewPassword}
+              {...register("confirmNewPassword", { 
+                required: "Debe confirmar la contraseña",
+                validate: value => value === newPassword || "Las contraseñas no coinciden"
+              })}
+            />
+            {errors.confirmNewPassword && <ErrorMsg>{errors.confirmNewPassword.message}</ErrorMsg>}
 
-          <Button onClick={handleSubmit}>
-            Continuar →
-          </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Restablecer Contraseña →'}
+            </Button>
 
-          <RequirementsBox>
-            <ReqItem $met={checks.len}>
-              <ReqDot $met={checks.len}>{checks.len && '✓'}</ReqDot>
-              Debe tener al menos 8 caracteres
-            </ReqItem>
-            <ReqItem $met={checks.upper}>
-              <ReqDot $met={checks.upper}>{checks.upper && '✓'}</ReqDot>
-              Incluye al menos una letra mayúscula (A-Z)
-            </ReqItem>
-            <ReqItem $met={checks.noSpace}>
-              <ReqDot $met={checks.noSpace}>{checks.noSpace && '✓'}</ReqDot>
-              No dejar espacios vacíos
-            </ReqItem>
-            <ReqItem $met={checks.num}>
-              <ReqDot $met={checks.num}>{checks.num && '✓'}</ReqDot>
-              Incluir al menos un número (0-9)
-            </ReqItem>
-          </RequirementsBox>
+          </form>
         </Card>
       </Body>
     </Container>

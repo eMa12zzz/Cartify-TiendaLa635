@@ -1,25 +1,40 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
+import api from '../api/api';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register, handleSubmit, formState: { errors } } = useForm();
 
-  const handleRecover = (e) => {
-    e.preventDefault();
-    if (!email) {
-      setError('Por favor, ingrese su correo electrónico.');
-      setSuccess('');
-      return;
+  // 1- Enviar la solicitud de recuperación
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true);
+
+      // 2- Llamada al backend
+      const response = await api.post('/recoveryPasswordClient/requestCode', {
+        email: data.email
+      });
+
+      toast.success(response.data.message || 'Se enviará un código a tu correo si existe.');
+      
+      // Guardar flujo para que Verification sepa
+      localStorage.setItem('verificationFlow', 'recovery');
+      
+      // Simular delay y navegar
+      setTimeout(() => {
+        navigate('/verification');
+      }, 1500);
+
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-    setError('');
-    setSuccess('Si el correo existe, se enviará un enlace de recuperación en breve.');
-    // Simulate API delay and redirect
-    setTimeout(() => {
-      navigate('/');
-    }, 3000);
   };
 
   return (
@@ -48,34 +63,34 @@ const ForgotPassword = () => {
             </p>
           </div>
 
-          <form onSubmit={handleRecover} className="w-full space-y-5">
-            {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-200">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-200">
-                {success}
-              </div>
-            )}
-
+          <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5 relative">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Correo</label>
               <input
                 type="email"
                 placeholder="Introduce tu correo electrónico"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B47C4D] focus:ring-1 focus:ring-[#B47C4D] transition-colors text-sm"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#B47C4D] focus:ring-1 focus:ring-[#B47C4D] transition-colors text-sm`}
+                {...register("email", { 
+                  required: "El correo es obligatorio",
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Formato de correo inválido"
+                  }
+                })}
               />
+              {errors.email && (
+                <span className="text-red-500 text-xs mt-1 block absolute">
+                  {errors.email.message}
+                </span>
+              )}
             </div>
 
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-[#C28C5D] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-[#C28C5D] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Recuperar contraseña
+              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Recuperar contraseña'}
             </button>
           </form>
 

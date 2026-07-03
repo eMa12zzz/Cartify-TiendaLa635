@@ -9,7 +9,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   
-  // Cascading state
+  // 1- Observamos los campos clave para filtrado en cascada
   const watchModuleId = watch('moduleId');
   const watchTypeId = watch('typeId');
   const watchSupplierId = watch('supplierId');
@@ -23,16 +23,25 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
     const catModuleId = typeof c.moduleId === 'object' ? c.moduleId?._id : c.moduleId;
     return catModuleId === watchModuleId;
   });
+
+  // Filtrar Proveedores por la Categoría seleccionada
+  const selectedCategoryObj = categories.find(c => c._id === watchTypeId);
+  const filteredSuppliers = (selectedCategoryObj?.supplierIds && selectedCategoryObj.supplierIds.length > 0)
+    ? suppliers.filter(s => selectedCategoryObj.supplierIds.includes(s._id))
+    : suppliers;
   
-  // Marca (Brand) filtrada por Proveedor (Supplier)
+  
+  // 2- Marca (Brand) filtrada por Proveedor (Supplier)
   const selectedSupplierObj = suppliers.find(s => s._id === watchSupplierId);
   const filteredBrands = (selectedSupplierObj?.brandIds && selectedSupplierObj.brandIds.length > 0)
     ? brands.filter(b => selectedSupplierObj.brandIds.includes(b._id))
     : brands;
   
   
+  
   const isEditing = !!product;
 
+  // 3- Efecto para rellenar datos si es edición, o limpiar si es creación
   useEffect(() => {
     if (isOpen) {
       if (product) {
@@ -73,7 +82,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
     }
   }, [isOpen, product, reset]);
 
-  // Reset dependent fields when parent changes
+  // 4- Efectos para limpiar campos dependientes (Categorías, Proveedores, Marcas) cuando el padre cambia
   useEffect(() => {
     if (isOpen && !isEditing) {
       setValue('typeId', '');
@@ -90,6 +99,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
 
   if (!isOpen) return null;
 
+  // 5- Manejar el cambio de la imagen del producto
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -98,6 +108,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
     }
   };
 
+  // 6- Validar y empaquetar los datos para enviarlos al backend (FormData)
   const onSubmit = (data) => {
     if (!isEditing && !selectedImage) {
       toast.error('La imagen es obligatoria para un producto nuevo');
@@ -111,7 +122,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
     formData.append('salePrice', data.salePrice);
     formData.append('supplierId', data.supplierId);
     formData.append('typeId', data.typeId);
-    // moduleId is no longer saved directly on Product
+    formData.append('moduleId', data.moduleId);
     formData.append('description', data.description);
     formData.append('expirationDate', data.expirationDate);
     formData.append('stock', data.stock);
@@ -122,7 +133,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
       formData.append('image', selectedImage);
     }
 
-    onSave({ formData, id: product?._id, previewData: data, selectedImage });
+    onSave({ formData, id: product?._id, previewData: data, selectedImage, originalImage: product?.image, originalProduct: product });
   };
 
   const onError = (errors) => {
@@ -253,7 +264,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                     }`}
                   >
                     <option value="">Seleccionar...</option>
-                    {suppliers.map(s => (
+                    {filteredSuppliers.map(s => (
                       <option key={s._id} value={s._id}>{s.name}</option>
                     ))}
                   </select>

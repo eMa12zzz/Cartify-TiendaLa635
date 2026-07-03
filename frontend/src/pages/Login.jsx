@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { loginAdminDB } from '../api/authApi';
+import { loginAdminDB, loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState('client'); // 'client' o 'admin'
 
-  // Limpiar sesión previa si el usuario entra al login
+
+  // 1- Limpiar sesión previa si el usuario entra al login
   useEffect(() => {
     logout();
   }, [logout]);
@@ -27,14 +29,23 @@ const Login = () => {
     }
   });
 
+  // 2- Enviar Petición al Backend para iniciar sesión
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      // Validamos con el backend real de administradores
-      const res = await loginAdminDB({ email: data.email, password: data.password });
       
-      // Guardamos el token real y los datos del admin en el contexto
-      login(res.token, 'admin', res.admin); // Pasamos 'admin' como userType y los datos
+      let res;
+      if (role === 'admin') {
+        // 3- Validamos con el backend de administradores
+        res = await loginAdminDB({ email: data.email, password: data.password });
+        // 4- Guardamos el token real y los datos del admin en el contexto
+        login(res.token, 'admin', res.admin);
+      } else {
+        // 3- Validamos con el backend de clientes
+        res = await loginClientDB({ email: data.email, password: data.password });
+        // 4- Guardamos el token real y los datos del cliente en el contexto
+        login(res.token, 'client', res.client);
+      }
       
       toast.success('¡Bienvenido! Inicio de sesión exitoso', {
         style: {
@@ -43,8 +54,12 @@ const Login = () => {
           color: '#fff',
         },
       });
-      // Redirigimos directo al panel
-      navigate('/dashboard');
+      // Redirigimos directo al panel si es admin, o tienda si es cliente
+      if (role === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/'); // O la ruta que sea para clientes
+      }
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas o cuenta bloqueada', {
         style: {
@@ -74,7 +89,7 @@ const Login = () => {
         <div className="w-full max-w-md flex flex-col items-center">
           
           {/* Logo / Header */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-6">
             <h1 className="text-4xl font-extrabold text-black leading-tight mb-4 tracking-tight">
               Tienda<br />la 635
             </h1>
@@ -82,6 +97,24 @@ const Login = () => {
             <p className="text-gray-400 text-xs mt-2 max-w-xs mx-auto">
               ¡Bienvenido de nuevo! Por favor, introduzca sus datos.
             </p>
+          </div>
+
+          {/* Toggle Role */}
+          <div className="flex w-full bg-gray-100 rounded-lg p-1 mb-6">
+            <button
+              type="button"
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${role === 'client' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setRole('client')}
+            >
+              Cliente
+            </button>
+            <button
+              type="button"
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${role === 'admin' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setRole('admin')}
+            >
+              Administrador
+            </button>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5">
