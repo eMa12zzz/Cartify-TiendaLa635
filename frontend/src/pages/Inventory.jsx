@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useInventory } from '../hooks/useInventory';
-import { Filter, Download, Plus } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
+import FilterSelect from '../components/UI/FilterSelect';
 import CategoryPills from '../components/Inventory/CategoryPills';
 import ProductCard from '../components/Inventory/ProductCard';
 import ProductFormModal from '../components/Inventory/ProductFormModal';
@@ -29,6 +30,21 @@ const Inventory = () => {
   const [currentProduct, setCurrentProduct] = useState(null);
   
   const [pendingAction, setPendingAction] = useState({ type: null, data: null });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stockFilter, setStockFilter] = useState('Todos');
+
+  const filteredProducts = products.filter(product => {
+    const searchString = searchTerm.toLowerCase();
+    const matchesSearch = product.name?.toLowerCase().includes(searchString) || 
+                          product.description?.toLowerCase().includes(searchString);
+    
+    if (stockFilter === 'Todos') return matchesSearch;
+    if (stockFilter === 'ConStock') return matchesSearch && (product.stock > 0);
+    if (stockFilter === 'Agotados') return matchesSearch && (!product.stock || product.stock === 0);
+    
+    return matchesSearch;
+  });
 
   const handleAddProduct = () => {
     setCurrentProduct(null);
@@ -75,14 +91,24 @@ const Inventory = () => {
         <h1 className="text-4xl font-extrabold text-[#C28C5D]">Inventario</h1>
         
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors shadow-sm">
-            <Filter className="w-4 h-4" />
-            Filtros
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors shadow-sm">
-            <Download className="w-4 h-4" />
-            Descargar
-          </button>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Buscar producto..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
+            />
+          </div>
+          <FilterSelect
+            value={stockFilter}
+            onChange={setStockFilter}
+            options={[
+              { value: 'ConStock', label: 'Con Stock' },
+              { value: 'Agotados', label: 'Agotados' },
+            ]}
+          />
           <button 
             onClick={handleAddProduct}
             className="flex items-center gap-2 px-6 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
@@ -103,7 +129,7 @@ const Inventory = () => {
         <h2 className="text-2xl font-bold text-[#C28C5D] mb-6">{selectedCategory}</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <ProductCard 
               key={product._id} 
               product={product} 
@@ -112,8 +138,8 @@ const Inventory = () => {
               onDelete={handleDeleteForm}
             />
           ))}
-          {products.length === 0 && (
-            <p className="text-gray-500 col-span-2 text-center py-10">No hay productos en esta categoría.</p>
+          {filteredProducts.length === 0 && (
+            <p className="text-gray-500 col-span-2 text-center py-10">No se encontraron productos que coincidan con la búsqueda.</p>
           )}
         </div>
       </div>

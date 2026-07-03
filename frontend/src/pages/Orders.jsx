@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Filter } from 'lucide-react';
 import DataTable from '../components/UI/DataTable';
+import FilterSelect from '../components/UI/FilterSelect';
 
 const mockOrders = [
   { id: 1, clienteId: 'Maggi', phone: '5555-5555', type: 'Recoger', dirId: '43 Street', device: '7535', date: '11/12/22', sub: '$4.00', total: '$4.00', status: 'En proceso' },
@@ -21,6 +23,17 @@ const getStatusColor = (status) => {
 };
 
 const Orders = () => {
+  const [statusFilter, setStatusFilter] = useState('Todos');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredOrders = mockOrders.filter(order => {
+    const matchesSearch = order.clienteId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          order.phone.includes(searchTerm) ||
+                          order.device.includes(searchTerm);
+    if (statusFilter === 'Todos') return matchesSearch;
+    return matchesSearch && order.status === statusFilter;
+  });
+
   const columns = ['ClienteId', 'Número de Teléfono', 'Tipo', 'DirecciónID', 'Dispositivo', 'Fecha', 'SubTotal', 'Total', 'Estado'];
 
   return (
@@ -81,14 +94,31 @@ const Orders = () => {
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-800">Pedidos</h3>
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors">
-            <Filter className="w-4 h-4" /> Filtros
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar pedido..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-4 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-52 shadow-sm"
+              />
+            </div>
+            <FilterSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: 'En proceso', label: 'En proceso' },
+                { value: 'Entregado', label: 'Entregado' },
+                { value: 'Cancelado', label: 'Cancelado' },
+              ]}
+            />
+          </div>
         </div>
         
         <DataTable 
           columns={columns}
-          data={mockOrders}
+          data={filteredOrders}
           renderRow={(item) => (
             <>
               <td className="py-4 px-4 text-sm text-gray-800">{item.clienteId}</td>

@@ -223,6 +223,18 @@ const styles = {
 
 export default function Clientes() {
   const [activeNav, setActiveNav] = useState("clientes");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Todos");
+
+  const filteredClientes = clientesData.filter(c => {
+    const searchString = searchTerm.toLowerCase();
+    const matchesSearch = c.nombre.toLowerCase().includes(searchString) || 
+                          c.correo.toLowerCase().includes(searchString) ||
+                          c.dui.includes(searchString);
+                          
+    if (statusFilter === 'Todos') return matchesSearch;
+    return matchesSearch && c.estatus === statusFilter;
+  });
 
   return (
     <div style={styles.root}>
@@ -277,9 +289,29 @@ export default function Clientes() {
         <div style={styles.content}>
           <div style={styles.pageTitle}>Clientes</div>
 
-          <div style={styles.toolbar}>
-            <button style={styles.btnOutline}>⚙ Filtros</button>
-            <button style={styles.btnOutline}>⬇ Descargar todo</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ ...styles.searchBox, backgroundColor: '#fff', border: '1px solid #ddd', minWidth: '280px' }}>
+              <span>🔍</span>
+              <input 
+                type="text" 
+                placeholder="Buscar por nombre, correo, DUI..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '12px' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{ ...styles.btnOutline, outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="Todos">Estado: Todos</option>
+                <option value="Activo">Activos</option>
+                <option value="No activo">Inactivos</option>
+              </select>
+              <button style={styles.btnOutline}>⬇ Descargar todo</button>
+            </div>
           </div>
 
           <div style={styles.tableWrapper}>
@@ -298,7 +330,7 @@ export default function Clientes() {
                 </tr>
               </thead>
               <tbody>
-                {clientesData.map((c, i) => (
+                {filteredClientes.map((c, i) => (
                   <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#fff" : "#fdfcfb" }}>
                     <td style={styles.td}>{c.nombre}</td>
                     <td style={styles.td}>{c.telefono}</td>
