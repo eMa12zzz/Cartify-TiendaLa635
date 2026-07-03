@@ -6,7 +6,7 @@ const promotionSchema = new mongoose.Schema(
     productsId: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Product", 
+        ref: "Products", 
         required: true,
       }
     ],

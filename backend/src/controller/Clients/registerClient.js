@@ -96,7 +96,7 @@ registerClientController.verifyCode = async (req, res) => {
     // 5. Extraemos todo del token, incluyendo la imagen y el public_id
     const {
       randomNumber: storedCode,
-      fullnName,
+      fullName,
       dui,
       phoneNumber,
       ClientAddress,
@@ -113,7 +113,7 @@ registerClientController.verifyCode = async (req, res) => {
 
     // 6. Guardamos en la base de datos usando el mismo estilo que tu employeeController
     const newClient = new clientModel({
-      fullnName,
+      fullName,
       dui,
       phoneNumber,
       ClientAddress,

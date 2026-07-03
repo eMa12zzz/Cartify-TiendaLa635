@@ -14,6 +14,11 @@ loginClientController.login = async (req, res) => {
   if (!email || !emailRegex.test(email)) {
     return res.status(400).json({ message: "Invalid email" });
   }
+  if (!password) {
+   return res.status(400).json({
+      message:"Password required"
+   });
+ }
 
   try {
     // Buscar cliente
@@ -97,7 +102,7 @@ loginClientController.login = async (req, res) => {
       token,
       client: {
         id: clientFound._id,
-        fullnName: clientFound.fullnName,
+        fullName: clientFound.fullName,
         email: clientFound.email,
         userName: clientFound.userName,
         image: clientFound.image,
