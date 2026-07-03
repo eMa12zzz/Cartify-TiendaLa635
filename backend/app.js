@@ -17,7 +17,7 @@ import logoutClientRoutes from "./src/routes/logoutClient.js";
 import recoveryPasswordClientRoutes from "./src/routes/recoveryPasswordClient.js";
 import clientRoutes from "./src/routes/client.js";
 import promotionRoutes from "./src/routes/promotion.js";
-import shoppingRoutes from "./src/routes/shopping.js";
+import shoppingRoutes from "./src/routes/shopping.js";  
 //cosas
 const app = express();
 
