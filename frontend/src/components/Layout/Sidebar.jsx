@@ -11,9 +11,12 @@ import {
   Blocks, 
   Settings 
 } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const Sidebar = () => {
   const location = useLocation();
+  const { palette } = useTheme();
+  const c = palette.colors;
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -28,9 +31,12 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0">
+    <aside
+      className="w-64 h-screen flex flex-col fixed left-0 top-0 transition-colors duration-300"
+      style={{ backgroundColor: c.sidebarBg, borderRight: `1px solid ${c.sidebarBorder}` }}
+    >
       <div className="p-6">
-        <h1 className="text-2xl font-bold leading-none tracking-tight">
+        <h1 className="text-2xl font-bold leading-none tracking-tight" style={{ color: c.textPrimary }}>
           Tienda<br />la 635
         </h1>
       </div>
@@ -42,28 +48,32 @@ const Sidebar = () => {
             <Link
               key={item.name}
               to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive 
-                  ? 'text-[#B47C4D] bg-orange-50/50' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                color: isActive ? c.primary : c.sidebarText,
+                backgroundColor: isActive ? c.primaryLight : 'transparent',
+              }}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-[#B47C4D]' : 'text-gray-500'}`} />
+              <item.icon className="w-5 h-5" style={{ color: isActive ? c.primary : c.textMuted }} />
               {item.name}
               {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#B47C4D]"></div>
+                <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.primary }}></div>
               )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4" style={{ borderTop: `1px solid ${c.sidebarBorder}` }}>
         <Link
           to="/cuenta"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+          style={{
+            color: location.pathname === '/cuenta' ? c.primary : c.sidebarText,
+            backgroundColor: location.pathname === '/cuenta' ? c.primaryLight : 'transparent',
+          }}
         >
-          <Settings className="w-5 h-5 text-gray-500" />
+          <Settings className="w-5 h-5" style={{ color: location.pathname === '/cuenta' ? c.primary : c.textMuted }} />
           Cuenta
         </Link>
       </div>
@@ -72,3 +82,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+

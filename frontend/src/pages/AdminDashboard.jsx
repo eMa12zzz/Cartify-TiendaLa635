@@ -1,6 +1,9 @@
-import { Filter, Download } from 'lucide-react';
+import { useState } from 'react';
+import { Filter, Download, X } from 'lucide-react';
 import StatCard from '../components/UI/StatCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const barData = [
   { name: 'Jan', Compras: 55000, Ventas: 49000 },
@@ -37,6 +40,45 @@ const lowStockProducts = [
 ];
 
 const AdminDashboard = () => {
+  const [chartTimeFilter, setChartTimeFilter] = useState('Semanalmente');
+  const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+  const [pdfTimeFilter, setPdfTimeFilter] = useState('Mensual');
+  
+  const [isTopProductsModalOpen, setIsTopProductsModalOpen] = useState(false);
+  const [isLowStockModalOpen, setIsLowStockModalOpen] = useState(false);
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text(`Reporte de Rendimiento - ${pdfTimeFilter}`, 14, 22);
+    
+    doc.setFontSize(12);
+    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
+    
+    // Summary Table
+    autoTable(doc, {
+      startY: 40,
+      head: [['Métrica', 'Valor']],
+      body: [
+        ['Total de Pedidos', '78'],
+        ['Pedidos Entregados', '185'],
+        ['Total de Ganancias', '$405'],
+        ['Productos Bajos en Stock', '28'],
+      ],
+    });
+
+    // Top Products Table
+    doc.text('Productos Más Vendidos', 14, doc.lastAutoTable.finalY + 15);
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 20,
+      head: [['Nombre', 'Vendidos', 'Stock', 'Precio']],
+      body: topProducts.map(p => [p.name, p.sold, p.remaining, p.price]),
+    });
+
+    doc.save('reporte-dashboard.pdf');
+    setIsPDFModalOpen(false);
+  };
+
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
       
@@ -44,11 +86,11 @@ const AdminDashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-4xl font-extrabold text-[#C28C5D]">Dashboard</h1>
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium shadow-sm transition-colors">
-            <Filter className="w-4 h-4" /> Filtros
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium shadow-sm transition-colors">
-            <Download className="w-4 h-4" /> Descargar
+          <button 
+            onClick={() => setIsPDFModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium shadow-md transition-colors"
+          >
+            <Download className="w-4 h-4" /> Descargar PDF
           </button>
         </div>
       </div>
@@ -75,7 +117,15 @@ const AdminDashboard = () => {
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-bold text-gray-800">Ventas y compras</h3>
-            <button className="text-xs text-gray-500 border border-gray-200 px-3 py-1 rounded-md">Semanalmente</button>
+            <select 
+              value={chartTimeFilter}
+              onChange={(e) => setChartTimeFilter(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-md text-xs font-medium outline-none cursor-pointer"
+            >
+              <option value="Semanalmente">Semanalmente</option>
+              <option value="Mensualmente">Mensualmente</option>
+              <option value="Anualmente">Anualmente</option>
+            </select>
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -118,7 +168,7 @@ const AdminDashboard = () => {
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold text-gray-800">Productos más vendidos</h3>
-            <button className="text-xs text-[#0066FF] font-medium">Ver todo</button>
+            <button onClick={() => setIsTopProductsModalOpen(true)} className="text-xs text-[#0066FF] font-medium hover:underline">Ver todo</button>
           </div>
           <table className="w-full text-left">
             <thead>
@@ -146,7 +196,7 @@ const AdminDashboard = () => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold text-gray-800">Baja cantidad de productos</h3>
-            <button className="text-xs text-[#0066FF] font-medium">Ver todo</button>
+            <button onClick={() => setIsLowStockModalOpen(true)} className="text-xs text-[#0066FF] font-medium hover:underline">Ver todo</button>
           </div>
           <div className="flex flex-col gap-4">
             {lowStockProducts.map((product, idx) => (
@@ -167,6 +217,123 @@ const AdminDashboard = () => {
         </div>
 
       </div>
+
+      {/* PDF Export Modal */}
+      {isPDFModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800">Descargar PDF</h3>
+              <button onClick={() => setIsPDFModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">¿De qué periodo deseas descargar el reporte?</p>
+              <select 
+                value={pdfTimeFilter}
+                onChange={(e) => setPdfTimeFilter(e.target.value)}
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm font-medium shadow-sm outline-none cursor-pointer focus:border-[#C28C5D] transition-colors mb-6"
+              >
+                <option value="Semanal">Esta semana</option>
+                <option value="Mensual">Este mes</option>
+                <option value="Anual">Este año</option>
+              </select>
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setIsPDFModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleDownloadPDF}
+                  className="px-5 py-2 text-sm font-medium text-white bg-[#B47C4D] hover:bg-[#9C6026] rounded-lg shadow-sm transition-colors flex items-center gap-2"
+                >
+                  <Download size={16} /> Descargar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Products Modal */}
+      {isTopProductsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800">Todos los productos más vendidos</h3>
+              <button onClick={() => setIsTopProductsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="py-3 text-xs font-medium text-gray-500">Nombre</th>
+                    <th className="py-3 text-xs font-medium text-gray-500">Cantidad vendida</th>
+                    <th className="py-3 text-xs font-medium text-gray-500">Cantidad restante</th>
+                    <th className="py-3 text-xs font-medium text-gray-500">Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topProducts.map(product => (
+                    <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                      <td className="py-4 text-sm text-gray-800">{product.name}</td>
+                      <td className="py-4 text-sm text-gray-600">{product.sold}</td>
+                      <td className="py-4 text-sm text-gray-600">{product.remaining}</td>
+                      <td className="py-4 text-sm text-gray-800 font-medium">{product.price}</td>
+                    </tr>
+                  ))}
+                  {/* Duplicate just for demonstration in the modal */}
+                  {topProducts.map(product => (
+                    <tr key={`${product.id}-copy`} className="border-b border-gray-50 hover:bg-gray-50/50">
+                      <td className="py-4 text-sm text-gray-800">{product.name} (Copy)</td>
+                      <td className="py-4 text-sm text-gray-600">{product.sold}</td>
+                      <td className="py-4 text-sm text-gray-600">{product.remaining}</td>
+                      <td className="py-4 text-sm text-gray-800 font-medium">{product.price}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Low Stock Modal */}
+      {isLowStockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800">Todos los productos con bajo stock</h3>
+              <button onClick={() => setIsLowStockModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div className="flex flex-col gap-4">
+                {[...lowStockProducts, ...lowStockProducts].map((product, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center p-1">
+                        <span className="text-xl">🍊</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-800">{product.name} {idx > 2 && '(Copy)'}</h4>
+                        <p className="text-xs text-gray-500">Cantidad restante: {product.remaining}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full">Low</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

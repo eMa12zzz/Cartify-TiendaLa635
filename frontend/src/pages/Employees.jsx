@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
+import FilterSelect from '../components/UI/FilterSelect';
 import DataTable from '../components/UI/DataTable';
 import { employeeService } from '../api/employeeService';
 import toast from 'react-hot-toast';
@@ -16,6 +17,23 @@ const Employees = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState(null);
   const [pendingAction, setPendingAction] = useState({ type: null, data: null });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Todos');
+
+  const filteredEmployees = employees.filter(emp => {
+    const searchString = searchTerm.toLowerCase();
+    const fullName = emp.fullName || emp.name || '';
+    const matchesSearch = fullName.toLowerCase().includes(searchString) || 
+                          emp.email?.toLowerCase().includes(searchString) ||
+                          emp.userName?.toLowerCase().includes(searchString);
+    
+    if (statusFilter === 'Todos') return matchesSearch;
+    if (statusFilter === 'Activo') return matchesSearch && emp.isActive !== false;
+    if (statusFilter === 'Inactivo') return matchesSearch && emp.isActive === false;
+    
+    return matchesSearch;
+  });
 
   const fetchEmployees = async () => {
     try {
@@ -83,19 +101,37 @@ const Employees = () => {
       <h1 className="text-4xl font-extrabold text-[#C28C5D] mb-6">Empleados</h1>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex justify-end gap-3 mb-6">
-          <button 
-            onClick={handleAddEmployee}
-            className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-md text-sm font-medium transition-colors"
-          >
-            Añadir Empleados
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors">
-            <Filter className="w-4 h-4" /> Filtros
-          </button>
-          <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors">
-            Descargar todo
-          </button>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <h3 className="text-xl font-bold text-gray-800">Listado de Empleados</h3>
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Buscar empleado..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
+              />
+            </div>
+            <FilterSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: 'Activo', label: 'Activos' },
+                { value: 'Inactivo', label: 'Inactivos' },
+              ]}
+            />
+            <button className="px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors shadow-sm">
+              Descargar todo
+            </button>
+            <button 
+              onClick={handleAddEmployee}
+              className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+            >
+              Añadir Empleados
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -103,7 +139,7 @@ const Employees = () => {
         ) : (
           <DataTable 
             columns={columns}
-            data={employees}
+            data={filteredEmployees}
             renderRow={(item) => (
               <>
                 <td className="py-4 px-4 text-sm text-gray-800">

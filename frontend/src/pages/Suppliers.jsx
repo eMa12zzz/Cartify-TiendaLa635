@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Search } from 'lucide-react';
+import FilterSelect from '../components/UI/FilterSelect';
 import DataTable from '../components/UI/DataTable';
 import { supplierService } from '../api/supplierService';
 import { brandService } from '../api/brandService';
@@ -17,6 +19,21 @@ const Suppliers = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [currentSupplier, setCurrentSupplier] = useState(null);
   const [pendingAction, setPendingAction] = useState({ type: null, data: null });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Todos');
+
+  const filteredSuppliers = suppliers.filter(supplier => {
+    const searchString = searchTerm.toLowerCase();
+    const matchesSearch = supplier.name?.toLowerCase().includes(searchString) || 
+                          supplier.phoneNumber?.toLowerCase().includes(searchString);
+    
+    if (statusFilter === 'Todos') return matchesSearch;
+    if (statusFilter === 'Activo') return matchesSearch && supplier.isActive !== false;
+    if (statusFilter === 'Inactivo') return matchesSearch && supplier.isActive === false;
+    
+    return matchesSearch;
+  });
 
   const fetchInitialData = async () => {
     try {
@@ -89,14 +106,34 @@ const Suppliers = () => {
       <h1 className="text-4xl font-extrabold text-[#C28C5D] mb-6">Proveedores</h1>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 w-full">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h3 className="text-xl font-bold text-gray-800">Listado de Proveedores</h3>
-          <button 
-            onClick={handleAddSupplier}
-            className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-md text-sm font-medium transition-colors"
-          >
-            Agregar Proveedor
-          </button>
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Buscar proveedor..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
+              />
+            </div>
+            <FilterSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: 'Activo', label: 'Activos' },
+                { value: 'Inactivo', label: 'Inactivos' },
+              ]}
+            />
+            <button 
+              onClick={handleAddSupplier}
+              className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+            >
+              Agregar Proveedor
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -104,7 +141,7 @@ const Suppliers = () => {
         ) : (
           <DataTable 
             columns={columns}
-            data={suppliers}
+            data={filteredSuppliers}
             renderRow={(item) => (
               <>
                 <td className="py-4 px-4 text-sm text-gray-800 font-medium">{item.name}</td>

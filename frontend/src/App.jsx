@@ -16,9 +16,8 @@ import Employees from './pages/Employees';
 import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
 import Categories from './pages/Categories';
-import impresiones from './pages/impresiones';
 import Impresiones from './pages/impresiones';
-//import de prueba
+import AccountSettings from './pages/AccountSettings';
 
 
 function App() {
@@ -34,7 +33,6 @@ function App() {
         <Route path="/store" element={<Store />} />
         <Route path="/impresiones" element={<Impresiones/>} />
 
-        {/* Admin Layout */}
         <Route element={<AdminLayout />}>
           <Route path="/dashboard" element={<AdminDashboard />} />
           <Route path="/inventario" element={<Inventory />} />
@@ -45,6 +43,7 @@ function App() {
           <Route path="/clientes" element={<Customers />} />
           <Route path="/proveedores" element={<Suppliers />} />
           <Route path="/categorias" element={<Categories />} />
+          <Route path="/cuenta" element={<AccountSettings />} />
         </Route>
       </Routes>
     </BrowserRouter>
