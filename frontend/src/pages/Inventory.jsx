@@ -4,6 +4,7 @@ import { Filter, Download, Plus } from 'lucide-react';
 import CategoryPills from '../components/Inventory/CategoryPills';
 import ProductCard from '../components/Inventory/ProductCard';
 import ProductFormModal from '../components/Inventory/ProductFormModal';
+import ProductViewModal from '../components/Inventory/ProductViewModal';
 import ConfirmActionModal from '../components/Inventory/ConfirmActionModal';
 import { Toaster } from 'react-hot-toast';
 
@@ -22,6 +23,7 @@ const Inventory = () => {
   } = useInventory();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   
   const [currentProduct, setCurrentProduct] = useState(null);
@@ -36,6 +38,11 @@ const Inventory = () => {
   const handleEditProduct = (product) => {
     setCurrentProduct(product);
     setIsFormOpen(true);
+  };
+
+  const handleViewProduct = (product) => {
+    setCurrentProduct(product);
+    setIsViewOpen(true);
   };
 
   const handleSaveForm = (formData) => {
@@ -100,7 +107,9 @@ const Inventory = () => {
             <ProductCard 
               key={product._id} 
               product={product} 
+              onView={handleViewProduct}
               onEdit={handleEditProduct} 
+              onDelete={handleDeleteForm}
             />
           ))}
           {products.length === 0 && (
@@ -127,7 +136,17 @@ const Inventory = () => {
         onConfirm={handleConfirmAction}
         product={pendingAction.data}
         actionType={pendingAction.type}
+        brands={brands}
+        suppliers={suppliers}
+        categories={categories}
       />
+      <ProductViewModal 
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        product={currentProduct}
+        modules={modules}
+      />
+
     </div>
   );
 };

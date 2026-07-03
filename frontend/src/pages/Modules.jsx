@@ -5,6 +5,7 @@ import { moduleService } from '../api/moduleService';
 import toast from 'react-hot-toast';
 import ModuleFormModal from '../components/Admin/ModuleFormModal';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
+import TableActions from '../components/UI/TableActions';
 
 const Modules = () => {
   const [modules, setModules] = useState([]);
@@ -110,9 +111,11 @@ const Modules = () => {
                 <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>
                   {item.isActive ? 'Activo' : 'Inactivo'}
                 </td>
-                <td className="py-4 px-4 text-sm text-gray-800 flex gap-4">
-                  <button onClick={() => handleEditModule(item)} className="text-blue-500 hover:underline">Editar</button>
-                  <button onClick={() => handleDeleteModule(item)} className="text-red-500 hover:underline">Eliminar</button>
+                <td className="py-4 px-4 text-sm text-gray-800">
+                  <TableActions 
+                    onEdit={() => handleEditModule(item)} 
+                    onDelete={() => handleDeleteModule(item)} 
+                  />
                 </td>
               </>
             )}

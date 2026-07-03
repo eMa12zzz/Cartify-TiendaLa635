@@ -5,6 +5,7 @@ import { employeeService } from '../api/employeeService';
 import toast from 'react-hot-toast';
 import EmployeeFormModal from '../components/Admin/EmployeeFormModal';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
+import TableActions from '../components/UI/TableActions';
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -122,9 +123,11 @@ const Employees = () => {
                 <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>
                   {item.isActive ? 'Activo' : 'Inactivo'}
                 </td>
-                <td className="py-4 px-4 text-sm text-gray-800 flex gap-4">
-                  <button onClick={() => handleEditEmployee(item)} className="text-blue-500 hover:underline">Editar</button>
-                  <button onClick={() => handleDeleteEmployee(item)} className="text-red-500 hover:underline">Eliminar</button>
+                <td className="py-4 px-4 text-sm text-gray-800">
+                  <TableActions 
+                    onEdit={() => handleEditEmployee(item)} 
+                    onDelete={() => handleDeleteEmployee(item)} 
+                  />
                 </td>
               </>
             )}
