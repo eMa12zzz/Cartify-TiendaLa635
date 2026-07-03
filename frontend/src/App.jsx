@@ -4,6 +4,7 @@ import Register from './pages/Register';
 import Verification from './pages/Verification';
 import CreatePassword from './pages/CreatePassword';
 import LoginPassword from './pages/LoginPassword';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Store from './pages/Store';
 import AdminLayout from './components/Layout/AdminLayout';
@@ -18,6 +19,7 @@ import Suppliers from './pages/Suppliers';
 import Categories from './pages/Categories';
 import Impresiones from './pages/impresiones';
 import AccountSettings from './pages/AccountSettings';
+//import de prueba
 
 
 function App() {
@@ -25,6 +27,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verification" element={<Verification />} />
         <Route path="/create-password" element={<CreatePassword />} />
