@@ -1,33 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 import { loginStep1 } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError('Por favor, ingrese sus datos completos.');
-      return;
+  // Limpiar sesión previa si el usuario entra al login
+  useEffect(() => {
+    logout();
+  }, [logout]);
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
     }
-    
+  });
+
+  const onSubmit = async (data) => {
     try {
       setLoading(true);
-      const res = await loginStep1({ email, password });
+      const res = await loginStep1({ email: data.email, password: data.password });
       
-      localStorage.setItem('tempIdentifier', email);
+      localStorage.setItem('tempIdentifier', data.email);
       localStorage.setItem('tempMethod', 'email');
       localStorage.setItem('pendingToken', res.pendingToken);
       
+      toast.success('Credenciales validadas. Redirigiendo a verificación...', {
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      });
       navigate('/verification');
     } catch (err) {
-      setError(err.message || 'Credenciales inválidas');
+      toast.error(err.message || 'Credenciales inválidas', {
+        style: {
+          borderRadius: '10px',
+          background: '#ff4d4f',
+          color: '#fff',
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -59,22 +83,23 @@ const Login = () => {
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="w-full space-y-5">
-            {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-200">
-                {error}
-              </div>
-            )}
+          <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5">
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Correo</label>
               <input
                 type="email"
                 placeholder="Introduce tu correo electrónico"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B47C4D] focus:ring-1 focus:ring-[#B47C4D] transition-colors text-sm"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-[#B47C4D] focus:ring-[#B47C4D]'} focus:outline-none focus:ring-1 transition-colors text-sm`}
+                {...register('email', { 
+                  required: 'El correo electrónico es requerido',
+                  pattern: {
+                    value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                    message: 'Formato de correo inválido'
+                  }
+                })}
               />
+              {errors.email && <span className="text-red-500 text-xs mt-1 block">{errors.email.message}</span>}
             </div>
 
             <div>
@@ -82,10 +107,16 @@ const Login = () => {
               <input
                 type="password"
                 placeholder="••••••••"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B47C4D] focus:ring-1 focus:ring-[#B47C4D] transition-colors text-sm tracking-widest"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-[#B47C4D] focus:ring-[#B47C4D]'} focus:outline-none focus:ring-1 transition-colors text-sm tracking-widest`}
+                {...register('password', { 
+                  required: 'La contraseña es requerida',
+                  minLength: {
+                    value: 6,
+                    message: 'La contraseña debe tener al menos 6 caracteres'
+                  }
+                })}
               />
+              {errors.password && <span className="text-red-500 text-xs mt-1 block">{errors.password.message}</span>}
             </div>
 
             <div className="flex items-center justify-between pt-2">
@@ -93,8 +124,7 @@ const Login = () => {
                 <input 
                   type="checkbox" 
                   className="w-4 h-4 rounded border-gray-300 text-[#B47C4D] focus:ring-[#B47C4D]"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  {...register('rememberMe')}
                 />
                 <span className="text-xs text-gray-600">Recuerda durante 30 días</span>
               </label>
@@ -109,7 +139,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-[#C28C5D] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm disabled:opacity-50"
+              className="w-full py-3 px-4 bg-[#C28C5D] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Cargando...' : 'Iniciar sesión'}
             </button>

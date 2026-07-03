@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginStep2 } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 import styled from 'styled-components';
+import toast from 'react-hot-toast';
 
 const BROWN = '#8B5A2B';
 
@@ -153,6 +155,7 @@ const ErrorMsg = styled.div`
 
 const Verification = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [code, setCode] = useState(['', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -196,17 +199,25 @@ const Verification = () => {
         otpCode: fullCode
       });
       
-      // Store final token and user data
-      localStorage.setItem('token', res.token);
-      localStorage.setItem('user', JSON.stringify(res.user));
+      // Usa el hook global para guardar el token de sesión final
+      const userType = identifier.includes('admin') ? 'admin' : 'employee';
+      login(res.token, userType);
       
       // Clean up temporary auth data
       localStorage.removeItem('tempIdentifier');
       localStorage.removeItem('tempMethod');
       localStorage.removeItem('pendingToken');
       
+      toast.success('¡Autenticación completada con éxito!', {
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      });
+
       // Redirect to admin or home based on role
-      navigate('/admin/dashboard');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Código incorrecto');
     } finally {
@@ -228,7 +239,7 @@ const Verification = () => {
           <SectionTitle>Ingresa el código de verificación</SectionTitle>
 
           <InfoBox>
-            <InfoText>Código de 6 dígitos enviado a {identifier}</InfoText>
+            <InfoText>Código de 4 dígitos enviado a {identifier}</InfoText>
             <InfoPhone>+503 5555-5555</InfoPhone>
 
             <CodeContainer>
