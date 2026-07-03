@@ -17,7 +17,9 @@ import logoutClientRoutes from "./src/routes/logoutClient.js";
 import recoveryPasswordClientRoutes from "./src/routes/recoveryPasswordClient.js";
 import clientRoutes from "./src/routes/client.js";
 import promotionRoutes from "./src/routes/promotion.js";
-import shoppingRoutes from "./src/routes/shopping.js";  
+import shoppingRoutes from "./src/routes/shopping.js";
+import wompiRoutes from "./src/routes/wompi.js"
+
 //cosas
 const app = express();
 
@@ -49,6 +51,8 @@ app.use("/api/recoveryPasswordClient", recoveryPasswordClientRoutes);
 app.use("/api/client", clientRoutes);
 app.use("/api/promotion", promotionRoutes);
 app.use("/api/shopping", shoppingRoutes);
+app.use("/api/wompi", wompiRoutes)
+
 //enpoint
 
 

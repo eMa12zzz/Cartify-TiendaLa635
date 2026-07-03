@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginStep1 } from '../api/authApi';
 import styled from 'styled-components';
 
 const BROWN = '#8B5A2B';
@@ -180,17 +181,31 @@ const PhoneIcon = () => (
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('correo');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleContinue = () => {
-    if (!email) {
-      setError('Ingrese su correo');
+  const handleContinue = async () => {
+    if (!email || !password) {
+      setError('Ingrese su correo y contraseña');
       return;
     }
-    localStorage.setItem('tempIdentifier', email);
-    localStorage.setItem('tempMethod', 'email');
-    navigate('/verification');
+    
+    try {
+      setLoading(true);
+      const res = await loginStep1({ email, password });
+      
+      localStorage.setItem('tempIdentifier', email);
+      localStorage.setItem('tempMethod', 'email');
+      localStorage.setItem('pendingToken', res.pendingToken);
+      
+      navigate('/verification');
+    } catch (err) {
+      setError(err.message || 'Credenciales inválidas');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -219,12 +234,22 @@ const Login = () => {
             placeholder="Ingrese su correo"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(''); }}
+          />
+
+          <Label>Contraseña</Label>
+          <Input
+            type="password"
+            placeholder="Ingrese su contraseña"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError(''); }}
             onKeyPress={(e) => e.key === 'Enter' && handleContinue()}
           />
 
           {error && <ErrorMsg>{error}</ErrorMsg>}
 
-          <Button onClick={handleContinue}>Continuar →</Button>
+          <Button onClick={handleContinue} disabled={loading}>
+            {loading ? 'Cargando...' : 'Continuar →'}
+          </Button>
 
           <Divider>o</Divider>
 

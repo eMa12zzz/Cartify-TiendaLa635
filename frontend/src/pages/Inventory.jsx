@@ -4,21 +4,26 @@ import { Filter, Download, Plus } from 'lucide-react';
 import CategoryPills from '../components/Inventory/CategoryPills';
 import ProductCard from '../components/Inventory/ProductCard';
 import ProductFormModal from '../components/Inventory/ProductFormModal';
+import ProductViewModal from '../components/Inventory/ProductViewModal';
 import ConfirmActionModal from '../components/Inventory/ConfirmActionModal';
 import { Toaster } from 'react-hot-toast';
 
 const Inventory = () => {
   const { 
     products, 
-    categories, 
+    categories,
+    categoryNames,
+    brands,
+    suppliers,
+    modules,
     selectedCategory, 
     setSelectedCategory,
     saveProduct,
     deleteProduct
   } = useInventory();
 
-
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   
   const [currentProduct, setCurrentProduct] = useState(null);
@@ -35,6 +40,11 @@ const Inventory = () => {
     setIsFormOpen(true);
   };
 
+  const handleViewProduct = (product) => {
+    setCurrentProduct(product);
+    setIsViewOpen(true);
+  };
+
   const handleSaveForm = (formData) => {
     setPendingAction({ type: 'save', data: formData });
     setIsConfirmOpen(true);
@@ -49,7 +59,7 @@ const Inventory = () => {
     if (pendingAction.type === 'save') {
       await saveProduct(data);
     } else if (pendingAction.type === 'delete') {
-      await deleteProduct(data.id);
+      await deleteProduct(data._id);
     }
     
     setIsConfirmOpen(false);
@@ -84,7 +94,7 @@ const Inventory = () => {
       </div>
 
       <CategoryPills 
-        categories={categories} 
+        categories={categoryNames} 
         selectedCategory={selectedCategory} 
         onSelectCategory={setSelectedCategory} 
       />
@@ -95,9 +105,11 @@ const Inventory = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {products.map((product) => (
             <ProductCard 
-              key={product.id} 
+              key={product._id} 
               product={product} 
+              onView={handleViewProduct}
               onEdit={handleEditProduct} 
+              onDelete={handleDeleteForm}
             />
           ))}
           {products.length === 0 && (
@@ -112,6 +124,10 @@ const Inventory = () => {
         product={currentProduct}
         onSave={handleSaveForm}
         onDelete={handleDeleteForm}
+        brands={brands}
+        suppliers={suppliers}
+        categories={categories}
+        modules={modules}
       />
 
       <ConfirmActionModal 
@@ -120,7 +136,17 @@ const Inventory = () => {
         onConfirm={handleConfirmAction}
         product={pendingAction.data}
         actionType={pendingAction.type}
+        brands={brands}
+        suppliers={suppliers}
+        categories={categories}
       />
+      <ProductViewModal 
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        product={currentProduct}
+        modules={modules}
+      />
+
     </div>
   );
 };

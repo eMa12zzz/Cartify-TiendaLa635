@@ -24,7 +24,7 @@ clientController.updateClient = async (req, res) => {
   try {
 
     let {
-      fullnName,
+      fullName,
       dui,
       phoneNumber,
       ClientAddress,
@@ -37,7 +37,7 @@ clientController.updateClient = async (req, res) => {
     userName = userName?.trim();
 
     if (
-      !fullnName ||
+      !fullName ||
       !dui ||
       !phoneNumber ||
       !ClientAddress ||
@@ -59,7 +59,7 @@ clientController.updateClient = async (req, res) => {
     }
 
     const updatedData = {
-      fullnName,
+      fullName,
       dui,
       phoneNumber,
       ClientAddress,

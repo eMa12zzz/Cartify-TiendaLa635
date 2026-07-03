@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, {Schema, model} from "mongoose";
 
 const promotionSchema = new mongoose.Schema(
   {
@@ -6,7 +6,7 @@ const promotionSchema = new mongoose.Schema(
     productsId: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Product", 
+        ref: "Products", 
         required: true,
       }
     ],
@@ -20,14 +20,11 @@ const promotionSchema = new mongoose.Schema(
     },
     isActive: {
       type: Boolean,
-      required: true,
       default: true, 
     }
   },
   {
-    timestamps: true, 
-    versionKey: false 
-  }
+    timestamps: true, strict: false  }
 );
 
-export default mongoose.model("Promotion", promotionSchema);
+export default model('promotionModel', promotionSchema, 'Promotions');

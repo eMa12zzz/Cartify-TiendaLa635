@@ -14,6 +14,8 @@ import Modules from './pages/Modules';
 import Brands from './pages/Brands';
 import Employees from './pages/Employees';
 import Customers from './pages/Customers';
+import Suppliers from './pages/Suppliers';
+import Categories from './pages/Categories';
 import impresiones from './pages/impresiones';
 import Impresiones from './pages/impresiones';
 //import de prueba
@@ -41,6 +43,8 @@ function App() {
           <Route path="/marcas" element={<Brands />} />
           <Route path="/empleados" element={<Employees />} />
           <Route path="/clientes" element={<Customers />} />
+          <Route path="/proveedores" element={<Suppliers />} />
+          <Route path="/categorias" element={<Categories />} />
         </Route>
       </Routes>
     </BrowserRouter>

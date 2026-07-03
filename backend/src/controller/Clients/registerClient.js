@@ -96,7 +96,7 @@ registerClientController.verifyCode = async (req, res) => {
     // 5. Extraemos todo del token, incluyendo la imagen y el public_id
     const {
       randomNumber: storedCode,
-      fullnName,
+      fullName,
       dui,
       phoneNumber,
       ClientAddress,
@@ -113,7 +113,7 @@ registerClientController.verifyCode = async (req, res) => {
 
     // 6. Guardamos en la base de datos usando el mismo estilo que tu employeeController
     const newClient = new clientModel({
-      fullnName,
+      fullName,
       dui,
       phoneNumber,
       ClientAddress,
@@ -134,6 +134,15 @@ registerClientController.verifyCode = async (req, res) => {
   } catch (error) {
     console.log("error"+error);
     return res.status(500).json({message: "Internal server error or Invalid Token"});
+  }
+};
+registerClientController.getAll = async (req, res) => {
+  try {
+    const clients = await clientModel.find();
+    return res.status(200).json(clients);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error fetching clients" });
   }
 };
 
