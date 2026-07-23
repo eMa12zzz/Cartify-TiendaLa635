@@ -37,7 +37,19 @@ import Employees from './pages/Employees';
 import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
 import Categories from './pages/Categories';
+import Fidelidad from './pages/Fidelidad';
 import AccountSettings from './pages/AccountSettings';
+
+// --- Área "Mi Cuenta" del cliente ---
+import ClienteLayout from './components/Layout/ClienteLayout';
+import PuntosFidelidad from './pages/cliente/PuntosFidelidad';
+import MisPedidos from './pages/cliente/MisPedidos';
+import Recibidos from './pages/cliente/Recibidos';
+import DetallesCuenta from './pages/cliente/DetallesCuenta';
+import Direcciones from './pages/cliente/Direcciones';
+import MetodoPago from './pages/cliente/MetodoPago';
+import Notificaciones from './pages/cliente/Notificaciones';
+import CentroAyuda from './pages/cliente/CentroAyuda';
 
 
 function App() {
@@ -75,7 +87,26 @@ function App() {
               <Route path="/clientes"    element={<Customers />} />
               <Route path="/proveedores" element={<Suppliers />} />
               <Route path="/categorias"  element={<Categories />} />
+              <Route path="/fidelidad"   element={<Fidelidad />} />
               <Route path="/cuenta"      element={<AccountSettings />} />
+            </Route>
+          </Route>
+
+          {/*
+           * ── Área "Mi Cuenta" del cliente (protegida) ──────────────
+           * Mismo guard de sesión, pero con su propio layout (ClienteLayout).
+           * Se van agregando rutas aquí conforme se cablea cada página.
+           */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<ClienteLayout />}>
+              <Route path="/mi-cuenta"           element={<DetallesCuenta />} />
+              <Route path="/mi-cuenta/pedidos"   element={<MisPedidos />} />
+              <Route path="/mi-cuenta/recibidos"   element={<Recibidos />} />
+              <Route path="/mi-cuenta/direcciones"    element={<Direcciones />} />
+              <Route path="/mi-cuenta/pagos"          element={<MetodoPago />} />
+              <Route path="/mi-cuenta/notificaciones" element={<Notificaciones />} />
+              <Route path="/mi-cuenta/puntos"         element={<PuntosFidelidad />} />
+              <Route path="/mi-cuenta/ayuda"       element={<CentroAyuda />} />
             </Route>
           </Route>
 

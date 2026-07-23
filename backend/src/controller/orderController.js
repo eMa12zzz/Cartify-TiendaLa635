@@ -1,6 +1,7 @@
 import orderModel from "../models/order.js";
 import clientModel from "../models/client.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
+import loyaltyLedgerModel from "../models/loyaltyLedger.js";
 
 const orderController = {};
 
@@ -52,9 +53,24 @@ orderController.createOrder = async (req, res) => {
     await newOrder.save();
 
     // Le sumamos los puntos ganados al cliente ($inc = incremento atómico).
+    // client.loyaltyPoints queda como "total acumulado"; el saldo DISPONIBLE
+    // real (con vencimiento) sale del ledger de abajo.
     if (pointsEarned > 0) {
       await clientModel.findByIdAndUpdate(clientId, {
         $inc: { loyaltyPoints: pointsEarned }
+      });
+
+      // Registramos el LOTE de puntos con su fecha de vencimiento (Parte B).
+      const earnedAt = new Date();
+      const expiresAt = new Date(earnedAt);
+      expiresAt.setMonth(expiresAt.getMonth() + (config.expiryMonths || 3));
+
+      await loyaltyLedgerModel.create({
+        clientId,
+        points: pointsEarned,
+        earnedAt,
+        expiresAt,
+        orderId: newOrder._id,
       });
     }
 
