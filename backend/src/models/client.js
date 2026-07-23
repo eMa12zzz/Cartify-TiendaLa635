@@ -26,7 +26,12 @@ const clientSchema = new Schema({
     email: { type:"String"},
     userName: { type:"String"},
     password: { type:"String"},
+    // Campo viejo (con typo y tipo String). Se mantiene por compatibilidad con
+    // los datos que ya existen en la base; la lógica nueva NO lo usa.
     lolayitypoints: { type:"String", default: 0},
+    // Puntos de fidelidad reales (Number). Este es el que usa toda la lógica
+    // nueva de loyalty: se suma al crear un pedido y se muestra en el admin.
+    loyaltyPoints: { type: Number, default: 0 },
     favorites: { type: Schema.Types.ObjectId, ref: "productModel"},
     isVerified: { type:"Boolean", default: false},
     isActive: { type:"Boolean", default: true}

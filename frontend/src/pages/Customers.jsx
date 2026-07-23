@@ -82,7 +82,7 @@ const Customers = () => {
                 <td className="py-4 px-4 text-sm text-gray-600">{item.dui}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.userName}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.isVerified ? 'Verificado' : 'No verificado'}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.lolayitypoints || 0}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{item.loyaltyPoints ?? item.lolayitypoints ?? 0}</td>
                 <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>
                   {item.isActive ? 'Activo' : 'Inactivo'}
                 </td>
