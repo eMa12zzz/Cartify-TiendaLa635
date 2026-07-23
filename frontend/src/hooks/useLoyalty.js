@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
-import { clientService } from '../api/clientService';
 import { loyaltyService } from '../api/loyaltyService';
 import { useAuth } from './useAuth';
 
 /*
- * useLoyalty — reúne los datos de fidelidad del cliente logueado:
- *   - sus puntos actuales (desde su documento en la base)
- *   - la config del programa (cuántos puntos por $1 y a cuántos meses vencen)
+ * useLoyalty — datos de fidelidad del cliente logueado:
+ *   - points:       saldo DISPONIBLE real (lotes no vencidos, del ledger)
+ *   - nextExpiry:   próxima fecha en que vence un lote
+ *   - expiringSoon: puntos que vencen dentro de 30 días
+ *   - config:       tasa por dólar y meses de vencimiento (para textos)
  *
- * Toda la carga vive aquí (regla del proyecto: la lógica va en hooks); la
- * página de Puntos solo consume estos valores y pinta.
+ * Toda la carga vive aquí; la página de Puntos solo pinta.
  */
 export const useLoyalty = () => {
   const { user } = useAuth();
-  const [points, setPoints] = useState(0);
+  const [summary, setSummary] = useState({ available: 0, nextExpiry: null, expiringSoon: 0 });
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,13 +21,14 @@ export const useLoyalty = () => {
     const cargar = async () => {
       try {
         setLoading(true);
-        // Pedimos en paralelo el cliente (para sus puntos) y la config.
-        const [cliente, cfg] = await Promise.all([
-          user?.id ? clientService.getClientById(user.id) : Promise.resolve(null),
+        // En paralelo: el resumen de puntos del cliente y la config del programa.
+        const [sum, cfg] = await Promise.all([
+          user?.id
+            ? loyaltyService.getSummary(user.id)
+            : Promise.resolve({ available: 0, nextExpiry: null, expiringSoon: 0 }),
           loyaltyService.getConfig(),
         ]);
-        // Aceptamos el campo nuevo (loyaltyPoints) o el viejo (lolayitypoints).
-        setPoints(Number(cliente?.loyaltyPoints ?? cliente?.lolayitypoints ?? 0));
+        setSummary(sum || { available: 0, nextExpiry: null, expiringSoon: 0 });
         setConfig(cfg);
       } catch (error) {
         console.error('Error cargando loyalty:', error);
@@ -39,10 +40,11 @@ export const useLoyalty = () => {
   }, [user?.id]);
 
   return {
-    points,
+    points: summary.available,
+    nextExpiry: summary.nextExpiry,
+    expiringSoon: summary.expiringSoon,
     config,
     loading,
-    // Valores con defaults por si la config aún no cargó.
     pointsPerDollar: config?.pointsPerDollar ?? 1,
     expiryMonths: config?.expiryMonths ?? 3,
   };

@@ -21,4 +21,10 @@ export const loyaltyService = {
     const response = await api.put('/loyaltyConfig', data);
     return response.data;
   },
+
+  // Resumen de puntos del cliente: saldo disponible + vencimientos.
+  getSummary: async (clientId) => {
+    const response = await api.get(`/loyalty/${clientId}/summary`);
+    return response.data;
+  },
 };

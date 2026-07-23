@@ -20,6 +20,7 @@ import orderModel from "../models/order.js";
 import clientModel from "../models/client.js";
 import productModel from "../models/product.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
+import loyaltyLedgerModel from "../models/loyaltyLedger.js";
 
 const run = async () => {
   await mongoose.connect(process.env.DB_URI, { family: 4 });
@@ -60,7 +61,7 @@ const run = async () => {
     const total = items.reduce((acc, it) => acc + it.price * it.amount, 0);
     const pointsEarned = config.isActive ? Math.floor(total * config.pointsPerDollar) : 0;
 
-    await orderModel.create({
+    const pedido = await orderModel.create({
       clientId: client._id,
       items,
       total,
@@ -69,6 +70,20 @@ const run = async () => {
       channel: "web",
       pointsEarned,
     });
+
+    // Escribimos el lote de puntos con su vencimiento, igual que en producción.
+    if (pointsEarned > 0) {
+      const earnedAt = new Date();
+      const expiresAt = new Date(earnedAt);
+      expiresAt.setMonth(expiresAt.getMonth() + (config.expiryMonths || 3));
+      await loyaltyLedgerModel.create({
+        clientId: client._id,
+        points: pointsEarned,
+        earnedAt,
+        expiresAt,
+        orderId: pedido._id,
+      });
+    }
     totalPuntos += pointsEarned;
   }
 
