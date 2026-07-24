@@ -5,6 +5,7 @@ import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
+import AsistenteVoz from '../components/Store/AsistenteVoz';
 import { Toaster } from 'react-hot-toast';
 
 const BROWN = '#8B5A2B';
@@ -429,6 +430,7 @@ const Store = () => {
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
+  const [mostrarAsistente, setMostrarAsistente] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef(null);
 
@@ -472,6 +474,18 @@ const Store = () => {
     <Container>
       <Toaster position="bottom-right" toastOptions={{ duration: 2500 }} />
 
+      {/* Overlay del Asistente por Voz (Modo Kiosco) */}
+      {mostrarAsistente && (
+        <AsistenteVoz
+          onClose={() => setMostrarAsistente(false)}
+          productos={productos}
+          agregarAlCarrito={agregarAlCarrito}
+          eliminarDelCarrito={eliminarDelCarrito}
+          carrito={carrito}
+          totalCarrito={totalCarrito}
+        />
+      )}
+
       {/* ── Header ── */}
       <Header>
         <LogoArea onClick={() => navigate('/tienda-dashboard')}>
@@ -496,6 +510,13 @@ const Store = () => {
         </SearchBox>
 
         <HeaderRight>
+          <IconBtn
+            onClick={() => setMostrarAsistente(true)}
+            title="Asistente por voz"
+            style={{ background: BROWN_LIGHT, color: BROWN, fontWeight: 600 }}
+          >
+            🎤 Asistente
+          </IconBtn>
           <CartBtn onClick={() => setMostrarCarrito(true)}>
             🛒 Carrito
             {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
