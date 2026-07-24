@@ -1,19 +1,17 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 
 /*
  * useVoiceAssistant — el "cerebro" del asistente por voz (Modo Kiosco).
  *
- * Incluye:
- *   - Escucha CONTINUA / manos libres: tras cada frase vuelve a escuchar solo.
- *   - Transcripción EN VIVO (interimResults) mientras el cliente habla.
- *   - Voz bidireccional (SpeechSynthesis) con "barge-in": al escuchar, se calla.
- *   - Matcher local que saca cantidad + producto de la frase.
- *
- * Comandos: "quiero/agrega [n] X", "quita [n] X", "cuánto llevo", "vaciar
- * carrito", "ayuda", "repite", "comprar".
- *
- * Recibe del store (useStore) la lista de productos y las funciones del carrito,
- * así comparte el MISMO carrito que la tienda.
+ * Funciones:
+ *   - Escucha continua (manos libres) + transcripción en vivo.
+ *   - Voz bidireccional con barge-in, MUTE y VELOCIDAD configurable.
+ *   - Matcher local con SINÓNIMOS y VARIOS productos por frase.
+ *   - No dice el total al agregar (solo cuando lo piden).
+ *   - CONFIRMA antes de comprar ("¿seguro? di sí").
+ *   - UPSELL: sugiere un producto en oferta (una vez).
+ *   - RE-PREGUNTA si hay silencio.
+ *   - Guarda el HISTORIAL de la conversación (para el chat en pantalla).
  */
 
 const NUMEROS = {
@@ -21,11 +19,27 @@ const NUMEROS = {
   seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10,
 };
 
+// Apodos/sinónimos → palabra que sí aparece en el nombre del producto.
+const SINONIMOS = {
+  refresco: ['gaseosa', 'soda', 'cola', 'coca'],
+  platano: ['banano', 'guineo'],
+  galletas: ['galleta'],
+  churritos: ['churros', 'churro'],
+  yogurt: ['yogur'],
+  manzana: ['mansana'],
+};
+
+// Velocidades de la voz (para la tercera edad, "Lenta" ayuda mucho).
+const VELOCIDADES = [
+  { v: 0.8, label: 'Lenta' },
+  { v: 0.95, label: 'Normal' },
+  { v: 1.15, label: 'Rápida' },
+];
+
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const normalizar = (s) => sinAcentos(s).toLowerCase().trim();
 const contarItems = (lista) => lista.reduce((a, i) => a + i.cantidad, 0);
 
-// Cantidad explícita en la frase (dígito o palabra). null = no se dijo cantidad.
 const cantidadExplicita = (texto) => {
   const t = normalizar(texto);
   const d = t.match(/\b(\d+)\b/);
@@ -36,16 +50,28 @@ const cantidadExplicita = (texto) => {
   return null;
 };
 
+// Si en la frase aparece un apodo, le añadimos la palabra "buena" para el match.
+const expandirSinonimos = (t) => {
+  let out = t;
+  for (const [canon, syns] of Object.entries(SINONIMOS)) {
+    for (const s of syns) {
+      if (new RegExp(`\\b${s}\\b`).test(out)) out += ' ' + canon;
+    }
+  }
+  return out;
+};
+
 export const useVoiceAssistant = ({
   productos = [], carrito = [], totalCarrito = 0,
   agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
 }) => {
-  const [activo, setActivo] = useState(false);         // sesión manos libres encendida
-  const [escuchando, setEscuchando] = useState(false); // capturando audio ahora mismo
+  const [activo, setActivo] = useState(false);
+  const [escuchando, setEscuchando] = useState(false);
+  const [muteado, setMuteado] = useState(false);
+  const [velIndex, setVelIndex] = useState(1); // Normal
   const [transcripcion, setTranscripcion] = useState('');
-  const [respuesta, setRespuesta] = useState('');
+  const [historial, setHistorial] = useState([]);
 
-  // Refs con datos/funciones SIEMPRE frescos (evita closures viejos en el loop).
   const dataRef = useRef({ productos, carrito, totalCarrito });
   dataRef.current = { productos, carrito, totalCarrito };
   const fnRef = useRef({});
@@ -54,18 +80,27 @@ export const useVoiceAssistant = ({
   const recognitionRef = useRef(null);
   const activoRef = useRef(false);
   const hablandoRef = useRef(false);
+  const muteRef = useRef(false); muteRef.current = muteado;
+  const rateRef = useRef(0.95); rateRef.current = VELOCIDADES[velIndex].v;
   const ultimaRespuestaRef = useRef('');
-  const procesarRef = useRef(null); // se asigna más abajo (evita TDZ)
+  const procesarRef = useRef(null);
+  const hablarRef = useRef(null);
+  const confirmandoRef = useRef(false); // esperando "sí" para comprar
+  const silencioRef = useRef(0);
+  const sugeridoRef = useRef(false);     // ya hicimos upsell esta sesión
+  const idRef = useRef(0);
 
   const soportado =
     typeof window !== 'undefined' &&
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
-  // Enciende el micrófono para una frase. Al terminar, procesa o reintenta.
+  // Agrega un mensaje al historial (limita a los últimos 8).
+  const registrar = (tipo, texto) => {
+    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto }]);
+  };
+
   const arrancarReconocimiento = useCallback(() => {
     if (!soportado || !activoRef.current) return;
-
-    // Barge-in: si el asistente estaba hablando, lo callamos al ponernos a escuchar.
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     hablandoRef.current = false;
 
@@ -73,7 +108,7 @@ export const useVoiceAssistant = ({
     const rec = new SR();
     rec.lang = 'es-SV';
     rec.continuous = false;
-    rec.interimResults = true; // transcripción en vivo
+    rec.interimResults = true;
     let finalTexto = '';
 
     rec.onstart = () => setEscuchando(true);
@@ -92,8 +127,14 @@ export const useVoiceAssistant = ({
       if (finalTexto.trim()) {
         procesarRef.current?.(finalTexto.trim());
       } else if (activoRef.current && !hablandoRef.current) {
-        // No se entendió nada: seguimos escuchando (manos libres).
-        setTimeout(() => arrancarReconocimiento(), 500);
+        // Silencio: reintenta y, tras 2 silencios seguidos, re-pregunta.
+        silencioRef.current += 1;
+        if (silencioRef.current >= 2) {
+          silencioRef.current = 0;
+          hablarRef.current?.('¿Sigues ahí? Dime qué quieres, o di comprar cuando termines.');
+        } else {
+          setTimeout(() => arrancarReconocimiento(), 500);
+        }
       }
     };
 
@@ -101,29 +142,35 @@ export const useVoiceAssistant = ({
     try { rec.start(); } catch { /* ya estaba iniciado */ }
   }, [soportado]);
 
-  // El asistente habla; al terminar de hablar vuelve a escuchar (manos libres).
   const hablar = useCallback((texto) => {
-    setRespuesta(texto);
     ultimaRespuestaRef.current = texto;
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    hablandoRef.current = true;
+    registrar('bot', texto);
 
-    const u = new SpeechSynthesisUtterance(texto);
-    u.lang = 'es-SV';
-    u.rate = 0.95; // un pelín más lento, se entiende mejor (tercera edad)
-    const alTerminar = () => {
+    const continuar = () => {
       hablandoRef.current = false;
       if (activoRef.current) setTimeout(() => arrancarReconocimiento(), 350);
     };
-    u.onend = alTerminar;
-    u.onerror = alTerminar;
+
+    if (muteRef.current || typeof window === 'undefined' || !window.speechSynthesis) {
+      continuar();
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    hablandoRef.current = true;
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = 'es-SV';
+    u.rate = rateRef.current;
+    // Elegimos una voz en español si el navegador tiene alguna.
+    const vozEs = window.speechSynthesis.getVoices().find((v) => v.lang && v.lang.toLowerCase().startsWith('es'));
+    if (vozEs) u.voice = vozEs;
+    u.onend = continuar;
+    u.onerror = continuar;
     window.speechSynthesis.speak(u);
   }, [arrancarReconocimiento]);
 
-  // Busca el producto que mejor coincide con lo que dijo el cliente.
   const buscarProducto = (texto) => {
-    const t = normalizar(texto);
+    const t = expandirSinonimos(normalizar(texto));
     return dataRef.current.productos.find((p) => {
       const nombre = normalizar(p.nombre);
       if (t.includes(nombre)) return true;
@@ -131,14 +178,30 @@ export const useVoiceAssistant = ({
     });
   };
 
-  // Procesa una frase reconocida: actúa sobre el carrito y responde por voz.
   const procesar = useCallback((texto) => {
-    const t = normalizar(texto);
-    const { carrito, totalCarrito } = dataRef.current;
+    const t = expandirSinonimos(normalizar(texto));
+    const { carrito, totalCarrito, productos } = dataRef.current;
     const fns = fnRef.current;
 
+    silencioRef.current = 0;
+    registrar('user', texto);
+
+    // ── Si estamos esperando confirmación de compra ──
+    if (confirmandoRef.current) {
+      if (/\b(si|sí|claro|confirmo|dale|correcto|comprar)\b/.test(t)) {
+        confirmandoRef.current = false;
+        hablar('¡Listo! Lleva tu carrito a caja, un empleado te ayudará a pagar. ¡Gracias!');
+      } else if (/\b(no|cancela|espera|todavia|todavía|aun|aún)\b/.test(t)) {
+        confirmandoRef.current = false;
+        hablar('Ok, seguimos. ¿Qué más quieres agregar?');
+      } else {
+        hablar('¿Confirmas la compra? Di sí para confirmar, o no para seguir agregando.');
+      }
+      return;
+    }
+
     if (/\b(ayuda|que puedo decir|comandos|no se|no entiendo)\b/.test(t)) {
-      hablar('Puedes decir: quiero una manzana, quita una manzana, cuánto llevo, vaciar carrito, o comprar.');
+      hablar('Puedes decir: quiero una manzana y dos galletas, quita una manzana, cuánto llevo, vaciar carrito, o comprar.');
       return;
     }
     if (/\b(repite|repetir|otra vez|que dijiste)\b/.test(t)) {
@@ -150,9 +213,11 @@ export const useVoiceAssistant = ({
       hablar('Vacié tu carrito. ¿Qué te gustaría llevar?');
       return;
     }
+    // Comprar → pide confirmación (no compra de una).
     if (/\b(comprar|pagar|finalizar|listo|terminar|es todo)\b/.test(t)) {
       if (!carrito.length) { hablar('Tu carrito está vacío. ¿Qué te gustaría llevar?'); return; }
-      hablar(`Tu carrito está listo con ${contarItems(carrito)} productos, por $${totalCarrito.toFixed(2)}. Un empleado te ayudará a pagar.`);
+      confirmandoRef.current = true;
+      hablar(`Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(carrito)} productos. ¿Confirmas la compra? Di sí para confirmar.`);
       return;
     }
     if (/\b(cuanto|total|llevo|va)\b/.test(t)) {
@@ -175,20 +240,45 @@ export const useVoiceAssistant = ({
       return;
     }
 
-    // Por defecto: agregar el producto mencionado.
-    const prod = buscarProducto(t);
-    if (prod) {
-      const cant = cantidadExplicita(t) ?? 1;
-      fns.agregarAlCarrito?.(prod, cant);
-      const totalAprox = totalCarrito + prod.precio * cant;
-      hablar(`Agregué ${cant} ${prod.nombre}. Llevas $${totalAprox.toFixed(2)}. ¿Algo más?`);
-    } else {
-      hablar('No encontré ese producto. ¿Puedes repetirlo?');
+    // ── Agregar (varios por frase) ──
+    const partes = t.split(/\s+y\s+|,|\s+tambien\s+|\s+ademas\s+/).map((s) => s.trim()).filter(Boolean);
+    const agregados = [];
+    const vistos = new Set();
+    for (const parte of partes) {
+      const prod = buscarProducto(parte);
+      if (prod && !vistos.has(prod.id)) {
+        const cant = cantidadExplicita(parte) ?? 1;
+        fns.agregarAlCarrito?.(prod, cant);
+        agregados.push(`${cant} ${prod.nombre}`);
+        vistos.add(prod.id);
+      }
     }
+
+    if (agregados.length === 0) {
+      hablar('No encontré ese producto. ¿Puedes repetirlo?');
+      return;
+    }
+
+    let mensaje = agregados.length === 1
+      ? `Agregué ${agregados[0]}. ¿Algo más?`
+      : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}. ¿Algo más?`;
+
+    // Upsell (una sola vez): sugiere un producto en oferta que no esté en el carrito.
+    if (!sugeridoRef.current) {
+      const promo = productos.find((p) =>
+        p.esMasVendido && p.precioAnterior > p.precio &&
+        !vistos.has(p.id) && !carrito.some((i) => i.id === p.id));
+      if (promo) {
+        sugeridoRef.current = true;
+        mensaje += ` Por cierto, ${promo.nombre} está en oferta hoy.`;
+      }
+    }
+
+    hablar(mensaje);
   }, [hablar]);
 
-  // Mantenemos procesarRef apuntando al procesar más reciente (lo usa onend).
   procesarRef.current = procesar;
+  hablarRef.current = hablar;
 
   const iniciar = useCallback(() => {
     if (!soportado) { hablar('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.'); return; }
@@ -205,5 +295,31 @@ export const useVoiceAssistant = ({
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
   }, []);
 
-  return { activo, escuchando, transcripcion, respuesta, iniciar, detener, hablar, soportado };
+  const toggleMute = useCallback(() => {
+    setMuteado((m) => !m);
+    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+  }, []);
+
+  const cambiarVelocidad = useCallback(() => {
+    setVelIndex((i) => (i + 1) % VELOCIDADES.length);
+  }, []);
+
+  // Al desmontar (cerrar el asistente): apagar TODO para que no siga escuchando
+  // ni hablando en segundo plano.
+  useEffect(() => {
+    return () => {
+      const teniaSesion = activoRef.current;
+      activoRef.current = false;
+      recognitionRef.current?.stop();
+      if (teniaSesion && typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  return {
+    activo, escuchando, muteado, transcripcion, historial,
+    velLabel: VELOCIDADES[velIndex].label,
+    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado,
+  };
 };

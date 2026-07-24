@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
 import AsistenteVoz from '../components/Store/AsistenteVoz';
-import { Toaster } from 'react-hot-toast';
+// El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#8B5A2B';
 const BROWN_DARK = '#5a3a1a';
@@ -472,21 +473,23 @@ const Store = () => {
 
   return (
     <Container>
-      <Toaster position="bottom-right" toastOptions={{ duration: 2500 }} />
 
-      {/* Overlay del Asistente por Voz (Modo Kiosco) */}
-      {mostrarAsistente && (
-        <AsistenteVoz
-          onClose={() => setMostrarAsistente(false)}
-          productos={productos}
-          agregarAlCarrito={agregarAlCarrito}
-          eliminarDelCarrito={eliminarDelCarrito}
-          actualizarCantidad={actualizarCantidad}
-          limpiarCarrito={limpiarCarrito}
-          carrito={carrito}
-          totalCarrito={totalCarrito}
-        />
-      )}
+      {/* Overlay del Asistente por Voz (Modo Kiosco) — con entrada/salida suave */}
+      <AnimatePresence>
+        {mostrarAsistente && (
+          <AsistenteVoz
+            key="asistente-voz"
+            onClose={() => setMostrarAsistente(false)}
+            productos={productos}
+            agregarAlCarrito={agregarAlCarrito}
+            eliminarDelCarrito={eliminarDelCarrito}
+            actualizarCantidad={actualizarCantidad}
+            limpiarCarrito={limpiarCarrito}
+            carrito={carrito}
+            totalCarrito={totalCarrito}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Header ── */}
       <Header>
