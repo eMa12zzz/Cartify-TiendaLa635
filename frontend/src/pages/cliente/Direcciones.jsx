@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MapPin, Trash2, Plus } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../hooks/useClientTheme';
 import { useAddresses } from '../../hooks/useAddresses';
 
 /*

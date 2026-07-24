@@ -198,7 +198,15 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito }) => {
   return (
     <Card onClick={handleClickCard}>
       <ImageWrapper>
-        {producto.esMasVendido && <BestSellerBadge>Más vendido</BestSellerBadge>}
+        {producto.promo && (
+          <BestSellerBadge>
+            {producto.promo.type === 'nxm'
+              ? `${producto.promo.buyQty}x${producto.promo.payQty}`
+              : producto.promo.type === 'descuento'
+                ? `-${producto.promo.discount}%`
+                : 'Oferta'}
+          </BestSellerBadge>
+        )}
         <WishlistButton
           className="wishlist-button"
           onClick={handleWishlist}

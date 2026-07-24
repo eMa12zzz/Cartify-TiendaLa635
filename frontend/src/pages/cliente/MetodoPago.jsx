@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CreditCard, Wallet, Trash2, Plus } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../hooks/useClientTheme';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 
 /*
