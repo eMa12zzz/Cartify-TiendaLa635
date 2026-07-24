@@ -481,6 +481,8 @@ const Store = () => {
           productos={productos}
           agregarAlCarrito={agregarAlCarrito}
           eliminarDelCarrito={eliminarDelCarrito}
+          actualizarCantidad={actualizarCantidad}
+          limpiarCarrito={limpiarCarrito}
           carrito={carrito}
           totalCarrito={totalCarrito}
         />
