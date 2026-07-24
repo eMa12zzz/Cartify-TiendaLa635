@@ -2,7 +2,8 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store,
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
 
 /*
@@ -32,6 +33,7 @@ const ClienteLayout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const reduce = useReducedMotion();
 
   const displayName = user?.userName || user?.fullName || 'Cliente';
   const initials = displayName.substring(0, 1).toUpperCase();
@@ -146,7 +148,18 @@ const ClienteLayout = () => {
           className="flex-1 rounded-2xl p-7"
           style={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}` }}
         >
-          <Outlet />
+          {/* Transición sutil entre páginas del cliente (criterio de Emil) */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

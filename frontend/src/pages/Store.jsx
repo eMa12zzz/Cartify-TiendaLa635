@@ -7,6 +7,7 @@ import ProductCard from '../components/Store/ProductCard';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
 import AsistenteVoz from '../components/Store/AsistenteVoz';
+import PromoBanners from '../components/Store/PromoBanners';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#8B5A2B';
@@ -427,6 +428,8 @@ const Store = () => {
     limpiarCarrito,
     filtroPrecio,
     setFiltroPrecio,
+    promoSeleccionada,
+    setPromoSeleccionada,
   } = useStore();
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
@@ -469,7 +472,7 @@ const Store = () => {
     '12+': 'Arriba de $4',
   };
 
-  const showTrending = !categoriaSeleccionada && !terminoBusqueda;
+  const showTrending = !categoriaSeleccionada && !terminoBusqueda && !promoSeleccionada;
 
   return (
     <Container>
@@ -526,6 +529,7 @@ const Store = () => {
             🛒 Carrito
             {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
           </CartBtn>
+          <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">👤 Mi Cuenta</IconBtn>
           <IconBtn onClick={handleCerrarSesion} title="Cerrar sesión">🚪</IconBtn>
         </HeaderRight>
       </Header>
@@ -545,6 +549,24 @@ const Store = () => {
           </CatBtn>
         ))}
       </CategoryBar>
+
+      {/* Banners de promociones — click → filtra a los productos de la promo */}
+      <PromoBanners onSelectPromo={(promo) => { setPromoSeleccionada(promo); setCategoriaSeleccionada(null); setTerminoBusqueda(''); }} />
+
+      {/* Chip para limpiar el filtro de promo */}
+      {promoSeleccionada && (
+        <div style={{ padding: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 14, color: '#8B5A2B', fontWeight: 600 }}>
+            Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
+          </span>
+          <button
+            onClick={() => setPromoSeleccionada(null)}
+            style={{ border: '1px solid #ddd', background: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 13, cursor: 'pointer', color: '#444' }}
+          >
+            ✕ Ver todos
+          </button>
+        </div>
+      )}
 
       {/* ── Hero Banners ── */}
       {showTrending && (

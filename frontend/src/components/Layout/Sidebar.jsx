@@ -10,6 +10,7 @@ import {
   Shapes,
   Blocks,
   Award,
+  Megaphone,
   Settings
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,6 +31,7 @@ const Sidebar = () => {
     { name: 'Categorías', path: '/categorias', icon: Shapes },
     { name: 'Módulos', path: '/modulos', icon: Blocks },
     { name: 'Fidelidad', path: '/fidelidad', icon: Award },
+    { name: 'Promociones', path: '/promociones', icon: Megaphone },
   ];
 
   return (

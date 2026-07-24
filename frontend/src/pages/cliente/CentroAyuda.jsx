@@ -1,5 +1,5 @@
 import { HelpCircle, Phone, Mail, MessageCircle } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../hooks/useClientTheme';
 
 /*
  * CentroAyuda — página estática de ayuda del cliente (área "Mi Cuenta").

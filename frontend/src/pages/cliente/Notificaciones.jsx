@@ -1,4 +1,4 @@
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../hooks/useClientTheme';
 import { useNotifications } from '../../hooks/useNotifications';
 
 /*
