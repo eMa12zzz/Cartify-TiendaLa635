@@ -1,0 +1,146 @@
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { promotionService } from '../api/promotionService';
+import PromotionFormModal from '../components/Admin/PromotionFormModal';
+import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
+
+/*
+ * Promociones (Admin) — banners/anuncios de la tienda. El gerente sube una
+ * imagen, le pone descuento y elige los productos; en la tienda aparece como
+ * banner y al hacer click lleva a esos productos.
+ */
+// Etiqueta corta del tipo de promo para la tarjeta.
+const etiquetaTipo = (promo) => {
+  if (promo.type === 'nxm') return `${promo.buyQty || 2}x${promo.payQty || 1}`;
+  if (promo.type === 'precio_fijo') return 'Precio fijo';
+  return 'Descuento %';
+};
+
+const Promociones = () => {
+  const [promos, setPromos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [current, setCurrent] = useState(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [toDelete, setToDelete] = useState(null);
+
+  const cargar = async () => {
+    try {
+      setLoading(true);
+      const data = await promotionService.getPromotions();
+      setPromos(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const handleSave = async (formData, id) => {
+    try {
+      if (id) { await promotionService.updatePromotion(id, formData); toast.success('Promoción actualizada'); }
+      else { await promotionService.createPromotion(formData); toast.success('Promoción creada'); }
+      setIsFormOpen(false);
+      setCurrent(null);
+      cargar();
+    } catch (error) {
+      console.error(error); // el interceptor de Axios ya muestra el toast de error
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    try {
+      await promotionService.deletePromotion(toDelete._id);
+      toast.success('Promoción eliminada');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsConfirmOpen(false);
+      setToDelete(null);
+      cargar();
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6 w-full pb-8">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-4xl font-extrabold text-[#C28C5D]">Promociones</h1>
+        <button
+          onClick={() => { setCurrent(null); setIsFormOpen(true); }}
+          className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+        >
+          Agregar Promoción
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-gray-500">Cargando promociones...</p>
+      ) : promos.length === 0 ? (
+        <div className="bg-white p-10 rounded-2xl border border-gray-100 text-center">
+          <p className="text-gray-800 font-semibold mb-1">No hay promociones todavía</p>
+          <p className="text-gray-500 text-sm">Crea la primera: sube un banner, ponle descuento y elige los productos.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {promos.map((promo) => (
+            <div key={promo._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="h-36 bg-gray-100">
+                {promo.image ? (
+                  <img src={promo.image} alt={promo.promoDescription} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">Sin banner</div>
+                )}
+              </div>
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FAF9F6] text-[#B47C4D]">{etiquetaTipo(promo)}</span>
+                  <span className={`text-xs font-medium ${promo.isActive ? 'text-green-500' : 'text-red-500'}`}>
+                    {promo.isActive ? 'Activa' : 'Inactiva'}
+                  </span>
+                </div>
+                {promo.title && <div className="text-sm font-bold text-gray-800">{promo.title}</div>}
+                <p className="text-sm text-gray-600 mb-2">{promo.promoDescription}</p>
+                <p className="text-xs text-gray-400 mb-3">{promo.items?.length || 0} productos</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setCurrent(promo); setIsFormOpen(true); }}
+                    className="flex-1 py-1.5 rounded-full border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => { setToDelete(promo); setIsConfirmOpen(true); }}
+                    className="flex-1 py-1.5 rounded-full border border-red-200 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <PromotionFormModal
+        isOpen={isFormOpen}
+        onClose={() => { setIsFormOpen(false); setCurrent(null); }}
+        promoData={current}
+        onSave={handleSave}
+      />
+
+      <GenericConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDelete}
+        data={toDelete}
+        actionType="delete"
+        entityName="Promoción"
+      />
+    </div>
+  );
+};
+
+export default Promociones;

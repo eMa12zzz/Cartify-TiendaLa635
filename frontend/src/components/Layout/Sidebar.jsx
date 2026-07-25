@@ -7,9 +7,12 @@ import {
   Tag, 
   Users, 
   UserSquare2, 
-  Shapes, 
-  Blocks, 
-  Settings 
+  Shapes,
+  Blocks,
+  Award,
+  Megaphone,
+  Printer,
+  Settings
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -28,6 +31,9 @@ const Sidebar = () => {
     { name: 'Clientes', path: '/clientes', icon: UserSquare2 },
     { name: 'Categorías', path: '/categorias', icon: Shapes },
     { name: 'Módulos', path: '/modulos', icon: Blocks },
+    { name: 'Fidelidad', path: '/fidelidad', icon: Award },
+    { name: 'Promociones', path: '/promociones', icon: Megaphone },
+    { name: 'Impresiones', path: '/servicios-impresion', icon: Printer },
   ];
 
   return (

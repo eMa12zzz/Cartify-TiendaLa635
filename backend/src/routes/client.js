@@ -10,7 +10,28 @@ router
 
 router
   .route("/:id")
+  .get(clientController.getClientById)
   .put(upload.single("image"), clientController.updateClient)
   .delete(clientController.deleteClient);
+
+// El cliente edita su propio perfil (datos básicos, JSON).
+router
+  .route("/:id/profile")
+  .patch(clientController.updateClientProfile);
+
+// El cliente gestiona su lista de direcciones de entrega.
+router
+  .route("/:id/addresses")
+  .patch(clientController.updateAddresses);
+
+// El cliente actualiza sus preferencias de notificación.
+router
+  .route("/:id/notifications")
+  .patch(clientController.updateNotifications);
+
+// El cliente gestiona sus métodos de pago (datos no sensibles).
+router
+  .route("/:id/payment-methods")
+  .patch(clientController.updatePaymentMethods);
 
 export default router;

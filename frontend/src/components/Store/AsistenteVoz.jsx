@@ -1,0 +1,238 @@
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Mic, X, ShoppingCart, Volume2, VolumeX, Gauge, Minimize2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+
+/*
+ * AsistenteVoz — pantalla grande (kiosco) del asistente por voz.
+ * Solo pinta; la lógica vive en useVoiceAssistant. Animaciones con la vara de
+ * Emil (ease-out fuerte, <300ms, respeta prefers-reduced-motion).
+ */
+const EASE_OUT = [0.23, 1, 0.32, 1];
+
+const AsistenteVoz = ({
+  onClose, productos, carrito, totalCarrito,
+  agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+}) => {
+  const reduce = useReducedMotion();
+  const [minimizado, setMinimizado] = useState(false); // asistente en segundo plano
+  const {
+    activo, escuchando, muteado, transcripcion, historial, velLabel,
+    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado,
+  } = useVoiceAssistant({
+    productos, carrito, totalCarrito,
+    agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+  });
+
+  const chatRef = useRef(null);
+  const saludadoRef = useRef(false);
+
+  useEffect(() => {
+    if (saludadoRef.current) return; // evita el saludo doble en desarrollo (StrictMode)
+    saludadoRef.current = true;
+    toast.dismiss();
+    hablar('Hola, soy tu asistente. Toca el micrófono y dime qué quieres llevar. Por ejemplo: quiero una manzana.');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-scroll del chat al último mensaje.
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [historial]);
+
+  const items = carrito.reduce((a, i) => a + i.cantidad, 0);
+  const pulsa = escuchando && !reduce;
+
+  const estadoTexto = !activo ? 'Toca para empezar' : escuchando ? 'Escuchando…' : 'Un momento…';
+  const estadoColor = !activo ? '#e5e7eb' : escuchando ? '#fca5a5' : '#fcd34d';
+  const micColor = escuchando ? '#dc2626' : activo ? '#d97706' : '#B47C4D';
+
+  const pill = { backgroundColor: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)' };
+
+  // ── Modo SEGUNDO PLANO: solo una píldora flotante; la sesión sigue viva ──
+  if (minimizado) {
+    return (
+      <motion.button
+        onClick={() => setMinimizado(false)}
+        aria-label="Volver a la pantalla del asistente"
+        className="fixed bottom-6 right-6 flex items-center gap-3 pl-4 pr-5 py-3 rounded-full shadow-2xl text-white"
+        style={{ backgroundColor: '#B47C4D', zIndex: 9998 }}
+        initial={{ opacity: 0, y: reduce ? 0 : 12, scale: reduce ? 1 : 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.2, ease: EASE_OUT }}
+      >
+        <span className="relative flex items-center justify-center w-8 h-8">
+          {escuchando && !reduce && (
+            <span className="absolute inset-0 rounded-full animate-ping" style={{ backgroundColor: 'rgba(255,255,255,0.45)' }} />
+          )}
+          <Mic className="w-5 h-5 relative z-10" />
+        </span>
+        <span className="text-sm font-semibold whitespace-nowrap">
+          Asistente {escuchando ? 'escuchando…' : 'activo'}
+        </span>
+        {items > 0 && (
+          <span className="min-w-[24px] h-6 px-1.5 rounded-full bg-white text-[#B47C4D] text-xs font-bold flex items-center justify-center">
+            {items}
+          </span>
+        )}
+      </motion.button>
+    );
+  }
+
+  return (
+    <motion.div
+      className="fixed inset-0 flex flex-col"
+      style={{ background: 'rgba(15,17,21,0.92)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 10000 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: EASE_OUT }}
+    >
+      {/* Silenciar / activar la voz */}
+      <button
+        onClick={toggleMute}
+        aria-label={muteado ? 'Activar voz' : 'Silenciar voz'}
+        className="absolute top-5 left-5 z-[60] flex items-center gap-2 px-4 py-3 rounded-full text-white font-medium text-base shadow-lg"
+        style={pill}
+      >
+        {muteado ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        {muteado ? 'Sin voz' : 'Con voz'}
+      </button>
+
+      {/* Segundo plano + Salir */}
+      <div className="absolute top-5 right-5 z-[60] flex items-center gap-2">
+        <button
+          onClick={() => setMinimizado(true)}
+          aria-label="Poner el asistente en segundo plano"
+          className="flex items-center gap-2 px-4 py-3 rounded-full text-white font-medium text-base shadow-lg"
+          style={pill}
+        >
+          <Minimize2 className="w-5 h-5" /> Segundo plano
+        </button>
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 px-5 py-3 rounded-full text-white font-semibold text-base shadow-lg"
+          style={{ backgroundColor: 'rgba(255,255,255,0.22)', border: '1.5px solid rgba(255,255,255,0.45)' }}
+        >
+          <X className="w-5 h-5" /> Salir
+        </button>
+      </div>
+
+      <motion.div
+        className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 text-center max-w-3xl mx-auto w-full overflow-y-auto pt-20"
+        initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.05 }}
+      >
+        <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Asistente de voz</h1>
+        <p className="text-base md:text-lg text-gray-300 mb-6">
+          Toca el micrófono y habla. Ej: <span className="text-white font-semibold">"quiero una manzana y dos galletas"</span>
+        </p>
+
+        {/* Micrófono con pulso tipo sonar */}
+        <div className="relative w-32 h-32 md:w-40 md:h-40 flex-none">
+          <AnimatePresence>
+            {pulsa && (
+              <>
+                <motion.span key="ring1" className="absolute inset-0 rounded-full" style={{ border: '2px solid rgba(220,38,38,0.5)' }}
+                  initial={{ scale: 1, opacity: 0.6 }} animate={{ scale: 1.6, opacity: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} />
+                <motion.span key="ring2" className="absolute inset-0 rounded-full" style={{ border: '2px solid rgba(220,38,38,0.35)' }}
+                  initial={{ scale: 1, opacity: 0.5 }} animate={{ scale: 1.6, opacity: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut', delay: 0.8 }} />
+              </>
+            )}
+          </AnimatePresence>
+          <motion.button
+            onClick={activo ? detener : iniciar}
+            className="relative w-full h-full rounded-full flex items-center justify-center shadow-2xl"
+            style={{ backgroundColor: micColor }}
+            whileTap={{ scale: 0.97 }}
+            animate={{ scale: pulsa ? [1, 1.04, 1] : 1 }}
+            transition={pulsa ? { duration: 1.2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.16, ease: EASE_OUT }}
+            aria-label={activo ? 'Detener' : 'Empezar a hablar'}
+          >
+            <Mic className="w-16 h-16 md:w-20 md:h-20 text-white" />
+          </motion.button>
+        </div>
+
+        <p className="mt-4 text-base md:text-lg font-semibold" style={{ color: estadoColor }}>{estadoTexto}</p>
+
+        {/* Control de velocidad de la voz */}
+        <button onClick={cambiarVelocidad} className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm shadow" style={pill}>
+          <Gauge className="w-4 h-4" /> Velocidad: {velLabel}
+        </button>
+
+        {/* Transcripción en vivo (mientras escucha) */}
+        {escuchando && transcripcion && (
+          <p className="mt-4 text-base text-gray-400 italic">…{transcripcion}</p>
+        )}
+
+        {/* Historial de la conversación (chat) */}
+        {historial.length > 0 && (
+          <div ref={chatRef} className="mt-4 w-full max-w-xl overflow-y-auto" style={{ maxHeight: '11rem' }}>
+            <div className="flex flex-col gap-2">
+              {historial.map((m) => (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: reduce ? 0 : 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.16, ease: EASE_OUT }}
+                  className={`flex ${m.tipo === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className="max-w-[80%] px-3.5 py-2 rounded-2xl text-sm text-left text-white"
+                    style={m.tipo === 'user'
+                      ? { backgroundColor: '#B47C4D' }
+                      : { backgroundColor: 'rgba(255,255,255,0.10)' }}
+                  >
+                    {m.texto}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!soportado && (
+          <p className="mt-4 text-sm text-red-300">Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.</p>
+        )}
+      </motion.div>
+
+      {/* Carrito abajo */}
+      <motion.div
+        className="w-full max-w-3xl mx-auto px-6 pb-6 flex-none"
+        initial={{ opacity: 0, y: reduce ? 0 : 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.1 }}
+      >
+        <div className="rounded-2xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-white text-base font-bold">
+              <ShoppingCart className="w-5 h-5" /> Tu carrito ({items})
+            </div>
+            <div className="text-xl font-extrabold text-white">${totalCarrito.toFixed(2)}</div>
+          </div>
+          {carrito.length === 0 ? (
+            <p className="text-gray-400 text-sm">Aún no has agregado nada. ¡Dime qué quieres!</p>
+          ) : (
+            <div className="flex flex-col gap-1 max-h-28 overflow-y-auto">
+              {carrito.map((item) => (
+                <motion.div key={item.id} layout initial={{ opacity: 0, x: reduce ? 0 : -8 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.18, ease: EASE_OUT }}
+                  className="flex items-center justify-between text-white text-sm">
+                  <span>{item.emoji ? `${item.emoji} ` : ''}{item.cantidad}× {item.nombre}</span>
+                  <span className="text-gray-300">${(item.precio * item.cantidad).toFixed(2)}</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
+          <p className="text-gray-400 text-xs mt-2">Di <span className="text-white font-semibold">"comprar"</span> cuando termines — un empleado te ayudará a pagar.</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export default AsistenteVoz;

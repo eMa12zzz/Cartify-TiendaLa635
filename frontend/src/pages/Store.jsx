@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
-import { Toaster } from 'react-hot-toast';
+import AsistenteVoz from '../components/Store/AsistenteVoz';
+import PromoBanners from '../components/Store/PromoBanners';
+// El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#8B5A2B';
 const BROWN_DARK = '#5a3a1a';
@@ -425,10 +428,13 @@ const Store = () => {
     limpiarCarrito,
     filtroPrecio,
     setFiltroPrecio,
+    promoSeleccionada,
+    setPromoSeleccionada,
   } = useStore();
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
+  const [mostrarAsistente, setMostrarAsistente] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef(null);
 
@@ -466,11 +472,27 @@ const Store = () => {
     '12+': 'Arriba de $4',
   };
 
-  const showTrending = !categoriaSeleccionada && !terminoBusqueda;
+  const showTrending = !categoriaSeleccionada && !terminoBusqueda && !promoSeleccionada;
 
   return (
     <Container>
-      <Toaster position="bottom-right" toastOptions={{ duration: 2500 }} />
+
+      {/* Overlay del Asistente por Voz (Modo Kiosco) — con entrada/salida suave */}
+      <AnimatePresence>
+        {mostrarAsistente && (
+          <AsistenteVoz
+            key="asistente-voz"
+            onClose={() => setMostrarAsistente(false)}
+            productos={productos}
+            agregarAlCarrito={agregarAlCarrito}
+            eliminarDelCarrito={eliminarDelCarrito}
+            actualizarCantidad={actualizarCantidad}
+            limpiarCarrito={limpiarCarrito}
+            carrito={carrito}
+            totalCarrito={totalCarrito}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Header ── */}
       <Header>
@@ -496,10 +518,18 @@ const Store = () => {
         </SearchBox>
 
         <HeaderRight>
+          <IconBtn
+            onClick={() => setMostrarAsistente(true)}
+            title="Asistente por voz"
+            style={{ background: BROWN_LIGHT, color: BROWN, fontWeight: 600 }}
+          >
+            🎤 Asistente
+          </IconBtn>
           <CartBtn onClick={() => setMostrarCarrito(true)}>
             🛒 Carrito
             {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
           </CartBtn>
+          <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">👤 Mi Cuenta</IconBtn>
           <IconBtn onClick={handleCerrarSesion} title="Cerrar sesión">🚪</IconBtn>
         </HeaderRight>
       </Header>
@@ -519,6 +549,24 @@ const Store = () => {
           </CatBtn>
         ))}
       </CategoryBar>
+
+      {/* Banners de promociones — click → filtra a los productos de la promo */}
+      <PromoBanners onSelectPromo={(promo) => { setPromoSeleccionada(promo); setCategoriaSeleccionada(null); setTerminoBusqueda(''); }} />
+
+      {/* Chip para limpiar el filtro de promo */}
+      {promoSeleccionada && (
+        <div style={{ padding: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 14, color: '#8B5A2B', fontWeight: 600 }}>
+            Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
+          </span>
+          <button
+            onClick={() => setPromoSeleccionada(null)}
+            style={{ border: '1px solid #ddd', background: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 13, cursor: 'pointer', color: '#444' }}
+          >
+            ✕ Ver todos
+          </button>
+        </div>
+      )}
 
       {/* ── Hero Banners ── */}
       {showTrending && (

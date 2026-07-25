@@ -26,7 +26,28 @@ const clientSchema = new Schema({
     email: { type:"String"},
     userName: { type:"String"},
     password: { type:"String"},
+    // Campo viejo (con typo y tipo String). Se mantiene por compatibilidad con
+    // los datos que ya existen en la base; la lógica nueva NO lo usa.
     lolayitypoints: { type:"String", default: 0},
+    // Puntos de fidelidad reales (Number). Este es el que usa toda la lógica
+    // nueva de loyalty: se suma al crear un pedido y se muestra en el admin.
+    loyaltyPoints: { type: Number, default: 0 },
+    // Preferencias de notificación del cliente (área "Mi Cuenta").
+    notificationPrefs: {
+      promociones:     { type: Boolean, default: true },
+      nuevosProductos: { type: Boolean, default: true },
+      pedidoCerca:     { type: Boolean, default: false },
+    },
+    // Métodos de pago guardados. SOLO datos NO sensibles: tipo, alias y los
+    // últimos 4 dígitos. NUNCA el número completo ni el CVV — el cobro real
+    // pasa por la pasarela de pago (Wompi).
+    paymentMethods: [
+      {
+        type:  { type: String, default: 'tarjeta' },
+        alias: { type: String },
+        last4: { type: String },
+      },
+    ],
     favorites: { type: Schema.Types.ObjectId, ref: "productModel"},
     isVerified: { type:"Boolean", default: false},
     isActive: { type:"Boolean", default: true}

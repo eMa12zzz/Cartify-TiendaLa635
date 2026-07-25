@@ -73,6 +73,23 @@ El proyecto se sustenta en un esquema relacional dentro de un entorno NoSQL para
 
 ---
 
+## Convenciones de Nomenclatura
+
+Para mantener la consistencia y legibilidad del código a lo largo del proyecto, se han establecido las siguientes convenciones de nomenclatura:
+
+### Frontend (React)
+- **Archivos de Componentes y Páginas**: Se utiliza **PascalCase** (ej. `TopBar.jsx`, `AdminDashboard.jsx`). Esto aplica a cualquier archivo que exporte un componente de React.
+- **Funciones y Variables**: Se utiliza **camelCase** (ej. `handleOpenModal`, `fetchProducts`, `productData`).
+- **Hooks Personalizados**: Se utiliza **camelCase** iniciando con `use` (ej. `useAuth`, `useFetch`).
+
+### Backend (Node.js)
+- **Archivos y Carpetas**: Se utiliza **camelCase** (ej. `productType.js`, `routes/`, `models/`).
+- **Controladores, Modelos y Rutas**: Las funciones y variables internas utilizan **camelCase** (ej. `createProduct`, `getAllProducts`).
+- **Modelos de Mongoose**: La definición del modelo suele utilizar **PascalCase** internamente (ej. `const Product = mongoose.model(...)`).
+- **Variables de Entorno**: Se utiliza **UPPER_SNAKE_CASE** (ej. `MONGODB_URI`, `CLOUDINARY_API_KEY`).
+
+---
+
 ## Instalación y Configuración Local
 
 Si deseas correr este proyecto en tu entorno local, sigue estos pasos:
