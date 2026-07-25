@@ -47,8 +47,20 @@ const orderSchema = new Schema({
     pointsEarned: { type: Number, default: 0 },
     channel: {
         type: String,
-        enum: ['web', 'kiosco'],
+        enum: ['web', 'kiosco', 'impresion'],
         default: 'web',
+    },
+    // Datos del trabajo de impresión (solo cuando channel === 'impresion').
+    printJob: {
+        serviceName: { type: String },
+        fileUrl: { type: String },
+        public_id: { type: String },
+        color: { type: Boolean, default: false },
+        copies: { type: Number, default: 1 },
+        pages: { type: Number, default: 1 },
+        doubleSided: { type: Boolean, default: false },
+        paper: { type: String },
+        emailedToPrinter: { type: Boolean, default: false },
     },
 }, {
     timestamps: true,

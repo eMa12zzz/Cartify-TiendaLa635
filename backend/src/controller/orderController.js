@@ -2,6 +2,8 @@ import orderModel from "../models/order.js";
 import clientModel from "../models/client.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
 import loyaltyLedgerModel from "../models/loyaltyLedger.js";
+import printServiceModel from "../models/printService.js";
+import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 
 const orderController = {};
 
@@ -144,6 +146,95 @@ orderController.updateOrderStatus = async (req, res) => {
 
     return res.status(200).json({ message: "Estado actualizado", order: updated });
 
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// INSERT — Crear un pedido de IMPRESIÓN (sube archivo + opciones).
+orderController.createPrintOrder = async (req, res) => {
+  try {
+    const { clientId, serviceId, color, copies, pages, doubleSided, paper } = req.body;
+
+    if (!clientId || !serviceId) {
+      return res.status(400).json({ message: "clientId y serviceId son requeridos" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: "Sube el archivo a imprimir" });
+    }
+
+    const service = await printServiceModel.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "Servicio de impresión no encontrado" });
+    }
+
+    const esColor = color === "true" || color === true;
+    const nCopias = Number(copies) || 1;
+    const nPaginas = Number(pages) || 1;
+    const doble = doubleSided === "true" || doubleSided === true;
+
+    // Precio: por copia (+ recargo si es a color) × copias × páginas.
+    const precioUnit = service.pricePerCopy + (esColor && service.allowsColor ? (service.colorSurcharge || 0) : 0);
+    const total = Number((precioUnit * nCopias * nPaginas).toFixed(2));
+
+    // Opción 1: enviar a la impresora por correo (si hay PRINTER_EMAIL).
+    // El archivo igual queda guardado en Cloudinary (opción 2 / respaldo).
+    let emailed = false;
+    try {
+      const r = await sendPrintToPrinter({
+        fileUrl: req.file.path,
+        fileName: req.file.originalname,
+        options: { servicio: service.name, color: esColor, copias: nCopias, paginas: nPaginas, doble, paper },
+      });
+      emailed = !!r.emailed;
+    } catch (e) {
+      console.log("error enviando a impresora " + e);
+    }
+
+    // Puntos de fidelidad, igual que un pedido normal.
+    const config = await getLoyaltyConfig();
+    const pointsEarned = config.isActive ? Math.floor(total * config.pointsPerDollar) : 0;
+
+    const resumen = `Impresión ${service.name} ${esColor ? "a color" : "B/N"} x${nCopias}` +
+      (nPaginas > 1 ? ` (${nPaginas} págs)` : "");
+
+    const newOrder = new orderModel({
+      clientId,
+      items: [{ name: resumen, price: total, amount: 1 }],
+      total,
+      status: "pagado",
+      paymentMethod: "efectivo",
+      channel: "impresion",
+      pointsEarned,
+      printJob: {
+        serviceName: service.name,
+        fileUrl: req.file.path,
+        public_id: req.file.filename,
+        color: esColor,
+        copies: nCopias,
+        pages: nPaginas,
+        doubleSided: doble,
+        paper: paper || "",
+        emailedToPrinter: emailed,
+      },
+    });
+
+    await newOrder.save();
+
+    if (pointsEarned > 0) {
+      await clientModel.findByIdAndUpdate(clientId, { $inc: { loyaltyPoints: pointsEarned } });
+      const earnedAt = new Date();
+      const expiresAt = new Date(earnedAt);
+      expiresAt.setMonth(expiresAt.getMonth() + (config.expiryMonths || 3));
+      await loyaltyLedgerModel.create({ clientId, points: pointsEarned, earnedAt, expiresAt, orderId: newOrder._id });
+    }
+
+    return res.status(201).json({
+      message: "Pedido de impresión creado",
+      order: newOrder,
+      emailedToPrinter: emailed,
+    });
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({ message: "Internal server error" });

@@ -39,6 +39,7 @@ import Suppliers from './pages/Suppliers';
 import Categories from './pages/Categories';
 import Fidelidad from './pages/Fidelidad';
 import Promociones from './pages/Promociones';
+import ServiciosImpresion from './pages/ServiciosImpresion';
 import AccountSettings from './pages/AccountSettings';
 
 // --- Área "Mi Cuenta" del cliente ---
@@ -90,6 +91,7 @@ function App() {
               <Route path="/categorias"  element={<Categories />} />
               <Route path="/fidelidad"   element={<Fidelidad />} />
               <Route path="/promociones" element={<Promociones />} />
+              <Route path="/servicios-impresion" element={<ServiciosImpresion />} />
               <Route path="/cuenta"      element={<AccountSettings />} />
             </Route>
           </Route>

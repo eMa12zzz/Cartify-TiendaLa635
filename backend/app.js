@@ -21,6 +21,7 @@ import shoppingRoutes from "./src/routes/shopping.js";
 import orderRoutes from "./src/routes/order.js";
 import loyaltyConfigRoutes from "./src/routes/loyaltyConfig.js";
 import loyaltyRoutes from "./src/routes/loyalty.js";
+import printServiceRoutes from "./src/routes/printService.js";
 import wompiRoutes from "./src/routes/wompi.js"
 import loginAdminRoutes from "./src/routes/loginAdmin.js";
 import logoutAdminRoutes from "./src/routes/logoutAdmin.js";
@@ -59,6 +60,7 @@ app.use("/api/shopping", shoppingRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/loyaltyConfig", loyaltyConfigRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
+app.use("/api/printService", printServiceRoutes);
 app.use("/api/wompi", wompiRoutes);
 app.use("/api/loginAdmin", loginAdminRoutes);
 app.use("/api/logoutAdmin", logoutAdminRoutes);
