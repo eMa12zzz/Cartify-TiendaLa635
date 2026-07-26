@@ -14,11 +14,11 @@ import { aiService } from '../api/aiService';
  *      cualquier imagen, así que nada cambia del lado del servidor.
  */
 
-// Paleta de la tienda (la misma del área cliente).
-const CAFE_OSCURO = '#6B4423';
-const CAFE = '#9C6026';
-const CAFE_CLARO = '#B47C4D';
-const CREMA = '#FAF9F6';
+// Paleta del diseño (la misma que los tokens de index.css).
+const CAFE_OSCURO = '#8A5222';
+const CAFE = '#B46C30';
+const CAFE_CLARO = '#D8A860';
+const CREMA = '#FBF6F0';
 
 const ANCHO = 1200;
 const ALTO = 480; // mismo formato que la tarjeta del carrusel (2.5:1)
@@ -113,9 +113,11 @@ export const usePromoAI = () => {
       ctx.fillRect(inicioFoto - 40, 0, ANCHO - inicioFoto + 40, ALTO);
     }
 
-    // Detalle de marca: una franja clara abajo.
-    ctx.fillStyle = CAFE_CLARO;
-    ctx.fillRect(0, ALTO - 10, ANCHO, 10);
+    /*
+     * Aquí había una franja clara de 10px abajo como "detalle de marca".
+     * Se quitó: dentro de la tarjeta redondeada no se leía como adorno sino
+     * como si la foto estuviera mal recortada.
+     */
 
     const margen = 64;
     const anchoTexto = ANCHO * 0.5;
