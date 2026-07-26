@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
+import BotonWhatsApp from './components/Store/BotonWhatsApp';
 
 /*
  * ============================================================
@@ -59,6 +60,8 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Toaster position="top-right" />
+        {/* Flotante de WhatsApp: se pinta solo en las pantallas del cliente. */}
+        <BotonWhatsApp />
         <Routes>
 
           {/* ── Rutas Públicas (sin autenticación) ─────────────────── */}

@@ -64,10 +64,13 @@ const mapearProducto = (p, mapaPromo = {}) => {
     promo: promoInfo,
     descripcion: p.description || '',
     stock: Number(p.stock) || 0,
+    // Tope de stock del producto: sirve para saber si "se está acabando"
+    // en relación a lo que normalmente tiene, no contra un número fijo.
+    stockMaximo: Number(p.maxQuantity) || 0,
     imagen: Array.isArray(p.image) ? p.image[0] : p.image,
-    emoji: '📦',
     esMasVendido: false,
     fechaExpiracion: p.expirationDate,
+    creadoEn: p.createdAt,
   };
 };
 

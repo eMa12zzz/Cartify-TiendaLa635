@@ -6,6 +6,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
 import { orderService } from '../../api/orderService';
 
+// Productos por página en el resumen del pedido confirmado.
+const POR_PAGINA = 4;
+
 const BROWN = '#B46C30';
 const BROWN_DARK = '#8A5222';
 const BROWN_LIGHT = '#F3E7D8';
@@ -833,6 +836,8 @@ const ShoppingCart = ({
   const [procesando, setProcesando] = useState(false);
   const [imgErrors, setImgErrors] = useState({});
   const [orderPage, setOrderPage] = useState(1);
+  // Páginas reales del resumen de productos del pedido.
+  const totalPaginas = Math.max(1, Math.ceil(items.length / POR_PAGINA));
 
   // Marcamos "montado" en el siguiente frame para que la transición de entrada
   // corra (si pintáramos ya en su posición final, no habría nada que animar).
@@ -1189,7 +1194,7 @@ const ShoppingCart = ({
                   <span>N.º Items</span>
                 </PTableHeader>
                 <ProductsTable>
-                  {items.slice((orderPage - 1) * 4, orderPage * 4).map(item => (
+                  {items.slice((orderPage - 1) * POR_PAGINA, orderPage * POR_PAGINA).map(item => (
                     <PTableRow key={item.id}>
                       <PImgBox>
                         {item.imagen && !imgErrors[item.id]
@@ -1209,17 +1214,33 @@ const ShoppingCart = ({
                   ))}
                 </ProductsTable>
 
-                <Pagination>
-                  <PageBtn onClick={() => setOrderPage(p => Math.max(1, p - 1))}>
-                    <ChevronLeft size={14} />
-                  </PageBtn>
-                  {[1, 2].map(p => (
-                    <PageBtn key={p} $active={orderPage === p} onClick={() => setOrderPage(p)}>{p}</PageBtn>
-                  ))}
-                  <PageBtn onClick={() => setOrderPage(p => Math.min(2, p + 1))}>
-                    <ChevronRight size={14} />
-                  </PageBtn>
-                </Pagination>
+                {/*
+                  Los números salen de cuántos productos hay, no de un "1, 2"
+                  escrito a mano: antes con 3 productos la página 2 salía vacía
+                  y con 12 no se podía llegar a la 3. Con una sola página no se
+                  muestra nada, que es lo normal en la mayoría de compras.
+                */}
+                {totalPaginas > 1 && (
+                  <Pagination>
+                    <PageBtn
+                      onClick={() => setOrderPage(p => Math.max(1, p - 1))}
+                      disabled={orderPage === 1}
+                      aria-label="Página anterior"
+                    >
+                      <ChevronLeft size={14} />
+                    </PageBtn>
+                    {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(p => (
+                      <PageBtn key={p} $active={orderPage === p} onClick={() => setOrderPage(p)}>{p}</PageBtn>
+                    ))}
+                    <PageBtn
+                      onClick={() => setOrderPage(p => Math.min(totalPaginas, p + 1))}
+                      disabled={orderPage === totalPaginas}
+                      aria-label="Página siguiente"
+                    >
+                      <ChevronRight size={14} />
+                    </PageBtn>
+                  </Pagination>
+                )}
               </ConfirmCard>
             </div>
 

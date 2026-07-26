@@ -9,7 +9,10 @@ import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
 import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
+import FilaProductos from '../components/Store/FilaProductos';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
+import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
+import { useMyOrders } from '../hooks/useMyOrders';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#B46C30';
@@ -460,6 +463,11 @@ const Store = () => {
   // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
   const destacados = useFilaDeslizable();
 
+  // Sus pedidos alimentan la fila "Volver a comprar"; si es cliente nuevo,
+  // esa fila simplemente no se arma.
+  const { orders } = useMyOrders();
+  const secciones = useSeccionesTienda({ productos, pedidos: orders });
+
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
   const [mostrarAsistente, setMostrarAsistente] = useState(false);
@@ -638,6 +646,22 @@ const Store = () => {
             </TrendingGrid>
           </TrendingSection>
         )}
+
+        {/*
+          Secciones que se arman solas con lo que hay en el inventario:
+          "Volver a comprar", "Se están acabando", "Nuevos" y las familias que
+          se detectan por el nombre (Quesos, Leches...). Nadie las configura.
+        */}
+        {showTrending && secciones.map((seccion) => (
+          <FilaProductos
+            key={seccion.clave}
+            titulo={seccion.titulo}
+            subtitulo={seccion.subtitulo}
+            productos={seccion.productos}
+            onVerDetalle={handleAbrirDetalle}
+            onAgregarAlCarrito={agregarAlCarrito}
+          />
+        ))}
 
         {/* ── All / Filtered Products ── */}
         <div>
