@@ -9,9 +9,80 @@ import clientModel from "../models/client.js";
  * qué caduca, qué preparar y qué ya no se vende.
  */
 
-// Umbrales del negocio (si la tienda crece, se ajustan aquí).
-const STOCK_BAJO = 10;   // a partir de cuánto un producto entra en "por reponer"
-const DIAS_CADUCA = 7;   // "caduca esta semana"
+/*
+ * Umbrales del negocio.
+ * "Stock bajo" NO es un número fijo: depende del máximo de cada producto.
+ * No es lo mismo que queden 10 refrescos de un máximo de 1000 (crítico) que
+ * 10 televisores de un máximo de 12 (normal). Por eso comparamos contra su
+ * propio maxQuantity; si el producto no lo tiene, usamos el respaldo fijo.
+ */
+const RATIO_BAJO = 0.25;      // le queda 25% o menos de su máximo
+const STOCK_BAJO_ABS = 10;    // respaldo cuando no hay máximo definido
+const DIAS_CADUCA = 7;        // "caduca esta semana"
+
+/*
+ * Convierte un campo a número dentro de la consulta. Hace falta porque algunos
+ * productos guardaron stock/maxQuantity como texto (vienen de un formulario con
+ * archivos), y Mongo no puede multiplicar cadenas.
+ */
+const numero = (campo) => ({ $convert: { input: campo, to: "double", onError: 0, onNull: 0 } });
+
+// Condición de "stock bajo" relativa al máximo de cada producto.
+const filtroStockBajo = {
+  isActive: { $ne: false },
+  $expr: {
+    $lte: [
+      numero("$stock"),
+      {
+        $cond: [
+          { $gt: [numero("$maxQuantity"), 0] },
+          { $multiply: [numero("$maxQuantity"), RATIO_BAJO] },
+          STOCK_BAJO_ABS,
+        ],
+      },
+    ],
+  },
+};
+
+/*
+ * Serie de la gráfica (ventas vs compras). Vive aparte porque el front la pide
+ * sola cuando cambias de Semana/Mes/Año — así no recarga todo el dashboard.
+ */
+const construirSerie = async (periodo, desde) => {
+  const porDia = periodo === "semana";
+  const formato = porDia ? "%d/%m" : "%Y-%m";
+
+  const [serieVentas, serieCompras] = await Promise.all([
+    orderModel.aggregate([
+      { $match: { status: { $ne: "cancelado" }, createdAt: { $gte: desde } } },
+      { $group: { _id: { $dateToString: { format: formato, date: "$createdAt" } }, total: { $sum: "$total" } } },
+      { $sort: { _id: 1 } },
+    ]),
+    shoppingModel.aggregate([
+      { $match: { date: { $gte: desde } } },
+      { $group: { _id: { $dateToString: { format: formato, date: "$date" } }, total: { $sum: "$total" } } },
+      { $sort: { _id: 1 } },
+    ]),
+  ]);
+
+  const etiquetas = Array.from(
+    new Set([...serieVentas.map((s) => s._id), ...serieCompras.map((s) => s._id)])
+  ).sort();
+
+  return etiquetas.map((etiqueta) => ({
+    etiqueta,
+    ventas: Number((serieVentas.find((s) => s._id === etiqueta)?.total || 0).toFixed(2)),
+    compras: Number((serieCompras.find((s) => s._id === etiqueta)?.total || 0).toFixed(2)),
+  }));
+};
+
+// Desde qué fecha arranca la serie según el periodo elegido.
+const inicioSerie = (periodo, hoy) => {
+  const desde = new Date(hoy);
+  if (periodo === "semana") desde.setDate(desde.getDate() - 6);
+  else desde.setMonth(desde.getMonth() - (periodo === "anio" ? 11 : 5));
+  return desde;
+};
 
 const inicioDelDia = (d) => {
   const x = new Date(d);
@@ -42,13 +113,6 @@ dashboardController.getSummary = async (req, res) => {
 
     const noCancelado = { status: { $ne: "cancelado" } };
 
-    // Rango y formato de la gráfica según el periodo elegido.
-    const porDia = periodo === "semana";
-    const desdeSerie = new Date(hoy);
-    if (porDia) desdeSerie.setDate(desdeSerie.getDate() - 6);
-    else desdeSerie.setMonth(desdeSerie.getMonth() - (periodo === "anio" ? 11 : 5));
-    const formatoSerie = porDia ? "%d/%m" : "%Y-%m";
-
     const [
       pedidosHoy, pedidosAyer,
       dineroHoy, dineroAyer,
@@ -57,7 +121,7 @@ dashboardController.getSummary = async (req, res) => {
       pedidosPorPreparar, impresionesPendientes,
       clientesNuevos, canjes,
       masVendidos, ventasPorModulo,
-      serieVentas, serieCompras,
+      grafica,
       totalProductos, totalClientes,
     ] = await Promise.all([
       // ── Pedidos de hoy vs ayer ──
@@ -78,10 +142,10 @@ dashboardController.getSummary = async (req, res) => {
       orderModel.countDocuments({ status: "entregado", updatedAt: { $gte: hace7 } }),
       orderModel.countDocuments({ status: "entregado", updatedAt: { $gte: hace14, $lt: hace7 } }),
 
-      // ── Por reponer (stock bajo) ──
+      // ── Por reponer (bajo respecto a SU propio máximo) ──
       productModel
-        .find({ isActive: { $ne: false }, stock: { $lte: STOCK_BAJO } })
-        .select("name stock salePrice")
+        .find(filtroStockBajo)
+        .select("name stock maxQuantity salePrice")
         .sort({ stock: 1 })
         .limit(50),
 
@@ -126,7 +190,8 @@ dashboardController.getSummary = async (req, res) => {
         {
           $project: {
             vendidos: 1, ingreso: 1,
-            nombre: "$p.name", stock: "$p.stock", precio: "$p.salePrice", categoria: "$t.type",
+            nombre: "$p.name", stock: "$p.stock", maxQuantity: "$p.maxQuantity",
+            precio: "$p.salePrice", categoria: "$t.type",
           },
         },
       ]),
@@ -148,19 +213,8 @@ dashboardController.getSummary = async (req, res) => {
         { $sort: { total: -1 } },
       ]),
 
-      // ── Serie: ventas (pedidos) ──
-      orderModel.aggregate([
-        { $match: { ...noCancelado, createdAt: { $gte: desdeSerie } } },
-        { $group: { _id: { $dateToString: { format: formatoSerie, date: "$createdAt" } }, total: { $sum: "$total" } } },
-        { $sort: { _id: 1 } },
-      ]),
-
-      // ── Serie: compras a proveedores ──
-      shoppingModel.aggregate([
-        { $match: { date: { $gte: desdeSerie } } },
-        { $group: { _id: { $dateToString: { format: formatoSerie, date: "$date" } }, total: { $sum: "$total" } } },
-        { $sort: { _id: 1 } },
-      ]),
+      // ── Gráfica de ventas vs compras ──
+      construirSerie(periodo, inicioSerie(periodo, hoy)),
 
       productModel.countDocuments({ isActive: { $ne: false } }),
       clientModel.countDocuments({ isActive: { $ne: false } }),
@@ -172,16 +226,6 @@ dashboardController.getSummary = async (req, res) => {
       .find({ isActive: { $ne: false }, _id: { $nin: vendidosIds.filter(Boolean) } })
       .select("name stock salePrice")
       .limit(8);
-
-    // Unimos las dos series (ventas y compras) en una sola lista para la gráfica.
-    const etiquetas = Array.from(
-      new Set([...serieVentas.map((s) => s._id), ...serieCompras.map((s) => s._id)])
-    ).sort();
-    const grafica = etiquetas.map((etiqueta) => ({
-      etiqueta,
-      ventas: Number((serieVentas.find((s) => s._id === etiqueta)?.total || 0).toFixed(2)),
-      compras: Number((serieCompras.find((s) => s._id === etiqueta)?.total || 0).toFixed(2)),
-    }));
 
     const gananciaHoy = Number((dineroHoy[0]?.total || 0).toFixed(2));
     const gananciaAyer = Number((dineroAyer[0]?.total || 0).toFixed(2));
@@ -222,8 +266,24 @@ dashboardController.getSummary = async (req, res) => {
       ventasPorModulo: ventasPorModulo.map((m) => ({ modulo: m._id, total: Number(m.total.toFixed(2)) })),
       grafica,
       periodo,
-      umbrales: { stockBajo: STOCK_BAJO, diasCaduca: DIAS_CADUCA },
+      umbrales: { ratioBajo: RATIO_BAJO, stockBajoAbs: STOCK_BAJO_ABS, diasCaduca: DIAS_CADUCA },
     });
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/*
+ * Solo la gráfica. Lo usa el front al cambiar Semana/Mes/Año, para no volver a
+ * pedir (ni repintar) todo el dashboard por un cambio que afecta una sola caja.
+ */
+dashboardController.getChart = async (req, res) => {
+  try {
+    const periodo = req.query.periodo || "mes";
+    const hoy = inicioDelDia(new Date());
+    const grafica = await construirSerie(periodo, inicioSerie(periodo, hoy));
+    return res.status(200).json({ grafica, periodo });
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({ message: "Internal server error" });

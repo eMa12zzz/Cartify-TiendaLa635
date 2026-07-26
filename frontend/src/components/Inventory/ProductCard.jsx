@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import TableActions from '../UI/TableActions';
 
-const ProductCard = ({ product, onEdit, onDelete, onView }) => {
+const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
   // Calcular porcentaje para la barra de cantidades (asumimos maximo de 100 si no existe)
   const maxStock = product.maxQuantity || 100;
   const currentStock = product.stock || 0;

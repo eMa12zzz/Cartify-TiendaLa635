@@ -52,7 +52,7 @@ const Variacion = ({ valor, sufijo = 'vs ayer', esDinero = false }) => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data, loading, periodo, setPeriodo } = useDashboard();
+  const { data, grafica, loading, loadingGrafica, periodo, setPeriodo } = useDashboard();
   const { palette } = useTheme();
   const c = palette.colors; // las barras y acentos siguen la paleta activa
   const [modal, setModal] = useState(null); // 'reponer' | 'caducar' | 'pdf'
@@ -114,7 +114,7 @@ const AdminDashboard = () => {
 
     if (y > 220) { doc.addPage(); y = 20; }
     y = tabla('Ventas y Compras', y, ['Periodo', 'Ventas ($)', 'Compras ($)', 'Diferencia ($)'],
-      data.grafica.map((d) => [d.etiqueta, d.ventas.toFixed(2), d.compras.toFixed(2), (d.ventas - d.compras).toFixed(2)]));
+      grafica.map((d) => [d.etiqueta, d.ventas.toFixed(2), d.compras.toFixed(2), (d.ventas - d.compras).toFixed(2)]));
 
     if (data.porReponer.lista.length) {
       if (y > 220) { doc.addPage(); y = 20; }
@@ -227,11 +227,14 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {data.grafica.length === 0 ? (
-            <p className="text-sm text-gray-500 py-10 text-center">Todavía no hay ventas ni compras en este periodo.</p>
+          {/* Solo esta caja se actualiza al cambiar el periodo */}
+          {loadingGrafica ? (
+            <p className="text-sm text-gray-500 py-24 text-center">Actualizando…</p>
+          ) : grafica.length === 0 ? (
+            <p className="text-sm text-gray-500 py-24 text-center">Todavía no hay ventas ni compras en este periodo.</p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={data.grafica} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+              <BarChart data={grafica} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="etiqueta" tick={{ fontSize: 12, fill: c.textSecondary }} />
                 <YAxis tick={{ fontSize: 12, fill: c.textSecondary }} tickFormatter={ejeMoneda} width={60} />
@@ -295,7 +298,12 @@ const AdminDashboard = () => {
               </thead>
               <tbody>
                 {data.masVendidos.map((p) => {
-                  const bajo = (p.stock ?? 0) <= data.umbrales.stockBajo;
+                  // "Bajo" según SU propio máximo, no un número fijo para todos.
+                  const stockNum = Number(p.stock) || 0;
+                  const maxNum = Number(p.maxQuantity) || 0;
+                  const bajo = maxNum > 0
+                    ? stockNum <= maxNum * data.umbrales.ratioBajo
+                    : stockNum <= data.umbrales.stockBajoAbs;
                   return (
                     <tr key={p._id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-4 px-4 text-sm font-medium text-gray-800">{p.nombre || '—'}</td>
@@ -385,7 +393,7 @@ const AdminDashboard = () => {
                   <span className="text-gray-800">{p.name}</span>
                   <span className="text-gray-500">
                     {modal === 'reponer'
-                      ? `${p.stock} en bodega`
+                      ? `${p.stock}${p.maxQuantity ? ` de ${p.maxQuantity}` : ''} en bodega`
                       : new Date(p.expirationDate).toLocaleDateString('es-SV')}
                   </span>
                 </div>

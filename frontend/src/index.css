@@ -91,18 +91,26 @@
   & .text-gray-500 { color: var(--theme-text-secondary) !important; }
   
   /* Text Accents */
-  & .text-\[\#C28C5D\], 
-  & .text-\[\#B47C4D\], 
+  & .text-\[\#C28C5D\],
+  & .text-\[\#B47C4D\],
+  & .text-\[\#8B5A2B\],
   & .text-\[\#E07A2B\] { color: var(--theme-accent) !important; }
 
   /* Primary button bg + readable text */
   & .bg-\[\#B47C4D\],
   & .bg-\[\#C28C5D\],
   & .bg-\[\#E07A2B\],
-  & .bg-\[\#9C6026\] { 
-    background-color: var(--theme-primary) !important; 
-    color: var(--theme-button-text) !important; 
+  & .bg-\[\#8B5A2B\],
+  & .bg-\[\#A36B3D\],
+  & .bg-\[\#9C6026\] {
+    background-color: var(--theme-primary) !important;
+    color: var(--theme-button-text) !important;
   }
+
+  /* Bordes con los mismos cafés fijos */
+  & .border-\[\#9C6026\],
+  & .border-\[\#B47C4D\],
+  & .border-\[\#8B5A2B\] { border-color: var(--theme-primary) !important; }
   
   /* Hover states */
   & .hover\:bg-\[\#9C6026\]:hover,
