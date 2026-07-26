@@ -1,5 +1,6 @@
 import { UploadCloud, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -157,7 +158,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex overflow-hidden relative z-10"
       >
         <div className="w-1/3 bg-[#9C6026] text-white p-6 flex flex-col">

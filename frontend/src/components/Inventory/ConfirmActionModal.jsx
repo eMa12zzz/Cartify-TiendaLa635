@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
 
 const ConfirmActionModal = ({ isOpen, onClose, onConfirm, product, actionType, brands = [], suppliers = [], categories = [] }) => {
 
@@ -39,7 +40,7 @@ const ConfirmActionModal = ({ isOpen, onClose, onConfirm, product, actionType, b
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={modalTransition}
             className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden relative z-10"
           >
             

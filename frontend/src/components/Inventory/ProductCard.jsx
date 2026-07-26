@@ -12,9 +12,8 @@ const ProductCard = ({ product, onEdit, onDelete, onView }) => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4, transition: { duration: 0.15 } }}
       transition={{ duration: 0.2 }}
-      className="flex bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all"
+      className="flex bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover-lift"
     >
       <div className="w-1/3 bg-[#9C6026] text-white p-4 flex flex-col items-center justify-between relative rounded-l-xl">
         <div className="w-full text-left">

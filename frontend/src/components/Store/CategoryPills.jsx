@@ -24,7 +24,7 @@ const Pill = styled.button`
   font-size: 14px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
 
   &:hover {
     border-color: ${BROWN};

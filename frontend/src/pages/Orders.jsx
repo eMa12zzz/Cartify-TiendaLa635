@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Search, Package, CheckCircle2, ChefHat, Printer, Eye, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { EASE_OUT, DUR, stagger } from '../utils/motion';
 import { useOrders } from '../hooks/useOrders';
 
 /*
@@ -117,11 +119,21 @@ const Orders = () => {
           <p className="text-sm text-gray-500">Cuando entren pedidos pagados, aparecerán aquí para prepararlos.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {visibles.map((order) => {
+        // `layout` hace que las tarjetas se reacomoden con suavidad cuando una
+        // cambia de estado y sale del filtro — antes la lista pegaba un brinco.
+        <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <AnimatePresence mode="popLayout">
+          {visibles.map((order, i) => {
             const estado = estadoInfo[order.status] || estadoInfo.pagado;
             return (
-              <div key={order._id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+              <motion.div
+                key={order._id}
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: DUR.modal, ease: EASE_OUT, delay: stagger(i) }}
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 {/* Encabezado: cliente + estado */}
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -210,10 +222,11 @@ const Orders = () => {
                     </span>
                   )}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+          </AnimatePresence>
+        </motion.div>
       )}
     </div>
   );

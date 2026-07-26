@@ -85,8 +85,8 @@ const Promociones = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {promos.map((promo) => (
-            <div key={promo._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          {promos.map((promo, i) => (
+            <div key={promo._id} style={{ '--i': i }} className="card-in bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="h-36 bg-gray-100">
                 {promo.image ? (
                   <img src={promo.image} alt={promo.promoDescription} className="w-full h-full object-cover" />

@@ -179,7 +179,7 @@ const AccountSettings = () => {
                 <button
                   key={p.id}
                   onClick={() => setPaletteId(p.id)}
-                  className="relative p-5 rounded-2xl border-2 text-left transition-all hover:scale-[1.02] cursor-pointer"
+                  className="relative p-5 rounded-2xl border-2 text-left cursor-pointer hover-scale"
                   style={{
                     borderColor: isActive ? p.colors.primary : 'var(--theme-card-border)',
                     backgroundColor: isActive ? p.colors.primaryLight : 'transparent',

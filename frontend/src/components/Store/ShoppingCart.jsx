@@ -1,18 +1,17 @@
-import { useState } from 'react';
-import styled, { keyframes } from 'styled-components';
+import { useState, useEffect } from 'react';
+import styled from 'styled-components';
 import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check } from 'lucide-react';
 
 const BROWN = '#8B5A2B';
 const BROWN_DARK = '#5a3a1a';
 const BROWN_LIGHT = '#f5ede4';
 
-const slideIn = keyframes`
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-`;
-
-const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
-
+/*
+ * El carrito entra con TRANSICIONES, no con @keyframes.
+ * Motivo: una transición se puede interrumpir y retomar desde donde va; los
+ * keyframes reinician desde cero. Si el cliente abre y cierra rápido, esto se
+ * siente natural en vez de dar un brinco.
+ */
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
@@ -21,7 +20,8 @@ const Overlay = styled.div`
   z-index: 999;
   display: flex;
   justify-content: flex-end;
-  animation: ${fadeIn} 0.2s ease;
+  opacity: ${p => (p.$montado ? 1 : 0)};
+  transition: opacity var(--dur-popover) var(--ease-out);
 `;
 
 /* Full-width panel for checkout & confirmation */
@@ -31,7 +31,8 @@ const FullPanel = styled.div`
   height: 100vh;
   display: flex;
   flex-direction: column;
-  animation: ${slideIn} 0.28s ease-out;
+  transform: translateX(${p => (p.$montado ? '0' : '100%')});
+  transition: transform var(--dur-drawer) var(--ease-drawer);
   overflow-y: auto;
 `;
 
@@ -44,7 +45,8 @@ const CartPanel = styled.div`
   display: flex;
   flex-direction: column;
   box-shadow: -12px 0 40px rgba(0,0,0,0.12);
-  animation: ${slideIn} 0.28s ease-out;
+  transform: translateX(${p => (p.$montado ? '0' : '100%')});
+  transition: transform var(--dur-drawer) var(--ease-drawer);
 `;
 
 /* ── SHARED TOP BAR ── */
@@ -129,7 +131,7 @@ const CloseButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   &:hover { background: #ebebeb; color: #111; }
 `;
 
@@ -247,7 +249,7 @@ const QtyBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   color: #444;
   &:hover { background: ${BROWN_LIGHT}; border-color: ${BROWN}; color: ${BROWN}; }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -348,7 +350,7 @@ const ClearBtn = styled.button`
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   white-space: nowrap;
   &:hover { background: #fef2f2; border-color: #fca5a5; color: #ef4444; }
 `;
@@ -546,7 +548,7 @@ const TipBtn = styled.button`
   font-size: 13px;
   font-weight: ${props => props.$active ? '700' : '400'};
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
 `;
 
 const CouponRow = styled.div`
@@ -828,6 +830,14 @@ const ShoppingCart = ({
   const [imgErrors, setImgErrors] = useState({});
   const [orderPage, setOrderPage] = useState(1);
 
+  // Marcamos "montado" en el siguiente frame para que la transición de entrada
+  // corra (si pintáramos ya en su posición final, no habría nada que animar).
+  const [montado, setMontado] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMontado(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   const ENVIO = items.length > 0 ? 4.78 : 0;
   const SERVICIO = items.length > 0 ? 0 : 0;
   const subtotal = total;
@@ -849,8 +859,8 @@ const ShoppingCart = ({
   // ── CART VIEW ──
   if (view === 'cart') {
     return (
-      <Overlay onClick={onCerrar}>
-        <CartPanel onClick={e => e.stopPropagation()}>
+      <Overlay $montado={montado} onClick={onCerrar}>
+        <CartPanel $montado={montado} onClick={e => e.stopPropagation()}>
           <CartHeader>
             <CartTitle>
               <ShoppingBag size={18} />
@@ -935,8 +945,8 @@ const ShoppingCart = ({
   // ── CHECKOUT VIEW ──
   if (view === 'checkout') {
     return (
-      <Overlay onClick={() => {}}>
-        <FullPanel onClick={e => e.stopPropagation()}>
+      <Overlay $montado={montado} onClick={() => {}}>
+        <FullPanel $montado={montado} onClick={e => e.stopPropagation()}>
           <PageTopBar>
             <BackBtn onClick={() => setView('cart')}><ChevronLeft size={20} /></BackBtn>
             <BrandTitle>
@@ -1054,8 +1064,8 @@ const ShoppingCart = ({
     const orderDate = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     return (
-      <Overlay onClick={() => {}}>
-        <FullPanel>
+      <Overlay $montado={montado} onClick={() => {}}>
+        <FullPanel $montado={montado}>
           <PageTopBar>
             <BackBtn onClick={handleConfirmClose}><ChevronLeft size={20} /></BackBtn>
             <BrandTitle>

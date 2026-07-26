@@ -20,12 +20,14 @@ const PromoBanners = ({ onSelectPromo }) => {
   return (
     <div style={{ padding: '16px 28px 0' }}>
       <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 6 }}>
-        {promos.map((promo) => (
+        {promos.map((promo, i) => (
           <button
             key={promo._id}
             onClick={() => onSelectPromo(promo)}
             title="Ver productos de esta promoción"
+            className="card-in press"
             style={{
+              '--i': i,
               position: 'relative', flex: '0 0 auto', width: 380, height: 150,
               borderRadius: 16, overflow: 'hidden', border: 'none', cursor: 'pointer', padding: 0,
             }}
