@@ -9,8 +9,8 @@ import { useAuth } from '../hooks/useAuth';
 import { usePrintComposer } from '../hooks/usePrintComposer';
 import PrintComposer from '../components/Store/PrintComposer';
 
-const BROWN = '#8B5A2B';
-const BROWN_DARK = '#5a3a1a';
+const BROWN = '#B46C30';
+const BROWN_DARK = '#8A5222';
 
 const Container = styled.div`min-height: 100vh; background: #f6f6f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;`;
 const Header = styled.header`background: white; padding: 0 28px; border-bottom: 1px solid #ebebeb; display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 64px; position: sticky; top: 0; z-index: 200;`;
@@ -22,13 +22,13 @@ const NavBtn = styled.button`background: white; color: #333; border: 1.5px solid
 const Content = styled.div`padding: 32px 28px 60px; max-width: 760px; margin: 0 auto;`;
 const StepTitle = styled.h2`font-size: 18px; font-weight: 800; color: #111; margin: 0 0 14px;`;
 const Tabs = styled.div`display: flex; gap: 8px; margin-bottom: 18px;`;
-const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : '#e0e0e0')}; background: ${p => (p.$active ? '#f5ede4' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#555')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
-const Dropzone = styled.div`border: 2px dashed ${p => (p.$active ? BROWN : '#d8d8d8')}; background: ${p => (p.$active ? '#f5ede4' : '#ececec')}; border-radius: 14px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); &:hover { border-color: ${BROWN}; background: #f5ede4; }`;
+const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : '#e0e0e0')}; background: ${p => (p.$active ? '#F3E7D8' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#555')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
+const Dropzone = styled.div`border: 2px dashed ${p => (p.$active ? BROWN : '#d8d8d8')}; background: ${p => (p.$active ? '#F3E7D8' : '#ececec')}; border-radius: 14px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); &:hover { border-color: ${BROWN}; background: #F3E7D8; }`;
 const DropHint = styled.p`font-size: 13px; color: #999; margin: 0;`;
 const FileChip = styled.div`display: flex; align-items: center; gap: 10px; font-size: 14px; color: ${BROWN_DARK}; font-weight: 600;`;
 const HiddenInput = styled.input`display: none;`;
 const SizesGrid = styled.div`display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }`;
-const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.5px solid ${p => (p.$active ? BROWN : '#cfcfcf')}; background: ${p => (p.$active ? '#f5ede4' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#222')}; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); padding: 10px; &:hover { border-color: ${BROWN}; }`;
+const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.5px solid ${p => (p.$active ? BROWN : '#cfcfcf')}; background: ${p => (p.$active ? '#F3E7D8' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#222')}; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); padding: 10px; &:hover { border-color: ${BROWN}; }`;
 const OptionsCard = styled.div`background: white; border: 1px solid #ebebeb; border-radius: 14px; padding: 20px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px;`;
 const Row = styled.div`display: flex; align-items: center; justify-content: space-between; gap: 12px;`;
 const Label = styled.span`font-size: 14px; color: #333; font-weight: 600;`;

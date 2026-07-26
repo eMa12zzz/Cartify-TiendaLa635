@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { Package } from 'lucide-react';
 import styled from 'styled-components';
 
-const BROWN = '#8B5A2B';
-const BROWN_DARK = '#5a3a1a';
+// Paleta del diseño (WEB.pdf), medida sobre el mockup.
+const BROWN = '#B46C30';
+const BROWN_DARK = '#8A5222';
 
 const Card = styled.div`
   background: white;
@@ -42,8 +44,12 @@ const ProductImage = styled.img`
   }
 `;
 
+/* Marcador de producto sin foto: icono de línea, no un emoji de sistema. */
 const ImageFallback = styled.div`
-  font-size: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #C4BDB6;
   user-select: none;
 `;
 
@@ -78,12 +84,11 @@ const BestSellerBadge = styled.div`
   left: 10px;
   background: ${BROWN};
   color: white;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radio-pill);
+  letter-spacing: 0.2px;
   z-index: 2;
 `;
 
@@ -111,9 +116,11 @@ const ProductName = styled.div`
   line-height: 1.3;
 `;
 
+/* En el diseño el "quedan N" siempre va en rojo: es lo que empuja a comprar. */
 const StockInfo = styled.div`
-  font-size: 10px;
-  color: ${props => props.$bajoStock ? '#ef4444' : '#9ca3af'};
+  font-size: 11px;
+  font-weight: 500;
+  color: ${props => (props.$bajoStock ? '#D8542C' : '#E0763F')};
   margin-top: 3px;
   display: flex;
   align-items: center;
@@ -147,14 +154,19 @@ const NewPrice = styled.span`
   line-height: 1.1;
 `;
 
+/*
+ * En el diseño este botón es NEGRO, no café. Es a propósito: el acento de la
+ * marca es el café, y el negro hace que la acción de agregar resalte sobre él
+ * en vez de competirle.
+ */
 const AddButton = styled.button`
-  background: ${BROWN};
+  background: var(--tinta);
   color: white;
   border: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  font-size: 20px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: 21px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -164,7 +176,7 @@ const AddButton = styled.button`
   line-height: 1;
 
   &:hover {
-    background: ${BROWN_DARK};
+    background: #000;
     transform: scale(1.08);
   }
 
@@ -222,7 +234,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
             onError={() => setImgError(true)}
           />
         ) : (
-          <ImageFallback>{producto.emoji || '📦'}</ImageFallback>
+          <ImageFallback><Package size={38} strokeWidth={1.4} /></ImageFallback>
         )}
       </ImageWrapper>
 

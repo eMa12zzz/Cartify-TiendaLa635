@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
-const BROWN = '#8B5A2B';
-const BROWN_LIGHT = '#f5ede4';
+const BROWN = '#B46C30';
+const BROWN_LIGHT = '#F3E7D8';
 
 const Container = styled.div`
   display: flex;

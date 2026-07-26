@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 
-const BROWN = '#8B5A2B';
+const BROWN = '#B46C30';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -160,7 +160,7 @@ const Button = styled.button`
   transition: background 0.2s;
   margin-bottom: 20px;
 
-  &:hover { background: #7a4e26; }
+  &:hover { background: #8A5222; }
   &:disabled { background: #d8c5af; cursor: not-allowed; }
 `;
 

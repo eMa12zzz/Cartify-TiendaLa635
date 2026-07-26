@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, ShoppingBag, Star, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, ShoppingBag, Star, ChevronDown, ChevronRight, ChevronLeft, Package, MessageCircle, Leaf } from 'lucide-react';
 
-const BROWN = '#8B5A2B';
-const BROWN_LIGHT = '#f5ede4';
-const BROWN_DARK = '#5a3a1a';
+const BROWN = '#B46C30';
+const BROWN_LIGHT = '#F3E7D8';
+const BROWN_DARK = '#8A5222';
 
 const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
 const slideUp = keyframes`from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; }`;
@@ -589,7 +589,7 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
             <span className="active">{producto.nombre}</span>
           </Breadcrumb>
           <HelpBtn>
-            💬 Ayuda
+            <MessageCircle size={15} strokeWidth={2} /> Ayuda
           </HelpBtn>
         </TopBar>
 
@@ -603,7 +603,7 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
                   <Thumb key={i} $active={activeThumb === i} onClick={() => setActiveThumb(i)}>
                     {producto.imagen && !imgError
                       ? <img src={producto.imagen} alt="" onError={() => setImgError(true)} />
-                      : (producto.emoji || '📦')
+                      : <Package size={22} strokeWidth={1.4} />
                     }
                   </Thumb>
                 ))}
@@ -614,7 +614,7 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
                 {producto.esMasVendido && <BestBadge>Los más vendidos</BestBadge>}
                 {producto.imagen && !imgError
                   ? <MainImage src={producto.imagen} alt={producto.nombre} onError={() => setImgError(true)} />
-                  : <ImageFallback>{producto.emoji || '📦'}</ImageFallback>
+                  : <ImageFallback><Package size={72} strokeWidth={1.2} /></ImageFallback>
                 }
               </MainImageWrapper>
             </ImageArea>
@@ -697,7 +697,7 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
                   {recomendados.map(p => (
                     <RecCard key={p.id} onClick={() => { /* open detail */ }}>
                       <RecImgBox>
-                        {p.imagen ? <img src={p.imagen} alt={p.nombre} /> : (p.emoji || '📦')}
+                        {p.imagen ? <img src={p.imagen} alt={p.nombre} /> : <Package size={30} strokeWidth={1.4} />}
                       </RecImgBox>
                       <RecInfo>
                         <RecName>{p.nombre}</RecName>
@@ -754,7 +754,7 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
                 </FeatureRow>
               )}
               <FeatureRow>
-                <FeatureIcon>🌱</FeatureIcon>
+                <FeatureIcon><Leaf size={17} strokeWidth={1.8} /></FeatureIcon>
                 100% Natural
               </FeatureRow>
               {producto.descripcion && (

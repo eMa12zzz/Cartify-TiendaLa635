@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check } from 'lucide-react';
+import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
 import { orderService } from '../../api/orderService';
 
-const BROWN = '#8B5A2B';
-const BROWN_DARK = '#5a3a1a';
-const BROWN_LIGHT = '#f5ede4';
+const BROWN = '#B46C30';
+const BROWN_DARK = '#8A5222';
+const BROWN_LIGHT = '#F3E7D8';
 
 /*
  * El carrito entra con TRANSICIONES, no con @keyframes.
@@ -925,14 +925,14 @@ const ShoppingCart = ({
           <CartItemsScroll>
             {items.length === 0 ? (
               <EmptyCart>
-                <div className="emoji">🛒</div>
+                <div className="emoji"><ShoppingBag size={44} strokeWidth={1.3} /></div>
                 <div className="title">Tu carrito está vacío</div>
                 <div className="sub">¡Agrega productos para comenzar!</div>
               </EmptyCart>
             ) : (
               <>
                 <StoreName>
-                  <StoreIcon>🏪</StoreIcon>
+                  <StoreIcon><StoreFront size={19} strokeWidth={1.8} /></StoreIcon>
                   <StoreInfo>
                     <div className="name">Tienda la 635</div>
                     <div className="sub">Mejicanos, San Salvador</div>
@@ -946,7 +946,7 @@ const ShoppingCart = ({
                     <ItemImgBox>
                       {item.imagen && !imgErrors[item.id]
                         ? <img src={item.imagen} alt={item.nombre} onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
-                        : <span className="emoji">{item.emoji || '📦'}</span>
+                        : <span className="emoji"><Package size={26} strokeWidth={1.4} /></span>
                       }
                     </ItemImgBox>
                     <ItemInfo>
@@ -1005,7 +1005,7 @@ const ShoppingCart = ({
               <BrandSub>Tienda</BrandSub>
               <BrandMain>la 635</BrandMain>
             </BrandTitle>
-            <HelpBtn>💬 Ayuda</HelpBtn>
+            <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
 
           <CheckoutLayout>
@@ -1021,7 +1021,7 @@ const ShoppingCart = ({
                       <div style={{ fontSize: 17, fontWeight: 700, color: '#111' }}>Checkout</div>
                     </div>
                     <DeliveryBadge>
-                      📅 Deliver Tomorrow, Sep 17, 8am–10am
+                      <CalendarDays size={14} strokeWidth={2} /> Deliver Tomorrow, Sep 17, 8am–10am
                     </DeliveryBadge>
                   </div>
                 </div>
@@ -1065,7 +1065,7 @@ const ShoppingCart = ({
                       <OrderThumb key={item.id}>
                         {item.imagen && !imgErrors[item.id]
                           ? <img src={item.imagen} alt="" onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
-                          : (item.emoji || '📦')
+                          : <Package size={24} strokeWidth={1.4} />
                         }
                       </OrderThumb>
                     ))}
@@ -1151,7 +1151,7 @@ const ShoppingCart = ({
               <BrandSub>Tienda</BrandSub>
               <BrandMain>la 635</BrandMain>
             </BrandTitle>
-            <HelpBtn>💬 Ayuda</HelpBtn>
+            <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
 
           <ConfirmLayout>
@@ -1194,7 +1194,7 @@ const ShoppingCart = ({
                       <PImgBox>
                         {item.imagen && !imgErrors[item.id]
                           ? <img src={item.imagen} alt="" onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
-                          : (item.emoji || '📦')
+                          : <Package size={24} strokeWidth={1.4} />
                         }
                       </PImgBox>
                       <PName>
@@ -1226,7 +1226,7 @@ const ShoppingCart = ({
             {/* Right: summary */}
             <ConfirmSummaryCard>
               <ConfirmSummaryTitle>Resumen del pedido</ConfirmSummaryTitle>
-              <OrderNumber>🔗 #123-321</OrderNumber>
+              <OrderNumber><Hash size={14} strokeWidth={2.2} /> 123-321</OrderNumber>
 
               <SummaryCardRow><span>Gastos de envío</span><span>$144</span></SummaryCardRow>
               <SummaryCardRow><span>Gastos de envío</span><span>$144</span></SummaryCardRow>

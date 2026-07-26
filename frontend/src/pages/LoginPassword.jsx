@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-const BROWN = '#8B5A2B';
+const BROWN = '#B46C30';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -108,7 +108,7 @@ const Button = styled.button`
   margin-bottom: 16px;
   transition: background 0.2s;
 
-  &:hover { background: #7a4e26; }
+  &:hover { background: #8A5222; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 

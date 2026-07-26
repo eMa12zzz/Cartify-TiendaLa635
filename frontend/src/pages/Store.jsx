@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { Search, Mic, ShoppingBag, User, LogOut, Flame, Milk, Cookie, Citrus } from 'lucide-react';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
@@ -10,15 +11,15 @@ import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
-const BROWN = '#8B5A2B';
-const BROWN_DARK = '#5a3a1a';
-const BROWN_LIGHT = '#f5ede4';
+const BROWN = '#B46C30';
+const BROWN_DARK = '#8A5222';
+const BROWN_LIGHT = '#F3E7D8';
 
 /* ─── Layout ─── */
 const Container = styled.div`
   min-height: 100vh;
   background: #f6f6f6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--fuente);
 `;
 
 /* ─── Header ─── */
@@ -57,21 +58,26 @@ const LogoMain = styled.span`
   line-height: 1.2;
 `;
 
+/*
+ * Buscador del diseño: pill blanca con borde suave y el icono metido en un
+ * círculo café a la izquierda (antes era gris con una lupa suelta).
+ */
 const SearchBox = styled.div`
   flex: 1;
-  max-width: 420px;
+  max-width: 460px;
   display: flex;
   align-items: center;
-  background: #f5f5f5;
-  border-radius: 40px;
-  padding: 0 16px;
-  gap: 8px;
-  height: 42px;
-  transition: box-shadow 0.2s;
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-pill);
+  padding: 0 6px 0 6px;
+  gap: 10px;
+  height: 46px;
+  transition: box-shadow var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out);
 
   &:focus-within {
-    box-shadow: 0 0 0 2px ${BROWN}40;
-    background: white;
+    border-color: ${BROWN};
+    box-shadow: 0 0 0 3px ${BROWN}1F;
   }
 
   input {
@@ -80,9 +86,22 @@ const SearchBox = styled.div`
     background: transparent;
     outline: none;
     font-size: 14px;
-    color: #111;
-    &::placeholder { color: #bbb; }
+    color: var(--tinta);
+    &::placeholder { color: var(--tinta-tenue); }
   }
+`;
+
+/* El círculo café que envuelve la lupa. */
+const SearchIcon = styled.span`
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: ${BROWN};
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const HeaderRight = styled.div`
@@ -91,35 +110,54 @@ const HeaderRight = styled.div`
   gap: 8px;
 `;
 
+/*
+ * En el diseño TODO en el header son pills. Hay dos sabores:
+ *   - $solida : café relleno con texto blanco (el Asistente).
+ *   - normal  : blanca con borde (Mi Cuenta, salir).
+ */
 const IconBtn = styled.button`
-  background: none;
-  border: none;
+  background: ${props => (props.$solida ? BROWN : 'var(--papel)')};
+  border: 1px solid ${props => (props.$solida ? BROWN : 'var(--linea)')};
+  color: ${props => (props.$solida ? '#fff' : 'var(--tinta-suave)')};
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 30px;
+  gap: 7px;
+  padding: 0 16px;
+  height: 42px;
+  border-radius: var(--radio-pill);
   font-size: 14px;
-  color: #444;
-  transition: background 0.2s;
-  &:hover { background: #f5f5f5; }
+  font-weight: ${props => (props.$solida ? 600 : 500)};
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background-color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out),
+              color var(--dur-press) var(--ease-out);
+
+  &:hover {
+    background: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-50)')};
+    border-color: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-400)')};
+    color: ${props => (props.$solida ? '#fff' : BROWN)};
+  }
 `;
 
 const CartBtn = styled.button`
   background: ${BROWN};
   color: white;
-  border: none;
+  border: 1px solid ${BROWN};
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 18px;
-  border-radius: 30px;
+  padding: 0 18px;
+  height: 42px;
+  border-radius: var(--radio-pill);
   font-size: 14px;
   font-weight: 600;
-  transition: background 0.2s;
-  &:hover { background: ${BROWN_DARK}; }
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out);
+  &:hover { background: ${BROWN_DARK}; border-color: ${BROWN_DARK}; }
 `;
 
 const CartBadge = styled.span`
@@ -137,31 +175,42 @@ const CartBadge = styled.span`
 `;
 
 /* ─── Category Bar ─── */
+/* En el diseño las categorías van CENTRADAS, no pegadas a la izquierda. */
 const CategoryBar = styled.nav`
-  background: white;
+  background: var(--papel);
   padding: 0 28px;
   display: flex;
-  gap: 4px;
+  justify-content: center;
+  gap: 8px;
   overflow-x: auto;
-  border-bottom: 1px solid #ebebeb;
-  height: 52px;
+  border-bottom: 1px solid var(--linea);
+  height: 60px;
   align-items: center;
   &::-webkit-scrollbar { display: none; }
+
+  /* Con muchas categorías deja de centrar y se vuelve deslizable. */
+  @media (max-width: 900px) { justify-content: flex-start; }
 `;
 
+/* Pill blanca con borde; la activa es café SÓLIDO con texto blanco. */
 const CatBtn = styled.button`
-  padding: 7px 18px;
-  border: none;
-  background: ${props => props.$active ? BROWN_LIGHT : 'transparent'};
-  color: ${props => props.$active ? BROWN : '#666'};
-  font-weight: ${props => props.$active ? '600' : '400'};
-  border-radius: 30px;
+  padding: 0 18px;
+  height: 38px;
+  border: 1px solid ${props => (props.$active ? BROWN : 'var(--linea)')};
+  background: ${props => (props.$active ? BROWN : 'var(--papel)')};
+  color: ${props => (props.$active ? '#fff' : 'var(--tinta-suave)')};
+  font-weight: ${props => (props.$active ? 600 : 500)};
+  border-radius: var(--radio-pill);
   font-size: 14px;
+  font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   flex-shrink: 0;
-  &:hover { background: ${BROWN_LIGHT}; color: ${BROWN}; }
+  &:hover {
+    border-color: ${BROWN};
+    color: ${props => (props.$active ? '#fff' : BROWN)};
+  }
 `;
 
 /* ─── Hero Banner ─── */
@@ -231,9 +280,12 @@ const BannerBtn = styled.button`
   gap: 6px;
 `;
 
+/* Antes tenía un emoji de 72px; ahora lleva un icono de línea de lucide. */
 const BannerEmoji = styled.div`
-  font-size: 72px;
-  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.45;
   margin-left: 8px;
   flex-shrink: 0;
 `;
@@ -502,7 +554,7 @@ const Store = () => {
         </LogoArea>
 
         <SearchBox>
-          <span style={{ fontSize: 16 }}>🔍</span>
+          <SearchIcon><Search size={17} strokeWidth={2.4} /></SearchIcon>
           <input
             type="text"
             placeholder="Buscar productos..."
@@ -518,19 +570,15 @@ const Store = () => {
         </SearchBox>
 
         <HeaderRight>
-          <IconBtn
-            onClick={() => setMostrarAsistente(true)}
-            title="Asistente por voz"
-            style={{ background: BROWN_LIGHT, color: BROWN, fontWeight: 600 }}
-          >
-            🎤 Asistente
+          <IconBtn $solida onClick={() => setMostrarAsistente(true)} title="Asistente por voz">
+            <Mic size={16} strokeWidth={2.2} /> Asistente
           </IconBtn>
           <CartBtn onClick={() => setMostrarCarrito(true)}>
-            🛒 Carrito
+            <ShoppingBag size={16} strokeWidth={2.2} /> Carrito
             {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
           </CartBtn>
-          <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">👤 Mi Cuenta</IconBtn>
-          <IconBtn onClick={handleCerrarSesion} title="Cerrar sesión">🚪</IconBtn>
+          <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta"><User size={16} strokeWidth={2.2} /> Mi Cuenta</IconBtn>
+          <IconBtn onClick={handleCerrarSesion} title="Cerrar sesión"><LogOut size={16} strokeWidth={2.2} /></IconBtn>
         </HeaderRight>
       </Header>
 
@@ -556,7 +604,7 @@ const Store = () => {
       {/* Chip para limpiar el filtro de promo */}
       {promoSeleccionada && (
         <div style={{ padding: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 14, color: '#8B5A2B', fontWeight: 600 }}>
+          <span style={{ fontSize: 14, color: '#B46C30', fontWeight: 600 }}>
             Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
           </span>
           <button
@@ -574,36 +622,36 @@ const Store = () => {
           <BannersGrid>
             <BannerCard $bg="linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)">
               <BannerContent>
-                <BannerTag $color={BROWN}>🔥 Oferta especial</BannerTag>
+                <BannerTag $color={BROWN}><Flame size={13} strokeWidth={2.4} /> Oferta especial</BannerTag>
                 <BannerTitle $color="#111">Frutas frescas<br/>del día</BannerTitle>
                 <BannerSub $color="#666">Directo del mercado a tu mesa</BannerSub>
                 <BannerBtn $bg={BROWN} onClick={() => setCategoriaSeleccionada('Frutas')}>
                   Ver frutas →
                 </BannerBtn>
               </BannerContent>
-              <BannerEmoji>🍊</BannerEmoji>
+              <BannerEmoji><Citrus size={62} strokeWidth={1.4} /></BannerEmoji>
             </BannerCard>
 
             <BannerCard $bg="linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)">
               <BannerContent>
-                <BannerTag $color="#2e7d32">🥛 Lácteos</BannerTag>
+                <BannerTag $color="#2e7d32"><Milk size={13} strokeWidth={2.4} /> Lácteos</BannerTag>
                 <BannerTitle $color="#1b5e20" style={{ fontSize: 18 }}>Lácteos<br/>frescos</BannerTitle>
                 <BannerBtn $bg="#2e7d32" onClick={() => setCategoriaSeleccionada('Lácteos')}>
                   Ver más →
                 </BannerBtn>
               </BannerContent>
-              <BannerEmoji style={{ fontSize: 52 }}>🧀</BannerEmoji>
+              <BannerEmoji><Milk size={52} strokeWidth={1.4} /></BannerEmoji>
             </BannerCard>
 
             <BannerCard $bg="linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%)">
               <BannerContent>
-                <BannerTag $color="#c62828">🍪 Snacks</BannerTag>
+                <BannerTag $color="#c62828"><Cookie size={13} strokeWidth={2.4} /> Snacks</BannerTag>
                 <BannerTitle $color="#880e4f" style={{ fontSize: 18 }}>Snacks<br/>favoritos</BannerTitle>
                 <BannerBtn $bg="#c62828" onClick={() => setCategoriaSeleccionada('Snacks')}>
                   Ver más →
                 </BannerBtn>
               </BannerContent>
-              <BannerEmoji style={{ fontSize: 52 }}>🍪</BannerEmoji>
+              <BannerEmoji><Cookie size={52} strokeWidth={1.4} /></BannerEmoji>
             </BannerCard>
           </BannersGrid>
         </BannerSection>
@@ -669,7 +717,7 @@ const Store = () => {
 
           {productosFiltrados.length === 0 ? (
             <EmptyState>
-              <div className="icon">🔍</div>
+              <div className="icon"><Search size={34} strokeWidth={1.6} /></div>
               No hay productos para "{terminoBusqueda || categoriaSeleccionada}"
             </EmptyState>
           ) : (

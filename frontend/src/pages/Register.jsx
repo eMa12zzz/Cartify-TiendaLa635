@@ -6,8 +6,8 @@ import { Mail, Phone, User, Hash, MapPin, Lock, Camera, Loader2 } from 'lucide-r
 import toast from 'react-hot-toast';
 import api from '../api/api';
 
-const BROWN = '#8B5A2B';
-const BROWN_HOVER = '#7a4e26';
+const BROWN = '#B46C30';
+const BROWN_HOVER = '#8A5222';
 
 const Container = styled.div`
   min-height: 100vh;

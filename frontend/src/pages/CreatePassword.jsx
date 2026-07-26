@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import api from '../api/api';
 
-const BROWN = '#8B5A2B';
+const BROWN = '#B46C30';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -122,7 +122,7 @@ const Button = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #7a4e26;
+    background: #8A5222;
   }
   
   &:disabled {
