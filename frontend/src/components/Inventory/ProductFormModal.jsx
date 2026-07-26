@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { modalTransition } from '../../utils/motion';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { reglaPrecio, reglaEntero, reglaCodigoBarras, bloquearTeclasNumero, bloquearNoDigitos } from '../../utils/validaciones';
 import toast from 'react-hot-toast';
 
 const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands = [], suppliers = [], categories = [], modules = [] }) => {
@@ -137,7 +138,10 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
     onSave({ formData, id: product?._id, previewData: data, selectedImage, originalImage: product?.image, originalProduct: product });
   };
 
-  const onError = (errors) => {
+  const onError = (errs) => {
+    // Mensaje concreto de la regla que falló (precio, stock, código de barras...).
+    const primero = Object.values(errs || {}).find((e) => e?.message)?.message;
+    if (primero) { toast.error(primero, { duration: 4000 }); return; }
     toast.error('Por favor, completa todos los campos obligatorios (Revisa si olvidaste la Marca, Categoría, etc.)', {
       duration: 4000,
     });
@@ -203,21 +207,39 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
             <div className="flex gap-4">
               <div className="flex-1 flex items-center gap-2">
                 <label className="text-xs">Costo ($):</label>
-                <input 
-                  type="number" step="0.01" 
-                  {...register('priceCost', { required: true })}
-                  className="w-full bg-white text-gray-900 text-sm rounded-md px-2 py-1 focus:outline-none" 
+                <input
+                  type="number" step="0.01" min="0"
+                  onKeyDown={bloquearTeclasNumero}
+                  {...register('priceCost', reglaPrecio('El costo'))}
+                  className="w-full bg-white text-gray-900 text-sm rounded-md px-2 py-1 focus:outline-none"
                 />
               </div>
               <div className="flex-1 flex items-center gap-2">
                 <label className="text-xs">Precio ($):</label>
-                <input 
-                  type="number" step="0.01" 
-                  {...register('salePrice', { required: true })}
-                  className="w-full bg-white text-gray-900 text-sm rounded-md px-2 py-1 focus:outline-none" 
+                <input
+                  type="number" step="0.01" min="0"
+                  onKeyDown={bloquearTeclasNumero}
+                  {...register('salePrice', {
+                    ...reglaPrecio('El precio de venta'),
+                    // Regla de negocio: nunca vender por debajo del costo.
+                    validate: (v, form) => {
+                      const base = reglaPrecio('El precio de venta').validate(v);
+                      if (base !== true) return base;
+                      if (Number(v) < Number(form.priceCost || 0)) {
+                        return 'El precio de venta no puede ser menor al costo';
+                      }
+                      return true;
+                    },
+                  })}
+                  className="w-full bg-white text-gray-900 text-sm rounded-md px-2 py-1 focus:outline-none"
                 />
               </div>
             </div>
+            {(errors.priceCost || errors.salePrice) && (
+              <p className="text-xs text-red-200 mt-1">
+                {errors.priceCost?.message || errors.salePrice?.message}
+              </p>
+            )}
           </div>
         </div>
 
@@ -278,12 +300,14 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
               <div className="w-1/3 space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-1">Stock</label>
-                  <input 
-                    type="number" 
-                    {...register('stock', { required: true })}
+                  <input
+                    type="number" min="0" step="1"
+                    onKeyDown={bloquearTeclasNumero}
+                    {...register('stock', reglaEntero('El stock', 0))}
                     className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]"
                     placeholder="Unidades"
                   />
+                  {errors.stock && <p className="text-xs text-red-500 mt-1">{errors.stock.message}</p>}
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
@@ -296,12 +320,14 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                       Generar
                     </button>
                   </div>
-                  <input 
-                    type="text" 
-                    {...register('barCode', { required: true })}
+                  <input
+                    type="text" inputMode="numeric"
+                    onKeyDown={bloquearNoDigitos}
+                    {...register('barCode', reglaCodigoBarras)}
                     className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]"
                     placeholder="Escanear o generar..."
                   />
+                  {errors.barCode && <p className="text-xs text-red-500 mt-1">{errors.barCode.message}</p>}
                 </div>
               </div>
             </div>

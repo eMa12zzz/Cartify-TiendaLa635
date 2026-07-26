@@ -4,7 +4,7 @@ const shoppingSchema = new mongoose.Schema(
   {
     supplierId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Suppliers",
+      ref: "supplierModel",
       required: true,
     },
     date: {
@@ -19,7 +19,7 @@ const shoppingSchema = new mongoose.Schema(
       {
         productId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Products", 
+          ref: "productModel",
           required: true,
         },
         amount: {

@@ -357,7 +357,7 @@ const AdminDashboard = () => {
           <h3 className="text-xl font-bold text-gray-800 mb-1">Sin movimiento</h3>
           <p className="text-xs text-gray-500 mb-4">Nadie los ha comprado — evalúa dejar de surtirlos</p>
           {data.sinMovimiento.length === 0 ? (
-            <p className="text-sm text-gray-500">Todos los productos han tenido ventas. 🎉</p>
+            <p className="text-sm text-gray-500">Todos los productos han tenido ventas.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {data.sinMovimiento.map((p) => (

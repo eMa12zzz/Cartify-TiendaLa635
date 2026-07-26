@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { promotionService } from '../api/promotionService';
 import PromotionFormModal from '../components/Admin/PromotionFormModal';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
+import { etiquetaPromo } from '../utils/promos';
 
 /*
  * Promociones (Admin) — banners/anuncios de la tienda. El gerente sube una
@@ -10,11 +11,8 @@ import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
  * banner y al hacer click lleva a esos productos.
  */
 // Etiqueta corta del tipo de promo para la tarjeta.
-const etiquetaTipo = (promo) => {
-  if (promo.type === 'nxm') return `${promo.buyQty || 2}x${promo.payQty || 1}`;
-  if (promo.type === 'precio_fijo') return 'Precio fijo';
-  return 'Descuento %';
-};
+// El ahorro real ("-25%", "$1.25", "2x1") sale del helper compartido, así el
+// admin y la tienda muestran siempre lo mismo.
 
 const Promociones = () => {
   const [promos, setPromos] = useState([]);
@@ -87,7 +85,8 @@ const Promociones = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {promos.map((promo, i) => (
             <div key={promo._id} style={{ '--i': i }} className="card-in bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="h-36 bg-gray-100">
+              {/* Mismo formato apaisado que la tienda: la imagen no se recorta distinto */}
+              <div className="aspect-[2.5/1] bg-gray-100">
                 {promo.image ? (
                   <img src={promo.image} alt={promo.promoDescription} className="w-full h-full object-cover" />
                 ) : (
@@ -95,11 +94,17 @@ const Promociones = () => {
                 )}
               </div>
               <div className="p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FAF9F6] text-[#B47C4D]">{etiquetaTipo(promo)}</span>
-                  <span className={`text-xs font-medium ${promo.isActive ? 'text-green-500' : 'text-red-500'}`}>
-                    {promo.isActive ? 'Activa' : 'Inactiva'}
-                  </span>
+                <div className="flex items-center justify-between mb-1 gap-2">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FAF9F6] text-[#B47C4D]">{etiquetaPromo(promo)}</span>
+                  <div className="flex items-center gap-2">
+                    {/* Promo silenciosa: aplica pero no sale en el carrusel */}
+                    {promo.showBanner === false && (
+                      <span className="text-xs font-medium text-gray-400" title="No aparece en el carrusel de la tienda">Sin anuncio</span>
+                    )}
+                    <span className={`text-xs font-medium ${promo.isActive ? 'text-green-500' : 'text-red-500'}`}>
+                      {promo.isActive ? 'Activa' : 'Inactiva'}
+                    </span>
+                  </div>
                 </div>
                 {promo.title && <div className="text-sm font-bold text-gray-800">{promo.title}</div>}
                 <p className="text-sm text-gray-600 mb-2">{promo.promoDescription}</p>

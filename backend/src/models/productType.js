@@ -4,7 +4,7 @@ const productTypeSchema = new Schema({
     
     moduleId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Module", 
+        ref: "moduleModel",
         required: true,
       
     },
