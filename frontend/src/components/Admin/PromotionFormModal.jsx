@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { Sparkles } from 'lucide-react';
 import { productService } from '../../api/productService';
+import { validarPromocion, bloquearTeclasNumero } from '../../utils/validaciones';
+import { etiquetaPromo } from '../../utils/promos';
+import { usePromoAI } from '../../hooks/usePromoAI';
+import PromoCard from '../Store/PromoCard';
 
 /*
  * PromotionFormModal — crear/editar una promoción (multi-tipo).
@@ -18,7 +23,7 @@ const TIPOS = [
 
 const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   const isEditing = !!promoData;
-  const [form, setForm] = useState({ title: '', promoDescription: '', isActive: true });
+  const [form, setForm] = useState({ title: '', promoDescription: '', isActive: true, showBanner: true });
   const [type, setType] = useState('descuento');
   const [items, setItems] = useState([]); // [{ productId, name, discount, fixedPrice }]
   const [buyQty, setBuyQty] = useState(2);
@@ -28,6 +33,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   const [imagen, setImagen] = useState(null);
   const [preview, setPreview] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const { generando, generarPromo } = usePromoAI();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -36,7 +42,12 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       .catch(() => {});
 
     if (promoData) {
-      setForm({ title: promoData.title || '', promoDescription: promoData.promoDescription || '', isActive: promoData.isActive !== false });
+      setForm({
+        title: promoData.title || '',
+        promoDescription: promoData.promoDescription || '',
+        isActive: promoData.isActive !== false,
+        showBanner: promoData.showBanner !== false,
+      });
       setType(promoData.type || 'descuento');
       setBuyQty(promoData.buyQty || 2);
       setPayQty(promoData.payQty || 1);
@@ -48,7 +59,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       })));
       setPreview(promoData.image || null);
     } else {
-      setForm({ title: '', promoDescription: '', isActive: true });
+      setForm({ title: '', promoDescription: '', isActive: true, showBanner: true });
       setType('descuento');
       setBuyQty(2); setPayQty(1);
       setItems([]);
@@ -76,11 +87,48 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       (p.name || '').toLowerCase().includes(busqueda.toLowerCase().trim())
   );
 
+  /*
+   * Le pasamos a la IA los productos que ya eligió el empleado y el tipo de
+   * promo; ella devuelve el texto y el banner ya armado con la foto del primer
+   * producto. Todo queda en el formulario para revisarlo antes de guardar.
+   */
+  const onGenerarIA = async () => {
+    const primero = productos.find((p) => p._id === items[0]?.productId);
+    const resultado = await generarPromo({
+      tipo: type,
+      items,
+      buyQty,
+      payQty,
+      imagenProducto: Array.isArray(primero?.image) ? primero.image[0] : primero?.image,
+    });
+    if (!resultado) return;
+
+    setForm((prev) => ({
+      ...prev,
+      title: resultado.title || prev.title,
+      promoDescription: resultado.promoDescription || prev.promoDescription,
+    }));
+    if (resultado.banner) {
+      setImagen(resultado.banner);
+      setPreview(URL.createObjectURL(resultado.banner));
+    }
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!form.promoDescription.trim()) { toast.error('La descripción es requerida'); return; }
-    if (items.length === 0) { toast.error('Agrega al menos un producto'); return; }
-    if (!isEditing && !imagen) { toast.error('Sube una imagen para el banner'); return; }
+
+    // Reglas del negocio según el tipo (descuentos 0-100, precio de oferta menor
+    // al normal, y que en un NxM se pague menos de lo que se lleva).
+    const precios = Object.fromEntries(productos.map((p) => [p._id, Number(p.salePrice) || 0]));
+    const error = validarPromocion({ tipo: type, items, buyQty, payQty, precios });
+    if (error) { toast.error(error); return; }
+
+    // El banner solo es obligatorio si la promo se va a anunciar en la tienda.
+    if (form.showBanner && !isEditing && !imagen) {
+      toast.error('Sube una imagen para el banner, o desmarca "Anunciar en la tienda"');
+      return;
+    }
 
     const itemsPayload = items.map((it) => ({
       productId: it.productId,
@@ -93,6 +141,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     fd.append('promoDescription', form.promoDescription);
     fd.append('type', type);
     fd.append('isActive', form.isActive);
+    fd.append('showBanner', form.showBanner);
     fd.append('buyQty', buyQty);
     fd.append('payQty', payQty);
     fd.append('items', JSON.stringify(itemsPayload));
@@ -143,21 +192,54 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                 {type === 'nxm' && (
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <span className="font-bold">Compra</span>
-                    <input type="number" min="1" value={buyQty} onChange={(e) => setBuyQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#9C6026]" />
+                    <input type="number" min="2" step="1" value={buyQty} onKeyDown={bloquearTeclasNumero} onChange={(e) => setBuyQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#9C6026]" />
                     <span className="font-bold">paga</span>
-                    <input type="number" min="1" value={payQty} onChange={(e) => setPayQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#9C6026]" />
+                    <input type="number" min="1" step="1" value={payQty} onKeyDown={bloquearTeclasNumero} onChange={(e) => setPayQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#9C6026]" />
                   </div>
                 )}
 
-                {/* Banner */}
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Banner (imagen)</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-28 h-20 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center flex-none">
-                      {preview ? <img src={preview} alt="banner" className="w-full h-full object-cover" /> : <span className="text-gray-400 text-xs">Sin imagen</span>}
-                    </div>
-                    <input type="file" accept="image/*" onChange={onImagen} className="text-sm text-gray-700" />
+                {/* Ayudante de IA: escribe el texto y arma el banner solito */}
+                <div className="rounded-xl border border-[#E4D5C3] bg-[#FBF6F0] p-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={onGenerarIA}
+                      disabled={generando || items.length === 0}
+                      className="hover-scale press flex items-center gap-2 bg-[#9C6026] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Sparkles size={16} />
+                      {generando ? 'Generando…' : 'Generar con IA'}
+                    </button>
+                    <p className="text-xs text-gray-600 flex-1">
+                      {items.length === 0
+                        ? 'Agrega los productos más abajo y la IA escribe el anuncio por vos.'
+                        : `Redacta el texto y arma el banner con ${items.length === 1 ? 'el producto' : 'los productos'} que elegiste.`}
+                    </p>
                   </div>
+                </div>
+
+                {/* Banner + vista previa fiel */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Banner — así se verá en la tienda
+                  </label>
+
+                  {/* Misma pieza que usa el carrusel del cliente: lo que se ve
+                      aquí es exactamente lo que va a ver la gente. */}
+                  <PromoCard
+                    imagen={preview}
+                    title={form.title}
+                    descripcion={form.promoDescription}
+                    etiqueta={etiquetaPromo({ type, items, buyQty, payQty })}
+                  />
+
+                  <div className="flex items-center gap-3 mt-3">
+                    <input type="file" accept="image/*" onChange={onImagen} className="text-sm text-gray-700 flex-1" />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    La tarjeta es apaisada (2.5 a 1). Si sube una foto cuadrada se recortará
+                    arriba y abajo — lo ideal es 1200 × 480. El banner que arma la IA ya viene en esa medida.
+                  </p>
                 </div>
 
                 <div>
@@ -205,7 +287,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                           <span className="flex-1 text-sm text-gray-700 truncate">{it.name}</span>
                           {type === 'descuento' && (
                             <div className="flex items-center gap-1">
-                              <input type="number" min="0" max="100" value={it.discount} onChange={(e) => updateItem(it.productId, 'discount', e.target.value)}
+                              <input type="number" min="0" max="100" value={it.discount} onKeyDown={bloquearTeclasNumero} onChange={(e) => updateItem(it.productId, 'discount', e.target.value)}
                                 className="w-16 bg-white border border-gray-300 rounded-full px-2 py-1 text-sm text-center focus:outline-none focus:border-[#9C6026]" />
                               <span className="text-xs text-gray-500">%</span>
                             </div>
@@ -213,7 +295,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                           {type === 'precio_fijo' && (
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-gray-500">$</span>
-                              <input type="number" min="0" step="0.01" value={it.fixedPrice} onChange={(e) => updateItem(it.productId, 'fixedPrice', e.target.value)}
+                              <input type="number" min="0" step="0.01" value={it.fixedPrice} onKeyDown={bloquearTeclasNumero} onChange={(e) => updateItem(it.productId, 'fixedPrice', e.target.value)}
                                 className="w-20 bg-white border border-gray-300 rounded-full px-2 py-1 text-sm text-center focus:outline-none focus:border-[#9C6026]" />
                             </div>
                           )}
@@ -225,10 +307,23 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   <p className="text-xs text-gray-400 mt-1">Al hacer click en el banner, la tienda mostrará estos productos con su promo.</p>
                 </div>
 
-                <label className="flex items-center cursor-pointer pt-1">
-                  <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="mr-2" />
-                  <span className="text-sm font-medium text-gray-700">Activa (se muestra en la tienda)</span>
-                </label>
+                <div className="pt-1 space-y-2">
+                  <label className="flex items-center cursor-pointer">
+                    <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="mr-2" />
+                    <span className="text-sm font-medium text-gray-700">Activa (el descuento se aplica)</span>
+                  </label>
+
+                  {/* Promo silenciosa: aplica el descuento pero sin anunciarlo */}
+                  <label className="flex items-start cursor-pointer">
+                    <input type="checkbox" checked={form.showBanner} onChange={(e) => setForm({ ...form, showBanner: e.target.checked })} className="mr-2 mt-1" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Anunciar en la tienda con banner
+                      <span className="block text-xs font-normal text-gray-500">
+                        Si lo desmarcas, el descuento se aplica igual pero no aparece en el carrusel.
+                      </span>
+                    </span>
+                  </label>
+                </div>
               </form>
             </div>
 

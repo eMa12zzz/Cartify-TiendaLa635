@@ -29,7 +29,7 @@ promotionController.getPromotions = async (req, res) => {
 
 promotionController.insertPromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive } = req.body;
+    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -47,6 +47,7 @@ promotionController.insertPromotion = async (req, res) => {
       buyQty: buyQty ? Number(buyQty) : 2,
       payQty: payQty ? Number(payQty) : 1,
       isActive: parseActivo(isActive),
+      showBanner: parseActivo(showBanner),
       image: req.file ? req.file.path : undefined,
       public_id: req.file ? req.file.filename : undefined,
     });
@@ -61,7 +62,7 @@ promotionController.insertPromotion = async (req, res) => {
 
 promotionController.updatePromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive } = req.body;
+    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -84,6 +85,7 @@ promotionController.updatePromotion = async (req, res) => {
       buyQty: buyQty ? Number(buyQty) : 2,
       payQty: payQty ? Number(payQty) : 1,
       isActive: parseActivo(isActive),
+      showBanner: parseActivo(showBanner),
     };
 
     if (req.file) {

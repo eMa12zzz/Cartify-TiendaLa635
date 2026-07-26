@@ -534,6 +534,9 @@ const Store = () => {
         </HeaderRight>
       </Header>
 
+      {/* Carrusel 3D de promociones — lo primero que ve el cliente al entrar */}
+      <PromoBanners onSelectPromo={(promo) => { setPromoSeleccionada(promo); setCategoriaSeleccionada(null); setTerminoBusqueda(''); }} />
+
       {/* ── Category Bar ── */}
       <CategoryBar>
         <CatBtn $active={!categoriaSeleccionada} onClick={() => setCategoriaSeleccionada(null)}>
@@ -549,9 +552,6 @@ const Store = () => {
           </CatBtn>
         ))}
       </CategoryBar>
-
-      {/* Banners de promociones — click → filtra a los productos de la promo */}
-      <PromoBanners onSelectPromo={(promo) => { setPromoSeleccionada(promo); setCategoriaSeleccionada(null); setTerminoBusqueda(''); }} />
 
       {/* Chip para limpiar el filtro de promo */}
       {promoSeleccionada && (

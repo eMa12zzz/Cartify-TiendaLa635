@@ -5,6 +5,7 @@ import DataTable from '../components/UI/DataTable';
 import TableActions from '../components/UI/TableActions';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
 import { printServiceService } from '../api/printServiceService';
+import { numeroEnRango, bloquearTeclasNumero } from '../utils/validaciones';
 
 /*
  * ServiciosImpresion (Admin) — catálogo de formatos de impresión con precio.
@@ -43,9 +44,26 @@ const ServiciosImpresion = () => {
   const guardar = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || form.pricePerCopy === '') { toast.error('Nombre y precio por copia son requeridos'); return; }
+
+    // Las medidas se usan para calcular la hoja en el editor: si vienen en 0
+    // o con letras, el canvas quedaría sin tamaño.
+    const ancho = numeroEnRango(form.widthCm, { min: 1, max: 200 });
+    if (ancho === null) { toast.error('El ancho debe estar entre 1 y 200 cm'); return; }
+
+    const alto = numeroEnRango(form.heightCm, { min: 1, max: 200 });
+    if (alto === null) { toast.error('El alto debe estar entre 1 y 200 cm'); return; }
+
+    const precio = numeroEnRango(form.pricePerCopy, { min: 0, max: 1000 });
+    if (precio === null) { toast.error('El precio por copia debe ser un número de 0 o más'); return; }
+
+    const recargo = numeroEnRango(form.colorSurcharge === '' ? 0 : form.colorSurcharge, { min: 0, max: 1000 });
+    if (recargo === null) { toast.error('El recargo de color debe ser un número de 0 o más'); return; }
+
+    const datos = { ...form, widthCm: ancho, heightCm: alto, pricePerCopy: precio, colorSurcharge: recargo };
+
     try {
-      if (editId) { await printServiceService.updateService(editId, form); toast.success('Formato actualizado'); }
-      else { await printServiceService.createService(form); toast.success('Formato creado'); }
+      if (editId) { await printServiceService.updateService(editId, datos); toast.success('Formato actualizado'); }
+      else { await printServiceService.createService(datos); toast.success('Formato creado'); }
       setModalOpen(false); cargar();
     } catch (e) { console.error(e); }
   };
@@ -109,10 +127,10 @@ const ServiciosImpresion = () => {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Tamaño de la plantilla (cm)</label>
                   <div className="flex items-center gap-2">
-                    <input type="number" min="1" step="0.1" value={form.widthCm} onChange={(e) => setForm({ ...form, widthCm: e.target.value })}
+                    <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.widthCm} onChange={(e) => setForm({ ...form, widthCm: e.target.value })}
                       className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]" placeholder="Ancho" />
                     <span className="text-gray-500">×</span>
-                    <input type="number" min="1" step="0.1" value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
+                    <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
                       className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]" placeholder="Alto" />
                     <span className="text-xs text-gray-400">cm</span>
                   </div>
@@ -121,7 +139,7 @@ const ServiciosImpresion = () => {
 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Precio por copia ($)</label>
-                  <input type="number" min="0" step="0.01" value={form.pricePerCopy} onChange={(e) => setForm({ ...form, pricePerCopy: e.target.value })} className={inputSm} placeholder="0.00" />
+                  <input type="number" min="0" step="0.01" onKeyDown={bloquearTeclasNumero} value={form.pricePerCopy} onChange={(e) => setForm({ ...form, pricePerCopy: e.target.value })} className={inputSm} placeholder="0.00" />
                 </div>
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input type="checkbox" checked={form.allowsColor} onChange={(e) => setForm({ ...form, allowsColor: e.target.checked })} /> Permite color
@@ -129,7 +147,7 @@ const ServiciosImpresion = () => {
                 {form.allowsColor && (
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Recargo por color ($/copia)</label>
-                    <input type="number" min="0" step="0.01" value={form.colorSurcharge} onChange={(e) => setForm({ ...form, colorSurcharge: e.target.value })} className={inputSm} placeholder="0.00" />
+                    <input type="number" min="0" step="0.01" onKeyDown={bloquearTeclasNumero} value={form.colorSurcharge} onChange={(e) => setForm({ ...form, colorSurcharge: e.target.value })} className={inputSm} placeholder="0.00" />
                   </div>
                 )}
                 <label className="flex items-center gap-2 text-sm text-gray-700">

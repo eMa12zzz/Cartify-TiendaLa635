@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import { reglaTelefono, bloquearNoDigitos } from '../../utils/validaciones';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,7 +39,10 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
     onSave({ data, id: supplier?._id });
   };
 
-  const onError = () => {
+  const onError = (errs) => {
+    // Si una regla dejó mensaje concreto (DUI, teléfono...), mostramos ese.
+    const primero = Object.values(errs || {}).find((e) => e?.message)?.message;
+    if (primero) { toast.error(primero, { duration: 4000 }); return; }
     toast.error('Por favor, completa todos los campos obligatorios', { duration: 4000 });
   };
 
@@ -96,7 +100,7 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
                 <label className="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
                 <input 
                   type="text" 
-                  {...register('phoneNumber', { required: true })}
+                  {...register('phoneNumber', reglaTelefono)} onKeyDown={bloquearNoDigitos}
                   className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
                   placeholder="7777-7777"
                 />
