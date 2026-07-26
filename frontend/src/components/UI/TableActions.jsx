@@ -16,7 +16,7 @@ const ActionBtn = styled.button`
   align-items: center;
   justify-content: center;
   color: ${({ $danger }) => ($danger ? '#ef4444' : '#6b7280')};
-  transition: all 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   padding: 6px;
   border-radius: 6px;
 

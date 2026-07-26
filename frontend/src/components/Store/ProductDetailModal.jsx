@@ -19,7 +19,7 @@ const Overlay = styled.div`
   justify-content: center;
   overflow-y: auto;
   padding: 0;
-  animation: ${fadeIn} 0.2s ease;
+  animation: ${fadeIn} 0.2s var(--ease-out);
 `;
 
 /* Full-page modal like the design */
@@ -27,7 +27,7 @@ const Page = styled.div`
   background: white;
   width: 100%;
   min-height: 100vh;
-  animation: ${slideUp} 0.25s ease;
+  animation: ${slideUp} 0.22s var(--ease-out);
 `;
 
 /* ── Top bar ── */

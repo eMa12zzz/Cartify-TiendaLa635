@@ -11,6 +11,7 @@ import {
   Blocks,
   Award,
   Megaphone,
+  Printer,
   Settings
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -32,6 +33,7 @@ const Sidebar = () => {
     { name: 'Módulos', path: '/modulos', icon: Blocks },
     { name: 'Fidelidad', path: '/fidelidad', icon: Award },
     { name: 'Promociones', path: '/promociones', icon: Megaphone },
+    { name: 'Impresiones', path: '/servicios-impresion', icon: Printer },
   ];
 
   return (

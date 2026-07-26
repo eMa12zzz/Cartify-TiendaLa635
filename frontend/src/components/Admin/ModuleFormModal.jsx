@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
 
 const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
   const { register, handleSubmit, reset, watch } = useForm();
@@ -42,7 +43,7 @@ const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
       >
         <div className="bg-[#9C6026] text-white p-6">

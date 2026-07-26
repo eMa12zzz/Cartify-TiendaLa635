@@ -10,7 +10,7 @@ const Card = styled.div`
   overflow: hidden;
   cursor: pointer;
   position: relative;
-  transition: all 0.25s ease;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   border: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
@@ -62,7 +62,7 @@ const WishlistButton = styled.button`
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  transition: all 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   z-index: 2;
   color: ${props => props.$liked ? '#ff4d6d' : '#ccc'};
 
@@ -159,7 +159,7 @@ const AddButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   flex-shrink: 0;
   line-height: 1;
 
@@ -173,7 +173,8 @@ const AddButton = styled.button`
   }
 `;
 
-const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito }) => {
+// Acepta className/style para que la grilla pueda escalonar su entrada.
+const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, style }) => {
   const [liked, setLiked] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -196,7 +197,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito }) => {
   };
 
   return (
-    <Card onClick={handleClickCard}>
+    <Card onClick={handleClickCard} className={className} style={style}>
       <ImageWrapper>
         {producto.promo && (
           <BestSellerBadge>

@@ -52,7 +52,7 @@ const LogoutBtn = styled.button`
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
-  transition: all 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
 
   &:hover {
     background: #ff4d4f;

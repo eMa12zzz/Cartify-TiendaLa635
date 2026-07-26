@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle, Trash2, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
 
 const GenericConfirmModal = ({ isOpen, onClose, onConfirm, data, actionType, entityName }) => {
 
@@ -21,7 +22,7 @@ const GenericConfirmModal = ({ isOpen, onClose, onConfirm, data, actionType, ent
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={modalTransition}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
       >
         

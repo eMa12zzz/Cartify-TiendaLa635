@@ -35,4 +35,12 @@ export const orderService = {
     const response = await api.put(`/order/${id}/status`, { status });
     return response.data;
   },
+
+  // Crear un pedido de IMPRESIÓN (lleva archivo → FormData).
+  createPrintOrder: async (formData) => {
+    const response = await api.post('/order/print', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };

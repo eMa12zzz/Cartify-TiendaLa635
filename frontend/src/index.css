@@ -1,5 +1,68 @@
 @import "tailwindcss";
 
+/*
+  ==========================================
+  TOKENS DE MOVIMIENTO (vara de Emil)
+  ==========================================
+  Las mismas curvas y duraciones que usa motion.js, para el CSS y los
+  styled-components. Si hay que ajustar el "feel" de la app, se toca aquí.
+*/
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 160ms;
+  --dur-popover: 180ms;
+  --dur-modal: 220ms;
+  --dur-drawer: 280ms;
+}
+
+/*
+  Hover con movimiento SOLO donde hay mouse de verdad. En pantallas táctiles
+  (el kiosco), un toque dispara un "hover" falso que deja la tarjeta pegada.
+*/
+.hover-scale,
+.hover-lift {
+  transition: transform var(--dur-press) var(--ease-out),
+              box-shadow var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out),
+              background-color var(--dur-press) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hover-scale:hover { transform: scale(1.02); }
+  .hover-lift:hover  { transform: translateY(-4px); }
+}
+
+/* Feedback al presionar: sutil, como algo físico que se hunde */
+.press { transition: transform var(--dur-press) var(--ease-out); }
+.press:active { transform: scale(0.98); }
+
+/* Entrada escalonada de tarjetas en grillas (se usa con --i) */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.card-in {
+  animation: cardIn 260ms var(--ease-out) backwards;
+  animation-delay: calc(min(var(--i, 0), 8) * 45ms);
+}
+
+/*
+  ACCESIBILIDAD — "menos movimiento".
+  Si la persona lo pidió en su sistema (tercera edad, migrañas, mareo),
+  quitamos los desplazamientos pero dejamos los cambios de color/opacidad,
+  que sí ayudan a entender qué pasó.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+  }
+  .card-in { animation: none; }
+  .hover-scale:hover, .hover-lift:hover { transform: none !important; }
+}
+
 /* 
   ==========================================
   GLOBAL THEME OVERRIDES FOR ADMIN LAYOUT

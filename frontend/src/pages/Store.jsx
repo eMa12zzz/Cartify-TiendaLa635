@@ -159,7 +159,7 @@ const CatBtn = styled.button`
   font-size: 14px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   flex-shrink: 0;
   &:hover { background: ${BROWN_LIGHT}; color: ${BROWN}; }
 `;
@@ -285,7 +285,7 @@ const FilterBtn = styled.button`
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   &:hover { border-color: ${BROWN}; color: ${BROWN}; background: ${BROWN_LIGHT}; }
 `;
 
@@ -674,9 +674,11 @@ const Store = () => {
             </EmptyState>
           ) : (
             <ProductsGrid>
-              {productosFiltrados.map(producto => (
+              {productosFiltrados.map((producto, i) => (
                 <ProductCard
                   key={producto.id}
+                  className="card-in"
+                  style={{ '--i': i }}
                   producto={producto}
                   onVerDetalle={handleAbrirDetalle}
                   onAgregarAlCarrito={agregarAlCarrito}
