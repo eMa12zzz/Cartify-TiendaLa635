@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store,
@@ -37,10 +38,23 @@ const ClienteLayout = () => {
 
   const displayName = user?.userName || user?.fullName || 'Cliente';
   const initials = displayName.substring(0, 1).toUpperCase();
+  const [confirmarSalida, setConfirmarSalida] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  /*
+   * Sombreado al pasar el mouse. Se hace tocando el estilo del elemento en vez
+   * de con estado de React porque los colores vienen del tema elegido y no de
+   * clases de Tailwind: un :hover en CSS no sabría qué color usar, y meter
+   * estado por cada fila del menú re-renderiza el sidebar entero al mover el
+   * mouse.
+   */
+  const sombrear = (e) => { e.currentTarget.style.backgroundColor = c.primaryLight; };
+  const desSombrear = (activo) => (e) => {
+    e.currentTarget.style.backgroundColor = activo ? c.primaryLight : 'transparent';
   };
 
   return (
@@ -113,6 +127,8 @@ const ClienteLayout = () => {
                     color: active ? c.primary : c.textSecondary,
                     backgroundColor: active ? c.primaryLight : 'transparent',
                   }}
+                  onMouseEnter={sombrear}
+                  onMouseLeave={desSombrear(active)}
                 >
                   <Icon className="w-4 h-4" /> {item.label}
                 </Link>
@@ -123,10 +139,14 @@ const ClienteLayout = () => {
           <hr className="my-3" style={{ borderColor: c.sidebarBorder }} />
 
           <div className="flex flex-col gap-0.5">
+            {/* Cerrar sesión pide confirmación: es la única acción del menú
+                que te saca de la aplicación. */}
             <button
-              onClick={handleLogout}
+              onClick={() => setConfirmarSalida(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left"
-              style={{ color: c.textSecondary }}
+              style={{ color: c.textSecondary, backgroundColor: 'transparent' }}
+              onMouseEnter={sombrear}
+              onMouseLeave={desSombrear(false)}
             >
               <LogOut className="w-4 h-4" /> Cerrar sesión
             </button>
@@ -162,6 +182,59 @@ const ClienteLayout = () => {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Confirmación de cierre de sesión */}
+      <AnimatePresence>
+        {confirmarSalida && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              className="absolute inset-0 bg-black/45"
+              onClick={() => setConfirmarSalida(false)}
+            />
+            <motion.div
+              initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+              className="relative z-10 w-full max-w-sm rounded-2xl p-6 shadow-xl"
+              style={{ backgroundColor: c.cardBg || '#fff', color: c.textPrimary }}
+              role="dialog"
+              aria-modal="true"
+            >
+              <div
+                className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                style={{ backgroundColor: c.primaryLight, color: c.primary }}
+              >
+                <LogOut className="h-5 w-5" />
+              </div>
+              <h2 className="mb-1 text-center text-lg font-bold">¿Cerrar sesión?</h2>
+              <p className="mb-6 text-center text-sm" style={{ color: c.textSecondary }}>
+                Tendrá que volver a ingresar su correo y contraseña para entrar de nuevo.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmarSalida(false)}
+                  className="press flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-colors"
+                  style={{ backgroundColor: c.primaryLight, color: c.textPrimary }}
+                >
+                  Quedarme
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="press flex-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                  style={{ backgroundColor: c.primary }}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
