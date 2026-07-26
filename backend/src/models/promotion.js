@@ -11,7 +11,8 @@ import mongoose, { Schema, model } from "mongoose";
 */
 const promoItemSchema = new Schema(
   {
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products" },
+    // ref = nombre del MODELO registrado ('productModel'), no el de la colección.
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "productModel" },
     discount: { type: Number, default: 0 },   // % (tipo 'descuento')
     fixedPrice: { type: Number },              // $ (tipo 'precio_fijo')
   },
@@ -33,6 +34,13 @@ const promotionSchema = new mongoose.Schema(
     buyQty: { type: Number, default: 2 }, // NxM: compra N
     payQty: { type: Number, default: 1 }, // NxM: paga M
     isActive: { type: Boolean, default: true },
+    /*
+     * ¿Se anuncia en la tienda con banner?
+     * Si va en false, la promo SIGUE aplicando su descuento en los precios y en
+     * el carrito, pero no aparece en el carrusel. Sirve para descuentos
+     * silenciosos (liquidar algo sin publicarlo).
+     */
+    showBanner: { type: Boolean, default: true },
   },
   { timestamps: true, strict: false }
 );
