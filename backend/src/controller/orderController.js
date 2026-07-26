@@ -4,26 +4,14 @@ import loyaltyConfigModel from "../models/loyaltyConfig.js";
 import loyaltyLedgerModel from "../models/loyaltyLedger.js";
 import printServiceModel from "../models/printService.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
+import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 
 const orderController = {};
-
-/*
- * Helper interno: obtiene la config de puntos y, si todavía no existe ninguna,
- * la crea con los valores por defecto del schema (1 punto/$1, vence a 3 meses).
- * Así nunca truena por "config no encontrada".
- */
-const getLoyaltyConfig = async () => {
-  let config = await loyaltyConfigModel.findOne();
-  if (!config) {
-    config = await loyaltyConfigModel.create({});
-  }
-  return config;
-};
 
 // INSERT — Crear un pedido (checkout). Aquí es donde se otorgan los puntos.
 orderController.createOrder = async (req, res) => {
   try {
-    const { clientId, items, paymentMethod, channel } = req.body;
+    const { clientId, items, paymentMethod, channel, pointsToRedeem } = req.body;
 
     // Validación básica: sin cliente o sin productos no hay pedido.
     if (!clientId || !items || items.length === 0) {
@@ -32,13 +20,36 @@ orderController.createOrder = async (req, res) => {
       });
     }
 
-    // El total lo calculamos aquí, en el backend. Nunca confiamos en el total
-    // que mande el front (podría venir manipulado).
-    const total = items.reduce((acc, it) => acc + (it.price * it.amount), 0);
+    // El subtotal lo calculamos aquí, en el backend. Nunca confiamos en el
+    // total que mande el front (podría venir manipulado).
+    const subtotal = Number(
+      items.reduce((acc, it) => acc + (it.price * it.amount), 0).toFixed(2)
+    );
 
-    // Puntos de fidelidad según la config editable. Si el programa está
-    // apagado, no se otorgan puntos.
     const config = await getLoyaltyConfig();
+
+    // ── CANJE DE PUNTOS ──
+    // Nos protegemos de tres cosas: que no canjee más de lo que tiene, que no
+    // canjee más de lo que cuesta la compra, y que respete el mínimo.
+    let pointsRedeemed = 0;
+    let discount = 0;
+    const pedidos = Number(pointsToRedeem) || 0;
+
+    if (pedidos > 0 && config.isActive) {
+      const disponibles = await puntosDisponibles(clientId);
+      const tasa = config.pointsPerDollarRedeem || 100;
+      const topePorCompra = Math.floor(subtotal * tasa); // no regalar más que el total
+      const posibles = Math.min(pedidos, disponibles, topePorCompra);
+
+      if (posibles >= (config.minRedeemPoints || 0)) {
+        pointsRedeemed = await consumirPuntos(clientId, posibles);
+        discount = Number((pointsRedeemed / tasa).toFixed(2));
+      }
+    }
+
+    const total = Number((subtotal - discount).toFixed(2));
+
+    // Los puntos se ganan sobre lo que REALMENTE se pagó (no sobre el subtotal).
     const pointsEarned = config.isActive
       ? Math.floor(total * config.pointsPerDollar)
       : 0;
@@ -46,6 +57,9 @@ orderController.createOrder = async (req, res) => {
     const newOrder = new orderModel({
       clientId,
       items,
+      subtotal,
+      discount,
+      pointsRedeemed,
       total,
       paymentMethod: paymentMethod || "efectivo",
       channel: channel || "web",
@@ -53,6 +67,13 @@ orderController.createOrder = async (req, res) => {
     });
 
     await newOrder.save();
+
+    // Si canjeó, le bajamos ese saldo al contador del cliente.
+    if (pointsRedeemed > 0) {
+      await clientModel.findByIdAndUpdate(clientId, {
+        $inc: { loyaltyPoints: -pointsRedeemed }
+      });
+    }
 
     // Le sumamos los puntos ganados al cliente ($inc = incremento atómico).
     // client.loyaltyPoints queda como "total acumulado"; el saldo DISPONIBLE
@@ -80,6 +101,8 @@ orderController.createOrder = async (req, res) => {
       message: "Pedido creado",
       order: newOrder,
       pointsEarned,
+      pointsRedeemed,
+      discount,
     });
 
   } catch (error) {

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useAuth } from '../../hooks/useAuth';
+import { useLoyalty } from '../../hooks/useLoyalty';
+import { orderService } from '../../api/orderService';
 
 const BROWN = '#8B5A2B';
 const BROWN_DARK = '#5a3a1a';
@@ -843,12 +847,60 @@ const ShoppingCart = ({
   const subtotal = total;
   const totalFinal = subtotal + ENVIO + SERVICIO;
 
-  const handlePlaceOrder = () => {
+  // ── Canje de puntos ──
+  const { user } = useAuth();
+  const { points: puntosDisponibles, redeemRate, minRedeem } = useLoyalty();
+  const [usarPuntos, setUsarPuntos] = useState(false);
+
+  const puedeCanjear = puntosDisponibles >= minRedeem;
+  // No dejamos canjear más de lo que valen los productos.
+  const maxPuntosUtiles = Math.floor(subtotal * redeemRate);
+  const puntosAUsar = usarPuntos && puedeCanjear ? Math.min(puntosDisponibles, maxPuntosUtiles) : 0;
+  const descuento = Number((puntosAUsar / (redeemRate || 100)).toFixed(2));
+  const totalAPagar = Math.max(0, Number((totalFinal - descuento).toFixed(2)));
+
+  /*
+   * Precio efectivo por unidad. Para las promos NxM (2x1) el cliente paga menos
+   * unidades de las que lleva, así que repartimos el total de la línea entre la
+   * cantidad — de esa forma el backend calcula el mismo total que ve en pantalla.
+   */
+  const precioEfectivo = (item) => {
+    if (item.promo?.type === 'nxm') {
+      const b = item.promo.buyQty || 2;
+      const m = item.promo.payQty || 1;
+      const grupos = Math.floor(item.cantidad / b);
+      const pagados = grupos * m + (item.cantidad % b);
+      return Number(((item.precio * pagados) / item.cantidad).toFixed(4));
+    }
+    return item.precio;
+  };
+
+  // Crea el pedido REAL. (El cobro con pasarela todavía no se conecta.)
+  const handlePlaceOrder = async () => {
+    if (!user?.id) {
+      toast.error('Inicia sesión como cliente para completar tu pedido');
+      return;
+    }
     setProcesando(true);
-    setTimeout(() => {
-      setProcesando(false);
+    try {
+      await orderService.createOrder({
+        clientId: user.id,
+        items: items.map((i) => ({
+          productId: i.id,
+          name: i.nombre,
+          price: precioEfectivo(i),
+          amount: i.cantidad,
+        })),
+        paymentMethod: 'efectivo',
+        channel: 'web',
+        pointsToRedeem: puntosAUsar,
+      });
       setView('confirmation');
-    }, 1000);
+    } catch (error) {
+      console.error(error); // el interceptor de Axios ya avisa al usuario
+    } finally {
+      setProcesando(false);
+    }
   };
 
   const handleConfirmClose = () => {
@@ -1035,14 +1087,41 @@ const ShoppingCart = ({
                 <span>${totalFinal.toFixed(2)}</span>
               </TotalBig>
 
-              <CouponRow>
-                <CouponBtn>+ Agregar cupón</CouponBtn>
-              </CouponRow>
+              {/* ── Usar puntos de fidelidad ── */}
+              {puntosDisponibles > 0 && (
+                <div style={{ padding: '12px 0', borderTop: '1px solid #f0f0f0', marginTop: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: puedeCanjear ? 'pointer' : 'not-allowed', opacity: puedeCanjear ? 1 : 0.6 }}>
+                    <input
+                      type="checkbox"
+                      checked={usarPuntos}
+                      disabled={!puedeCanjear}
+                      onChange={(e) => setUsarPuntos(e.target.checked)}
+                      style={{ marginTop: 3 }}
+                    />
+                    <span style={{ fontSize: 13, color: '#333', lineHeight: 1.4 }}>
+                      <strong>Usar mis puntos</strong><br />
+                      <span style={{ color: '#777' }}>
+                        Tienes {puntosDisponibles} puntos
+                        {puedeCanjear
+                          ? ` = $${(puntosDisponibles / (redeemRate || 100)).toFixed(2)}`
+                          : ` (necesitas ${minRedeem} para canjear)`}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {descuento > 0 && (
+                <SummaryCardRow style={{ color: '#16a34a', fontWeight: 600 }}>
+                  <span>Descuento por puntos</span>
+                  <span>−${descuento.toFixed(2)}</span>
+                </SummaryCardRow>
+              )}
 
               <Divider />
               <TotalBig>
                 <span>Total</span>
-                <span style={{ fontSize: 22 }}>${totalFinal.toFixed(2)}</span>
+                <span style={{ fontSize: 22 }}>${totalAPagar.toFixed(2)}</span>
               </TotalBig>
 
               <p style={{ fontSize: 11, color: '#aaa', marginTop: 12, lineHeight: 1.5 }}>
