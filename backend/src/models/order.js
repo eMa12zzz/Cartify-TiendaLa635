@@ -32,6 +32,9 @@ const orderItemSchema = new Schema({
 const orderSchema = new Schema({
     clientId: { type: Schema.Types.ObjectId, ref: 'clientModel', required: true },
     items: { type: [orderItemSchema], required: true },
+    subtotal: { type: Number },            // antes del descuento por puntos
+    discount: { type: Number, default: 0 }, // descuento aplicado al canjear puntos
+    pointsRedeemed: { type: Number, default: 0 },
     total: { type: Number, required: true },
     status: {
         type: String,

@@ -21,12 +21,14 @@ loyaltyConfigController.getConfig = async (req, res) => {
 // Usa upsert: si el documento singleton no existe todavía, lo crea.
 loyaltyConfigController.updateConfig = async (req, res) => {
   try {
-    const { pointsPerDollar, expiryMonths, isActive } = req.body;
+    const { pointsPerDollar, expiryMonths, pointsPerDollarRedeem, minRedeemPoints, isActive } = req.body;
 
     // Solo tocamos los campos que realmente vengan en la petición.
     const updates = {};
     if (pointsPerDollar !== undefined) updates.pointsPerDollar = pointsPerDollar;
     if (expiryMonths !== undefined) updates.expiryMonths = expiryMonths;
+    if (pointsPerDollarRedeem !== undefined) updates.pointsPerDollarRedeem = pointsPerDollarRedeem;
+    if (minRedeemPoints !== undefined) updates.minRedeemPoints = minRedeemPoints;
     if (isActive !== undefined) updates.isActive = isActive;
 
     const config = await loyaltyConfigModel.findOneAndUpdate(

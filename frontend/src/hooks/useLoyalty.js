@@ -47,5 +47,10 @@ export const useLoyalty = () => {
     loading,
     pointsPerDollar: config?.pointsPerDollar ?? 1,
     expiryMonths: config?.expiryMonths ?? 3,
+    // Canje: cuántos puntos valen $1 y el mínimo para poder usarlos.
+    redeemRate: config?.pointsPerDollarRedeem ?? 100,
+    minRedeem: config?.minRedeemPoints ?? 100,
+    // Cuánto dinero valen los puntos disponibles ahora mismo.
+    valorEnDinero: Number((summary.available / (config?.pointsPerDollarRedeem ?? 100)).toFixed(2)),
   };
 };
