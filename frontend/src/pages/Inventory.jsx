@@ -35,11 +35,23 @@ const Inventory = () => {
   const [stockFilter, setStockFilter] = useState('Todos');
   const [orden, setOrden] = useState('nombre'); // 'nombre' | 'stock' | 'precio'
 
-  const STOCK_BAJO = 10; // mismo umbral que usa el dashboard
+  /*
+   * "Stock bajo" es relativo al máximo de CADA producto, no un número fijo:
+   * que queden 10 refrescos de un máximo de 1000 es crítico, pero 10 televisores
+   * de un máximo de 12 es normal. Si el producto no tiene máximo, usamos 10.
+   */
+  const RATIO_BAJO = 0.25;
+  const STOCK_BAJO_ABS = 10;
+  const esBajo = (p) => {
+    // Number() porque algunos productos guardaron estos campos como texto.
+    const stock = Number(p.stock) || 0;
+    const max = Number(p.maxQuantity) || 0;
+    return stock > 0 && (max > 0 ? stock <= max * RATIO_BAJO : stock <= STOCK_BAJO_ABS);
+  };
 
   // Resumen rápido del inventario: lo que el encargado necesita ver de un vistazo.
   const agotados = products.filter((p) => !p.stock).length;
-  const bajos = products.filter((p) => p.stock > 0 && p.stock <= STOCK_BAJO).length;
+  const bajos = products.filter(esBajo).length;
   const valorInventario = products.reduce((a, p) => a + (p.stock || 0) * (p.salePrice || 0), 0);
 
   const filteredProducts = products
@@ -51,7 +63,7 @@ const Inventory = () => {
 
       if (stockFilter === 'Todos') return matchesSearch;
       if (stockFilter === 'ConStock') return matchesSearch && (product.stock > 0);
-      if (stockFilter === 'StockBajo') return matchesSearch && product.stock > 0 && product.stock <= STOCK_BAJO;
+      if (stockFilter === 'StockBajo') return matchesSearch && esBajo(product);
       if (stockFilter === 'Agotados') return matchesSearch && (!product.stock || product.stock === 0);
 
       return matchesSearch;

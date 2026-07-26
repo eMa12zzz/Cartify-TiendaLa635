@@ -10,4 +10,10 @@ export const dashboardService = {
     const response = await api.get('/dashboard/summary', { params: { periodo } });
     return response.data;
   },
+
+  // Solo la gráfica: se usa al cambiar Semana/Mes/Año, para no recargar todo.
+  getChart: async (periodo = 'mes') => {
+    const response = await api.get('/dashboard/chart', { params: { periodo } });
+    return response.data;
+  },
 };
