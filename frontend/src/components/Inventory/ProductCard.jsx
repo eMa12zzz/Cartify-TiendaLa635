@@ -12,7 +12,7 @@ const ProductCard = ({ product, onEdit, onDelete, onView }) => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1], delay: Math.min(index, 8) * 0.045 }}
       className="flex bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover-lift"
     >
       <div className="w-1/3 bg-[#9C6026] text-white p-4 flex flex-col items-center justify-between relative rounded-l-xl">

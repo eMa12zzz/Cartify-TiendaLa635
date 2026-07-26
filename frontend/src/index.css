@@ -187,4 +187,30 @@
   /* Gray button texts */
   & .bg-gray-200 { background-color: var(--theme-card-border) !important; color: var(--theme-text-primary) !important; }
   & .bg-gray-300 { background-color: var(--theme-card-border) !important; color: var(--theme-text-primary) !important; }
+
+  /*
+    Detalles que antes se quedaban grises con cualquier paleta:
+    textos e iconos apagados, casillas, selects de archivo y bordes de tabla.
+  */
+  & .text-gray-400,
+  & .text-gray-300 { color: var(--theme-text-muted) !important; }
+
+  & input[type="checkbox"],
+  & input[type="radio"] { accent-color: var(--theme-primary); }
+
+  & input[type="file"] { color: var(--theme-text-secondary) !important; }
+  & input[type="file"]::file-selector-button {
+    background-color: var(--theme-primary-light);
+    color: var(--theme-primary);
+    border: 1px solid var(--theme-card-border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin-right: 10px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  /* Divisores y bordes sueltos */
+  & .divide-gray-100 > * + * { border-color: var(--theme-card-border) !important; }
+  & .border-gray-50 { border-color: var(--theme-card-border) !important; }
 }
