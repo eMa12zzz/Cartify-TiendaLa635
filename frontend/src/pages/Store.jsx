@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Search, Mic, ShoppingBag, User, LogOut, Flame, Milk, Cookie, Citrus } from 'lucide-react';
+import { Search, Mic, ShoppingBag, User, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
@@ -9,6 +9,7 @@ import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
 import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
+import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#B46C30';
@@ -18,7 +19,7 @@ const BROWN_LIGHT = '#F3E7D8';
 /* ─── Layout ─── */
 const Container = styled.div`
   min-height: 100vh;
-  background: #f6f6f6;
+  background: var(--banda);
   font-family: var(--fuente);
 `;
 
@@ -213,83 +214,6 @@ const CatBtn = styled.button`
   }
 `;
 
-/* ─── Hero Banner ─── */
-const BannerSection = styled.div`
-  padding: 20px 28px 0;
-  max-width: 1400px;
-  margin: 0 auto;
-`;
-
-const BannersGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
-  gap: 14px;
-  @media (max-width: 900px) { grid-template-columns: 1fr; }
-`;
-
-const BannerCard = styled.div`
-  border-radius: 16px;
-  overflow: hidden;
-  height: 180px;
-  position: relative;
-  cursor: pointer;
-  background: ${props => props.$bg || '#f0e6d3'};
-  display: flex;
-  align-items: center;
-  padding: 24px;
-  transition: transform 0.2s;
-  &:hover { transform: scale(1.01); }
-`;
-
-const BannerContent = styled.div`z-index: 1; flex: 1;`;
-
-const BannerTag = styled.div`
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: ${props => props.$color || BROWN};
-  margin-bottom: 6px;
-`;
-
-const BannerTitle = styled.h3`
-  font-size: 22px;
-  font-weight: 800;
-  color: ${props => props.$color || '#111'};
-  margin: 0 0 6px;
-  line-height: 1.2;
-`;
-
-const BannerSub = styled.p`
-  font-size: 13px;
-  color: ${props => props.$color || '#666'};
-  margin: 0 0 12px;
-`;
-
-const BannerBtn = styled.button`
-  background: ${props => props.$bg || BROWN};
-  color: ${props => props.$color || 'white'};
-  border: none;
-  padding: 8px 16px;
-  border-radius: 30px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-/* Antes tenía un emoji de 72px; ahora lleva un icono de línea de lucide. */
-const BannerEmoji = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.45;
-  margin-left: 8px;
-  flex-shrink: 0;
-`;
-
 /* ─── Content ─── */
 const Content = styled.div`
   padding: 24px 28px 40px;
@@ -304,16 +228,50 @@ const SectionHeader = styled.div`
   margin-bottom: 18px;
 `;
 
+/* En el diseño los títulos de sección son grandes y pesados. */
 const SectionTitle = styled.h2`
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
-  color: #111;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const SectionCount = styled.span`
   font-size: 13px;
-  color: #aaa;
+  color: var(--tinta-tenue);
+`;
+
+/*
+ * Flechas circulares a la derecha del título, como en el diseño. Por ahora
+ * desplazan la fila de tarjetas; cuando la sección no se pueda mover más,
+ * la flecha se apaga sola.
+ */
+const SectionNav = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+`;
+
+const NavCircle = styled.button`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--linea);
+  background: var(--papel);
+  color: var(--tinta);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out),
+              color var(--dur-press) var(--ease-out);
+  &:hover:not(:disabled) { border-color: ${BROWN}; color: ${BROWN}; background: var(--marca-50); }
+  &:disabled { opacity: 0.35; cursor: default; }
 `;
 
 /* ─── Filter bar with dropdown ─── */
@@ -437,11 +395,26 @@ const LiveDot = styled.span`
   }
 `;
 
+/*
+ * En el diseño esta fila NO es una grilla: se corre de lado con las flechas.
+ * scroll-snap hace que siempre quede una tarjeta alineada al borde, sin cortes
+ * a media tarjeta.
+ */
 const TrendingGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex;
   gap: 14px;
   margin-top: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 2px;
+  padding-bottom: 4px;
+  &::-webkit-scrollbar { display: none; }
+  scrollbar-width: none;
+
+  > * {
+    flex: 0 0 clamp(160px, 21%, 214px);
+    scroll-snap-align: start;
+  }
 `;
 
 /* ─── Products Grid ─── */
@@ -483,6 +456,9 @@ const Store = () => {
     promoSeleccionada,
     setPromoSeleccionada,
   } = useStore();
+
+  // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
+  const destacados = useFilaDeslizable();
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
@@ -582,9 +558,6 @@ const Store = () => {
         </HeaderRight>
       </Header>
 
-      {/* Carrusel 3D de promociones — lo primero que ve el cliente al entrar */}
-      <PromoBanners onSelectPromo={(promo) => { setPromoSeleccionada(promo); setCategoriaSeleccionada(null); setTerminoBusqueda(''); }} />
-
       {/* ── Category Bar ── */}
       <CategoryBar>
         <CatBtn $active={!categoriaSeleccionada} onClick={() => setCategoriaSeleccionada(null)}>
@@ -616,45 +589,20 @@ const Store = () => {
         </div>
       )}
 
-      {/* ── Hero Banners ── */}
+      {/*
+        Promociones reales de la tienda, en el lugar que ocupaban los tres
+        banners de adorno. Aquellos apuntaban a categorías inventadas (Frutas,
+        Lácteos, Snacks) que no existen en la base, así que no llevaban a
+        ningún lado; estas sí filtran a sus productos.
+      */}
       {showTrending && (
-        <BannerSection>
-          <BannersGrid>
-            <BannerCard $bg="linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)">
-              <BannerContent>
-                <BannerTag $color={BROWN}><Flame size={13} strokeWidth={2.4} /> Oferta especial</BannerTag>
-                <BannerTitle $color="#111">Frutas frescas<br/>del día</BannerTitle>
-                <BannerSub $color="#666">Directo del mercado a tu mesa</BannerSub>
-                <BannerBtn $bg={BROWN} onClick={() => setCategoriaSeleccionada('Frutas')}>
-                  Ver frutas →
-                </BannerBtn>
-              </BannerContent>
-              <BannerEmoji><Citrus size={62} strokeWidth={1.4} /></BannerEmoji>
-            </BannerCard>
-
-            <BannerCard $bg="linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)">
-              <BannerContent>
-                <BannerTag $color="#2e7d32"><Milk size={13} strokeWidth={2.4} /> Lácteos</BannerTag>
-                <BannerTitle $color="#1b5e20" style={{ fontSize: 18 }}>Lácteos<br/>frescos</BannerTitle>
-                <BannerBtn $bg="#2e7d32" onClick={() => setCategoriaSeleccionada('Lácteos')}>
-                  Ver más →
-                </BannerBtn>
-              </BannerContent>
-              <BannerEmoji><Milk size={52} strokeWidth={1.4} /></BannerEmoji>
-            </BannerCard>
-
-            <BannerCard $bg="linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%)">
-              <BannerContent>
-                <BannerTag $color="#c62828"><Cookie size={13} strokeWidth={2.4} /> Snacks</BannerTag>
-                <BannerTitle $color="#880e4f" style={{ fontSize: 18 }}>Snacks<br/>favoritos</BannerTitle>
-                <BannerBtn $bg="#c62828" onClick={() => setCategoriaSeleccionada('Snacks')}>
-                  Ver más →
-                </BannerBtn>
-              </BannerContent>
-              <BannerEmoji><Cookie size={52} strokeWidth={1.4} /></BannerEmoji>
-            </BannerCard>
-          </BannersGrid>
-        </BannerSection>
+        <PromoBanners
+          onSelectPromo={(promo) => {
+            setPromoSeleccionada(promo);
+            setCategoriaSeleccionada(null);
+            setTerminoBusqueda('');
+          }}
+        />
       )}
 
       <Content>
@@ -666,9 +614,19 @@ const Store = () => {
                 <LiveDot />
                 <SectionTitle>Más vendidos</SectionTitle>
               </TrendingBadge>
-              <SectionCount>{productosDestacados.length} productos</SectionCount>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <SectionCount>{productosDestacados.length} productos</SectionCount>
+                <SectionNav>
+                  <NavCircle onClick={destacados.izquierda} disabled={!destacados.puedeIzq} aria-label="Ver anteriores">
+                    <ChevronLeft size={19} strokeWidth={2.2} />
+                  </NavCircle>
+                  <NavCircle onClick={destacados.derecha} disabled={!destacados.puedeDer} aria-label="Ver siguientes">
+                    <ChevronRight size={19} strokeWidth={2.2} />
+                  </NavCircle>
+                </SectionNav>
+              </div>
             </TrendingHeader>
-            <TrendingGrid>
+            <TrendingGrid ref={destacados.fila}>
               {productosDestacados.map(producto => (
                 <ProductCard
                   key={producto.id}
