@@ -70,6 +70,9 @@ const mapearProducto = (p, mapaPromo = {}) => {
     marca: p.brandId?.name || '',
     categoria: p.typeId?.type || 'General',
     modulo: p.moduleId?.name || '',
+    // El id además del nombre: filtrar por pasillo con el nombre se rompía en
+    // cuanto alguien le corregía una tilde al módulo.
+    moduloId: p.moduleId?._id || p.moduleId || null,
     precio,
     precioAnterior,
     promo: promoInfo,
@@ -85,8 +88,13 @@ const mapearProducto = (p, mapaPromo = {}) => {
   };
 };
 
-export const useStore = () => {
+export const useStore = ({ moduloInicial = null } = {}) => {
   const [productos, setProductos] = useState([]);
+  /*
+   * El pasillo en el que está parado el cliente. null = toda la tienda.
+   * Viene de la pantalla de servicios (?modulo=) o de las pastillas de arriba.
+   */
+  const [moduloSeleccionado, setModuloSeleccionado] = useState(moduloInicial);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [carrito, setCarrito] = useState([]);
@@ -128,13 +136,28 @@ export const useStore = () => {
     return () => window.removeEventListener('keydown', alTeclear);
   }, [promoDetalle]);
 
+  /*
+   * El pasillo manda sobre todo lo demás: si el cliente entró a la Panadería,
+   * las categorías, los destacados y la búsqueda son de la panadería. Por eso
+   * el filtro de módulo se aplica ANTES que cualquier otro y todo lo demás
+   * cuelga de aquí.
+   */
+  const productosDelPasillo = useMemo(() => {
+    if (!moduloSeleccionado) return productos;
+    return productos.filter((p) => String(p.moduloId) === String(moduloSeleccionado));
+  }, [productos, moduloSeleccionado]);
+
+  // Al cambiar de pasillo se suelta la categoría: la de la panadería no existe
+  // en abarrotes, y la lista quedaría vacía sin explicación.
+  useEffect(() => { setCategoriaSeleccionada(null); }, [moduloSeleccionado]);
+
   const categorias = useMemo(() => {
-    const cats = new Set(productos.map((p) => p.categoria).filter(Boolean));
+    const cats = new Set(productosDelPasillo.map((p) => p.categoria).filter(Boolean));
     return Array.from(cats).sort();
-  }, [productos]);
+  }, [productosDelPasillo]);
 
   const productosFiltrados = useMemo(() => {
-    let filtrados = productos;
+    let filtrados = productosDelPasillo;
 
     // Filtro por promo (banner): solo los productos de esa promo.
     if (promoSeleccionada) {
@@ -164,9 +187,9 @@ export const useStore = () => {
     }
 
     return filtrados;
-  }, [productos, categoriaSeleccionada, terminoBusqueda, filtroPrecio, promoSeleccionada]);
+  }, [productosDelPasillo, categoriaSeleccionada, terminoBusqueda, filtroPrecio, promoSeleccionada]);
 
-  const productosDestacados = useMemo(() => productos.slice(0, 6), [productos]);
+  const productosDestacados = useMemo(() => productosDelPasillo.slice(0, 6), [productosDelPasillo]);
 
   /*
    * Los productos de la promo que se está mirando en detalle. Salen del
@@ -253,6 +276,9 @@ export const useStore = () => {
 
   return {
     productos,
+    productosDelPasillo,
+    moduloSeleccionado,
+    setModuloSeleccionado,
     categorias,
     categoriaSeleccionada,
     setCategoriaSeleccionada,

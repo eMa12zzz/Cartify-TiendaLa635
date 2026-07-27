@@ -19,7 +19,7 @@ moduleController.insertModule = async (req, res) => {
     try {
         console.log("Nombre de la DB actual:", mongoose.connection.name);
 
-        const { name, description, isActive } = req.body;
+        const { name, description, isActive, flujo, icono, orden } = req.body;
 
         if (!name || !name.trim()) {
             return res.status(400).json({ message: 'El nombre del módulo es obligatorio' });
@@ -30,7 +30,15 @@ moduleController.insertModule = async (req, res) => {
             return res.status(400).json({ message: 'Ya existe un módulo con ese nombre' });
         }
 
-        const newModule = new moduleModel({ name: name.trim(), description, isActive: isActive !== undefined ? isActive : true });
+        const newModule = new moduleModel({
+            name: name.trim(),
+            description,
+            isActive: isActive !== undefined ? isActive : true,
+            // Por defecto es un pasillo más de la tienda: se compra como todo lo demás.
+            flujo: flujo === 'impresiones' ? 'impresiones' : 'estandar',
+            icono: icono || '',
+            orden: Number(orden) || 0,
+        });
         await newModule.save();
         res.status(201).json({ message: 'Module created successfully' });
     } catch (error) {
@@ -43,16 +51,27 @@ moduleController.insertModule = async (req, res) => {
 moduleController.updateModule = async (req, res) => {
     try {
         //1- Pedimos los datos para actualizar
-        let { name, description, isActive } = req.body;
+        let { name, description, isActive, flujo, icono, orden } = req.body;
 
         //Valores requeridos
         if (!name || !description) {
             return res.status(400).json({ message: 'required fields' });
         }
 
+        const datos = { name, description, isActive };
+
+        /*
+         * El flujo solo se pisa si viene en la petición: un módulo viejo que
+         * todavía no lo tiene no debe volverse 'estandar' porque alguien le
+         * corrigió una tilde a la descripción.
+         */
+        if (flujo !== undefined) datos.flujo = flujo === 'impresiones' ? 'impresiones' : 'estandar';
+        if (icono !== undefined) datos.icono = icono;
+        if (orden !== undefined) datos.orden = Number(orden) || 0;
+
         const updateModule = await moduleModel.findByIdAndUpdate(
             req.params.id,
-            { name, description, isActive },
+            datos,
             { new: true }
         );
         

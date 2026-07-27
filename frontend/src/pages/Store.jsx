@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Search, Mic, ShoppingBag, User, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
@@ -14,6 +14,8 @@ import FilaProductos from '../components/Store/FilaProductos';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
+import { useModulos } from '../hooks/useModulos';
+import { iconoDeModulo } from '../utils/modulos';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#B46C30';
@@ -195,6 +197,60 @@ const CategoryBar = styled.nav`
 
   /* Con muchas categorías deja de centrar y se vuelve deslizable. */
   @media (max-width: 900px) { justify-content: flex-start; }
+`;
+
+/*
+ * ── Barra de pasillos ──
+ * Un nivel por ENCIMA de las categorías: Abarrotes, Panadería, Pupusería son
+ * partes de la misma tienda, no tiendas distintas. Por eso son pestañas y no
+ * pastillas: si se vieran igual que las categorías, nadie entendería cuál
+ * manda sobre cuál.
+ */
+const PasilloBar = styled.nav`
+  background: var(--papel);
+  padding: 0 28px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  overflow-x: auto;
+  height: 52px;
+  align-items: center;
+  &::-webkit-scrollbar { display: none; }
+
+  @media (max-width: 900px) { justify-content: flex-start; }
+`;
+
+const PasilloBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  height: 100%;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: ${props => (props.$active ? 700 : 500)};
+  color: ${props => (props.$active ? BROWN : 'var(--tinta-suave)')};
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  transition: color var(--dur-press) var(--ease-out);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: ${props => (props.$active ? BROWN : 'transparent')};
+    transition: background-color var(--dur-press) var(--ease-out);
+  }
+
+  &:hover { color: ${BROWN}; }
 `;
 
 /* Pill blanca con borde; la activa es café SÓLIDO con texto blanco. */
@@ -444,7 +500,16 @@ const EmptyState = styled.div`
 /* ─── Component ─── */
 const Store = () => {
   const navigate = useNavigate();
+  /*
+   * Si vino desde "Servicios" con ?modulo=, la tienda abre parada en ese
+   * pasillo. Se lee una sola vez, al montar: después manda la barra de arriba.
+   */
+  const [searchParams] = useSearchParams();
+  const { pasillos } = useModulos();
+
   const {
+    moduloSeleccionado,
+    setModuloSeleccionado,
     categorias,
     categoriaSeleccionada,
     setCategoriaSeleccionada,
@@ -453,6 +518,7 @@ const Store = () => {
     productosFiltrados,
     productosDestacados,
     productos, // all products for recommendations
+    productosDelPasillo,
     agregarAlCarrito,
     eliminarDelCarrito,
     actualizarCantidad,
@@ -469,7 +535,7 @@ const Store = () => {
     abrirPromo,
     cerrarPromo,
     verPromoEnTienda,
-  } = useStore();
+  } = useStore({ moduloInicial: searchParams.get('modulo') });
 
   // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
   const destacados = useFilaDeslizable();
@@ -477,7 +543,12 @@ const Store = () => {
   // Sus pedidos alimentan la fila "Volver a comprar"; si es cliente nuevo,
   // esa fila simplemente no se arma.
   const { orders } = useMyOrders();
-  const secciones = useSeccionesTienda({ productos, pedidos: orders });
+  /*
+   * Las secciones automáticas se arman con lo del pasillo, no con todo el
+   * catálogo: estando en Librería, "Nuevos en la tienda" mostraba las papas
+   * de abarrotes y el filtro parecía roto.
+   */
+  const secciones = useSeccionesTienda({ productos: productosDelPasillo, pedidos: orders });
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
@@ -515,6 +586,9 @@ const Store = () => {
   };
 
   const showTrending = !categoriaSeleccionada && !terminoBusqueda && !promoSeleccionada;
+
+  // Nombre del pasillo donde está parado el cliente, para los títulos y avisos.
+  const nombrePasillo = pasillos.find((m) => String(m._id) === String(moduloSeleccionado))?.name || '';
 
   return (
     <Container>
@@ -572,6 +646,31 @@ const Store = () => {
               sin querer, al lado del carrito. */}
         </HeaderRight>
       </Header>
+
+      {/*
+        Los pasillos de la tienda. Solo aparecen si hay más de uno: con una
+        sola estantería, la barra sería una pestaña sola sin nada que elegir.
+      */}
+      {pasillos.length > 1 && (
+        <PasilloBar>
+          <PasilloBtn $active={!moduloSeleccionado} onClick={() => setModuloSeleccionado(null)}>
+            Toda la tienda
+          </PasilloBtn>
+          {pasillos.map((m) => {
+            const Icono = iconoDeModulo(m);
+            return (
+              <PasilloBtn
+                key={m._id}
+                $active={String(moduloSeleccionado) === String(m._id)}
+                onClick={() => setModuloSeleccionado(m._id)}
+              >
+                <Icono size={16} strokeWidth={2} />
+                {m.name}
+              </PasilloBtn>
+            );
+          })}
+        </PasilloBar>
+      )}
 
       {/* ── Category Bar ── */}
       <CategoryBar>
@@ -673,7 +772,7 @@ const Store = () => {
             <SectionTitle>
               {categoriaSeleccionada || terminoBusqueda
                 ? (categoriaSeleccionada || `"${terminoBusqueda}"`)
-                : 'Todos los productos'}
+                : (nombrePasillo ? `Todo en ${nombrePasillo}` : 'Todos los productos')}
               <SectionCount>{productosFiltrados.length} productos</SectionCount>
             </SectionTitle>
 
@@ -703,7 +802,16 @@ const Store = () => {
           {productosFiltrados.length === 0 ? (
             <EmptyState>
               <div className="icon"><Search size={34} strokeWidth={1.6} /></div>
-              No hay productos para "{terminoBusqueda || categoriaSeleccionada}"
+              {/*
+                Un pasillo recién creado está vacío hasta que le carguen
+                productos. Decir 'No hay productos para ""' hacía parecer que
+                la tienda estaba rota.
+              */}
+              {terminoBusqueda || categoriaSeleccionada
+                ? `No hay productos para "${terminoBusqueda || categoriaSeleccionada}"`
+                : nombrePasillo
+                  ? `${nombrePasillo} todavía no tiene productos`
+                  : 'Todavía no hay productos en la tienda'}
             </EmptyState>
           ) : (
             <ProductsGrid>
@@ -744,7 +852,7 @@ const Store = () => {
           producto={productoSeleccionado}
           onClose={handleCerrarDetalle}
           onAgregarAlCarrito={agregarAlCarrito}
-          todosLosProductos={productos || productosFiltrados}
+          todosLosProductos={productosDelPasillo?.length ? productosDelPasillo : productos}
         />
       )}
 
