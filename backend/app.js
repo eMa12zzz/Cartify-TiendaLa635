@@ -25,6 +25,7 @@ import printServiceRoutes from "./src/routes/printService.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import aiRoutes from "./src/routes/ai.js";
 import giftCardRoutes from "./src/routes/giftCard.js";
+import supplierCreditRoutes from "./src/routes/supplierCredit.js";
 import wompiRoutes from "./src/routes/wompi.js"
 import loginAdminRoutes from "./src/routes/loginAdmin.js";
 import logoutAdminRoutes from "./src/routes/logoutAdmin.js";
@@ -67,6 +68,7 @@ app.use("/api/printService", printServiceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/giftCard", giftCardRoutes);
+app.use("/api/credito", supplierCreditRoutes);
 app.use("/api/wompi", wompiRoutes);
 app.use("/api/loginAdmin", loginAdminRoutes);
 app.use("/api/logoutAdmin", logoutAdminRoutes);
