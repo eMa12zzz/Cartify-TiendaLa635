@@ -242,7 +242,9 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
             ? `${producto.promo.buyQty}x${producto.promo.payQty}`
             : producto.promo.type === 'descuento'
               ? `-${producto.promo.discount}%`
-              : 'Oferta'}
+              : producto.promo.type === 'anuncio'
+                ? (producto.promo.etiqueta || 'Nuevo')
+                : 'Oferta'}
         </BestSellerBadge>
       )}
       <WishlistButton

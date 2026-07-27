@@ -88,6 +88,13 @@ export const numeroEnRango = (valor, { min = -Infinity, max = Infinity, entero =
  * Devuelve un aviso, o null si todo deja margen.
  */
 export const avisoVentaBajoCosto = ({ tipo, items, buyQty, payQty, costos = {}, precios = {} }) => {
+  /*
+   * Un anuncio no cambia el precio, así que no puede hacer perder plata. Si el
+   * producto ya se vendía bajo costo, ese es un problema del producto y se
+   * avisa en su formulario, no aquí.
+   */
+  if (tipo === 'anuncio') return null;
+
   const bajoCosto = [];
 
   items.forEach((it) => {
@@ -126,6 +133,9 @@ export const avisoVentaBajoCosto = ({ tipo, items, buyQty, payQty, costos = {}, 
  */
 export const validarPromocion = ({ tipo, items, buyQty, payQty, precios = {} }) => {
   if (!items.length) return 'Agrega al menos un producto';
+
+  // El anuncio solo necesita productos: no hay importes que revisar.
+  if (tipo === 'anuncio') return null;
 
   if (tipo === 'descuento') {
     for (const it of items) {

@@ -19,6 +19,15 @@ export const etiquetaPromo = (promo) => {
   if (!promo) return '';
   const items = Array.isArray(promo.items) ? promo.items : [];
 
+  /*
+   * El anuncio no tiene ahorro que mostrar: su sello es una palabra que la
+   * tienda escribe ("Nuevo", "De la casa"). Sin esto saldría "-0%", que es
+   * peor que no poner nada.
+   */
+  if (promo.type === 'anuncio') {
+    return (promo.etiqueta || '').trim() || 'Nuevo';
+  }
+
   if (promo.type === 'nxm') {
     return `${numero(promo.buyQty) || 2}x${numero(promo.payQty) || 1}`;
   }

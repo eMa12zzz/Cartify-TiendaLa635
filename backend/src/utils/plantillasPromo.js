@@ -77,13 +77,37 @@ const porNxM = (items, buyQty, payQty) => {
   };
 };
 
+/* ---------- Anuncio (sin cambio de precio) ---------- */
+/*
+ * Aquí no hay ahorro que contar, así que el gancho es el producto: que exista,
+ * que acabe de llegar, que lo hagan ellos. Las plantillas quedan más pobres
+ * que en los otros tipos justamente por eso — es el caso donde más se nota
+ * cuando la IA está disponible.
+ */
+const porAnuncio = (items) => {
+  const uno = items.length === 1;
+  const producto = items[0];
+  const nombres = listarNombres(items);
+
+  return {
+    title: uno ? `Ya tenemos ${producto.name}` : `Encuentre ${nombres} aquí`,
+    promoDescription: uno
+      ? `${producto.name} disponible en la tienda a ${dinero(producto.salePrice)}.`
+      : `${nombres}, listos para llevar en la tienda.`,
+    bannerHeadline: alAzar(["YA LLEGÓ", "NUEVO EN LA TIENDA", "RECIÉN LLEGADO"]),
+    bannerSubtitle: uno ? `${producto.name} a ${dinero(producto.salePrice)}` : nombres,
+    badge: "Nuevo",
+  };
+};
+
 /*
  * Genera el texto completo de la promo. Mismos campos que devuelve la IA, así
  * el formulario no tiene que saber de dónde vino.
  */
 export const generarCopyPlantilla = ({ type, items, buyQty = 2, payQty = 1 }) => {
   let copy;
-  if (type === "precio_fijo") copy = porPrecioFijo(items);
+  if (type === "anuncio") copy = porAnuncio(items);
+  else if (type === "precio_fijo") copy = porPrecioFijo(items);
   else if (type === "nxm") copy = porNxM(items, Number(buyQty) || 2, Number(payQty) || 1);
   else copy = porDescuento(items);
 
