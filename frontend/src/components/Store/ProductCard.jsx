@@ -31,12 +31,22 @@ const ImageWrapper = styled.div`
   justify-content: center;
   position: relative;
   overflow: hidden;
+  /* El margen que hace que todas las fotos respiren igual */
+  padding: 14px;
 `;
 
 const ProductImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  /*
+   * contain y no cover: con cover el navegador recorta lo que le sobra para
+   * llenar la caja, y a una foto vertical le comía la mitad — a la pera se le
+   * perdía la punta y a las uvas los bordes. Las fotos de producto vienen de
+   * mil tamaños distintos (unas cuadradas del proveedor, otras del celular),
+   * así que ninguna caja fija les queda bien a todas: mejor que entren
+   * completas dentro del mismo marco.
+   */
+  object-fit: contain;
   transition: transform 0.3s ease;
 
   ${Card}:hover & {

@@ -131,7 +131,9 @@ const Thumb = styled.div`
   justify-content: center;
   font-size: 28px;
 
-  img { width: 100%; height: 100%; object-fit: cover; }
+  /* Igual que la foto grande: la miniatura muestra el producto entero */
+  padding: 6px;
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
   &:hover { border-color: ${BROWN}; }
 `;
 
@@ -382,8 +384,9 @@ const RecImgBox = styled.div`
   align-items: center;
   justify-content: center;
   font-size: 40px;
+  padding: 10px;
 
-  img { width: 100%; height: 100%; object-fit: cover; }
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
 `;
 
 const RecInfo = styled.div`

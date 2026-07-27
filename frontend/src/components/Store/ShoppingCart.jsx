@@ -203,7 +203,9 @@ const ItemImgBox = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  /* Mismo criterio que las tarjetas: la foto entra entera, no recortada */
+  padding: 5px;
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
   .emoji { font-size: 26px; }
 `;
 
@@ -470,7 +472,8 @@ const OrderThumb = styled.div`
   justify-content: center;
   font-size: 22px;
   overflow: hidden;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  padding: 4px;
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
 `;
 
 const MoreBadge = styled.div`
@@ -735,7 +738,8 @@ const PImgBox = styled.div`
   font-size: 20px;
   flex-shrink: 0;
   overflow: hidden;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  padding: 4px;
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
 `;
 
 const PName = styled.div`flex: 1; font-size: 13px; font-weight: 500; color: #111;`;
