@@ -78,6 +78,49 @@ export const numeroEnRango = (valor, { min = -Infinity, max = Infinity, entero =
 };
 
 /*
+ * Avisa si una promoción deja productos vendiéndose POR DEBAJO DEL COSTO.
+ *
+ * No lo bloquea: una tienda puede querer un producto gancho a pérdida a
+ * propósito. Pero debe ser una decisión, no un accidente — un 50% sobre algo
+ * con 40% de margen pierde plata en cada venta, y eso no se nota hasta que
+ * alguien mira el cierre del mes.
+ *
+ * Devuelve un aviso, o null si todo deja margen.
+ */
+export const avisoVentaBajoCosto = ({ tipo, items, buyQty, payQty, costos = {}, precios = {} }) => {
+  const bajoCosto = [];
+
+  items.forEach((it) => {
+    const costo = Number(costos[it.productId]) || 0;
+    const normal = Number(precios[it.productId]) || 0;
+    if (costo <= 0) return; // sin costo cargado no hay nada que comparar
+
+    let precioFinal = normal;
+    if (tipo === 'descuento') {
+      precioFinal = normal * (1 - (Number(it.discount) || 0) / 100);
+    } else if (tipo === 'precio_fijo') {
+      precioFinal = Number(it.fixedPrice) || 0;
+    } else if (tipo === 'nxm') {
+      // En un 3x2 cada unidad sale al promedio de lo que se paga.
+      const compra = Number(buyQty) || 2;
+      const paga = Number(payQty) || 1;
+      precioFinal = compra > 0 ? (normal * paga) / compra : normal;
+    }
+
+    if (precioFinal < costo) {
+      bajoCosto.push({ nombre: it.name, precioFinal, costo });
+    }
+  });
+
+  if (!bajoCosto.length) return null;
+
+  const primero = bajoCosto[0];
+  const resto = bajoCosto.length - 1;
+  return `"${primero.nombre}" quedaría a $${primero.precioFinal.toFixed(2)} y le cuesta $${primero.costo.toFixed(2)}: pierde $${(primero.costo - primero.precioFinal).toFixed(2)} en cada venta` +
+    (resto > 0 ? ` (y ${resto} producto${resto > 1 ? 's' : ''} más)` : '');
+};
+
+/*
  * Valida una promoción completa antes de guardarla.
  * Devuelve un mensaje de error, o null si todo está bien.
  */

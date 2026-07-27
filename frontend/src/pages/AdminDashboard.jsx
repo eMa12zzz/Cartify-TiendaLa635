@@ -100,7 +100,10 @@ const AdminDashboard = () => {
     let y = tabla('Resumen General', 50, ['Métrica', 'Valor'], [
       ['Pedidos de hoy', String(data.pedidosHoy.valor)],
       ['Entregados (7 días)', String(data.entregados.valor)],
-      ['Ganancia del día', money(data.ganancia.valor)],
+      ['Ingresos del día', money(data.ingresos?.valor ?? 0)],
+      ['Inversión del día', money(data.inversion?.valor ?? 0)],
+      ['Ganancia real', money(data.ganancia?.valor ?? 0)],
+      ['Margen', `${data.ganancia?.margen ?? 0}%`],
       ['Ticket promedio', money(data.ticketPromedio)],
       ['Productos por reponer', String(data.porReponer.total)],
       ['Lotes por caducar', String(data.porCaducar.total)],
@@ -179,14 +182,42 @@ const AdminDashboard = () => {
           extra={<Variacion valor={data.pedidosHoy.variacion} />} />
         <StatCard title="Entregados (7 días)" value={data.entregados.valor}
           extra={<Variacion valor={data.entregados.variacion} sufijo="vs semana pasada" />} />
-        <StatCard title="Ganancia del día" value={money(data.ganancia.valor)}
-          extra={<Variacion valor={data.ganancia.delta} esDinero />} />
+        {/*
+          Antes acá decía "Ganancia" pero mostraba los ingresos a secas, sin
+          restar lo que costaron los productos. Ahora son tres números: lo que
+          entró, lo que costó y lo que quedó.
+        */}
+        <StatCard title="Ingresos del día" value={money(data.ingresos?.valor ?? 0)}
+          extra={<Variacion valor={data.ingresos?.delta ?? 0} esDinero />} />
         <StatCard title="Por reponer" value={data.porReponer.total}
           extra={
             data.porReponer.total > 0
               ? <button onClick={() => setModal('reponer')} className="text-xs font-bold text-[#B47C4D] hover:underline">Ver la lista →</button>
               : <span className="text-xs text-gray-500">Todo surtido</span>
           } />
+      </div>
+
+      {/* ── Inversión y ganancia real ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="Inversión del día"
+          value={money(data.inversion?.valor ?? 0)}
+          extra={<span className="text-xs text-gray-500">Lo que costaron los productos vendidos</span>}
+        />
+        <StatCard
+          title="Ganancia real"
+          value={money(data.ganancia?.valor ?? 0)}
+          extra={<Variacion valor={data.ganancia?.delta ?? 0} esDinero />}
+        />
+        <StatCard
+          title="Margen"
+          value={`${data.ganancia?.margen ?? 0}%`}
+          extra={
+            (data.ganancia?.margen ?? 0) < 0
+              ? <span className="text-xs font-bold text-red-500">Está vendiendo por debajo del costo</span>
+              : <span className="text-xs text-gray-500">De cada dólar que entra</span>
+          }
+        />
       </div>
 
       {/* ── Segunda fila: métricas de apoyo ── */}

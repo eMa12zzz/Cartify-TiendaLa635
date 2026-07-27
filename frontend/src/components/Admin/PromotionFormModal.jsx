@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Sparkles } from 'lucide-react';
 import { productService } from '../../api/productService';
-import { validarPromocion, bloquearTeclasNumero } from '../../utils/validaciones';
+import { validarPromocion, avisoVentaBajoCosto, bloquearTeclasNumero } from '../../utils/validaciones';
 import { etiquetaPromo } from '../../utils/promos';
 import { usePromoAI } from '../../hooks/usePromoAI';
 import PromoCard from '../Store/PromoCard';
@@ -123,6 +123,17 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     const precios = Object.fromEntries(productos.map((p) => [p._id, Number(p.salePrice) || 0]));
     const error = validarPromocion({ tipo: type, items, buyQty, payQty, precios });
     if (error) { toast.error(error); return; }
+
+    /*
+     * Aviso (no bloqueo) si la promo vende por debajo del costo. Un producto
+     * gancho a pérdida puede ser intencional, pero tiene que ser una decisión:
+     * un 50% sobre algo con 40% de margen pierde plata en cada venta.
+     */
+    const costos = Object.fromEntries(productos.map((p) => [p._id, Number(p.priceCost) || 0]));
+    const aviso = avisoVentaBajoCosto({ tipo: type, items, buyQty, payQty, costos, precios });
+    if (aviso) {
+      toast(aviso, { icon: '⚠️', duration: 7000, style: { maxWidth: 460 } });
+    }
 
     // El banner solo es obligatorio si la promo se va a anunciar en la tienda.
     if (form.showBanner && !isEditing && !imagen) {
