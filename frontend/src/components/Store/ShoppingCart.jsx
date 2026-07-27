@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash } from 'lucide-react';
+import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
+import { useSaldo } from '../../hooks/useSaldo';
 import { orderService } from '../../api/orderService';
 
 // Productos por página en el resumen del pedido confirmado.
@@ -811,6 +812,33 @@ const MastercardIcon = styled.div`
   flex-shrink: 0;
 `;
 
+/*
+ * Opción del checkout (retiro/delivery, efectivo/tarjeta/saldo).
+ * Tarjeta seleccionable con borde café, no un radio button suelto: en pantalla
+ * táctil el área de toque es toda la tarjeta y no un círculo de 12px.
+ */
+const OpcionBtn = styled.button`
+  flex: 1 1 150px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid ${p => (p.$activa ? BROWN : '#e5e5e5')};
+  background: ${p => (p.$activa ? BROWN_LIGHT : '#fff')};
+  color: ${p => (p.$activa ? BROWN : '#444')};
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out),
+              color var(--dur-press) var(--ease-out);
+
+  &:hover:not(:disabled) { border-color: ${BROWN}; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+`;
+
 const DeliveryAddress = styled.div`
   display: flex;
   align-items: flex-start;
@@ -847,13 +875,25 @@ const ShoppingCart = ({
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const ENVIO = items.length > 0 ? 4.78 : 0;
-  const SERVICIO = items.length > 0 ? 0 : 0;
+  /*
+   * ── Entrega y pago ──
+   * El envío solo se cobra si se lo llevan a la casa. Antes se cobraba
+   * siempre, así que pasar a traerlo al local costaba lo mismo que el
+   * delivery — no tenía sentido elegirlo.
+   */
+  const [entrega, setEntrega] = useState('retiro');   // 'retiro' | 'delivery'
+  const [direccion, setDireccion] = useState('');
+  const [metodoPago, setMetodoPago] = useState('efectivo'); // 'efectivo' | 'tarjeta' | 'saldo'
+
+  const COSTO_ENVIO = 4.78;
+  const ENVIO = items.length > 0 && entrega === 'delivery' ? COSTO_ENVIO : 0;
+  const SERVICIO = 0;
   const subtotal = total;
   const totalFinal = subtotal + ENVIO + SERVICIO;
 
   // ── Canje de puntos ──
   const { user } = useAuth();
+  const { saldo, recargar: recargarSaldo } = useSaldo();
   const { points: puntosDisponibles, redeemRate, minRedeem } = useLoyalty();
   const [usarPuntos, setUsarPuntos] = useState(false);
 
@@ -886,6 +926,19 @@ const ShoppingCart = ({
       toast.error('Inicia sesión como cliente para completar tu pedido');
       return;
     }
+    // Con envío a domicilio la dirección es obligatoria; el servidor también
+    // lo revisa, pero avisar acá evita que llene todo y falle al final.
+    if (entrega === 'delivery' && !direccion.trim()) {
+      toast.error('Escriba la dirección de entrega');
+      return;
+    }
+    // Se compara contra totalAPagar (ya con el descuento de puntos aplicado),
+    // que es lo que de verdad se va a cobrar.
+    if (metodoPago === 'saldo' && saldo < totalAPagar) {
+      toast.error(`Su saldo es de $${saldo.toFixed(2)} y el pedido cuesta $${totalAPagar.toFixed(2)}`);
+      return;
+    }
+
     setProcesando(true);
     try {
       await orderService.createOrder({
@@ -896,10 +949,15 @@ const ShoppingCart = ({
           price: precioEfectivo(i),
           amount: i.cantidad,
         })),
-        paymentMethod: 'efectivo',
+        paymentMethod: metodoPago,
+        deliveryType: entrega,
+        deliveryAddress: entrega === 'delivery' ? direccion.trim() : undefined,
         channel: 'web',
         pointsToRedeem: puntosAUsar,
       });
+      // Si pagó con saldo, el del servidor ya bajó: lo volvemos a leer para
+      // que no se quede mostrando el de antes.
+      if (metodoPago === 'saldo') recargarSaldo();
       setView('confirmation');
     } catch (error) {
       console.error(error); // el interceptor de Axios ya avisa al usuario
@@ -1031,33 +1089,111 @@ const ShoppingCart = ({
                   </div>
                 </div>
 
-                {/* Shipping info */}
-                <CheckoutSection>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* ── Cómo lo recibe ── */}
+                <div style={{ padding: '18px 20px', borderTop: '1px solid #f5f5f5' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                     <CheckoutIconBox><MapPin size={18} color={BROWN} /></CheckoutIconBox>
-                    <div>
-                      <CheckoutSectionTitle>Información del envío ⓘ</CheckoutSectionTitle>
-                      <CheckoutSectionSub>Enviar a: 2118 Thornridge Cir. Syracuse, Connecticut 35624</CheckoutSectionSub>
-                    </div>
+                    <CheckoutSectionTitle>¿Cómo lo recibe?</CheckoutSectionTitle>
                   </div>
-                  <ChevronRight size={16} color="#aaa" />
-                </CheckoutSection>
 
-                {/* Payment */}
-                <CheckoutSection>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <CheckoutIconBox><CreditCard size={18} color={BROWN} /></CheckoutIconBox>
-                    <div>
-                      <CheckoutSectionTitle>Método de pago ⓘ</CheckoutSectionTitle>
-                      <CheckoutSectionSub>
-                        Pagando con <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f5f5f5', padding: '2px 8px', borderRadius: 6 }}>
-                          <MastercardIcon style={{ width: 22, height: 14 }} /> Mastercard ···· 3434
-                        </span>
-                      </CheckoutSectionSub>
-                    </div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <OpcionBtn
+                      type="button"
+                      $activa={entrega === 'retiro'}
+                      onClick={() => setEntrega('retiro')}
+                    >
+                      <StoreFront size={16} strokeWidth={2} />
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 600 }}>Paso a traerlo</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>Sin costo de envío</div>
+                      </div>
+                    </OpcionBtn>
+
+                    <OpcionBtn
+                      type="button"
+                      $activa={entrega === 'delivery'}
+                      onClick={() => setEntrega('delivery')}
+                    >
+                      <MapPin size={16} strokeWidth={2} />
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 600 }}>Que me lo lleven</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>+${COSTO_ENVIO.toFixed(2)}</div>
+                      </div>
+                    </OpcionBtn>
                   </div>
-                  <ChevronRight size={16} color="#aaa" />
-                </CheckoutSection>
+
+                  {entrega === 'delivery' && (
+                    <div style={{ marginTop: 12 }}>
+                      <input
+                        value={direccion}
+                        onChange={(e) => setDireccion(e.target.value)}
+                        placeholder="Dirección: colonia, calle, número y una referencia"
+                        aria-label="Dirección de entrega"
+                        style={{
+                          width: '100%', padding: '11px 14px', fontSize: 14,
+                          border: '1px solid #e5e5e5', borderRadius: 12, outline: 'none',
+                          fontFamily: 'inherit', color: '#111',
+                        }}
+                      />
+                      <p style={{ fontSize: 11, color: '#999', margin: '6px 0 0' }}>
+                        Una referencia ayuda al repartidor: "portón verde", "frente a la tienda de don Beto".
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Con qué paga ── */}
+                <div style={{ padding: '18px 20px', borderTop: '1px solid #f5f5f5' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <CheckoutIconBox><CreditCard size={18} color={BROWN} /></CheckoutIconBox>
+                    <CheckoutSectionTitle>¿Con qué paga?</CheckoutSectionTitle>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <OpcionBtn type="button" $activa={metodoPago === 'efectivo'} onClick={() => setMetodoPago('efectivo')}>
+                      <Wallet size={16} strokeWidth={2} />
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 600 }}>Efectivo</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>
+                          {entrega === 'delivery' ? 'Al recibirlo' : 'En el local'}
+                        </div>
+                      </div>
+                    </OpcionBtn>
+
+                    <OpcionBtn type="button" $activa={metodoPago === 'tarjeta'} onClick={() => setMetodoPago('tarjeta')}>
+                      <CreditCard size={16} strokeWidth={2} />
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 600 }}>Tarjeta</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>
+                          {entrega === 'delivery' ? 'Al recibirlo' : 'En el local'}
+                        </div>
+                      </div>
+                    </OpcionBtn>
+
+                    {/* Saldo: se deshabilita si no alcanza, con el motivo a la vista */}
+                    <OpcionBtn
+                      type="button"
+                      $activa={metodoPago === 'saldo'}
+                      disabled={saldo < totalAPagar}
+                      title={saldo < totalAPagar ? 'Su saldo no alcanza para este pedido' : 'Pagar con su saldo'}
+                      onClick={() => setMetodoPago('saldo')}
+                    >
+                      <Gift size={16} strokeWidth={2} />
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 600 }}>Mi saldo</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>
+                          ${saldo.toFixed(2)} {saldo < totalAPagar ? '· no alcanza' : 'disponible'}
+                        </div>
+                      </div>
+                    </OpcionBtn>
+                  </div>
+
+                  {metodoPago === 'saldo' && (
+                    <p style={{ fontSize: 12, color: BROWN, margin: '10px 0 0', fontWeight: 500 }}>
+                      Le quedarán ${(saldo - totalAPagar).toFixed(2)} después de este pedido.
+                    </p>
+                  )}
+                </div>
 
                 {/* Order thumbnails */}
                 <div style={{ borderTop: '1px solid #f5f5f5' }}>

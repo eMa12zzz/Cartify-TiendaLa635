@@ -40,6 +40,7 @@ import Suppliers from './pages/Suppliers';
 import Categories from './pages/Categories';
 import Fidelidad from './pages/Fidelidad';
 import Promociones from './pages/Promociones';
+import GiftCards from './pages/GiftCards';
 import ServiciosImpresion from './pages/ServiciosImpresion';
 import AccountSettings from './pages/AccountSettings';
 
@@ -95,6 +96,7 @@ function App() {
               <Route path="/fidelidad"   element={<Fidelidad />} />
               <Route path="/promociones" element={<Promociones />} />
               <Route path="/servicios-impresion" element={<ServiciosImpresion />} />
+              <Route path="/tarjetas"    element={<GiftCards />} />
               <Route path="/cuenta"      element={<AccountSettings />} />
             </Route>
           </Route>
