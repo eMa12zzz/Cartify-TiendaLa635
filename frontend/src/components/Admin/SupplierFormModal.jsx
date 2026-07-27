@@ -18,7 +18,8 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
           name: supplier.name || '', 
           phoneNumber: supplier.phoneNumber || '',
           email: supplier.email || '',
-          creditDays: supplier.creditDays || '',
+          // creditDays queda fuera a propósito: si el formulario lo enviara,
+          // sobrescribiría el plazo configurado en el estado de cuenta.
           brandIds: supplier.brandIds || [],
           isActive: supplier.isActive !== false 
         });
@@ -27,7 +28,6 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
           name: '', 
           phoneNumber: '',
           email: '',
-          creditDays: '',
           brandIds: [],
           isActive: true 
         });
@@ -84,15 +84,12 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Días de Crédito</label>
-                <input 
-                  type="number" 
-                  {...register('creditDays', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
-                  placeholder="Ej. 30, 60..."
-                />
-              </div>
+              {/*
+                Los días de crédito se movieron al estado de cuenta del
+                proveedor, donde van junto al límite: son las dos mitades de la
+                misma condición ("$1000 a 30 días") y tenerlas en pantallas
+                distintas obligaba a acordarse de cambiar las dos.
+              */}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
