@@ -13,7 +13,10 @@ const orderController = {};
 // INSERT — Crear un pedido (checkout). Aquí es donde se otorgan los puntos.
 orderController.createOrder = async (req, res) => {
   try {
-    const { clientId, items, paymentMethod, channel, pointsToRedeem } = req.body;
+    const {
+      clientId, items, paymentMethod, channel, pointsToRedeem,
+      deliveryType, deliveryAddress, deliveryLat, deliveryLng,
+    } = req.body;
 
     // Validación básica: sin cliente o sin productos no hay pedido.
     if (!clientId || !items || items.length === 0) {
@@ -87,6 +90,34 @@ orderController.createOrder = async (req, res) => {
       ? Math.floor(total * config.pointsPerDollar)
       : 0;
 
+    /*
+     * ── PAGO CON SALDO ──
+     * Va antes de guardar: si no le alcanza, no queremos ni el pedido creado
+     * ni los puntos consumidos. El descuento del saldo es condicional
+     * ({ balance: { $gte: total } }) para que dos compras simultáneas no
+     * puedan gastar el mismo dinero dos veces.
+     */
+    const metodo = paymentMethod || "efectivo";
+    const entrega = deliveryType === "delivery" ? "delivery" : "retiro";
+
+    if (entrega === "delivery" && !deliveryAddress) {
+      return res.status(400).json({ message: "Indica la dirección de entrega" });
+    }
+
+    if (metodo === "saldo") {
+      const cobrado = await clientModel.findOneAndUpdate(
+        { _id: clientId, balance: { $gte: total } },
+        { $inc: { balance: -total } },
+        { new: true }
+      );
+      if (!cobrado) {
+        const cliente = await clientModel.findById(clientId).select("balance");
+        return res.status(400).json({
+          message: `Saldo insuficiente. Tiene $${(cliente?.balance || 0).toFixed(2)} y el pedido es de $${total.toFixed(2)}`,
+        });
+      }
+    }
+
     const newOrder = new orderModel({
       clientId,
       items,
@@ -94,7 +125,11 @@ orderController.createOrder = async (req, res) => {
       discount,
       pointsRedeemed,
       total,
-      paymentMethod: paymentMethod || "efectivo",
+      paymentMethod: metodo,
+      deliveryType: entrega,
+      deliveryAddress: entrega === "delivery" ? deliveryAddress : undefined,
+      deliveryLat: entrega === "delivery" ? deliveryLat : undefined,
+      deliveryLng: entrega === "delivery" ? deliveryLng : undefined,
       channel: channel || "web",
       pointsEarned,
     });

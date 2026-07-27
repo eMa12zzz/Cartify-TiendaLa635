@@ -32,6 +32,12 @@ const clientSchema = new Schema({
     // Puntos de fidelidad reales (Number). Este es el que usa toda la lógica
     // nueva de loyalty: se suma al crear un pedido y se muestra en el admin.
     loyaltyPoints: { type: Number, default: 0 },
+    /*
+     * Saldo digital en dólares, cargado canjeando gift cards.
+     * Solo lo mueve el servidor: al canjear una tarjeta sube, al pagar con
+     * saldo baja. Nunca se toca con un valor que venga del navegador.
+     */
+    balance: { type: Number, default: 0, min: 0 },
     // Preferencias de notificación del cliente (área "Mi Cuenta").
     notificationPrefs: {
       promociones:     { type: Boolean, default: true },

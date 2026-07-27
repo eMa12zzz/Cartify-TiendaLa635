@@ -41,7 +41,28 @@ const orderSchema = new Schema({
         enum: ['pagado', 'preparando', 'entregado', 'cancelado'],
         default: 'pagado',
     },
-    paymentMethod: { type: String, default: 'efectivo' },
+    /*
+     * Cómo paga. 'saldo' descuenta del balance digital del cliente (cargado
+     * con gift cards); los demás se cobran en el local o al entregar, porque
+     * todavía no hay pasarela de pago conectada.
+     */
+    paymentMethod: {
+        type: String,
+        enum: ['efectivo', 'tarjeta', 'saldo'],
+        default: 'efectivo',
+    },
+    /*
+     * Si se lo llevan a la casa o lo pasa a traer.
+     * Con 'delivery' el pedido necesita dirección; con 'retiro' no.
+     */
+    deliveryType: {
+        type: String,
+        enum: ['delivery', 'retiro'],
+        default: 'retiro',
+    },
+    deliveryAddress: { type: String },   // texto de la dirección elegida
+    deliveryLat: { type: Number },       // punto marcado en el mapa
+    deliveryLng: { type: Number },
     paymentStatus: {
         type: String,
         enum: ['pendiente', 'pagado'],
