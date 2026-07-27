@@ -8,6 +8,7 @@ import { orderService } from '../api/orderService';
 import { useAuth } from '../hooks/useAuth';
 import { usePrintComposer } from '../hooks/usePrintComposer';
 import PrintComposer from '../components/Store/PrintComposer';
+import { calcularPrecioImpresion } from '../utils/precioImpresion';
 
 const BROWN = '#B46C30';
 const BROWN_DARK = '#8A5222';
@@ -74,8 +75,15 @@ const Impresiones = () => {
   });
 
   const paginas = modo === 'editor' ? composer.paginas.length : 1;
-  const precioUnit = servicio ? servicio.pricePerCopy + (color && servicio.allowsColor ? (servicio.colorSurcharge || 0) : 0) : 0;
-  const total = precioUnit * (Number(copias) || 1) * paginas;
+  // Misma fórmula que usa el backend para cobrar: por hoja, y doble cara
+  // reduce las hojas a la mitad.
+  const { total, hojas, precioPorHoja } = calcularPrecioImpresion({
+    servicio,
+    paginas,
+    copias,
+    color,
+    dobleCara: dobleCara,
+  });
 
   const seleccionarArchivo = (e) => { const f = e.target.files?.[0]; if (f) setArchivo(f); setError(''); };
   const handleDrop = (e) => { e.preventDefault(); setArrastrando(false); const f = e.dataTransfer.files?.[0]; if (f) setArchivo(f); setError(''); };
@@ -202,8 +210,17 @@ const Impresiones = () => {
         </OptionsCard>
 
         <PriceBox>
+          {/* Desglose explícito: así el cliente ve por qué doble cara le sale
+              más barato y cuánto le suma el color. */}
           <PriceLabel>
-            Total {servicio ? `(${copias} × ${paginas} pág${paginas > 1 ? 's' : ''} × $${precioUnit.toFixed(2)})` : ''}
+            Total
+            {servicio && (
+              <span style={{ display: 'block', fontSize: 11, opacity: 0.75, fontWeight: 400, marginTop: 2 }}>
+                {copias} × {hojas} hoja{hojas > 1 ? 's' : ''} × ${precioPorHoja.toFixed(2)}
+                {dobleCara && paginas > 1 ? ` · ${paginas} págs a doble cara` : ''}
+                {color && servicio.allowsColor ? ` · color +$${Number(servicio.colorSurcharge || 0).toFixed(2)}/hoja` : ''}
+              </span>
+            )}
           </PriceLabel>
           <PriceValue>${total.toFixed(2)}</PriceValue>
         </PriceBox>

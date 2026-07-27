@@ -5,6 +5,7 @@ import loyaltyLedgerModel from "../models/loyaltyLedger.js";
 import printServiceModel from "../models/printService.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
+import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
 
 const orderController = {};
 
@@ -197,9 +198,18 @@ orderController.createPrintOrder = async (req, res) => {
     const nPaginas = Number(pages) || 1;
     const doble = doubleSided === "true" || doubleSided === true;
 
-    // Precio: por copia (+ recargo si es a color) × copias × páginas.
-    const precioUnit = service.pricePerCopy + (esColor && service.allowsColor ? (service.colorSurcharge || 0) : 0);
-    const total = Number((precioUnit * nCopias * nPaginas).toFixed(2));
+    /*
+     * Antes el precio ignoraba `doble`: se calculaba, se guardaba en el pedido
+     * y no tocaba el total, así que elegir doble cara no cambiaba nada. Ahora
+     * el cálculo vive en un solo lugar y cobra por hoja, no por página.
+     */
+    const { total, hojas, precioPorHoja } = calcularPrecioImpresion({
+      servicio: service,
+      paginas: nPaginas,
+      copias: nCopias,
+      color: esColor,
+      dobleCara: doble,
+    });
 
     // Opción 1: enviar a la impresora por correo (si hay PRINTER_EMAIL).
     // El archivo igual queda guardado en Cloudinary (opción 2 / respaldo).
@@ -219,8 +229,12 @@ orderController.createPrintOrder = async (req, res) => {
     const config = await getLoyaltyConfig();
     const pointsEarned = config.isActive ? Math.floor(total * config.pointsPerDollar) : 0;
 
-    const resumen = `Impresión ${service.name} ${esColor ? "a color" : "B/N"} x${nCopias}` +
-      (nPaginas > 1 ? ` (${nPaginas} págs)` : "");
+    // Resumen con las hojas reales, para que el empleado sepa qué va a salir
+    // de la impresora sin tener que abrir el pedido.
+    const resumen =
+      `Impresión ${service.name} ${esColor ? "a color" : "B/N"}` +
+      `${doble ? " doble cara" : ""} x${nCopias}` +
+      ` (${nPaginas} pág${nPaginas > 1 ? "s" : ""}, ${hojas} hoja${hojas > 1 ? "s" : ""} a $${precioPorHoja.toFixed(2)})`;
 
     const newOrder = new orderModel({
       clientId,
