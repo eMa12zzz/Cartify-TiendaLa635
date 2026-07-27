@@ -3,10 +3,13 @@ import { useTheme, palettes } from '../context/ThemeContext';
 import { Check, Palette, User, CheckCircle2, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { BotonOjo } from '../components/UI/CampoContrasena';
+import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 
 const AccountSettings = () => {
   const { paletteId, setPaletteId, palette } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
+  const [verPass, setVerPass] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -111,14 +114,18 @@ const AccountSettings = () => {
                 <>
                   <div className="space-y-2">
                     <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Teléfono</label>
-                    <input type="text" name="phone" value={formData.phone} onChange={handleChange}
+                    <input type="text" name="phone" inputMode="numeric" maxLength={LARGO_TELEFONO}
+                        value={formatearTelefono(formData.phone)}
+                        onChange={(e) => handleChange({ target: { name: 'phone', value: formatearTelefono(e.target.value) } })}
                         className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
                         style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
                   </div>
 
                   <div className="space-y-2">
                     <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>DUI</label>
-                    <input type="text" name="dui" value={formData.dui} onChange={handleChange}
+                    <input type="text" name="dui" inputMode="numeric" maxLength={LARGO_DUI}
+                      value={formatearDui(formData.dui)}
+                      onChange={(e) => handleChange({ target: { name: 'dui', value: formatearDui(e.target.value) } })}
                       className="w-full px-5 py-2.5 rounded-full border focus:outline-none transition-colors"
                       style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
                   </div>
@@ -127,11 +134,16 @@ const AccountSettings = () => {
 
               <div className="space-y-2 relative">
                 <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Contraseña</label>
+                {/*
+                  El ojo reemplaza al chulito verde que había: aquel estaba
+                  siempre encendido, sin comprobar nada, así que decía "todo
+                  bien" incluso con el campo vacío.
+                */}
                 <div className="relative">
-                  <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••"
+                  <input type={verPass ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} placeholder="••••••••"
                     className="w-full px-5 py-2.5 rounded-full border focus:outline-none pr-12 tracking-wider transition-colors"
                     style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }} />
-                  <CheckCircle2 className="w-5 h-5 text-green-500 absolute right-4 top-1/2 -translate-y-1/2" />
+                  <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} derecha={16} />
                 </div>
               </div>
 

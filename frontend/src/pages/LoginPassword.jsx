@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { BotonOjo } from '../components/UI/CampoContrasena';
 
 const BROWN = '#B46C30';
 
@@ -134,6 +135,7 @@ const ForgotLink = styled.div`
 const LoginPassword = () => {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
+  const [verPass, setVerPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -190,14 +192,18 @@ const LoginPassword = () => {
           <Subtitle>Ingresa tu contraseña para continuar</Subtitle>
 
           <Label>Contraseña</Label>
-          <Input
-            type="password"
-            placeholder="Tu contraseña"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-            autoFocus
-          />
+          <div style={{ position: 'relative' }}>
+            <Input
+              type={verPass ? 'text' : 'password'}
+              placeholder="Tu contraseña"
+              style={{ paddingRight: 44 }}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus
+            />
+            <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} />
+          </div>
 
           {error && <ErrorMsg>{error}</ErrorMsg>}
 

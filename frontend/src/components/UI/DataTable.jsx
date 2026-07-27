@@ -1,37 +1,95 @@
+import { Children, isValidElement } from 'react';
+import { motion } from 'framer-motion';
+import { DUR, EASE_OUT, stagger } from '../../utils/motion';
+
+/*
+ * ============================================================
+ * DataTable — la vista de catálogo del panel
+ * ============================================================
+ * Antes era una tabla de verdad: cuatro columnas con py-4 px-4 por celda, así
+ * que "Bebidas · Tienda · Activo" ocupaba el ancho completo de la pantalla con
+ * tres cuartas partes de aire. Y abajo, una paginación de mentira que siempre
+ * decía "Página 1 de 10" con botones que no hacían nada.
+ *
+ * Ahora son tarjetas en grilla: el nombre manda, los demás datos van debajo
+ * con su etiqueta, y las acciones a la derecha del título. Se parece a la
+ * pantalla de Pedidos porque comparte la misma familia visual, pero es más
+ * densa y en columnas a propósito: Pedidos es una cola de trabajo que se
+ * atiende de arriba abajo, esto es un catálogo que se ojea.
+ *
+ * Lo importante: las páginas que la usan NO cambiaron. Siguen mandando sus
+ * columnas y su renderRow con <td>, y el componente los reacomoda. Ocho
+ * pantallas mejoran sin tocar ocho archivos.
+ * ============================================================
+ */
+
+/*
+ * Las celdas traen clases de tabla (py-4 px-4) que aquí sobran y romperían el
+ * espaciado de la tarjeta. Se les quita el relleno y se respeta el resto —el
+ * text-red-500 del estado "Inactivo", por ejemplo, tiene que sobrevivir.
+ */
+const SIN_ESPACIADO = /^(p|px|py|pt|pb|pl|pr|w|min-w|max-w|whitespace)-/;
+
+const limpiarClases = (clases = '') =>
+  clases.split(' ').filter((c) => c && !SIN_ESPACIADO.test(c)).join(' ');
+
+// renderRow devuelve un fragmento con <td>: sacamos las celdas de adentro.
+const celdasDe = (fila) => {
+  if (!isValidElement(fila)) return [];
+  return Children.toArray(fila.props.children).filter(isValidElement);
+};
+
 const DataTable = ({ columns, data, renderRow }) => {
+  if (!data?.length) return null;
+
+  // Por convención la última columna son las acciones y la primera, el nombre.
+  const iAcciones = columns.length - 1;
+
   return (
-    <div className="w-full">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-gray-200">
-              {columns.map((col, index) => (
-                <th key={index} className="py-4 px-4 text-xs font-medium text-gray-500 bg-white">
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white">
-            {data.map((item, index) => (
-              <tr key={item.id || index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                {renderRow(item)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Paginación simple (Visual) */}
-      <div className="flex justify-between items-center mt-4 py-4 px-2">
-        <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-          Anterior
-        </button>
-        <span className="text-sm text-gray-500">Página 1 de 10</span>
-        <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-          Siguiente
-        </button>
-      </div>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {data.map((item, index) => {
+        const celdas = celdasDe(renderRow(item));
+        const titulo = celdas[0];
+        const acciones = celdas[iAcciones];
+        const datos = celdas.slice(1, iAcciones);
+
+        return (
+          <motion.div
+            key={item._id || item.id || index}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DUR.modal, ease: EASE_OUT, delay: stagger(index) }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3 transition-colors hover:border-gray-300"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className={`text-base font-bold text-gray-800 leading-tight ${limpiarClases(titulo?.props?.className)}`}>
+                {titulo?.props?.children}
+              </div>
+              {acciones && <div className="flex-shrink-0">{acciones.props.children}</div>}
+            </div>
+
+            {/*
+              Los datos del medio, en pares etiqueta/valor. Con la etiqueta
+              encima ya no hace falta el encabezado de la tabla para saber que
+              ese "Activo" es el estado y no otra cosa.
+            */}
+            {datos.length > 0 && (
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {datos.map((celda, i) => (
+                  <div key={i} className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                      {columns[i + 1]}
+                    </div>
+                    <div className={`text-sm text-gray-700 truncate ${limpiarClases(celda.props.className)}`}>
+                      {celda.props.children}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 };

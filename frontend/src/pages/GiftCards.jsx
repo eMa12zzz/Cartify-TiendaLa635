@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Gift, Copy, Trash2, Plus } from 'lucide-react';
+import { Gift, Copy, Trash2, Plus, Search, ArrowDownUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DataTable from '../components/UI/DataTable';
+import FilterSelect from '../components/UI/FilterSelect';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
 import { useGiftCards } from '../hooks/useGiftCards';
 import { bloquearTeclasNumero } from '../utils/validaciones';
@@ -16,7 +17,10 @@ import { modalTransition, modalInitial, modalAnimate } from '../utils/motion';
 const formVacio = { amount: '', cantidad: 1, note: '', expiresAt: '' };
 
 const GiftCards = () => {
-  const { tarjetas, resumen, cargando, creando, crear, anular, copiar } = useGiftCards();
+  const {
+    tarjetas, resumen, cargando, creando, crear, anular, copiar,
+    visibles, conteos, filtro, setFiltro, busqueda, setBusqueda, orden, setOrden,
+  } = useGiftCards();
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(formVacio);
   const [recienCreadas, setRecienCreadas] = useState([]);
@@ -103,7 +107,61 @@ const GiftCards = () => {
       </AnimatePresence>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">Todas las tarjetas</h3>
+        {/*
+          Las canjeadas ya no son trabajo pendiente: solo estorban al buscar
+          una que sirva. Por eso la pantalla abre en "Disponibles" y las
+          canjeadas quedan a un click, sin desaparecer.
+        */}
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <div className="flex flex-wrap gap-2 flex-1">
+            {[
+              { id: 'disponibles', label: 'Disponibles' },
+              { id: 'canjeadas', label: 'Canjeadas' },
+              { id: 'todas', label: 'Todas' },
+            ].map((f) => {
+              const activo = filtro === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setFiltro(f.id)}
+                  aria-pressed={activo}
+                  className="press px-4 py-2 rounded-full text-sm font-medium border transition-colors"
+                  style={{
+                    borderColor: activo ? 'var(--theme-primary)' : 'var(--theme-card-border)',
+                    background: activo ? 'var(--theme-primary-light)' : 'var(--theme-card-bg)',
+                    color: activo ? 'var(--theme-primary)' : 'var(--theme-text-secondary)',
+                  }}
+                >
+                  {f.label}
+                  <span className="ml-2 text-xs opacity-70">{conteos[f.id]}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Código, cliente, monto…"
+              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] w-60"
+            />
+          </div>
+
+          <FilterSelect
+            value={orden}
+            onChange={setOrden}
+            defaultValue="nuevas"
+            defaultLabel="Ordenar: Más nuevas"
+            icon={ArrowDownUp}
+            options={[
+              { value: 'monto-mayor', label: 'Ordenar: Mayor monto' },
+              { value: 'monto-menor', label: 'Ordenar: Menor monto' },
+            ]}
+          />
+        </div>
+
         {cargando ? (
           <p className="text-gray-500">Cargando...</p>
         ) : tarjetas.length === 0 ? (
@@ -111,10 +169,15 @@ const GiftCards = () => {
             <p className="text-gray-800 font-semibold mb-1">Todavía no hay tarjetas</p>
             <p className="text-gray-500 text-sm">Cree la primera: elija un monto y cuántas quiere generar.</p>
           </div>
+        ) : visibles.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-gray-800 font-semibold mb-1">Ninguna tarjeta coincide</p>
+            <p className="text-gray-500 text-sm">Pruebe con otro código, otro cliente o cambie de pestaña.</p>
+          </div>
         ) : (
           <DataTable
             columns={['Código', 'Monto', 'Estado', 'Canjeada por', 'Nota', 'Acciones']}
-            data={tarjetas}
+            data={visibles}
             renderRow={(t) => (
               <>
                 <td className="py-4 px-4">
