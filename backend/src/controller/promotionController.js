@@ -67,7 +67,7 @@ promotionController.getPromotions = async (req, res) => {
 
 promotionController.insertPromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt } = req.body;
+    const { title, promoDescription, type, etiqueta, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -81,6 +81,8 @@ promotionController.insertPromotion = async (req, res) => {
       title,
       promoDescription,
       type: type || "descuento",
+      // Solo el anuncio la usa; en los demás el sello sale del ahorro.
+      etiqueta: type === "anuncio" ? (etiqueta || "").trim() : "",
       items,
       buyQty: buyQty ? Number(buyQty) : 2,
       payQty: payQty ? Number(payQty) : 1,
@@ -106,7 +108,7 @@ promotionController.insertPromotion = async (req, res) => {
 
 promotionController.updatePromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt } = req.body;
+    const { title, promoDescription, type, etiqueta, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -125,6 +127,8 @@ promotionController.updatePromotion = async (req, res) => {
       title,
       promoDescription,
       type: type || "descuento",
+      // Solo el anuncio la usa; en los demás el sello sale del ahorro.
+      etiqueta: type === "anuncio" ? (etiqueta || "").trim() : "",
       items,
       buyQty: buyQty ? Number(buyQty) : 2,
       payQty: payQty ? Number(payQty) : 1,

@@ -41,13 +41,21 @@ const VOZ_DE_LA_TIENDA = [
   "  'Queso fresco 25% menos' informa; 'El queso de los desayunos, hoy más barato' antoja.",
   "- El título es el gancho. La descripción aterriza la oferta con el precio real.",
   "- Español salvadoreño de la calle, cálido y con chispa. Nada de inglés ni palabras rebuscadas.",
-  "- Tratás al cliente de usted. Sin emojis. Máximo un signo de admiración, y solo si suma.",
+  "- Tratás al cliente de usted. Sin emojis.",
   "- Entre los clientes hay personas mayores: por creativo que sea, se entiende de una leída.",
   "- Nombrás el producto. Nunca decís 'este producto' ni 'estos artículos'.",
   "- Nunca inventás precios, fechas, marcas, sabores ni productos que no estén en la oferta.",
   "- Variá los arranques: no empecés siempre igual ni repitas la fórmula de los ejemplos.",
-  "- El badge es el ahorro real y bien corto: -25%, 2x1, $1.50.",
+  "- El badge es el ahorro real y bien corto: -25%, 2x1, $1.50. En un anuncio sin descuento,",
+  "  el badge es una palabra que dé ganas: Nuevo, Recién llegado, De la casa, Recomendado.",
   "- Respetás los límites de caracteres de cada campo.",
+  "",
+  "NADA DE NEUTRAL. Un cartel que dice 'Promoción de quesos seleccionados' no lo lee nadie:",
+  "es el mismo cartel de cualquier tienda del país. Escribí como el dueño que sabe por qué",
+  "vale la pena ese producto y quiere contarlo. Poné energía según lo que se está anunciando:",
+  "un 2x1 se grita, un producto nuevo se presenta con orgullo, un vencimiento cercano se",
+  "cuenta con urgencia honesta. Si el texto podría servir para cualquier otro producto,",
+  "está mal escrito: volvelo a hacer.",
   "",
   "Ejemplos del tono que buscamos:",
   "",
@@ -62,6 +70,12 @@ const VOZ_DE_LA_TIENDA = [
   "",
   'Oferta: Jabón de baño (Higiene): 15% | Detergente (Limpieza): 20% | Cloro (Limpieza): 10%',
   '{"title":"Surta la casa gastando menos","promoDescription":"Jabón, detergente y cloro con hasta 20% de descuento. Todo en un solo viaje.","bannerHeadline":"HASTA 20% MENOS","bannerSubtitle":"Jabón, detergente y cloro","badge":"-20%"}',
+  "",
+  "Anuncio sin descuento: Café de altura (Bebidas, marca El Volcán), precio $4.25",
+  '{"title":"Ya llegó el café de altura","promoDescription":"El Volcán de altura, molido del dia, a $4.25. El que despierta la casa.","bannerHeadline":"YA LLEGO","bannerSubtitle":"Cafe El Volcan de altura","badge":"Nuevo"}',
+  "",
+  "Anuncio sin descuento: toda la categoría Panadería",
+  '{"title":"El pan sale calientito todos los dias","promoDescription":"Pan frances, semita y quesadilla, horneados aqui mismo desde temprano.","bannerHeadline":"RECIEN HORNEADO","bannerSubtitle":"Toda la panaderia","badge":"De la casa"}',
 ].join("\n");
 
 // Describe un producto con todo lo que sabemos de él: mientras más contexto,
@@ -73,6 +87,14 @@ const describirProducto = (it) => {
 
 // Arma la frase que describe el gancho según el tipo de promoción.
 const describirOferta = (tipo, items, buyQty, payQty) => {
+  /*
+   * Un anuncio no tiene ahorro que contar: el gancho es el producto mismo.
+   * Sin este caso, la IA recibía "0% de descuento" y escribía sobre una
+   * rebaja que no existe.
+   */
+  if (tipo === "anuncio") {
+    return items.map((it) => `${describirProducto(it)}, precio $${it.salePrice}`).join(" | ");
+  }
   if (tipo === "nxm") {
     return `${items.map(describirProducto).join(" | ")}: compra ${buyQty} y paga ${payQty}`;
   }
@@ -87,7 +109,9 @@ const describirOferta = (tipo, items, buyQty, payQty) => {
 };
 
 const armarPrompt = (type, items, buyQty, payQty) =>
-  `Oferta: ${describirOferta(type, items, buyQty, payQty)}`;
+  type === "anuncio"
+    ? `Anuncio sin descuento: ${describirOferta(type, items, buyQty, payQty)}`
+    : `Oferta: ${describirOferta(type, items, buyQty, payQty)}`;
 
 /*
  * POST /api/ai/promo-copy

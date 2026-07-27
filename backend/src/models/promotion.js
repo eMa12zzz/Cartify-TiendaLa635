@@ -39,9 +39,21 @@ const promotionSchema = new mongoose.Schema(
     promoDescription: { type: String, required: true },
     type: {
       type: String,
-      enum: ["descuento", "precio_fijo", "nxm"],
+      /*
+       * 'anuncio' no toca precios: sirve para poner un producto o una
+       * categoría al frente de la tienda sin rebajarlos. Antes, para
+       * promocionar algo había que inventarle un descuento del 0%, y eso
+       * ensuciaba los reportes con ofertas que no existían.
+       */
+      enum: ["descuento", "precio_fijo", "nxm", "anuncio"],
       default: "descuento",
     },
+    /*
+     * Texto corto del sello. Solo lo usa 'anuncio': los otros tipos lo calculan
+     * de la oferta ("-25%", "2x1"), pero un anuncio no tiene número que
+     * mostrar, así que lleva una palabra: Nuevo, De la casa, Recomendado.
+     */
+    etiqueta: { type: String, default: '' },
     items: [promoItemSchema],
     buyQty: { type: Number, default: 2 }, // NxM: compra N
     payQty: { type: Number, default: 1 }, // NxM: paga M

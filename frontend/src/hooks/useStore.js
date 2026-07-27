@@ -36,6 +36,8 @@ const construirMapaPromo = (promos) => {
         fixedPrice: it.fixedPrice,
         buyQty: pr.buyQty || 2,
         payQty: pr.payQty || 1,
+        // Solo el anuncio la trae: es su sello, ya que no tiene ahorro.
+        etiqueta: pr.etiqueta || '',
       };
     });
   });
@@ -61,6 +63,13 @@ const mapearProducto = (p, mapaPromo = {}) => {
       promoInfo = { type: 'precio_fijo' };
     } else if (promo.type === 'nxm') {
       promoInfo = { type: 'nxm', buyQty: promo.buyQty, payQty: promo.payQty };
+    } else if (promo.type === 'anuncio') {
+      /*
+       * El anuncio NO toca el precio: solo le pone su sello al producto para
+       * que destaque en la tienda. Por eso no se define precioAnterior — si no,
+       * la tarjeta mostraría un precio tachado igual al vigente.
+       */
+      promoInfo = { type: 'anuncio', etiqueta: promo.etiqueta || 'Nuevo' };
     }
   }
 

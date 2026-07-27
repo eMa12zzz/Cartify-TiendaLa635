@@ -21,6 +21,8 @@ const TIPOS = [
   { v: 'descuento', l: 'Descuento %' },
   { v: 'precio_fijo', l: 'Precio fijo' },
   { v: 'nxm', l: 'NxM (2x1)' },
+  // Sin cambio de precio: para poner algo al frente de la tienda y ya.
+  { v: 'anuncio', l: 'Solo anunciar' },
 ];
 
 // La fecha de un <input type="date"> se escribe "2026-08-03".
@@ -96,6 +98,8 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   const [imagenCompleta, setImagenCompleta] = useState(false);
   const [endsAt, setEndsAt] = useState('');
   const [icono, setIcono] = useState('');
+  // Sello del anuncio: "Nuevo", "De la casa"... Solo lo usa el tipo 'anuncio'.
+  const [etiqueta, setEtiqueta] = useState('');
   // Alta por categoría completa: cuál y con qué precio/descuento entra.
   const [categoriaElegida, setCategoriaElegida] = useState('');
   const [valorCategoria, setValorCategoria] = useState('');
@@ -156,6 +160,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       setImagenCompleta(!!promoData.imagenCompleta);
       setEndsAt(aInputDate(promoData.endsAt));
       setIcono(promoData.icono || '');
+      setEtiqueta(promoData.etiqueta || '');
       setTema(promoData.tema || 'cafe');
       setColorFondo(promoData.colorFondo || '#B46C30');
       setColorFondo2(promoData.colorFondo2 || '');
@@ -171,6 +176,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       setImagenCompleta(false);
       setEndsAt('');
       setIcono('');
+      setEtiqueta('');
       setTema('cafe');
       setColorFondo('#B46C30');
       setColorFondo2('');
@@ -207,6 +213,10 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
    * Salen de los productos cargados, no de un endpoint aparte: una categoría
    * sin productos no se puede promocionar, así que no tiene por qué aparecer.
    */
+  // Los tipos que piden un número por producto. El NxM aplica igual a todos y
+  // el anuncio no toca precios, así que ninguno de los dos pide importe.
+  const pideImporte = type === 'descuento' || type === 'precio_fijo';
+
   const idCategoria = (p) => p.typeId?._id || p.typeId || null;
 
   const categorias = useMemo(() => {
@@ -295,6 +305,9 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       title: resultado.title || prev.title,
       promoDescription: resultado.promoDescription || prev.promoDescription,
     }));
+
+    // En un anuncio el sello también lo propone la IA ("Nuevo", "De la casa").
+    if (type === 'anuncio' && resultado.badge) setEtiqueta(resultado.badge);
   };
 
   const onSubmit = async (e) => {
@@ -349,6 +362,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     fd.append('title', form.title);
     fd.append('promoDescription', form.promoDescription);
     fd.append('type', type);
+    fd.append('etiqueta', etiqueta);
     fd.append('isActive', form.isActive);
     fd.append('showBanner', form.showBanner);
     fd.append('buyQty', buyQty);
@@ -409,6 +423,28 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   </div>
                 </div>
 
+                {/*
+                  Anuncio: no hay importes que pedir, solo el sello. Se explica
+                  aquí mismo porque "Solo anunciar" puede leerse como que la
+                  promo no hace nada.
+                */}
+                {type === 'anuncio' && (
+                  <div className="rounded-xl border border-gray-200 bg-[#FAF9F6] p-3">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Sello del anuncio</label>
+                    <input
+                      value={etiqueta}
+                      onChange={(e) => setEtiqueta(e.target.value)}
+                      maxLength={14}
+                      placeholder="Nuevo"
+                      className={inputCls}
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Los precios no cambian: esto pone los productos al frente de la tienda con ese sello.
+                      Sirve para lo recién llegado o para lo que quiera empujar sin rebajar.
+                    </p>
+                  </div>
+                )}
+
                 {/* NxM */}
                 {type === 'nxm' && (
                   <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -453,7 +489,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     imagenCompleta={imagenCompleta}
                     title={form.title}
                     descripcion={form.promoDescription}
-                    etiqueta={etiquetaPromo({ type, items, buyQty, payQty })}
+                    etiqueta={etiquetaPromo({ type, items, buyQty, payQty, etiqueta })}
                     vencimiento={textoVencimiento({ endsAt: finDelDia(endsAt) })}
                     icono={icono}
                   />
@@ -704,7 +740,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                           ))}
                         </select>
 
-                        {type !== 'nxm' && (
+                        {pideImporte && (
                           <div className="flex items-center gap-1">
                             <span className="text-xs text-gray-500">{type === 'descuento' ? '%' : '$'}</span>
                             <input
@@ -732,7 +768,9 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                       <p className="text-xs text-gray-500 mt-2">
                         {type === 'nxm'
                           ? 'Entran todos los productos de la categoría con el mismo NxM.'
-                          : `Entran todos con el mismo ${type === 'descuento' ? 'descuento' : 'precio'}; después puede ajustar cualquiera abajo.`}
+                          : type === 'anuncio'
+                            ? 'Entra la categoría completa al anuncio, sin tocarle el precio a nada.'
+                            : `Entran todos con el mismo ${type === 'descuento' ? 'descuento' : 'precio'}; después puede ajustar cualquiera abajo.`}
                       </p>
                     </div>
                   )}
