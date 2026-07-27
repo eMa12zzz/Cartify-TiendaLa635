@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Palette } from 'lucide-react';
 import { productService } from '../../api/productService';
 import { validarPromocion, avisoVentaBajoCosto, bloquearTeclasNumero } from '../../utils/validaciones';
 import { etiquetaPromo } from '../../utils/promos';
 import { usePromoAI } from '../../hooks/usePromoAI';
 import PromoCard from '../Store/PromoCard';
+import { TEMAS } from '../../utils/temasPromo';
 
 /*
  * PromotionFormModal — crear/editar una promoción (multi-tipo).
@@ -33,6 +34,11 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   const [imagen, setImagen] = useState(null);
   const [preview, setPreview] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  // Diseño del banner (reemplaza al canvas que armaba la IA).
+  const [tema, setTema] = useState('cafe');
+  const [colorFondo, setColorFondo] = useState('#B46C30');
+  const [colorTexto, setColorTexto] = useState('#FFFFFF');
+  const [colorAcento, setColorAcento] = useState('#F3E7D8');
   const { generando, generarPromo } = usePromoAI();
 
   useEffect(() => {
@@ -58,12 +64,20 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
         fixedPrice: it.fixedPrice ?? '',
       })));
       setPreview(promoData.image || null);
+      setTema(promoData.tema || 'cafe');
+      setColorFondo(promoData.colorFondo || '#B46C30');
+      setColorTexto(promoData.colorTexto || '#FFFFFF');
+      setColorAcento(promoData.colorAcento || '#F3E7D8');
     } else {
       setForm({ title: '', promoDescription: '', isActive: true, showBanner: true });
       setType('descuento');
       setBuyQty(2); setPayQty(1);
       setItems([]);
       setPreview(null);
+      setTema('cafe');
+      setColorFondo('#B46C30');
+      setColorTexto('#FFFFFF');
+      setColorAcento('#F3E7D8');
     }
     setImagen(null);
     setBusqueda('');
@@ -88,19 +102,11 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   );
 
   /*
-   * Le pasamos a la IA los productos que ya eligió el empleado y el tipo de
-   * promo; ella devuelve el texto y el banner ya armado con la foto del primer
-   * producto. Todo queda en el formulario para revisarlo antes de guardar.
+   * La IA solo escribe el TEXTO. El banner se diseña acá con los colores, así
+   * que se puede seguir ajustando después sin regenerar nada.
    */
   const onGenerarIA = async () => {
-    const primero = productos.find((p) => p._id === items[0]?.productId);
-    const resultado = await generarPromo({
-      tipo: type,
-      items,
-      buyQty,
-      payQty,
-      imagenProducto: Array.isArray(primero?.image) ? primero.image[0] : primero?.image,
-    });
+    const resultado = await generarPromo({ tipo: type, items, buyQty, payQty });
     if (!resultado) return;
 
     setForm((prev) => ({
@@ -108,10 +114,6 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       title: resultado.title || prev.title,
       promoDescription: resultado.promoDescription || prev.promoDescription,
     }));
-    if (resultado.banner) {
-      setImagen(resultado.banner);
-      setPreview(URL.createObjectURL(resultado.banner));
-    }
   };
 
   const onSubmit = async (e) => {
@@ -135,9 +137,13 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       toast(aviso, { icon: '⚠️', duration: 7000, style: { maxWidth: 460 } });
     }
 
-    // El banner solo es obligatorio si la promo se va a anunciar en la tienda.
-    if (form.showBanner && !isEditing && !imagen) {
-      toast.error('Sube una imagen para el banner, o desmarca "Anunciar en la tienda"');
+    /*
+     * Ya no se exige imagen: la tarjeta se dibuja con el texto y los colores.
+     * Lo que sí hace falta para anunciarla es un título — sin él el banner
+     * saldría con el texto de relleno.
+     */
+    if (form.showBanner && !form.title.trim()) {
+      toast.error('Ponle un título a la promoción, o desmarca "Anunciar en la tienda"');
       return;
     }
 
@@ -156,6 +162,13 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     fd.append('buyQty', buyQty);
     fd.append('payQty', payQty);
     fd.append('items', JSON.stringify(itemsPayload));
+    // Diseño del banner (solo se usa si no hay imagen propia).
+    fd.append('tema', tema);
+    if (tema === 'personalizado') {
+      fd.append('colorFondo', colorFondo);
+      fd.append('colorTexto', colorTexto);
+      fd.append('colorAcento', colorAcento);
+    }
     if (imagen) fd.append('image', imagen);
 
     setGuardando(true);
@@ -229,7 +242,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   </div>
                 </div>
 
-                {/* Banner + vista previa fiel */}
+                {/* Banner: se diseña acá mismo, con vista previa en vivo */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Banner — así se verá en la tienda
@@ -238,18 +251,96 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   {/* Misma pieza que usa el carrusel del cliente: lo que se ve
                       aquí es exactamente lo que va a ver la gente. */}
                   <PromoCard
+                    promo={{ tema, colorFondo, colorTexto, colorAcento }}
                     imagen={preview}
                     title={form.title}
                     descripcion={form.promoDescription}
                     etiqueta={etiquetaPromo({ type, items, buyQty, payQty })}
                   />
 
+                  {/* Los colores solo aplican si NO hay imagen propia */}
+                  {!preview && (
+                    <div className="mt-3">
+                      <span className="block text-xs font-bold text-gray-600 mb-2">Colores</span>
+                      <div className="flex flex-wrap gap-2">
+                        {TEMAS.map((t) => (
+                          <button
+                            type="button"
+                            key={t.id}
+                            onClick={() => setTema(t.id)}
+                            title={t.nombre}
+                            aria-label={`Tema ${t.nombre}`}
+                            aria-pressed={tema === t.id}
+                            className="press flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full border transition-colors"
+                            style={{
+                              borderColor: tema === t.id ? '#9C6026' : '#e5e5e5',
+                              background: tema === t.id ? '#FBF6F0' : '#fff',
+                            }}
+                          >
+                            <span
+                              className="w-5 h-5 rounded-full border border-black/10"
+                              style={{ background: t.muestra }}
+                            />
+                            <span className="text-xs font-medium text-gray-700">{t.nombre}</span>
+                          </button>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() => setTema('personalizado')}
+                          aria-pressed={tema === 'personalizado'}
+                          className="press flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors"
+                          style={{
+                            borderColor: tema === 'personalizado' ? '#9C6026' : '#e5e5e5',
+                            background: tema === 'personalizado' ? '#FBF6F0' : '#fff',
+                          }}
+                        >
+                          <Palette size={14} className="text-gray-500" />
+                          <span className="text-xs font-medium text-gray-700">Personalizado</span>
+                        </button>
+                      </div>
+
+                      {tema === 'personalizado' && (
+                        <div className="flex flex-wrap gap-4 mt-3 bg-white border border-gray-200 rounded-xl p-3">
+                          {[
+                            { l: 'Fondo', v: colorFondo, set: setColorFondo },
+                            { l: 'Texto', v: colorTexto, set: setColorTexto },
+                            { l: 'Etiqueta', v: colorAcento, set: setColorAcento },
+                          ].map((c) => (
+                            <label key={c.l} className="flex items-center gap-2 text-xs text-gray-600">
+                              <input
+                                type="color"
+                                value={c.v}
+                                onChange={(e) => c.set(e.target.value)}
+                                className="w-8 h-8 rounded cursor-pointer border border-gray-200"
+                              />
+                              {c.l}
+                            </label>
+                          ))}
+                          <p className="text-xs text-gray-400 w-full">
+                            Ojo con el contraste: si el fondo es claro, el texto tiene que ser oscuro.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3 mt-3">
                     <input type="file" accept="image/*" onChange={onImagen} className="text-sm text-gray-700 flex-1" />
+                    {preview && (
+                      <button
+                        type="button"
+                        onClick={() => { setImagen(null); setPreview(null); }}
+                        className="press text-xs text-gray-500 hover:text-red-500 whitespace-nowrap"
+                      >
+                        Quitar imagen
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
-                    La tarjeta es apaisada (2.5 a 1). Si sube una foto cuadrada se recortará
-                    arriba y abajo — lo ideal es 1200 × 480. El banner que arma la IA ya viene en esa medida.
+                    {preview
+                      ? 'Con imagen propia el texto no se encima, para no duplicar lo que la imagen ya trae. Lo ideal es 1200 × 480.'
+                      : 'No hace falta subir imagen: la tarjeta se arma con el texto y los colores que elija.'}
                   </p>
                 </div>
 

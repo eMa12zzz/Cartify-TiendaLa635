@@ -29,7 +29,7 @@ promotionController.getPromotions = async (req, res) => {
 
 promotionController.insertPromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner } = req.body;
+    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorTexto, colorAcento } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -48,6 +48,9 @@ promotionController.insertPromotion = async (req, res) => {
       payQty: payQty ? Number(payQty) : 1,
       isActive: parseActivo(isActive),
       showBanner: parseActivo(showBanner),
+      // Diseño del banner: se usa cuando no hay imagen propia.
+      tema: tema || "cafe",
+      colorFondo, colorTexto, colorAcento,
       image: req.file ? req.file.path : undefined,
       public_id: req.file ? req.file.filename : undefined,
     });
@@ -62,7 +65,7 @@ promotionController.insertPromotion = async (req, res) => {
 
 promotionController.updatePromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner } = req.body;
+    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorTexto, colorAcento } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -86,6 +89,9 @@ promotionController.updatePromotion = async (req, res) => {
       payQty: payQty ? Number(payQty) : 1,
       isActive: parseActivo(isActive),
       showBanner: parseActivo(showBanner),
+      // Diseño del banner: se usa cuando no hay imagen propia.
+      tema: tema || "cafe",
+      colorFondo, colorTexto, colorAcento,
     };
 
     if (req.file) {

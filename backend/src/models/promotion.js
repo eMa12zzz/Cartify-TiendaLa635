@@ -33,6 +33,20 @@ const promotionSchema = new mongoose.Schema(
     items: [promoItemSchema],
     buyQty: { type: Number, default: 2 }, // NxM: compra N
     payQty: { type: Number, default: 1 }, // NxM: paga M
+    /*
+     * Diseño del banner. Antes la IA armaba una imagen en canvas y se subía a
+     * Cloudinary; ahora la tarjeta se dibuja con estos valores, así que se
+     * puede editar cuando sea sin regenerar nada, el texto queda nítido en
+     * cualquier pantalla y no se gasta almacenamiento en imágenes.
+     *
+     * La imagen sigue existiendo por si la tienda diseñó su propio banner:
+     * si la sube, manda ella y estos colores no se usan.
+     */
+    tema: { type: String, default: 'cafe' },   // paleta elegida (ver temasPromo)
+    colorFondo: { type: String },              // hex, solo si eligió "personalizado"
+    colorTexto: { type: String },
+    colorAcento: { type: String },
+
     isActive: { type: Boolean, default: true },
     /*
      * ¿Se anuncia en la tienda con banner?
