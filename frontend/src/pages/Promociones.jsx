@@ -3,7 +3,8 @@ import toast from 'react-hot-toast';
 import { promotionService } from '../api/promotionService';
 import PromotionFormModal from '../components/Admin/PromotionFormModal';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
-import { etiquetaPromo } from '../utils/promos';
+import { etiquetaPromo, textoVencimiento, promoVencida } from '../utils/promos';
+import PromoCard from '../components/Store/PromoCard';
 
 /*
  * Promociones (Admin) — banners/anuncios de la tienda. El gerente sube una
@@ -79,19 +80,30 @@ const Promociones = () => {
       ) : promos.length === 0 ? (
         <div className="bg-white p-10 rounded-2xl border border-gray-100 text-center">
           <p className="text-gray-800 font-semibold mb-1">No hay promociones todavía</p>
-          <p className="text-gray-500 text-sm">Crea la primera: sube un banner, ponle descuento y elige los productos.</p>
+          <p className="text-gray-500 text-sm">Crea la primera: elige los productos o una categoría completa, ponle precio y listo — el banner se dibuja solo.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {promos.map((promo, i) => (
             <div key={promo._id} style={{ '--i': i }} className="card-in bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              {/* Mismo formato apaisado que la tienda: la imagen no se recorta distinto */}
-              <div className="aspect-[2.5/1] bg-gray-100">
-                {promo.image ? (
-                  <img src={promo.image} alt={promo.promoDescription} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">Sin banner</div>
-                )}
+              {/*
+                La MISMA tarjeta que ve el cliente. Antes esto pintaba la
+                imagen a secas y las promos dibujadas con CSS —que ya son la
+                mayoría— salían como "Sin banner", aunque en la tienda se
+                vieran perfectas.
+              */}
+              <div className="p-3 pb-0">
+                <PromoCard
+                  promo={promo}
+                  imagen={promo.image}
+                  imagenCompleta={promo.imagenCompleta}
+                  title={promo.title}
+                  descripcion={promo.promoDescription}
+                  etiqueta={etiquetaPromo(promo)}
+                  vencimiento={textoVencimiento(promo)}
+                  icono={promo.icono}
+                  mostrarFlecha={false}
+                />
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-1 gap-2">
@@ -101,14 +113,24 @@ const Promociones = () => {
                     {promo.showBanner === false && (
                       <span className="text-xs font-medium text-gray-400" title="No aparece en el carrusel de la tienda">Sin anuncio</span>
                     )}
-                    <span className={`text-xs font-medium ${promo.isActive ? 'text-green-500' : 'text-red-500'}`}>
-                      {promo.isActive ? 'Activa' : 'Inactiva'}
-                    </span>
+                    {/* Vencida se dice aparte de inactiva: no es lo mismo que la apagaran */}
+                    {promoVencida(promo) ? (
+                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full" title={`Venció el ${new Date(promo.endsAt).toLocaleDateString('es')}`}>
+                        Vencida
+                      </span>
+                    ) : (
+                      <span className={`text-xs font-medium ${promo.isActive ? 'text-green-500' : 'text-red-500'}`}>
+                        {promo.isActive ? 'Activa' : 'Inactiva'}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {promo.title && <div className="text-sm font-bold text-gray-800">{promo.title}</div>}
                 <p className="text-sm text-gray-600 mb-2">{promo.promoDescription}</p>
-                <p className="text-xs text-gray-400 mb-3">{promo.items?.length || 0} productos</p>
+                <p className="text-xs text-gray-400 mb-3">
+                  {promo.items?.length || 0} productos
+                  {promo.endsAt && !promoVencida(promo) && ` · ${textoVencimiento(promo).toLowerCase()}`}
+                </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setCurrent(promo); setIsFormOpen(true); }}

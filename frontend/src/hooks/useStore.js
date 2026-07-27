@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { productService } from '../api/productService';
 import { promotionService } from '../api/promotionService';
+import { promoVigente } from '../utils/promos';
 
 /*
  * useStore — estado de la tienda (catálogo real + carrito) con PROMOCIONES.
@@ -12,10 +13,20 @@ import { promotionService } from '../api/promotionService';
  *   - nxm         → precio normal, pero el CARRITO cobra "compra N paga M".
  */
 
-// Mapa productId -> info de promo (nos quedamos con la primera promo activa que lo incluya).
+// Los productos que toca una promo, ya vengan poblados o como puro id.
+export const idsDePromo = (promo) =>
+  (promo?.items || [])
+    .map((it) => (typeof it.productId === 'object' ? it.productId?._id : it.productId))
+    .filter(Boolean);
+
+/*
+ * Mapa productId -> info de promo (la primera promo vigente que lo incluya).
+ * "Vigente" incluye la fecha: una promo que venció anoche no puede seguir
+ * bajando precios hoy solo porque nadie recargó la lista.
+ */
 const construirMapaPromo = (promos) => {
   const mapa = {};
-  (promos || []).filter((pr) => pr.isActive !== false).forEach((pr) => {
+  (promos || []).filter(promoVigente).forEach((pr) => {
     (pr.items || []).forEach((it) => {
       const pid = typeof it.productId === 'object' ? it.productId?._id : it.productId;
       if (!pid || mapa[pid]) return;
@@ -82,6 +93,8 @@ export const useStore = () => {
   const [cargando, setCargando] = useState(false);
   const [filtroPrecio, setFiltroPrecio] = useState('todos');
   const [promoSeleccionada, setPromoSeleccionada] = useState(null);
+  // Promo abierta en la ventana de detalle (el click al banner del carrusel).
+  const [promoDetalle, setPromoDetalle] = useState(null);
 
   useEffect(() => {
     const cargar = async () => {
@@ -103,6 +116,18 @@ export const useStore = () => {
     cargar();
   }, []);
 
+  /*
+   * Escape cierra el detalle de la promo. El listener vive acá y no en el
+   * componente porque el estado de apertura también vive acá: la ventana solo
+   * pinta lo que el hook le dice.
+   */
+  useEffect(() => {
+    if (!promoDetalle) return;
+    const alTeclear = (e) => { if (e.key === 'Escape') setPromoDetalle(null); };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [promoDetalle]);
+
   const categorias = useMemo(() => {
     const cats = new Set(productos.map((p) => p.categoria).filter(Boolean));
     return Array.from(cats).sort();
@@ -113,7 +138,7 @@ export const useStore = () => {
 
     // Filtro por promo (banner): solo los productos de esa promo.
     if (promoSeleccionada) {
-      const ids = (promoSeleccionada.items || []).map((it) => (typeof it.productId === 'object' ? it.productId?._id : it.productId));
+      const ids = idsDePromo(promoSeleccionada);
       filtrados = filtrados.filter((p) => ids.includes(p.id));
     }
 
@@ -142,6 +167,32 @@ export const useStore = () => {
   }, [productos, categoriaSeleccionada, terminoBusqueda, filtroPrecio, promoSeleccionada]);
 
   const productosDestacados = useMemo(() => productos.slice(0, 6), [productos]);
+
+  /*
+   * Los productos de la promo que se está mirando en detalle. Salen del
+   * catálogo ya mapeado, no de promo.items, para que se vean con su precio de
+   * oferta y su stock real — los mismos que verá en la tienda.
+   */
+  const productosDePromo = useMemo(() => {
+    if (!promoDetalle) return [];
+    const ids = idsDePromo(promoDetalle);
+    return productos.filter((p) => ids.includes(p.id));
+  }, [productos, promoDetalle]);
+
+  // Abrir el detalle de una promo (click al banner) y cerrarlo.
+  const abrirPromo = (promo) => setPromoDetalle(promo);
+  const cerrarPromo = () => setPromoDetalle(null);
+
+  /*
+   * "Ver todos en la tienda": cierra el detalle y deja la lista filtrada a esa
+   * promo, limpiando categoría y búsqueda para que no se peleen entre filtros.
+   */
+  const verPromoEnTienda = (promo) => {
+    setPromoSeleccionada(promo || promoDetalle);
+    setCategoriaSeleccionada(null);
+    setTerminoBusqueda('');
+    setPromoDetalle(null);
+  };
 
   const agregarAlCarrito = (producto, cantidad = 1) => {
     setCarrito((prev) => {
@@ -221,5 +272,10 @@ export const useStore = () => {
     setFiltroPrecio,
     promoSeleccionada,
     setPromoSeleccionada,
+    promoDetalle,
+    productosDePromo,
+    abrirPromo,
+    cerrarPromo,
+    verPromoEnTienda,
   };
 };

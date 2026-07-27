@@ -17,8 +17,46 @@ const parseItems = (raw) => {
 
 const parseActivo = (v) => !(v === 'false' || v === false);
 
+/*
+ * La fecha llega como "2026-08-03" desde un <input type="date">. Se guarda al
+ * FINAL de ese día: si el gerente escribe "vence el 3", la promo tiene que
+ * servir todo el 3 y no apagarse a la medianoche en que empieza.
+ * Vacío significa "sin vencimiento", y hay que guardarlo como null explícito
+ * para poder quitarle la fecha a una promo que ya la tenía.
+ */
+const parseVencimiento = (valor) => {
+  if (!valor || valor === 'null' || valor === 'undefined') return null;
+  const soloFecha = /^\d{4}-\d{2}-\d{2}$/.test(valor);
+  const fecha = new Date(soloFecha ? `${valor}T23:59:59.999` : valor);
+  return isNaN(fecha.getTime()) ? null : fecha;
+};
+
+/*
+ * Apaga las promociones que ya vencieron. Corre cuando alguien pide la lista
+ * (vencimiento perezoso, igual que los puntos de fidelidad) en vez de con una
+ * tarea programada: no hace falta un servidor despierto a medianoche, y la
+ * tienda nunca alcanza a mostrar una promo vencida porque el filtro del
+ * frontend ya la descarta por fecha.
+ *
+ * El $type es obligatorio, no adorno: en Mongo el null ordena ANTES que
+ * cualquier fecha, así que un $lt suelto también agarraría las promos sin
+ * vencimiento y las apagaría a todas.
+ */
+const desactivarVencidas = async () => {
+  try {
+    await promotionModel.updateMany(
+      { isActive: true, endsAt: { $type: "date", $lt: new Date() } },
+      { $set: { isActive: false } }
+    );
+  } catch (error) {
+    // Que no se caiga la lista por esto: peor es no devolver las promos.
+    console.log("no se pudieron desactivar las promos vencidas: " + error);
+  }
+};
+
 promotionController.getPromotions = async (req, res) => {
   try {
+    await desactivarVencidas();
     const promotions = await promotionModel.find().populate("items.productId");
     return res.status(200).json(promotions);
   } catch (error) {
@@ -29,7 +67,7 @@ promotionController.getPromotions = async (req, res) => {
 
 promotionController.insertPromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorTexto, colorAcento } = req.body;
+    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -50,7 +88,10 @@ promotionController.insertPromotion = async (req, res) => {
       showBanner: parseActivo(showBanner),
       // Diseño del banner: se usa cuando no hay imagen propia.
       tema: tema || "cafe",
-      colorFondo, colorTexto, colorAcento,
+      colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha,
+      icono: icono || "",
+      imagenCompleta: imagenCompleta === 'true' || imagenCompleta === true,
+      endsAt: parseVencimiento(endsAt),
       image: req.file ? req.file.path : undefined,
       public_id: req.file ? req.file.filename : undefined,
     });
@@ -65,7 +106,7 @@ promotionController.insertPromotion = async (req, res) => {
 
 promotionController.updatePromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorTexto, colorAcento } = req.body;
+    const { title, promoDescription, type, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -91,7 +132,10 @@ promotionController.updatePromotion = async (req, res) => {
       showBanner: parseActivo(showBanner),
       // Diseño del banner: se usa cuando no hay imagen propia.
       tema: tema || "cafe",
-      colorFondo, colorTexto, colorAcento,
+      colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha,
+      icono: icono || "",
+      imagenCompleta: imagenCompleta === 'true' || imagenCompleta === true,
+      endsAt: parseVencimiento(endsAt),
     };
 
     if (req.file) {
