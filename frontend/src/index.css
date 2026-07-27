@@ -267,6 +267,19 @@ h1, h2, h3, h4 {
   & input[type="checkbox"],
   & input[type="radio"] { accent-color: var(--theme-primary); }
 
+  /*
+    Cafés que se habían quedado fuera del mapeo y saltaban a la vista al
+    cambiar de paleta: el fondo crema de los bloques de ayuda, su borde, el
+    café oscuro de los iconos y el hover de los botones de acción.
+  */
+  & .bg-\[\#FBF6F0\] { background-color: var(--theme-primary-light) !important; }
+  & .border-\[\#E4D5C3\] { border-color: var(--theme-card-border) !important; }
+  & .text-\[\#9C6026\] { color: var(--theme-primary) !important; }
+  & .hover\:bg-\[\#6B4423\]:hover {
+    background-color: var(--theme-primary-hover) !important;
+    color: var(--theme-button-text) !important;
+  }
+
   & input[type="file"] { color: var(--theme-text-secondary) !important; }
   & input[type="file"]::file-selector-button {
     background-color: var(--theme-primary-light);

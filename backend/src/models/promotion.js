@@ -15,6 +15,18 @@ const promoItemSchema = new Schema(
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "productModel" },
     discount: { type: Number, default: 0 },   // % (tipo 'descuento')
     fixedPrice: { type: Number },              // $ (tipo 'precio_fijo')
+    /*
+     * De dónde salió este producto. Si se agregó eligiendo una categoría
+     * completa, se guarda cuál: la promo queda con los productos uno por uno
+     * (una foto del momento), pero el admin ve "Lácteos · 12 productos" en vez
+     * de doce filas sueltas y puede quitarlos de un golpe.
+     *
+     * Es una foto a propósito: si fuera dinámica, un producto agregado mañana
+     * a esa categoría entraría a la promo sin que nadie lo haya visto ni
+     * revisado su precio.
+     */
+    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "productTypeModel" },
+    categoryName: { type: String },
   },
   { _id: false }
 );
@@ -44,8 +56,28 @@ const promotionSchema = new mongoose.Schema(
      */
     tema: { type: String, default: 'cafe' },   // paleta elegida (ver temasPromo)
     colorFondo: { type: String },              // hex, solo si eligió "personalizado"
+    colorFondo2: { type: String },             // segundo color: arma el degradado
     colorTexto: { type: String },
-    colorAcento: { type: String },
+    colorAcento: { type: String },             // píldora de la etiqueta
+    colorFlecha: { type: String },             // círculo de la flecha; si falta, usa el acento
+    /*
+     * Icono del banner (ver iconosPromo). Se dibuja en la píldora y en grande
+     * de marca de agua, para que el banner tenga cara sin depender de una foto.
+     */
+    icono: { type: String, default: '' },
+    /*
+     * Si la tienda diseñó su propio banner entero (1200×480), la imagen ocupa
+     * toda la tarjeta y el texto no se dibuja encima. En falso —lo normal— la
+     * imagen acompaña a un lado y el título sigue leyéndose.
+     */
+    imagenCompleta: { type: Boolean, default: false },
+
+    /*
+     * Vencimiento (opcional). Al pasar la fecha la promo deja de aplicarse y de
+     * anunciarse sola: nadie tiene que acordarse de apagarla un domingo.
+     * Se guarda al FINAL del día elegido, así "vence el 3" incluye todo el 3.
+     */
+    endsAt: { type: Date, default: null },
 
     isActive: { type: Boolean, default: true },
     /*

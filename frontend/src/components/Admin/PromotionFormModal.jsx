@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Sparkles, Palette } from 'lucide-react';
+import { Sparkles, Palette, Layers, X } from 'lucide-react';
 import { productService } from '../../api/productService';
 import { validarPromocion, avisoVentaBajoCosto, bloquearTeclasNumero } from '../../utils/validaciones';
-import { etiquetaPromo } from '../../utils/promos';
+import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promos';
 import { usePromoAI } from '../../hooks/usePromoAI';
 import PromoCard from '../Store/PromoCard';
-import { TEMAS } from '../../utils/temasPromo';
+import { TEMAS, TEMAS_BASE, TEMAS_FESTIVOS } from '../../utils/temasPromo';
+import { ICONOS_PROMO } from '../../utils/iconosPromo';
 
 /*
  * PromotionFormModal — crear/editar una promoción (multi-tipo).
@@ -22,24 +23,110 @@ const TIPOS = [
   { v: 'nxm', l: 'NxM (2x1)' },
 ];
 
+// La fecha de un <input type="date"> se escribe "2026-08-03".
+const aInputDate = (valor) => {
+  if (!valor) return '';
+  const f = new Date(valor);
+  if (isNaN(f.getTime())) return '';
+  // Local, no ISO: toISOString() se corre un día en zonas al oeste de Greenwich.
+  const mes = String(f.getMonth() + 1).padStart(2, '0');
+  const dia = String(f.getDate()).padStart(2, '0');
+  return `${f.getFullYear()}-${mes}-${dia}`;
+};
+
+const hoyInputDate = () => aInputDate(new Date());
+
+/*
+ * Para la vista previa: la fecha escrita vale hasta el final de ese día, igual
+ * que la guarda el backend. Sin esto, "vence hoy" se vería como vencida — un
+ * "2026-08-03" pelón es medianoche UTC, que aquí ya pasó.
+ */
+const finDelDia = (valor) => (valor ? `${valor}T23:59:59.999` : null);
+
+/*
+ * Saca los dos colores de un fondo de tema ("linear-gradient(135deg, #8A5222
+ * 0%, #B46C30 100%)") para poder seguir editándolos con los selectores de
+ * color, que solo entienden hex sueltos.
+ */
+const extraerColoresDeFondo = (fondo = '') => {
+  const hex = fondo.match(/#[0-9a-fA-F]{3,8}/g) || [];
+  return [hex[0] || '#B46C30', hex[1] || ''];
+};
+
+/*
+ * Estilo de las píldoras que se eligen (temas e iconos).
+ *
+ * Va con las variables del tema y no con hex fijos porque el panel tiene
+ * paletas de accesibilidad: en alto contraste o modo oscuro, un café clavado
+ * a mano se queda solo en medio de la pantalla. Y como es `style` inline, los
+ * mapeos de .admin-theme no lo alcanzan: hay que pedir la variable aquí.
+ */
+const seleccionable = (activo) => ({
+  borderColor: activo ? 'var(--theme-primary)' : 'var(--theme-card-border)',
+  background: activo ? 'var(--theme-primary-light)' : 'var(--theme-card-bg)',
+});
+
+// Píldora de un tema: su color de muestra y su nombre.
+const BotonTema = ({ tema, activo, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={tema.nombre}
+    aria-label={`Tema ${tema.nombre}`}
+    aria-pressed={activo}
+    className="press flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full border transition-colors"
+    style={seleccionable(activo)}
+  >
+    <span className="w-5 h-5 rounded-full border border-black/10" style={{ background: tema.muestra }} />
+    <span className="text-xs font-medium text-gray-700">{tema.nombre}</span>
+  </button>
+);
+
 const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   const isEditing = !!promoData;
   const [form, setForm] = useState({ title: '', promoDescription: '', isActive: true, showBanner: true });
   const [type, setType] = useState('descuento');
-  const [items, setItems] = useState([]); // [{ productId, name, discount, fixedPrice }]
+  const [items, setItems] = useState([]); // [{ productId, name, discount, fixedPrice, categoryId, categoryName }]
   const [buyQty, setBuyQty] = useState(2);
   const [payQty, setPayQty] = useState(1);
   const [productos, setProductos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [imagen, setImagen] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [imagenCompleta, setImagenCompleta] = useState(false);
+  const [endsAt, setEndsAt] = useState('');
+  const [icono, setIcono] = useState('');
+  // Alta por categoría completa: cuál y con qué precio/descuento entra.
+  const [categoriaElegida, setCategoriaElegida] = useState('');
+  const [valorCategoria, setValorCategoria] = useState('');
   const [guardando, setGuardando] = useState(false);
   // Diseño del banner (reemplaza al canvas que armaba la IA).
   const [tema, setTema] = useState('cafe');
   const [colorFondo, setColorFondo] = useState('#B46C30');
+  const [colorFondo2, setColorFondo2] = useState('');
   const [colorTexto, setColorTexto] = useState('#FFFFFF');
   const [colorAcento, setColorAcento] = useState('#F3E7D8');
+  const [colorFlecha, setColorFlecha] = useState('');
   const { generando, generarPromo } = usePromoAI();
+
+  /*
+   * Pasar a "Personalizado" arranca desde el tema que estaba puesto, no desde
+   * el café de siempre. Personalizar es corregir un detalle de algo que ya
+   * gustó; obligar a rearmar la paleta desde cero era la razón por la que el
+   * editor se sentía limitado.
+   */
+  const activarPersonalizado = () => {
+    if (tema !== 'personalizado') {
+      const base = TEMAS.find((t) => t.id === tema) || TEMAS[0];
+      const [inicio, fin] = extraerColoresDeFondo(base.fondo);
+      setColorFondo(inicio);
+      setColorFondo2(fin);
+      setColorTexto(base.texto);
+      setColorAcento(base.acento);
+      setColorFlecha(base.acento);
+    }
+    setTema('personalizado');
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -62,25 +149,39 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
         name: typeof it.productId === 'object' ? it.productId?.name : 'Producto',
         discount: it.discount ?? 0,
         fixedPrice: it.fixedPrice ?? '',
+        categoryId: it.categoryId || null,
+        categoryName: it.categoryName || null,
       })));
       setPreview(promoData.image || null);
+      setImagenCompleta(!!promoData.imagenCompleta);
+      setEndsAt(aInputDate(promoData.endsAt));
+      setIcono(promoData.icono || '');
       setTema(promoData.tema || 'cafe');
       setColorFondo(promoData.colorFondo || '#B46C30');
+      setColorFondo2(promoData.colorFondo2 || '');
       setColorTexto(promoData.colorTexto || '#FFFFFF');
       setColorAcento(promoData.colorAcento || '#F3E7D8');
+      setColorFlecha(promoData.colorFlecha || '');
     } else {
       setForm({ title: '', promoDescription: '', isActive: true, showBanner: true });
       setType('descuento');
       setBuyQty(2); setPayQty(1);
       setItems([]);
       setPreview(null);
+      setImagenCompleta(false);
+      setEndsAt('');
+      setIcono('');
       setTema('cafe');
       setColorFondo('#B46C30');
+      setColorFondo2('');
       setColorTexto('#FFFFFF');
       setColorAcento('#F3E7D8');
+      setColorFlecha('');
     }
     setImagen(null);
     setBusqueda('');
+    setCategoriaElegida('');
+    setValorCategoria('');
   }, [isOpen, promoData]);
 
   const onImagen = (e) => {
@@ -100,6 +201,86 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     (p) => !items.some((it) => it.productId === p._id) &&
       (p.name || '').toLowerCase().includes(busqueda.toLowerCase().trim())
   );
+
+  /*
+   * ── Categorías ──
+   * Salen de los productos cargados, no de un endpoint aparte: una categoría
+   * sin productos no se puede promocionar, así que no tiene por qué aparecer.
+   */
+  const idCategoria = (p) => p.typeId?._id || p.typeId || null;
+
+  const categorias = useMemo(() => {
+    const mapa = new Map();
+    productos.forEach((p) => {
+      const id = idCategoria(p);
+      const nombre = p.typeId?.type;
+      if (id && nombre && !mapa.has(String(id))) mapa.set(String(id), nombre);
+    });
+    return [...mapa.entries()]
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [productos]);
+
+  /*
+   * Agrega de un golpe todos los productos de una categoría, con el mismo
+   * precio o descuento para todos.
+   *
+   * Se guardan producto por producto (una foto del momento) y no como "la
+   * categoría entera": así el gerente ve y puede corregir el precio de cada
+   * uno ANTES de guardar, la alerta de venta bajo costo sigue funcionando, y
+   * un producto que se agregue mañana a esa categoría no entra solo a una
+   * promo que nadie revisó.
+   */
+  const agregarCategoria = () => {
+    if (!categoriaElegida) return;
+
+    const cat = categorias.find((c) => c.id === categoriaElegida);
+    const nuevos = productos.filter(
+      (p) => String(idCategoria(p)) === categoriaElegida && !items.some((it) => it.productId === p._id)
+    );
+
+    if (nuevos.length === 0) {
+      toast('Esa categoría ya está completa en la promoción', { icon: '👍' });
+      return;
+    }
+
+    const valor = Number(valorCategoria);
+    const hayValor = valorCategoria !== '' && !isNaN(valor);
+
+    setItems([
+      ...items,
+      ...nuevos.map((p) => ({
+        productId: p._id,
+        name: p.name,
+        // Sin valor escrito: descuento 0 y precio actual, para que se note que
+        // falta ponerlo en vez de inventar una oferta.
+        discount: type === 'descuento' && hayValor ? valor : 0,
+        fixedPrice: type === 'precio_fijo' && hayValor ? valor : (p.salePrice ?? 0),
+        categoryId: categoriaElegida,
+        categoryName: cat?.nombre || '',
+      })),
+    ]);
+
+    toast.success(`${nuevos.length} ${nuevos.length === 1 ? 'producto agregado' : 'productos agregados'} de ${cat?.nombre}`);
+    setCategoriaElegida('');
+    setValorCategoria('');
+  };
+
+  // Quitar de un tirón todo lo que entró por una categoría.
+  const quitarCategoria = (categoryId) => setItems(items.filter((it) => String(it.categoryId) !== String(categoryId)));
+
+  // Resumen "Lácteos · 12" para no mostrar doce filas iguales sin contexto.
+  const gruposCategoria = useMemo(() => {
+    const mapa = new Map();
+    items.forEach((it) => {
+      if (!it.categoryId) return;
+      const clave = String(it.categoryId);
+      const grupo = mapa.get(clave) || { id: clave, nombre: it.categoryName || 'Categoría', cantidad: 0 };
+      grupo.cantidad += 1;
+      mapa.set(clave, grupo);
+    });
+    return [...mapa.values()];
+  }, [items]);
 
   /*
    * La IA solo escribe el TEXTO. El banner se diseña acá con los colores, así
@@ -147,10 +328,21 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       return;
     }
 
+    /*
+     * Una fecha ya pasada es siempre un dedazo: la promo nacería vencida y el
+     * gerente la buscaría en la tienda sin encontrarla nunca.
+     */
+    if (endsAt && endsAt < hoyInputDate()) {
+      toast.error('Esa fecha ya pasó. Elige una de hoy en adelante, o déjala vacía.');
+      return;
+    }
+
     const itemsPayload = items.map((it) => ({
       productId: it.productId,
       discount: Number(it.discount) || 0,
       fixedPrice: it.fixedPrice === '' || it.fixedPrice === null ? undefined : Number(it.fixedPrice),
+      categoryId: it.categoryId || undefined,
+      categoryName: it.categoryName || undefined,
     }));
 
     const fd = new FormData();
@@ -162,12 +354,17 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     fd.append('buyQty', buyQty);
     fd.append('payQty', payQty);
     fd.append('items', JSON.stringify(itemsPayload));
+    fd.append('endsAt', endsAt);
+    fd.append('imagenCompleta', imagenCompleta && !!preview);
     // Diseño del banner (solo se usa si no hay imagen propia).
     fd.append('tema', tema);
+    fd.append('icono', icono);
     if (tema === 'personalizado') {
       fd.append('colorFondo', colorFondo);
+      fd.append('colorFondo2', colorFondo2);
       fd.append('colorTexto', colorTexto);
       fd.append('colorAcento', colorAcento);
+      fd.append('colorFlecha', colorFlecha);
     }
     if (imagen) fd.append('image', imagen);
 
@@ -251,61 +448,58 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   {/* Misma pieza que usa el carrusel del cliente: lo que se ve
                       aquí es exactamente lo que va a ver la gente. */}
                   <PromoCard
-                    promo={{ tema, colorFondo, colorTexto, colorAcento }}
+                    promo={{ tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha }}
                     imagen={preview}
+                    imagenCompleta={imagenCompleta}
                     title={form.title}
                     descripcion={form.promoDescription}
                     etiqueta={etiquetaPromo({ type, items, buyQty, payQty })}
+                    vencimiento={textoVencimiento({ endsAt: finDelDia(endsAt) })}
+                    icono={icono}
                   />
 
-                  {/* Los colores solo aplican si NO hay imagen propia */}
-                  {!preview && (
+                  {/* Los colores pintan la tarjeta salvo que la imagen la ocupe entera */}
+                  {!(preview && imagenCompleta) && (
                     <div className="mt-3">
                       <span className="block text-xs font-bold text-gray-600 mb-2">Colores</span>
                       <div className="flex flex-wrap gap-2">
-                        {TEMAS.map((t) => (
-                          <button
-                            type="button"
-                            key={t.id}
-                            onClick={() => setTema(t.id)}
-                            title={t.nombre}
-                            aria-label={`Tema ${t.nombre}`}
-                            aria-pressed={tema === t.id}
-                            className="press flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full border transition-colors"
-                            style={{
-                              borderColor: tema === t.id ? '#9C6026' : '#e5e5e5',
-                              background: tema === t.id ? '#FBF6F0' : '#fff',
-                            }}
-                          >
-                            <span
-                              className="w-5 h-5 rounded-full border border-black/10"
-                              style={{ background: t.muestra }}
-                            />
-                            <span className="text-xs font-medium text-gray-700">{t.nombre}</span>
-                          </button>
+                        {TEMAS_BASE.map((t) => (
+                          <BotonTema key={t.id} tema={t} activo={tema === t.id} onClick={() => setTema(t.id)} />
                         ))}
 
                         <button
                           type="button"
-                          onClick={() => setTema('personalizado')}
+                          onClick={activarPersonalizado}
                           aria-pressed={tema === 'personalizado'}
                           className="press flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors"
-                          style={{
-                            borderColor: tema === 'personalizado' ? '#9C6026' : '#e5e5e5',
-                            background: tema === 'personalizado' ? '#FBF6F0' : '#fff',
-                          }}
+                          style={seleccionable(tema === 'personalizado')}
                         >
                           <Palette size={14} className="text-gray-500" />
                           <span className="text-xs font-medium text-gray-700">Personalizado</span>
                         </button>
                       </div>
 
+                      {/*
+                        Las de temporada van aparte: se usan tres semanas al año
+                        y mezcladas harían buscar "Café" entre nueve píldoras.
+                      */}
+                      <span className="block text-xs font-bold text-gray-600 mt-3 mb-2">Fechas especiales</span>
+                      <div className="flex flex-wrap gap-2">
+                        {TEMAS_FESTIVOS.map((t) => (
+                          <BotonTema key={t.id} tema={t} activo={tema === t.id} onClick={() => setTema(t.id)} />
+                        ))}
+                      </div>
+
                       {tema === 'personalizado' && (
                         <div className="flex flex-wrap gap-4 mt-3 bg-white border border-gray-200 rounded-xl p-3">
                           {[
                             { l: 'Fondo', v: colorFondo, set: setColorFondo },
+                            { l: 'Fondo 2', v: colorFondo2 || colorFondo, set: setColorFondo2 },
                             { l: 'Texto', v: colorTexto, set: setColorTexto },
                             { l: 'Etiqueta', v: colorAcento, set: setColorAcento },
+                            // La flecha vive con los demás colores; suelta afuera
+                            // era un recuadro huérfano que no se entendía.
+                            { l: 'Flecha', v: colorFlecha || colorAcento, set: setColorFlecha },
                           ].map((c) => (
                             <label key={c.l} className="flex items-center gap-2 text-xs text-gray-600">
                               <input
@@ -317,11 +511,58 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                               {c.l}
                             </label>
                           ))}
+
+                          {/* El segundo color arma el degradado; quitarlo deja el fondo plano */}
+                          {colorFondo2 && (
+                            <button
+                              type="button"
+                              onClick={() => setColorFondo2('')}
+                              className="press text-xs text-gray-500 hover:text-red-500 self-center"
+                            >
+                              Fondo de un solo color
+                            </button>
+                          )}
+
                           <p className="text-xs text-gray-400 w-full">
-                            Ojo con el contraste: si el fondo es claro, el texto tiene que ser oscuro.
+                            "Fondo 2" arma el degradado. Ojo con el contraste: si el fondo es claro, el texto tiene que ser oscuro.
                           </p>
                         </div>
                       )}
+
+                      {/* Iconos: el banner tiene cara sin depender de una foto */}
+                      <div className="mt-4">
+                        <span className="block text-xs font-bold text-gray-600 mb-2">Icono</span>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setIcono('')}
+                            aria-pressed={!icono}
+                            className="press px-3 py-1.5 rounded-full border text-xs font-medium text-gray-700 transition-colors"
+                            style={seleccionable(!icono)}
+                          >
+                            Sin icono
+                          </button>
+
+                          {ICONOS_PROMO.map(({ id, nombre, Icono }) => (
+                            <button
+                              type="button"
+                              key={id}
+                              onClick={() => setIcono(id)}
+                              title={nombre}
+                              aria-label={`Icono ${nombre}`}
+                              aria-pressed={icono === id}
+                              className="press flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full border transition-colors"
+                              style={seleccionable(icono === id)}
+                            >
+                              <Icono size={15} style={{ color: 'var(--theme-primary)' }} />
+                              <span className="text-xs font-medium text-gray-700">{nombre}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">
+                          Sale junto al precio y en grande de fondo. Si el título es largo, el de fondo se quita solo para no estorbarlo.
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -330,16 +571,39 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     {preview && (
                       <button
                         type="button"
-                        onClick={() => { setImagen(null); setPreview(null); }}
+                        onClick={() => { setImagen(null); setPreview(null); setImagenCompleta(false); }}
                         className="press text-xs text-gray-500 hover:text-red-500 whitespace-nowrap"
                       >
                         Quitar imagen
                       </button>
                     )}
                   </div>
+
+                  {/*
+                    La foto acompaña al texto por defecto. Ocupar la tarjeta
+                    entera se puede, pero eligiéndolo: así nadie pierde el
+                    título y el precio sin darse cuenta por subir una foto.
+                  */}
+                  {preview && (
+                    <label className="flex items-start cursor-pointer mt-2">
+                      <input
+                        type="checkbox"
+                        checked={imagenCompleta}
+                        onChange={(e) => setImagenCompleta(e.target.checked)}
+                        className="mr-2 mt-1"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Usar la imagen como banner completo
+                        <span className="block text-xs font-normal text-gray-500">
+                          Solo si ya diseñó el banner entero (1200 × 480) con su texto adentro. El título y la fecha dejan de dibujarse.
+                        </span>
+                      </span>
+                    </label>
+                  )}
+
                   <p className="text-xs text-gray-400 mt-1">
                     {preview
-                      ? 'Con imagen propia el texto no se encima, para no duplicar lo que la imagen ya trae. Lo ideal es 1200 × 480.'
+                      ? 'La foto se acomoda a la derecha y se funde con el color; el texto se sigue leyendo.'
                       : 'No hace falta subir imagen: la tarjeta se arma con el texto y los colores que elija.'}
                   </p>
                 </div>
@@ -354,6 +618,45 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   <textarea value={form.promoDescription} onChange={(e) => setForm({ ...form, promoDescription: e.target.value })} rows={2}
                     className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#9C6026] resize-none"
                     placeholder="Ej. Promo de quesos seleccionados" />
+                </div>
+
+                {/*
+                  Vencimiento: la promo se apaga sola. Sin esto, apagarla era
+                  acordarse un domingo de entrar al sistema — y mientras tanto
+                  seguía descontando.
+                */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Vence el (opcional)</label>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <input
+                      type="date"
+                      value={endsAt}
+                      min={hoyInputDate()}
+                      onChange={(e) => setEndsAt(e.target.value)}
+                      className={`${inputCls} flex-1 min-w-[170px] cursor-pointer`}
+                    />
+                    {endsAt && (
+                      <button
+                        type="button"
+                        onClick={() => setEndsAt('')}
+                        className="press text-xs text-gray-500 hover:text-red-500 whitespace-nowrap"
+                      >
+                        Sin vencimiento
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {endsAt
+                      ? 'Aplica todo ese día completo. Al día siguiente deja de descontar y sale del carrusel sola.'
+                      : 'Sin fecha, la promoción sigue hasta que la apague a mano.'}
+                  </p>
+
+                  {/* Al estirarle la fecha a una promo vencida hay que reactivarla */}
+                  {isEditing && promoVencida(promoData) && endsAt >= hoyInputDate() && !form.isActive && (
+                    <p className="text-xs text-[#B47C4D] mt-2 font-medium">
+                      Esta promoción se apagó al vencerse: marque "Activa" abajo para que la nueva fecha sirva de algo.
+                    </p>
+                  )}
                 </div>
 
                 {/* Productos */}
@@ -379,8 +682,82 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     </div>
                   )}
 
+                  {/*
+                    Alta por categoría completa. Para una promo de "todos los
+                    lácteos" nadie debería buscar treinta productos a mano.
+                  */}
+                  {categorias.length > 0 && (
+                    <div className="rounded-xl border border-gray-200 bg-[#FAF9F6] p-3 mb-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Layers size={15} style={{ color: 'var(--theme-primary)' }} />
+                        <span className="text-xs font-bold text-gray-700">O agregue una categoría completa</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={categoriaElegida}
+                          onChange={(e) => setCategoriaElegida(e.target.value)}
+                          className="flex-1 min-w-[140px] bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-3 py-2 focus:outline-none focus:border-[#9C6026] cursor-pointer"
+                        >
+                          <option value="">Elegir categoría…</option>
+                          {categorias.map((c) => (
+                            <option key={c.id} value={c.id}>{c.nombre}</option>
+                          ))}
+                        </select>
+
+                        {type !== 'nxm' && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-500">{type === 'descuento' ? '%' : '$'}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step={type === 'descuento' ? '1' : '0.01'}
+                              value={valorCategoria}
+                              onKeyDown={bloquearTeclasNumero}
+                              onChange={(e) => setValorCategoria(e.target.value)}
+                              placeholder={type === 'descuento' ? '20' : '1.25'}
+                              className="w-20 bg-white border border-gray-300 rounded-full px-2 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]"
+                            />
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={agregarCategoria}
+                          disabled={!categoriaElegida}
+                          className="press bg-[#9C6026] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Agregar
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {type === 'nxm'
+                          ? 'Entran todos los productos de la categoría con el mismo NxM.'
+                          : `Entran todos con el mismo ${type === 'descuento' ? 'descuento' : 'precio'}; después puede ajustar cualquiera abajo.`}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Lo que entró por categoría, resumido y quitable de un golpe */}
+                  {gruposCategoria.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {gruposCategoria.map((g) => (
+                        <span key={g.id} className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium pl-3 pr-1.5 py-1 rounded-full">
+                          {g.nombre} · {g.cantidad}
+                          <button
+                            type="button"
+                            onClick={() => quitarCategoria(g.id)}
+                            className="press text-gray-400 hover:text-red-500"
+                            aria-label={`Quitar los productos de ${g.nombre}`}
+                          >
+                            <X size={13} strokeWidth={2.6} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Lista de productos agregados */}
-                  <div className="border border-gray-200 rounded-lg bg-white p-2 space-y-1">
+                  <div className="border border-gray-200 rounded-lg bg-white p-2 space-y-1 max-h-56 overflow-y-auto">
                     {items.length === 0 ? (
                       <p className="text-xs text-gray-400 py-2">Aún no agregas productos. Búscalos arriba.</p>
                     ) : (

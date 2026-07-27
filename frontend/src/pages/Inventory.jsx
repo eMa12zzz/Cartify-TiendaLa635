@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useInventory } from '../hooks/useInventory';
-import { Download, Plus, Search } from 'lucide-react';
+import { Download, Plus, Search, ArrowDownUp } from 'lucide-react';
 import FilterSelect from '../components/UI/FilterSelect';
 import CategoryPills from '../components/Inventory/CategoryPills';
 import ProductCard from '../components/Inventory/ProductCard';
@@ -62,7 +62,6 @@ const Inventory = () => {
                             product.barCode?.toLowerCase().includes(searchString);
 
       if (stockFilter === 'Todos') return matchesSearch;
-      if (stockFilter === 'ConStock') return matchesSearch && (product.stock > 0);
       if (stockFilter === 'StockBajo') return matchesSearch && esBajo(product);
       if (stockFilter === 'Agotados') return matchesSearch && (!product.stock || product.stock === 0);
 
@@ -131,24 +130,22 @@ const Inventory = () => {
               className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
             />
           </div>
+          {/*
+            El botón de ordenar heredó la píldora del filtro de stock (que ya
+            no está: filtrar ahora se hace clickeando las tarjetas del resumen,
+            que además dicen cuántos son antes de que uno filtre).
+          */}
           <FilterSelect
-            value={stockFilter}
-            onChange={setStockFilter}
+            value={orden}
+            onChange={setOrden}
+            defaultValue="nombre"
+            defaultLabel="Ordenar: Nombre"
+            icon={ArrowDownUp}
             options={[
-              { value: 'ConStock', label: 'Con Stock' },
-              { value: 'StockBajo', label: 'Stock bajo' },
-              { value: 'Agotados', label: 'Agotados' },
+              { value: 'stock', label: 'Ordenar: Menos stock' },
+              { value: 'precio', label: 'Ordenar: Mayor precio' },
             ]}
           />
-          <select
-            value={orden}
-            onChange={(e) => setOrden(e.target.value)}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] shadow-sm cursor-pointer"
-          >
-            <option value="nombre">Ordenar: Nombre</option>
-            <option value="stock">Ordenar: Menos stock</option>
-            <option value="precio">Ordenar: Mayor precio</option>
-          </select>
           <button 
             onClick={handleAddProduct}
             className="flex items-center gap-2 px-6 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
@@ -159,19 +156,46 @@ const Inventory = () => {
         </div>
       </div>
 
-      {/* Resumen del inventario: contexto antes de la lista */}
+      {/*
+        Resumen del inventario: contexto antes de la lista, y de paso el filtro.
+        Que "Agotados: 7" no se pueda tocar es una crueldad pequeña: el número
+        que le preocupa al encargado ya está ahí, lo natural es clickearlo para
+        ver cuáles son. Volver a clickear la tarjeta activa quita el filtro.
+      */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Productos', valor: products.length, tono: 'text-gray-900' },
-          { label: 'Stock bajo', valor: bajos, tono: bajos > 0 ? 'text-orange-500' : 'text-gray-900' },
-          { label: 'Agotados', valor: agotados, tono: agotados > 0 ? 'text-red-500' : 'text-gray-900' },
+          { label: 'Productos', valor: products.length, tono: 'text-gray-900', filtro: 'Todos' },
+          { label: 'Stock bajo', valor: bajos, tono: bajos > 0 ? 'text-orange-500' : 'text-gray-900', filtro: 'StockBajo' },
+          { label: 'Agotados', valor: agotados, tono: agotados > 0 ? 'text-red-500' : 'text-gray-900', filtro: 'Agotados' },
           { label: 'Valor en bodega', valor: `$${valorInventario.toFixed(2)}`, tono: 'text-gray-900' },
-        ].map((s) => (
-          <div key={s.label} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-            <div className="text-xs font-bold text-gray-500 mb-1">{s.label}</div>
-            <div className={`text-2xl font-extrabold ${s.tono}`}>{s.valor}</div>
-          </div>
-        ))}
+        ].map((s) => {
+          const activa = s.filtro && stockFilter === s.filtro;
+          const base = 'text-left p-4 rounded-2xl shadow-sm border transition-colors';
+
+          // La de "Valor en bodega" no filtra nada: no tiene por qué invitar al click.
+          if (!s.filtro) {
+            return (
+              <div key={s.label} className={`${base} bg-white border-gray-100`}>
+                <div className="text-xs font-bold text-gray-500 mb-1">{s.label}</div>
+                <div className={`text-2xl font-extrabold ${s.tono}`}>{s.valor}</div>
+              </div>
+            );
+          }
+
+          return (
+            <button
+              key={s.label}
+              type="button"
+              onClick={() => setStockFilter(activa ? 'Todos' : s.filtro)}
+              aria-pressed={activa}
+              title={activa ? 'Quitar el filtro' : `Ver solo: ${s.label}`}
+              className={`${base} press ${activa ? 'bg-[#FAF9F6] border-[#B47C4D]' : 'bg-white border-gray-100'}`}
+            >
+              <div className="text-xs font-bold text-gray-500 mb-1">{s.label}</div>
+              <div className={`text-2xl font-extrabold ${s.tono}`}>{s.valor}</div>
+            </button>
+          );
+        })}
       </div>
 
       <CategoryPills

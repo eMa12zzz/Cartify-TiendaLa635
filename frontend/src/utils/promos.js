@@ -36,11 +36,61 @@ export const etiquetaPromo = (promo) => {
 };
 
 /*
- * Las que de verdad se anuncian en la tienda: activas y marcadas para anunciar.
+ * ── Vencimiento ──
+ * El backend apaga las promos vencidas cuando alguien pide la lista, pero la
+ * tienda no puede depender de eso: alguien con la página abierta desde ayer
+ * seguiría viendo la promo de ayer. Por eso la fecha se mira también acá, en
+ * cada render — es la verdad más barata y la más inmediata.
+ */
+
+// Medianoche de hoy: comparar días completos, no horas.
+const hoyCero = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const fechaFin = (promo) => {
+  if (!promo?.endsAt) return null;
+  const f = new Date(promo.endsAt);
+  return isNaN(f.getTime()) ? null : f;
+};
+
+export const promoVencida = (promo) => {
+  const fin = fechaFin(promo);
+  return !!fin && fin.getTime() < Date.now();
+};
+
+// Una promo rige si está activa y todavía no se le pasó la fecha.
+export const promoVigente = (promo) =>
+  !!promo && promo.isActive !== false && !promoVencida(promo);
+
+/*
+ * Cuánto le queda, dicho como lo diría una persona. "Termina el 3 de agosto"
+ * sirve para planear; "Último día" es lo que hace que alguien compre hoy.
+ */
+export const textoVencimiento = (promo) => {
+  const fin = fechaFin(promo);
+  if (!fin) return null;
+  if (promoVencida(promo)) return 'Vencida';
+
+  const finDia = new Date(fin);
+  finDia.setHours(0, 0, 0, 0);
+  const dias = Math.round((finDia - hoyCero()) / 86400000);
+
+  if (dias <= 0) return 'Último día';
+  if (dias === 1) return 'Termina mañana';
+  if (dias <= 6) return `Quedan ${dias} días`;
+
+  return `Termina el ${fin.toLocaleDateString('es', { day: 'numeric', month: 'long' })}`;
+};
+
+/*
+ * Las que de verdad se anuncian en la tienda: vigentes y marcadas para anunciar.
  * Ya NO se exige imagen — la tarjeta se dibuja con el texto y los colores del
  * tema. Lo que sí hace falta es un título: sin él el banner saldría vacío.
  */
 export const promosVisibles = (lista) =>
   (Array.isArray(lista) ? lista : []).filter(
-    (p) => p.isActive !== false && p.showBanner !== false && (p.image || p.title)
+    (p) => promoVigente(p) && p.showBanner !== false && (p.image || p.title)
   );

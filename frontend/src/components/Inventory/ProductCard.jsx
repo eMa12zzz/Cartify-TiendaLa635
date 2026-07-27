@@ -26,7 +26,7 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
             <img 
               src={imageUrl} 
               alt={product.name} 
-              className="max-h-32 object-contain filter drop-shadow-lg"
+              className="max-h-32 max-w-full object-contain filter drop-shadow-lg"
             />
           )}
         </div>

@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { usePromoCarousel } from '../../hooks/usePromoCarousel';
-import { etiquetaPromo } from '../../utils/promos';
+import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import { EASE_OUT } from '../../utils/motion';
 import PromoCard from './PromoCard';
 
@@ -102,9 +102,12 @@ const PromoBanners = ({ onSelectPromo }) => {
               <PromoCard
                 promo={promo}
                 imagen={promo.image}
+                imagenCompleta={promo.imagenCompleta}
                 title={promo.title}
                 descripcion={promo.promoDescription}
                 etiqueta={etiquetaPromo(promo)}
+                vencimiento={textoVencimiento(promo)}
+                icono={promo.icono}
                 atenuada={!esCentro}
                 mostrarFlecha={esCentro}
               />

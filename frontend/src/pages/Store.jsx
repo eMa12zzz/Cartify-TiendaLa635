@@ -9,6 +9,7 @@ import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
 import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
+import PromoDetailModal from '../components/Store/PromoDetailModal';
 import FilaProductos from '../components/Store/FilaProductos';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
@@ -463,6 +464,11 @@ const Store = () => {
     setFiltroPrecio,
     promoSeleccionada,
     setPromoSeleccionada,
+    promoDetalle,
+    productosDePromo,
+    abrirPromo,
+    cerrarPromo,
+    verPromoEnTienda,
   } = useStore();
 
   // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
@@ -604,15 +610,7 @@ const Store = () => {
         Lácteos, Snacks) que no existen en la base, así que no llevaban a
         ningún lado; estas sí filtran a sus productos.
       */}
-      {showTrending && (
-        <PromoBanners
-          onSelectPromo={(promo) => {
-            setPromoSeleccionada(promo);
-            setCategoriaSeleccionada(null);
-            setTerminoBusqueda('');
-          }}
-        />
-      )}
+      {showTrending && <PromoBanners onSelectPromo={abrirPromo} />}
 
       <Content>
         {/* ── Trending ── */}
@@ -725,6 +723,22 @@ const Store = () => {
       </Content>
 
       {/* ── Modals ── */}
+      {/*
+        Detalle de la promo. Se abre con la misma animación que un producto,
+        así el click al banner se siente igual de vivo que el click a una
+        tarjeta; antes solo filtraba la lista de abajo, sin aviso.
+      */}
+      {promoDetalle && (
+        <PromoDetailModal
+          promo={promoDetalle}
+          productos={productosDePromo}
+          onCerrar={cerrarPromo}
+          onVerEnTienda={() => verPromoEnTienda(promoDetalle)}
+          onVerProducto={handleAbrirDetalle}
+          onAgregarAlCarrito={agregarAlCarrito}
+        />
+      )}
+
       {productoSeleccionado && (
         <ProductDetailModal
           producto={productoSeleccionado}
