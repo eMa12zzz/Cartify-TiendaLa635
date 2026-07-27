@@ -35,8 +35,12 @@ export const etiquetaPromo = (promo) => {
   return `-${Math.max(...descuentos)}%`;
 };
 
-// Las que de verdad se anuncian en la tienda: activas, con banner y con imagen.
+/*
+ * Las que de verdad se anuncian en la tienda: activas y marcadas para anunciar.
+ * Ya NO se exige imagen — la tarjeta se dibuja con el texto y los colores del
+ * tema. Lo que sí hace falta es un título: sin él el banner saldría vacío.
+ */
 export const promosVisibles = (lista) =>
   (Array.isArray(lista) ? lista : []).filter(
-    (p) => p.isActive !== false && p.showBanner !== false && p.image
+    (p) => p.isActive !== false && p.showBanner !== false && (p.image || p.title)
   );

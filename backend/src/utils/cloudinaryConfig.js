@@ -15,12 +15,24 @@ const storage = new CloudinaryStorage({
     cloudinary,
     params: {
         folder: "grupo1B",
-        allowed_formats: ["jpg", "png", "jpeg", "gif"]
+        // webp y avif son formatos normales hoy: los navegadores los generan y
+        // muchas imágenes descargadas vienen así. Rechazarlos solo provocaba
+        // errores sin explicación al subir.
+        allowed_formats: ["jpg", "jpeg", "png", "gif", "webp", "avif"]
     }
 })
 
 //#3- Configurar multer
-const upload = multer({storage})
+const upload = multer({
+    storage,
+    /*
+     * Tope de 8 MB. Sin límite, una foto pesada se subía entera a Cloudinary
+     * antes de que la rechazara: el empleado esperaba y al final veía un error
+     * genérico. Ahora falla al instante y con un motivo claro (lo traduce el
+     * manejador de errores de app.js).
+     */
+    limits: { fileSize: 8 * 1024 * 1024 }
+})
 
 export default upload
 

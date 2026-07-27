@@ -100,6 +100,7 @@ const PromoBanners = ({ onSelectPromo }) => {
               }}
             >
               <PromoCard
+                promo={promo}
                 imagen={promo.image}
                 title={promo.title}
                 descripcion={promo.promoDescription}

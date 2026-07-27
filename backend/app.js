@@ -75,5 +75,36 @@ app.use("/api/logoutAdmin", logoutAdminRoutes);
 
 //enpoint
 
+/*
+ * ── Manejador de errores ──
+ * Sin esto, cualquier error lanzado en un middleware (típicamente la subida de
+ * imágenes) devolvía la página HTML por defecto de Express con "[object Object]",
+ * y el empleado solo veía "Internal Server Error" sin saber que el problema era
+ * su foto. Va al final a propósito: Express reconoce como manejador de errores
+ * la función que recibe cuatro argumentos, y solo entra aquí si algo falló.
+ */
+app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err);
+
+    console.log("error no controlado: " + (err?.message || err));
+
+    // Archivo más pesado que el límite de multer.
+    if (err?.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({
+            message: "La imagen pesa demasiado. Use una de menos de 8 MB.",
+        });
+    }
+
+    // Formato que Cloudinary no acepta (típico: fotos HEIC del iPhone).
+    const texto = String(err?.message || "");
+    if (texto.includes("not allowed") || texto.includes("Invalid image") || texto.includes("format")) {
+        return res.status(400).json({
+            message: "Ese archivo no es una imagen válida. Use JPG, PNG o WEBP. " +
+                     "Las fotos del iPhone suelen venir en HEIC: conviértalas antes de subirlas.",
+        });
+    }
+
+    return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor" });
+});
 
 export default app;
