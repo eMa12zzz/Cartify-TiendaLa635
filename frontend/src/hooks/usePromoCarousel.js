@@ -12,6 +12,14 @@ import { promosVisibles } from '../utils/promos';
  */
 const INTERVALO = 5000; // cada cuánto avanza sola
 
+/*
+ * Cuántas promos entran al carrusel. Con más de tres el cliente deja de
+ * mirarlas: el carrusel se vuelve papel tapiz. Si hay más promociones activas
+ * igual aplican su descuento en los precios — lo que se limita es el anuncio,
+ * no la promo.
+ */
+const MAXIMO = 3;
+
 export const usePromoCarousel = ({ autoplay = true } = {}) => {
   const [promos, setPromos] = useState([]);
   const [activa, setActiva] = useState(0);
@@ -21,7 +29,15 @@ export const usePromoCarousel = ({ autoplay = true } = {}) => {
   useEffect(() => {
     let vivo = true;
     promotionService.getPromotions()
-      .then((d) => { if (vivo) setPromos(promosVisibles(d)); })
+      // Las más nuevas primero: si la tienda arma una promo hoy, quiere que
+      // se vea, no que quede detrás de una de hace tres meses.
+      .then((d) => {
+        if (!vivo) return;
+        const visibles = promosVisibles(d)
+          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+          .slice(0, MAXIMO);
+        setPromos(visibles);
+      })
       .catch(() => {});
     return () => { vivo = false; };
   }, []);

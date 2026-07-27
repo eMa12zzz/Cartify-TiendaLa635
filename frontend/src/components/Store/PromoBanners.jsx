@@ -20,11 +20,12 @@ import PromoCard from './PromoCard';
  * ancho y las vecinas se leían enteras, compitiendo con la del centro.
  * La idea es que las laterales se asomen por detrás, no que acompañen.
  */
-const VISIBLES = 1;      // tarjetas a cada lado
-const SEPARACION = 46;   // % de ancho que se corre cada paso
-const GIRO = 42;         // grados de rotación en Y
-const ENCOGE = 0.16;     // cuánto se achica por paso
-const APAGA = 0.35;      // cuánta opacidad pierde por paso
+const VISIBLES = 1;       // tarjetas a cada lado
+const SEPARACION = 46;    // % de ancho que se corre cada paso
+const GIRO = 42;          // grados de rotación en Y
+const PROFUNDIDAD = 180;  // px que se alejan del ojo por paso (esto las manda atrás)
+const ENCOGE = 0.08;      // achique extra; la profundidad ya achica sola
+const APAGA = 0.35;       // cuánta opacidad pierde por paso
 
 const PromoBanners = ({ onSelectPromo }) => {
   const reducirMovimiento = useReducedMotion();
@@ -69,7 +70,15 @@ const PromoBanners = ({ onSelectPromo }) => {
               title={esCentro ? 'Ver los productos de esta promoción' : 'Ver esta promoción'}
               animate={{
                 x: `${d * SEPARACION}%`,
-                // Sin movimiento reducido: nada de giros, solo se desvanecen.
+                /*
+                 * z (translateZ) es lo que arregla que las laterales taparan a
+                 * la del centro. En un escenario con perspective + preserve-3d
+                 * el navegador ordena por posición 3D REAL y el z-index queda
+                 * de adorno; como las laterales giran sobre su propio eje, su
+                 * borde cercano se venía hacia el ojo y se dibujaba encima.
+                 * Empujándolas hacia atrás, la del centro queda siempre al frente.
+                 */
+                z: reducirMovimiento ? 0 : -Math.abs(d) * PROFUNDIDAD,
                 rotateY: reducirMovimiento ? 0 : -d * GIRO,
                 scale: Math.max(0.6, 1 - Math.abs(d) * ENCOGE),
                 opacity: lejos ? 0 : 1 - Math.abs(d) * APAGA,

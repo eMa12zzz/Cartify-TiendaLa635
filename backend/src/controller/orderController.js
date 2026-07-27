@@ -3,6 +3,7 @@ import clientModel from "../models/client.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
 import loyaltyLedgerModel from "../models/loyaltyLedger.js";
 import printServiceModel from "../models/printService.js";
+import productModel from "../models/product.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
@@ -19,6 +20,37 @@ orderController.createOrder = async (req, res) => {
       return res.status(400).json({
         message: "clientId e items son requeridos"
       });
+    }
+
+    /*
+     * ── STOCK: validar ANTES de cobrar ──
+     * Sin esto se podían pedir 100 unidades de algo que tiene 5. El carrito ya
+     * lo revisa, pero el navegador no es de fiar: la comprobación que vale es
+     * esta. Los renglones sin productId (las impresiones) se saltan.
+     */
+    const idsProductos = items.map((it) => it.productId).filter(Boolean);
+    const productos = idsProductos.length
+      ? await productModel.find({ _id: { $in: idsProductos } })
+      : [];
+    const porId = new Map(productos.map((p) => [String(p._id), p]));
+
+    for (const it of items) {
+      if (!it.productId) continue;
+      const producto = porId.get(String(it.productId));
+      if (!producto) {
+        return res.status(400).json({ message: `El producto "${it.name}" ya no existe` });
+      }
+      // Ojo: hay productos con el stock guardado como texto (vienen de
+      // FormData), por eso el Number() en vez de compararlo directo.
+      const disponible = Number(producto.stock) || 0;
+      const pedido = Number(it.amount) || 0;
+      if (pedido > disponible) {
+        return res.status(400).json({
+          message: disponible === 0
+            ? `"${producto.name}" se acaba de agotar`
+            : `Solo quedan ${disponible} de "${producto.name}"`,
+        });
+      }
     }
 
     // El subtotal lo calculamos aquí, en el backend. Nunca confiamos en el
@@ -68,6 +100,28 @@ orderController.createOrder = async (req, res) => {
     });
 
     await newOrder.save();
+
+    /*
+     * ── STOCK: descontar ──
+     * Va DESPUÉS de guardar el pedido: si algo falla acá, al menos la venta
+     * quedó registrada. Al revés (descontar y que falle el pedido) perderíamos
+     * inventario sin tener a qué achacárselo.
+     *
+     * Se usa $set con el número ya calculado y no $inc porque varios productos
+     * tienen el stock guardado como texto y $inc revienta con esos. De paso,
+     * cada venta va dejando el campo convertido a número.
+     */
+    for (const it of items) {
+      if (!it.productId) continue;
+      const producto = porId.get(String(it.productId));
+      if (!producto) continue;
+      const restante = Math.max(0, (Number(producto.stock) || 0) - (Number(it.amount) || 0));
+      try {
+        await productModel.findByIdAndUpdate(it.productId, { $set: { stock: restante } });
+      } catch (e) {
+        console.log("error descontando stock de " + it.productId + ": " + e.message);
+      }
+    }
 
     // Si canjeó, le bajamos ese saldo al contador del cliente.
     if (pointsRedeemed > 0) {
