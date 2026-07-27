@@ -98,6 +98,62 @@ h1, h2, h3, h4 {
 .press { transition: transform var(--dur-press) var(--ease-out); }
 .press:active { transform: scale(0.98); }
 
+/*
+  ==========================================
+  LO CLICKEABLE SE SIENTE CLICKEABLE
+  ==========================================
+  Media app estaba con el cursor de flecha sobre botones y filtros: no hay
+  forma de saber qué responde al click sin ir probando. Esto lo resuelve de
+  una vez para toda la app en lugar de ir clase por clase.
+*/
+button:not(:disabled),
+[role="button"],
+a[href],
+summary,
+select,
+label[for],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+input[type="color"],
+input[type="date"],
+input[type="range"] {
+  cursor: pointer;
+}
+
+/* Deshabilitado tiene que verse deshabilitado, no invitar al click */
+button:disabled,
+select:disabled,
+input:disabled {
+  cursor: not-allowed;
+}
+
+/*
+  Sombreado al pasar por encima. brightness sirve para los dos casos sin
+  saber de qué color es cada botón: oscurece los sólidos y apenas marca los
+  transparentes. Los botones que ya traen su propio :hover lo pisan.
+*/
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover,
+  [role="button"]:hover {
+    filter: brightness(0.94);
+  }
+
+  /*
+    Para secciones enteras que responden al click (tarjetas, filas, resúmenes)
+    que no son <button>: se les pone .clickable y ya traen cursor y sombra.
+  */
+  .clickable:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+}
+
+.clickable {
+  cursor: pointer;
+  transition: background-color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out);
+}
+
 /* Entrada escalonada de tarjetas en grillas (se usa con --i) */
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(8px); }

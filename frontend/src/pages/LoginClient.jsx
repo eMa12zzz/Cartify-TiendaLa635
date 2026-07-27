@@ -6,6 +6,7 @@ import { Mail, Lock, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
+import { BotonOjo } from '../components/UI/CampoContrasena';
 
 const BROWN = '#B46C30';
 
@@ -181,6 +182,7 @@ const LoginClient = () => {
   const navigate = useNavigate();
   const { login, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [verPass, setVerPass] = useState(false);
 
   // 1- Limpiar sesión previa al entrar al login
   useEffect(() => {
@@ -243,14 +245,16 @@ const LoginClient = () => {
               <InputWrapper>
                 <IconWrapper><Lock size={18} /></IconWrapper>
                 <Input
-                  type="password"
+                  type={verPass ? 'text' : 'password'}
                   placeholder="••••••••"
+                  style={{ paddingRight: 44 }}
                   $error={!!errors.password}
                   {...register('password', {
                     required: 'La contraseña es requerida',
                     minLength: { value: 6, message: 'Mínimo 6 caracteres' }
                   })}
                 />
+                <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} />
               </InputWrapper>
               {errors.password && <ErrorMsg>{errors.password.message}</ErrorMsg>}
             </FieldGroup>

@@ -19,13 +19,29 @@ employeeController.getEmployees = async (req, res) => {
 //Insert
 employeeController.insertEmployee = async (req, res) => {
     
+  try {
     //1- Pedimos los datos para insertar
-    const { fullName, dui, phoneNumber, image, email, userName, password } = req.body;
+    const { fullName, dui, phoneNumber, email, userName, password } = req.body;
+
     //2- Lleno una instancia de mi Schema
-    const newEmployee = new employeeModel({ fullName, dui, phoneNumber, image: req.file.path, public_id: req.file.filename, email, userName, password });
+    /*
+     * La foto es opcional: antes esto hacía req.file.path a secas y, si el
+     * empleado se registraba sin foto, reventaba con un 500 sin explicar nada.
+     * Sin foto, la ficha muestra las iniciales.
+     */
+    const newEmployee = new employeeModel({
+      fullName, dui, phoneNumber, email, userName, password,
+      image: req.file ? req.file.path : undefined,
+      public_id: req.file ? req.file.filename : undefined,
+    });
+
     //3- Guardamos en la base de datos
     await newEmployee.save();
     res.status(201).json({ message: 'Employee created successfully' });
+  } catch (error) {
+    console.log("error " + error);
+    res.status(500).json({ message: 'Internal Server Error insertEmployee' });
+  }
 
 
 };

@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { reglaTelefono, bloquearNoDigitos } from '../../utils/validaciones';
+import { formatearTelefono, LARGO_TELEFONO } from '../../utils/mascaras';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,9 +96,13 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
-                <input 
-                  type="text" 
-                  {...register('phoneNumber', reglaTelefono)} onKeyDown={bloquearNoDigitos}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_TELEFONO}
+                  {...register('phoneNumber', reglaTelefono)}
+                  onKeyDown={bloquearNoDigitos}
+                  onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
                   className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
                   placeholder="7777-7777"
                 />

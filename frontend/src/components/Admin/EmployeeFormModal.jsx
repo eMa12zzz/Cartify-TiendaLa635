@@ -1,5 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { reglaDui, reglaTelefono, bloquearNoDigitos } from '../../utils/validaciones';
+import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../../utils/mascaras';
+import CampoContrasena from '../UI/CampoContrasena';
 import { UploadCloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modalTransition } from '../../utils/motion';
@@ -53,11 +55,11 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
   };
 
   const onSubmit = (data) => {
-    if (!isEditing && !selectedImage) {
-      toast.error('La foto es obligatoria para registrar a un nuevo empleado');
-      return;
-    }
-    
+    /*
+     * La foto es opcional a propósito: alguien que entra a trabajar hoy tiene
+     * que poder quedar registrado hoy, sin depender de que le tomen una foto
+     * decente. Si no la sube, la ficha muestra sus iniciales.
+     */
     if (!isEditing && !data.password) {
       toast.error('La contraseña es obligatoria para un nuevo empleado');
       return;
@@ -131,7 +133,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                 <>
                   <UploadCloud className="w-8 h-8 mb-2 opacity-80" />
                   <p className="text-xs opacity-90">
-                    Foto del Empleado (Requerida)
+                    Foto del empleado <span className="opacity-70">(opcional)</span>
                   </p>
                 </>
               )}
@@ -139,7 +141,9 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
             </div>
             
             <p className="text-xs text-white/70 text-center">
-              Haz clic o arrastra para {isEditing ? 'cambiar' : 'subir'} la foto
+              {isEditing
+                ? 'Haz clic o arrastra para cambiar la foto'
+                : 'Haz clic o arrastra si querés ponerle foto; se puede agregar después'}
             </p>
           </div>
         </div>
@@ -149,9 +153,15 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">DUI</label>
-                <input 
-                  type="text" 
-                  {...register('dui', reglaDui)} onKeyDown={bloquearNoDigitos}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_DUI}
+                  {...register('dui', reglaDui)}
+                  onKeyDown={bloquearNoDigitos}
+                  // El guion se pone solo mientras escribe: si lo deja a mano,
+                  // la base termina con tres formatos distintos del mismo DUI.
+                  onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
                   className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
                   placeholder="00000000-0"
                 />
@@ -159,9 +169,13 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
               
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
-                <input 
-                  type="text" 
-                  {...register('phoneNumber', reglaTelefono)} onKeyDown={bloquearNoDigitos}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_TELEFONO}
+                  {...register('phoneNumber', reglaTelefono)}
+                  onKeyDown={bloquearNoDigitos}
+                  onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
                   className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
                   placeholder="Ej. 7777-7777"
                 />
@@ -193,11 +207,10 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Contraseña {isEditing && <span className="text-xs font-normal text-gray-500">(Opcional)</span>}
                 </label>
-                <input 
-                  type="password" 
+                <CampoContrasena
                   {...register('password', { required: !isEditing })}
                   className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
-                  placeholder={isEditing ? "Dejar en blanco para no cambiar" : "Contraseña segura"}
+                  placeholder={isEditing ? 'Dejalo vacío si no la vas a cambiar' : 'Contraseña segura'}
                 />
               </div>
             </div>

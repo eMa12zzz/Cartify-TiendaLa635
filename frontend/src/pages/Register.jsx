@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
 import { Mail, Phone, User, Hash, MapPin, Lock, Camera, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { BotonOjo } from '../components/UI/CampoContrasena';
 import api from '../api/api';
 
 const BROWN = '#B46C30';
@@ -179,6 +180,7 @@ const Register = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [verPass, setVerPass] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -334,13 +336,15 @@ const Register = () => {
               <InputWrapper>
                 <IconWrapper><Lock size={18} /></IconWrapper>
                 <Input
-                  type="password"
+                  type={verPass ? 'text' : 'password'}
                   placeholder="********"
-                  {...register("password", { 
+                  style={{ paddingRight: 44 }}
+                  {...register("password", {
                     required: "La contraseña es obligatoria",
                     minLength: { value: 6, message: "Mínimo 6 caracteres" }
                   })}
                 />
+                <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} />
                 {errors.password && <ErrorMsg>{errors.password.message}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
