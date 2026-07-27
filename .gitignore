@@ -1,0 +1,25 @@
+# Dependencias — se reinstalan con "npm install", no se versionan.
+node_modules/
+
+# Variables de entorno: llaves, contraseñas y secretos. NUNCA al repositorio.
+# Los archivos .env.example sí van, porque solo documentan qué variables hacen falta.
+.env
+.env.*
+!.env.example
+
+# Compilados
+dist/
+build/
+
+# Registros y cachés
+*.log
+npm-debug.log*
+.vite/
+.cache/
+
+# Cosas del sistema y del editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/

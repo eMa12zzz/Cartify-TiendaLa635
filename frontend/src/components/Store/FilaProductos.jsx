@@ -10,12 +10,13 @@ import { useFilaDeslizable } from '../../hooks/useFilaDeslizable';
  * Es un componente y no un bucle dentro de Store porque cada fila necesita su
  * propio useFilaDeslizable, y los hooks no se pueden llamar dentro de un map.
  */
+/*
+ * Sin recuadro blanco: las filas se separan con aire, no con bordes. Con la
+ * tarjeta la portada quedaba partida en cajas, cada sección se leía como una
+ * página aparte.
+ */
 const Seccion = styled.section`
-  background: var(--papel);
-  border-radius: var(--radio-panel);
-  padding: 20px 22px 22px;
-  margin-bottom: 18px;
-  box-shadow: var(--sombra-tarjeta);
+  margin-bottom: 34px;
 `;
 
 const Encabezado = styled.div`

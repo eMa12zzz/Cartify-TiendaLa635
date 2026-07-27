@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Search, Mic, ShoppingBag, User, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Mic, ShoppingBag, User, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
@@ -243,8 +243,11 @@ const SectionTitle = styled.h2`
   gap: 10px;
 `;
 
+/* Va pegada al título, así que no hereda su peso ni su tamaño. */
 const SectionCount = styled.span`
   font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--tinta-tenue);
 `;
 
@@ -278,12 +281,12 @@ const NavCircle = styled.button`
 `;
 
 /* ─── Filter bar with dropdown ─── */
+/* Vive dentro del encabezado, así que ya no necesita empujarse ni separarse. */
 const FilterBar = styled.div`
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 20px;
   position: relative;
+  flex-shrink: 0;
 `;
 
 const FilterBtn = styled.button`
@@ -364,11 +367,13 @@ const FilterToggle = styled.div`
 `;
 
 /* ─── Trending Section ─── */
+/*
+ * Sin tarjeta blanca alrededor: el recuadro partía la portada en cajas y se
+ * sentía como secciones separadas en vez de una sola página. Ahora las filas
+ * se distinguen por el aire entre ellas, no por un borde.
+ */
 const TrendingSection = styled.div`
-  background: white;
-  border-radius: 20px;
-  padding: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 34px;
 `;
 
 const TrendingHeader = styled.div`
@@ -485,11 +490,6 @@ const Store = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleCerrarSesion = () => {
-    localStorage.clear();
-    navigate('/');
-  };
-
   const handleAbrirDetalle = (producto) => setProductoSeleccionado(producto);
   const handleCerrarDetalle = () => setProductoSeleccionado(null);
 
@@ -562,7 +562,8 @@ const Store = () => {
             {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
           </CartBtn>
           <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta"><User size={16} strokeWidth={2.2} /> Mi Cuenta</IconBtn>
-          <IconBtn onClick={handleCerrarSesion} title="Cerrar sesión"><LogOut size={16} strokeWidth={2.2} /></IconBtn>
+          {/* Cerrar sesión vive solo en Mi Cuenta: acá era muy fácil apretarlo
+              sin querer, al lado del carrito. */}
         </HeaderRight>
       </Header>
 
@@ -665,37 +666,41 @@ const Store = () => {
 
         {/* ── All / Filtered Products ── */}
         <div>
+          {/*
+            Título, cantidad y Filtros en UNA sola línea. Antes la cantidad se
+            iba al extremo derecho y el botón caía debajo, así que el encabezado
+            ocupaba dos renglones y quedaba desalineado.
+          */}
           <SectionHeader>
             <SectionTitle>
               {categoriaSeleccionada || terminoBusqueda
                 ? (categoriaSeleccionada || `"${terminoBusqueda}"`)
                 : 'Todos los productos'}
+              <SectionCount>{productosFiltrados.length} productos</SectionCount>
             </SectionTitle>
-            <SectionCount>{productosFiltrados.length} productos</SectionCount>
+
+            <FilterBar ref={filterRef}>
+              <FilterBtn $open={filterOpen} onClick={() => setFilterOpen(o => !o)}>
+                <SlidersHorizontal size={15} strokeWidth={2.2} /> Filtros
+              </FilterBtn>
+
+              {filterOpen && (
+                <FilterDropdown>
+                  <FilterDropTitle>Precio</FilterDropTitle>
+                  {precioFiltros.map(f => (
+                    <FilterOption
+                      key={f.key}
+                      $active={filtroPrecio === f.key}
+                      onClick={() => { setFiltroPrecio(f.key); setFilterOpen(false); }}
+                    >
+                      <FilterToggle $active={filtroPrecio === f.key} />
+                      {f.label}
+                    </FilterOption>
+                  ))}
+                </FilterDropdown>
+              )}
+            </FilterBar>
           </SectionHeader>
-
-          {/* ── Filter button + dropdown ── */}
-          <FilterBar ref={filterRef}>
-            <FilterBtn $open={filterOpen} onClick={() => setFilterOpen(o => !o)}>
-              ⚙ Filtros
-            </FilterBtn>
-
-            {filterOpen && (
-              <FilterDropdown>
-                <FilterDropTitle>Price</FilterDropTitle>
-                {precioFiltros.map(f => (
-                  <FilterOption
-                    key={f.key}
-                    $active={filtroPrecio === f.key}
-                    onClick={() => { setFiltroPrecio(f.key); setFilterOpen(false); }}
-                  >
-                    <FilterToggle $active={filtroPrecio === f.key} />
-                    {f.label}
-                  </FilterOption>
-                ))}
-              </FilterDropdown>
-            )}
-          </FilterBar>
 
           {productosFiltrados.length === 0 ? (
             <EmptyState>
