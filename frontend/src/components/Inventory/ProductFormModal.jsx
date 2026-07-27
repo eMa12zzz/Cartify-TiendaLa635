@@ -4,6 +4,7 @@ import { modalTransition } from '../../utils/motion';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { reglaPrecio, reglaEntero, reglaCodigoBarras, bloquearTeclasNumero, bloquearNoDigitos } from '../../utils/validaciones';
+import { flujoDeModulo, iconoDeModulo, modulosVisibles } from '../../utils/modulos';
 import toast from 'react-hot-toast';
 
 const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands = [], suppliers = [], categories = [], modules = [] }) => {
@@ -17,9 +18,20 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
   const watchSupplierId = watch('supplierId');
   const watchIsActive = watch('isActive');
 
+  /*
+   * Las reglas dependen del FLUJO del módulo, no de cómo se llame.
+   *
+   * Antes esto comparaba el nombre con "tienda" e "impresiones": el día que la
+   * tienda creara "Panadería", el proveedor dejaba de ser obligatorio sin que
+   * nadie lo hubiera decidido, y nadie se iba a enterar hasta encontrar panes
+   * sin proveedor en el inventario.
+   */
   const selectedModuleObj = modules.find(m => m._id === watchModuleId);
-  const isStoreModule = selectedModuleObj?.name?.toLowerCase() === 'tienda';
-  const isPrintModule = selectedModuleObj?.name?.toLowerCase() === 'impresiones';
+  const isPrintModule = selectedModuleObj ? flujoDeModulo(selectedModuleObj) === 'impresiones' : false;
+  const isStoreModule = selectedModuleObj ? !isPrintModule : false;
+
+  // Solo los pasillos que la tienda tiene encendidos.
+  const modulosActivos = modulosVisibles(modules);
 
   const filteredCategories = categories.filter(c => {
     const catModuleId = typeof c.moduleId === 'object' ? c.moduleId?._id : c.moduleId;
@@ -98,6 +110,17 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
       setValue('brandId', '');
     }
   }, [watchSupplierId, isOpen, isEditing, setValue]);
+
+  /*
+   * Con un solo pasillo no hay nada que elegir: se marca solo. Obligar a
+   * clickear la única opción posible es pedirle al empleado que confirme algo
+   * que no puede ser de otra manera.
+   */
+  useEffect(() => {
+    if (!isOpen || isEditing || watchModuleId) return;
+    const activos = modulosVisibles(modules);
+    if (activos.length === 1) setValue('moduleId', activos[0]._id);
+  }, [isOpen, isEditing, watchModuleId, modules, setValue]);
 
   if (!isOpen) return null;
 
@@ -247,17 +270,52 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
           <form id="product-form" onSubmit={handleSubmit(onSubmit, onError)} className="space-y-4 flex-1">
             <div className="flex justify-between items-start">
               <div className="space-y-4 w-2/3 pr-8 flex flex-col">
+                {/*
+                  El pasillo va primero y en pastillas, no en un desplegable
+                  perdido entre otros cinco: es la pregunta que decide todo lo
+                  que sigue (qué categorías, si hace falta proveedor). "Módulo"
+                  a secas no le decía nada a nadie; la pregunta sí.
+                */}
                 <div className="order-1">
-                  <label className="block text-xs text-gray-500 mb-1">Módulo / Pasillo</label>
-                  <select 
-                    {...register('moduleId', { required: true })}
-                    className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]"
-                  >
-                    <option value="">Seleccionar...</option>
-                    {modules.map(m => (
-                      <option key={m._id} value={m._id}>{m.name}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-bold text-gray-900 mb-0.5">
+                    ¿En qué parte de la tienda se vende?
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    El pasillo donde el cliente lo va a encontrar.
+                  </p>
+
+                  <input type="hidden" {...register('moduleId', { required: true })} />
+
+                  <div className="flex flex-wrap gap-2">
+                    {modulosActivos.map((m) => {
+                      const activo = watchModuleId === m._id;
+                      const Icono = iconoDeModulo(m);
+                      return (
+                        <button
+                          type="button"
+                          key={m._id}
+                          onClick={() => setValue('moduleId', m._id, { shouldValidate: true })}
+                          aria-pressed={activo}
+                          className="press flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-medium transition-colors"
+                          style={{
+                            borderColor: activo ? 'var(--theme-primary)' : 'var(--theme-card-border)',
+                            background: activo ? 'var(--theme-primary-light)' : 'var(--theme-card-bg)',
+                            color: 'var(--theme-text-primary)',
+                          }}
+                        >
+                          <Icono size={15} style={{ color: 'var(--theme-primary)' }} />
+                          {m.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Un pasillo con flujo propio pide otros datos; conviene avisarlo */}
+                  {isPrintModule && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Este pasillo tiene su propia forma de comprarse: el cliente elegirá archivo, tamaño y color al pedirlo.
+                    </p>
+                  )}
                 </div>
 
                 <div className="order-2">
@@ -269,9 +327,19 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                   >
                     <option value="">Seleccionar...</option>
                     {filteredCategories.map((c, i) => (
-                      <option key={c._id || i} value={c._id || c}>{c.type || c}</option> 
+                      <option key={c._id || i} value={c._id || c}>{c.type || c}</option>
                     ))}
                   </select>
+                  {/*
+                    Un pasillo recién creado no tiene categorías, así que el
+                    desplegable sale vacío y el producto no se puede guardar.
+                    Sin este aviso parecía que el formulario estaba fallando.
+                  */}
+                  {watchModuleId && filteredCategories.length === 0 && (
+                    <span className="text-xs text-gray-500 mt-1 block">
+                      Este pasillo todavía no tiene categorías: creá una en <b>Catálogo → Categorías</b> antes de cargarle productos.
+                    </span>
+                  )}
                 </div>
                 
                 <div className="order-3">
@@ -292,7 +360,9 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                     ))}
                   </select>
                   {errors.supplierId && (
-                    <span className="text-xs text-red-500 mt-1 block">El proveedor es obligatorio para Tienda</span>
+                    <span className="text-xs text-red-500 mt-1 block">
+                      El proveedor es obligatorio en los pasillos de la tienda
+                    </span>
                   )}
                 </div>
               </div>

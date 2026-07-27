@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useModulos } from '../hooks/useModulos';
+import { iconoDeModulo, flujoDeModulo } from '../utils/modulos';
 
 const BROWN = '#8B5A2B';
 const BROWN_DARK = '#5a3a1a';
@@ -89,11 +91,33 @@ const ServiceCard = styled.div`
   padding: 40px 28px;
   cursor: pointer;
   transition: transform 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 
   &:hover {
     transform: translateY(-2px);
     background: ${BROWN_DARK};
   }
+`;
+
+const ServiceIcon = styled.div`
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const Vacio = styled.p`
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 0;
 `;
 
 const ServiceTitle = styled.h3`
@@ -119,6 +143,7 @@ const Footer = styled.div`
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { modulos, cargando } = useModulos();
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -131,12 +156,17 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const handleIrTienda = () => {
-    navigate('/store');
-  };
-
-  const handleIrImpresiones = () => {
-    navigate('/impresiones');
+  /*
+   * A dónde lleva cada módulo. Los pasillos normales van a la MISMA tienda,
+   * ya parada en su estantería; solo los que tienen flujo propio abren otra
+   * pantalla. Por eso agregar la panadería no necesita ruta nueva.
+   */
+  const abrirModulo = (modulo) => {
+    if (flujoDeModulo(modulo) === 'impresiones') {
+      navigate('/impresiones');
+      return;
+    }
+    navigate(`/store?modulo=${modulo._id}`);
   };
 
   return (
@@ -152,17 +182,31 @@ const Dashboard = () => {
       <Body>
         <SectionTitle>Servicios</SectionTitle>
 
-        <ServiceGrid>
-          <ServiceCard onClick={handleIrTienda}>
-            <ServiceTitle>Tienda</ServiceTitle>
-            <ServiceDesc>Compra tus productos aquí!!!!</ServiceDesc>
-          </ServiceCard>
-
-          <ServiceCard onClick={handleIrImpresiones}>
-            <ServiceTitle>Impresiones</ServiceTitle>
-            <ServiceDesc>Imprime tus archivos aquí!!!!</ServiceDesc>
-          </ServiceCard>
-        </ServiceGrid>
+        {/*
+          Los servicios salen de los módulos de la tienda. Antes estaban
+          escritos aquí a mano, así que abrir la panadería significaba
+          programar otra tarjeta: hoy basta con crear el módulo en el panel.
+        */}
+        {cargando ? (
+          <Vacio>Cargando los servicios…</Vacio>
+        ) : modulos.length === 0 ? (
+          <Vacio>Todavía no hay servicios disponibles.</Vacio>
+        ) : (
+          <ServiceGrid>
+            {modulos.map((modulo) => {
+              const Icono = iconoDeModulo(modulo);
+              return (
+                <ServiceCard key={modulo._id} onClick={() => abrirModulo(modulo)}>
+                  <ServiceIcon><Icono size={26} strokeWidth={1.8} /></ServiceIcon>
+                  <div>
+                    <ServiceTitle>{modulo.name}</ServiceTitle>
+                    <ServiceDesc>{modulo.description || 'Ver los productos de esta sección'}</ServiceDesc>
+                  </div>
+                </ServiceCard>
+              );
+            })}
+          </ServiceGrid>
+        )}
       </Body>
 
       <Footer>Sobre Nosotros</Footer>

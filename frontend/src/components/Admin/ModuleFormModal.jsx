@@ -3,19 +3,30 @@ import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modalTransition } from '../../utils/motion';
+import { ICONOS_MODULO, flujoDeModulo } from '../../utils/modulos';
 
 const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
-  const { register, handleSubmit, reset, watch } = useForm();
-  
+  const { register, handleSubmit, reset, watch, setValue } = useForm();
+
   const isEditing = !!moduleData;
   const watchIsActive = watch('isActive');
+  const watchFlujo = watch('flujo');
+
+  const watchIcono = watch('icono');
 
   useEffect(() => {
     if (isOpen) {
       if (moduleData) {
-        reset({ name: moduleData.name, description: moduleData.description, isActive: moduleData.isActive !== false });
+        reset({
+          name: moduleData.name,
+          description: moduleData.description,
+          isActive: moduleData.isActive !== false,
+          icono: moduleData.icono || 'tienda',
+          // Los módulos viejos no tienen el campo: se deduce del nombre.
+          flujo: flujoDeModulo(moduleData),
+        });
       } else {
-        reset({ name: '', description: '', isActive: true });
+        reset({ name: '', description: '', isActive: true, icono: 'tienda', flujo: 'estandar' });
       }
     }
   }, [isOpen, moduleData, reset]);
@@ -61,8 +72,77 @@ const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
                 type="text" 
                 {...register('name', { required: true })}
                 className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
-                placeholder="Ej. Tienda, Almacén..."
+                placeholder="Ej. Panadería, Pupusería, Librería..."
               />
+            </div>
+
+            {/*
+              El icono es la cara del módulo en la pantalla de servicios del
+              cliente: es lo primero que se ve al entrar.
+            */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Icono</label>
+              <input type="hidden" {...register('icono')} />
+              <div className="flex flex-wrap gap-2">
+                {ICONOS_MODULO.map(({ id, nombre, Icono }) => {
+                  const activo = watchIcono === id;
+                  return (
+                    <button
+                      type="button"
+                      key={id}
+                      onClick={() => setValue('icono', id)}
+                      title={nombre}
+                      aria-label={`Icono ${nombre}`}
+                      aria-pressed={activo}
+                      className="press w-10 h-10 rounded-full border flex items-center justify-center transition-colors"
+                      style={{
+                        borderColor: activo ? 'var(--theme-primary)' : 'var(--theme-card-border)',
+                        background: activo ? 'var(--theme-primary-light)' : 'var(--theme-card-bg)',
+                      }}
+                    >
+                      <Icono size={17} style={{ color: 'var(--theme-primary)' }} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/*
+              La única pregunta que de verdad separa un módulo de otro. Casi
+              siempre es la primera opción: un pasillo más de la misma tienda,
+              que no necesita ni una línea de código nueva.
+            */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">¿Cómo se compra?</label>
+              <div className="space-y-2">
+                {[
+                  {
+                    v: 'estandar',
+                    t: 'Como cualquier producto',
+                    d: 'Se agrega al carrito y se paga con el resto. Panadería, pupusería, librería…',
+                  },
+                  {
+                    v: 'impresiones',
+                    t: 'Pide datos antes de comprar',
+                    d: 'Como Impresiones: el cliente sube un archivo y elige tamaño y color. Tiene pantalla propia.',
+                  },
+                ].map((o) => (
+                  <label
+                    key={o.v}
+                    className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
+                    style={{
+                      borderColor: watchFlujo === o.v ? 'var(--theme-primary)' : 'var(--theme-card-border)',
+                      background: watchFlujo === o.v ? 'var(--theme-primary-light)' : 'var(--theme-card-bg)',
+                    }}
+                  >
+                    <input type="radio" value={o.v} {...register('flujo')} className="mt-1" />
+                    <span>
+                      <span className="block text-sm font-medium text-gray-800">{o.t}</span>
+                      <span className="block text-xs text-gray-500">{o.d}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div>
