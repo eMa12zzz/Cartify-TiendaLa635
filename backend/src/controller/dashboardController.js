@@ -116,6 +116,7 @@ dashboardController.getSummary = async (req, res) => {
     const [
       pedidosHoy, pedidosAyer,
       dineroHoy, dineroAyer,
+      costoHoy, costoAyer,
       entregadosSemana, entregadosSemanaPrevia,
       productosPorReponer, lotesPorCaducar,
       pedidosPorPreparar, impresionesPendientes,
@@ -128,7 +129,7 @@ dashboardController.getSummary = async (req, res) => {
       orderModel.countDocuments({ createdAt: { $gte: hoy, $lt: manana } }),
       orderModel.countDocuments({ createdAt: { $gte: ayer, $lt: hoy } }),
 
-      // ── Ganancia del día vs ayer ──
+      // ── INGRESOS del día vs ayer (lo que entró a la caja) ──
       orderModel.aggregate([
         { $match: { ...noCancelado, createdAt: { $gte: hoy, $lt: manana } } },
         { $group: { _id: null, total: { $sum: "$total" }, cantidad: { $sum: 1 } } },
@@ -136,6 +137,34 @@ dashboardController.getSummary = async (req, res) => {
       orderModel.aggregate([
         { $match: { ...noCancelado, createdAt: { $gte: ayer, $lt: hoy } } },
         { $group: { _id: null, total: { $sum: "$total" } } },
+      ]),
+
+      /*
+       * ── INVERSIÓN del día vs ayer ──
+       * Lo que le costaron a la tienda los productos que vendió: el precio de
+       * costo por la cantidad. Restándoselo a los ingresos sale la ganancia
+       * de verdad — antes se llamaba "ganancia" a los ingresos a secas, que es
+       * como decir que vender a $2 algo que costó $1.80 dejó $2 de ganancia.
+       *
+       * Las impresiones no entran: no tienen producto ni costo cargado (el
+       * papel y la tinta no están modelados), así que su margen no se puede
+       * calcular y sumarles costo cero inflaría la ganancia.
+       */
+      orderModel.aggregate([
+        { $match: { ...noCancelado, createdAt: { $gte: hoy, $lt: manana } } },
+        { $unwind: "$items" },
+        { $match: { "items.productId": { $ne: null } } },
+        { $lookup: { from: "Products", localField: "items.productId", foreignField: "_id", as: "p" } },
+        { $unwind: "$p" },
+        { $group: { _id: null, total: { $sum: { $multiply: [numero("$p.priceCost"), numero("$items.amount")] } } } },
+      ]),
+      orderModel.aggregate([
+        { $match: { ...noCancelado, createdAt: { $gte: ayer, $lt: hoy } } },
+        { $unwind: "$items" },
+        { $match: { "items.productId": { $ne: null } } },
+        { $lookup: { from: "Products", localField: "items.productId", foreignField: "_id", as: "p" } },
+        { $unwind: "$p" },
+        { $group: { _id: null, total: { $sum: { $multiply: [numero("$p.priceCost"), numero("$items.amount")] } } } },
       ]),
 
       // ── Entregados esta semana vs la anterior (por fecha de entrega) ──
@@ -205,9 +234,23 @@ dashboardController.getSummary = async (req, res) => {
         { $lookup: { from: "Modules", localField: "p.moduleId", foreignField: "_id", as: "m" } },
         { $unwind: { path: "$m", preserveNullAndEmptyArrays: true } },
         {
+          /*
+           * Antes todo lo que no tenía módulo caía en un cajón llamado
+           * "Impresiones / otros", que mezclaba dos cosas muy distintas: las
+           * impresiones (que legítimamente no tienen producto) y productos a
+           * los que se les olvidó asignar módulo. Lo primero es normal; lo
+           * segundo es un dato que hay que corregir en el inventario, y
+           * escondido en ese cajón nadie lo iba a ver.
+           */
           $group: {
-            _id: { $ifNull: ["$m.name", "Impresiones / otros"] },
-            total: { $sum: { $multiply: ["$items.price", "$items.amount"] } },
+            _id: {
+              $cond: [
+                { $eq: ["$channel", "impresion"] },
+                "Impresiones",
+                { $ifNull: ["$m.name", "Sin módulo asignado"] },
+              ],
+            },
+            total: { $sum: { $multiply: [numero("$items.price"), numero("$items.amount")] } },
           },
         },
         { $sort: { total: -1 } },
@@ -227,8 +270,24 @@ dashboardController.getSummary = async (req, res) => {
       .select("name stock salePrice")
       .limit(8);
 
-    const gananciaHoy = Number((dineroHoy[0]?.total || 0).toFixed(2));
-    const gananciaAyer = Number((dineroAyer[0]?.total || 0).toFixed(2));
+    /*
+     * Ingresos - inversión = ganancia. Tres números distintos que antes se
+     * mostraban como uno solo llamado "ganancia".
+     */
+    const ingresosHoy = Number((dineroHoy[0]?.total || 0).toFixed(2));
+    const ingresosAyer = Number((dineroAyer[0]?.total || 0).toFixed(2));
+    const inversionHoy = Number((costoHoy[0]?.total || 0).toFixed(2));
+    const inversionAyer = Number((costoAyer[0]?.total || 0).toFixed(2));
+
+    const gananciaHoy = Number((ingresosHoy - inversionHoy).toFixed(2));
+    const gananciaAyer = Number((ingresosAyer - inversionAyer).toFixed(2));
+
+    // Margen: de cada dólar que entró, cuánto quedó. Sin ingresos no hay margen
+    // que calcular (dividir entre cero daría Infinity).
+    const margen = ingresosHoy > 0
+      ? Number(((gananciaHoy / ingresosHoy) * 100).toFixed(1))
+      : 0;
+
     const pedidosConMonto = dineroHoy[0]?.cantidad || 0;
 
     return res.status(200).json({
@@ -241,11 +300,24 @@ dashboardController.getSummary = async (req, res) => {
         valor: entregadosSemana,
         variacion: variacion(entregadosSemana, entregadosSemanaPrevia),
       },
+      // Lo que entró a la caja.
+      ingresos: {
+        valor: ingresosHoy,
+        delta: Number((ingresosHoy - ingresosAyer).toFixed(2)),
+      },
+      // Lo que costaron los productos vendidos.
+      inversion: {
+        valor: inversionHoy,
+        delta: Number((inversionHoy - inversionAyer).toFixed(2)),
+      },
+      // Lo que de verdad quedó, y qué porcentaje representa.
       ganancia: {
         valor: gananciaHoy,
         delta: Number((gananciaHoy - gananciaAyer).toFixed(2)),
+        margen,
       },
-      ticketPromedio: pedidosConMonto ? Number((gananciaHoy / pedidosConMonto).toFixed(2)) : 0,
+      // El ticket se calcula sobre lo que pagó el cliente, no sobre la ganancia.
+      ticketPromedio: pedidosConMonto ? Number((ingresosHoy / pedidosConMonto).toFixed(2)) : 0,
 
       // Requiere atención
       porReponer: { total: productosPorReponer.length, lista: productosPorReponer },

@@ -35,7 +35,7 @@ const Sidebar = () => {
     { name: 'Fidelidad', path: '/fidelidad', icon: Award },
     { name: 'Promociones', path: '/promociones', icon: Megaphone },
     { name: 'Impresiones', path: '/servicios-impresion', icon: Printer },
-    { name: 'Tarjetas de saldo', path: '/tarjetas', icon: Gift },
+    { name: 'Tarjetas de regalo', path: '/tarjetas', icon: Gift },
   ];
 
   return (

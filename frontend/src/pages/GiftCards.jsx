@@ -8,7 +8,7 @@ import { bloquearTeclasNumero } from '../utils/validaciones';
 import { modalTransition, modalInitial, modalAnimate } from '../utils/motion';
 
 /*
- * GiftCards (Admin) — tarjetas de saldo para regalar o vender.
+ * GiftCards (Admin) — tarjetas de regalo que cargan saldo al cliente.
  *
  * El gerente crea tarjetas por un monto, se imprimen o se dictan, y el cliente
  * canjea el código para cargar saldo. La lógica vive en useGiftCards.
@@ -42,7 +42,7 @@ const GiftCards = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Gift className="w-8 h-8" style={{ color: 'var(--theme-accent)' }} />
-          <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>Tarjetas de saldo</h1>
+          <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>Tarjetas de regalo</h1>
         </div>
         <button
           onClick={() => setModalOpen(true)}

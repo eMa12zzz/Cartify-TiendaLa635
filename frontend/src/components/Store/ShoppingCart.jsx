@@ -893,7 +893,21 @@ const ShoppingCart = ({
 
   // ── Canje de puntos ──
   const { user } = useAuth();
-  const { saldo, recargar: recargarSaldo } = useSaldo();
+  const { saldo, canjeando, canjear, recargar: recargarSaldo } = useSaldo();
+  const [codigoTarjeta, setCodigoTarjeta] = useState('');
+
+  /*
+   * Canjear la tarjeta sin salir del checkout: si el cliente tuviera que irse
+   * a "Métodos de pago" a canjearla, pierde el carrito de vista y muchos no
+   * vuelven. Al canjear, si el saldo alcanza, se selecciona solo como pago.
+   */
+  const onCanjearEnCheckout = async (e) => {
+    e.preventDefault();
+    if (await canjear(codigoTarjeta)) {
+      setCodigoTarjeta('');
+      setMetodoPago('saldo');
+    }
+  };
   const { points: puntosDisponibles, redeemRate, minRedeem } = useLoyalty();
   const [usarPuntos, setUsarPuntos] = useState(false);
 
@@ -1104,7 +1118,7 @@ const ShoppingCart = ({
                     >
                       <StoreFront size={16} strokeWidth={2} />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600 }}>Paso a traerlo</div>
+                        <div style={{ fontWeight: 600 }}>Retiro en el local</div>
                         <div style={{ fontSize: 11, opacity: 0.7 }}>Sin costo de envío</div>
                       </div>
                     </OpcionBtn>
@@ -1116,8 +1130,8 @@ const ShoppingCart = ({
                     >
                       <MapPin size={16} strokeWidth={2} />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600 }}>Que me lo lleven</div>
-                        <div style={{ fontSize: 11, opacity: 0.7 }}>+${COSTO_ENVIO.toFixed(2)}</div>
+                        <div style={{ fontWeight: 600 }}>Envío a domicilio</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>+${COSTO_ENVIO.toFixed(2)} de envío</div>
                       </div>
                     </OpcionBtn>
                   </div>
@@ -1193,6 +1207,67 @@ const ShoppingCart = ({
                       Le quedarán ${(saldo - totalAPagar).toFixed(2)} después de este pedido.
                     </p>
                   )}
+
+                  {/*
+                    Los puntos no son un método aparte sino un descuento: se
+                    restan del total y el resto se paga con lo de arriba. Se
+                    muestra acá porque es donde el cliente decide cómo pagar.
+                  */}
+                  {puedeCanjear && (
+                    <label
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, marginTop: 12,
+                        padding: '12px 14px', borderRadius: 14, cursor: 'pointer',
+                        border: `1.5px solid ${usarPuntos ? BROWN : '#e5e5e5'}`,
+                        background: usarPuntos ? BROWN_LIGHT : '#fff',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={usarPuntos}
+                        onChange={(e) => setUsarPuntos(e.target.checked)}
+                        style={{ accentColor: BROWN, width: 16, height: 16 }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: usarPuntos ? BROWN : '#444' }}>
+                          Usar mis {puntosDisponibles} puntos
+                        </div>
+                        <div style={{ fontSize: 11, color: '#888' }}>
+                          {usarPuntos
+                            ? `Descuenta $${descuento.toFixed(2)} de este pedido`
+                            : `Equivalen a $${(Math.min(puntosDisponibles, maxPuntosUtiles) / (redeemRate || 100)).toFixed(2)} en esta compra`}
+                        </div>
+                      </div>
+                    </label>
+                  )}
+
+                  {/* Canjear una tarjeta sin salir del checkout */}
+                  <form onSubmit={onCanjearEnCheckout} style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <input
+                      value={codigoTarjeta}
+                      onChange={(e) => setCodigoTarjeta(e.target.value.toUpperCase())}
+                      placeholder="¿Tiene una tarjeta de regalo? 635-XXXX-XXXX"
+                      aria-label="Código de tarjeta de regalo"
+                      style={{
+                        flex: 1, padding: '11px 14px', fontSize: 13, fontFamily: 'inherit',
+                        border: '1px solid #e5e5e5', borderRadius: 12, outline: 'none',
+                        letterSpacing: '0.05em',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={canjeando || !codigoTarjeta.trim()}
+                      className="press"
+                      style={{
+                        padding: '0 18px', borderRadius: 12, border: `1.5px solid ${BROWN}`,
+                        background: '#fff', color: BROWN, fontSize: 13, fontWeight: 600,
+                        fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
+                        opacity: canjeando || !codigoTarjeta.trim() ? 0.5 : 1,
+                      }}
+                    >
+                      {canjeando ? 'Canjeando…' : 'Canjear'}
+                    </button>
+                  </form>
                 </div>
 
                 {/* Order thumbnails */}
