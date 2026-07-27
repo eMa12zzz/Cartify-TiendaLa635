@@ -1,42 +1,31 @@
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingBag, 
-  Truck, 
-  Tag, 
-  Users, 
-  UserSquare2, 
-  Shapes,
-  Blocks,
-  Award,
-  Megaphone,
-  Printer,
-  Gift,
-  Settings
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Settings } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useSidebarNav } from '../../hooks/useSidebarNav';
+import { DUR, EASE_OUT } from '../../utils/motion';
 
+/*
+ * Sidebar — el menú del panel.
+ *
+ * Dos niveles: arriba lo del día a día (Dashboard, Pedidos, Inventario) y
+ * debajo tres grupos que se despliegan. Toda la decisión de qué va dónde y
+ * qué está abierto vive en useSidebarNav; aquí solo se pinta.
+ */
 const Sidebar = () => {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const { palette } = useTheme();
   const c = palette.colors;
+  const { accesos, grupos, esActivo, tieneActivo, estaAbierto, alternar } = useSidebarNav();
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Inventario', path: '/inventario', icon: Package },
-    { name: 'Pedidos', path: '/pedidos', icon: ShoppingBag },
-    { name: 'Proveedores', path: '/proveedores', icon: Truck },
-    { name: 'Marcas', path: '/marcas', icon: Tag },
-    { name: 'Empleados', path: '/empleados', icon: Users },
-    { name: 'Clientes', path: '/clientes', icon: UserSquare2 },
-    { name: 'Categorías', path: '/categorias', icon: Shapes },
-    { name: 'Módulos', path: '/modulos', icon: Blocks },
-    { name: 'Fidelidad', path: '/fidelidad', icon: Award },
-    { name: 'Promociones', path: '/promociones', icon: Megaphone },
-    { name: 'Impresiones', path: '/servicios-impresion', icon: Printer },
-    { name: 'Tarjetas de regalo', path: '/tarjetas', icon: Gift },
-  ];
+  // Una sola pinta para todo lo clickeable del menú.
+  const estilo = (activo) => ({
+    color: activo ? c.primary : c.sidebarText,
+    backgroundColor: activo ? c.primaryLight : 'transparent',
+  });
+
+  const fila = 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors w-full';
 
   return (
     <aside
@@ -49,39 +38,89 @@ const Sidebar = () => {
         </h1>
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname.includes(item.path);
+      <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+        {/* Lo de todos los días, sin un clic de más */}
+        {accesos.map((item) => {
+          const activo = esActivo(item.path);
           return (
-            <Link
-              key={item.name}
-              to={item.path}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                color: isActive ? c.primary : c.sidebarText,
-                backgroundColor: isActive ? c.primaryLight : 'transparent',
-              }}
-            >
-              <item.icon className="w-5 h-5" style={{ color: isActive ? c.primary : c.textMuted }} />
+            <Link key={item.path} to={item.path} className={fila} style={estilo(activo)}>
+              <item.icon className="w-5 h-5" style={{ color: activo ? c.primary : c.textMuted }} />
               {item.name}
-              {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.primary }}></div>
-              )}
+              {activo && <span className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.primary }} />}
             </Link>
+          );
+        })}
+
+        {grupos.map((grupo) => {
+          const abierto = estaAbierto(grupo);
+          const conActivo = tieneActivo(grupo);
+
+          return (
+            <div key={grupo.id}>
+              <button
+                type="button"
+                onClick={() => alternar(grupo)}
+                aria-expanded={abierto}
+                className={fila}
+                /*
+                 * El encabezado se tiñe solo si el grupo está cerrado y adentro
+                 * hay algo activo: así se sabe dónde quedó uno sin abrirlo. Si
+                 * está abierto, el color se lo lleva la pantalla de adentro y
+                 * no compiten dos cosas resaltadas a la vez.
+                 */
+                style={estilo(conActivo && !abierto)}
+              >
+                <grupo.icon
+                  className="w-5 h-5"
+                  style={{ color: conActivo && !abierto ? c.primary : c.textMuted }}
+                />
+                {grupo.name}
+                <ChevronDown
+                  className="w-4 h-4 ml-auto transition-transform"
+                  style={{
+                    color: c.textMuted,
+                    transform: abierto ? 'rotate(180deg)' : 'none',
+                  }}
+                />
+              </button>
+
+              <AnimatePresence initial={false}>
+                {abierto && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: DUR.dropdown, ease: EASE_OUT }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    {/* La guía de la izquierda ata visualmente el grupo con sus hijos */}
+                    <div className="ml-6 pl-3 mt-1 space-y-1" style={{ borderLeft: `1px solid ${c.sidebarBorder}` }}>
+                      {grupo.items.map((item) => {
+                        const activo = esActivo(item.path);
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
+                            style={estilo(activo)}
+                          >
+                            <item.icon className="w-4 h-4" style={{ color: activo ? c.primary : c.textMuted }} />
+                            {item.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           );
         })}
       </nav>
 
       <div className="p-4" style={{ borderTop: `1px solid ${c.sidebarBorder}` }}>
-        <Link
-          to="/cuenta"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
-          style={{
-            color: location.pathname === '/cuenta' ? c.primary : c.sidebarText,
-            backgroundColor: location.pathname === '/cuenta' ? c.primaryLight : 'transparent',
-          }}
-        >
-          <Settings className="w-5 h-5" style={{ color: location.pathname === '/cuenta' ? c.primary : c.textMuted }} />
+        <Link to="/cuenta" className={fila} style={estilo(pathname === '/cuenta')}>
+          <Settings className="w-5 h-5" style={{ color: pathname === '/cuenta' ? c.primary : c.textMuted }} />
           Cuenta
         </Link>
       </div>
@@ -90,4 +129,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-

@@ -23,15 +23,26 @@ const Card = styled.div`
   }
 `;
 
+/*
+ * El recuadro de la foto: un panel redondeado DENTRO de la tarjeta, con aire
+ * blanco alrededor, en vez de la imagen pegada a los bordes de arriba.
+ *
+ * No es adorno: el marco le da a cada producto el mismo escenario. Con fotos
+ * de proveedores distintos —unas con fondo blanco, otras recortadas, otras
+ * cuadradas— la fila se veía despareja; encuadradas todas igual, la vista
+ * compara productos en vez de tropezar con las fotos.
+ */
 const ImageWrapper = styled.div`
-  background: #f7f7f7;
-  height: 160px;
+  background: #F4F4F5;
+  height: 165px;
+  margin: 10px 10px 0;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  /* El margen que hace que todas las fotos respiren igual */
+  /* El margen interno que hace que todas las fotos respiren igual */
   padding: 14px;
 `;
 
@@ -63,10 +74,15 @@ const ImageFallback = styled.div`
   user-select: none;
 `;
 
+/*
+ * El corazón y la etiqueta se anclan a la TARJETA, no al recuadro: si fueran
+ * hijos del recuadro, el margen nuevo los empujaría hacia adentro y quedarían
+ * flotando en medio de la foto.
+ */
 const WishlistButton = styled.button`
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 16px;
+  right: 16px;
   background: white;
   border: none;
   font-size: 17px;
@@ -90,8 +106,8 @@ const WishlistButton = styled.button`
 
 const BestSellerBadge = styled.div`
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 16px;
+  left: 16px;
   background: ${BROWN};
   color: white;
   font-size: 10px;
@@ -220,23 +236,24 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
 
   return (
     <Card onClick={handleClickCard} className={className} style={style}>
+      {producto.promo && (
+        <BestSellerBadge>
+          {producto.promo.type === 'nxm'
+            ? `${producto.promo.buyQty}x${producto.promo.payQty}`
+            : producto.promo.type === 'descuento'
+              ? `-${producto.promo.discount}%`
+              : 'Oferta'}
+        </BestSellerBadge>
+      )}
+      <WishlistButton
+        className="wishlist-button"
+        onClick={handleWishlist}
+        $liked={liked}
+      >
+        {liked ? '♥' : '♡'}
+      </WishlistButton>
+
       <ImageWrapper>
-        {producto.promo && (
-          <BestSellerBadge>
-            {producto.promo.type === 'nxm'
-              ? `${producto.promo.buyQty}x${producto.promo.payQty}`
-              : producto.promo.type === 'descuento'
-                ? `-${producto.promo.discount}%`
-                : 'Oferta'}
-          </BestSellerBadge>
-        )}
-        <WishlistButton
-          className="wishlist-button"
-          onClick={handleWishlist}
-          $liked={liked}
-        >
-          {liked ? '♥' : '♡'}
-        </WishlistButton>
         {producto.imagen && !imgError ? (
           <ProductImage
             src={producto.imagen}

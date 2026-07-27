@@ -28,14 +28,6 @@ const PROPORCION = '2.5 / 1';
 // Cuánto ocupa la foto cuando acompaña al texto.
 const ANCHO_IMAGEN = '46%';
 
-/*
- * A partir de acá el título ya no deja espacio para la marca de agua. Es un
- * corte a ojo, pero deliberado: preferimos perder el adorno antes que dejar
- * que un icono gigante compita con lo que la promo tiene que decir.
- */
-const TITULO_LARGO = 42;
-const DESCRIPCION_LARGA = 80;
-
 const PromoCard = ({
   promo,
   imagen,
@@ -58,12 +50,11 @@ const PromoCard = ({
 
   const Icono = iconoDePromo(icono);
   /*
-   * La marca de agua ocupa el lado derecho, así que solo cabe si ese lado
-   * está libre: sin foto y con un texto que no se estire hasta allá.
+   * La marca de agua se dibuja siempre que haya icono y no haya foto: son
+   * capas, no vecinos. El icono va al fondo y el texto encima, así que un
+   * título largo simplemente pasa por arriba en vez de echar al icono.
    */
-  const textoLargo = (title || '').length > TITULO_LARGO || (descripcion || '').length > DESCRIPCION_LARGA;
-  const marcaDeAgua = Icono && !imagen && !textoLargo;
-  const textoAngosto = acompaña || marcaDeAgua;
+  const marcaDeAgua = Icono && !imagen;
 
   return (
     <div
@@ -110,8 +101,10 @@ const PromoCard = ({
       )}
 
       {/*
-        Marca de agua: el icono en grande, apenas visible, llenando el vacío
-        de la derecha. Va antes del texto en el DOM para quedar por detrás.
+        Marca de agua: el icono en grande, apenas visible, detrás de todo.
+        Es una CAPA de fondo, no un vecino que pelea por el espacio: el texto
+        se dibuja encima (zIndex 1), así que un título largo lo cruza sin
+        problema y el icono nunca le quita lugar.
       */}
       {marcaDeAgua && (
         <span
@@ -128,6 +121,7 @@ const PromoCard = ({
             opacity: 0.17,
             lineHeight: 0,
             pointerEvents: 'none',
+            zIndex: 0,
           }}
         >
           <Icono size="100%" strokeWidth={1.6} />
@@ -151,6 +145,8 @@ const PromoCard = ({
             justifyContent: 'center',
             padding: 'clamp(16px, 4.5%, 40px)',
             textAlign: 'left',
+            // La capa de arriba: siempre por encima de la marca de agua.
+            zIndex: 1,
           }}
         >
           {(etiqueta || vencimiento) && (
@@ -208,7 +204,7 @@ const PromoCard = ({
               fontSize: 'clamp(14px, 6cqw, 32px)',
               lineHeight: 1.12,
               letterSpacing: '-0.02em',
-              maxWidth: textoAngosto ? '62%' : '100%',
+              maxWidth: acompaña ? '62%' : '100%',
               /*
                * Tope de dos líneas: un título largo empujaba la descripción
                * fuera de la tarjeta en vez de cortarse.
@@ -230,7 +226,7 @@ const PromoCard = ({
                 fontSize: 'clamp(9px, 3cqw, 16px)',
                 marginTop: 6,
                 lineHeight: 1.35,
-                maxWidth: textoAngosto ? '58%' : '78%',
+                maxWidth: acompaña ? '58%' : '78%',
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
