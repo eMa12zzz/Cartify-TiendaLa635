@@ -276,9 +276,17 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
       <CardBody>
         <ProductBrand>{producto.marca}</ProductBrand>
         <ProductName>{producto.nombre}</ProductName>
-        <StockInfo $bajoStock={bajoStock}>
-          {bajoStock ? `⚠️ Solo ${producto.stock}` : `${producto.stock} disponibles`}
-        </StockInfo>
+        {/*
+          Solo se avisa cuando se está acabando o cuando ya no hay. Poner
+          "100 disponibles" en cada tarjeta le enseña el inventario al cliente
+          sin que le sirva de nada; lo que sí lo mueve es saber que quedan
+          pocas.
+        */}
+        {producto.stock === 0 ? (
+          <StockInfo $bajoStock>Agotado</StockInfo>
+        ) : bajoStock ? (
+          <StockInfo $bajoStock>¡Quedan pocas!</StockInfo>
+        ) : null}
 
         <PriceRow>
           <PriceBlock>
