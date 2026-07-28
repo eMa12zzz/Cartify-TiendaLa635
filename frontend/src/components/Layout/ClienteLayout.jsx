@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store, Heart,
+  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store, Heart, Bike,
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
+import { puedeRepartir } from '../../hooks/useReparto';
 
 /*
  * ClienteLayout — el "marco" compartido del área "Mi Cuenta" del cliente.
@@ -40,6 +41,14 @@ const ClienteLayout = () => {
   const displayName = user?.userName || user?.fullName || 'Cliente';
   const initials = displayName.substring(0, 1).toUpperCase();
   const [confirmarSalida, setConfirmarSalida] = useState(false);
+
+  /*
+   * "Reparto" solo lo ve el personal. Va de primero porque para ellos es lo
+   * único que vienen a hacer aquí: el resto del menú es de su cuenta personal.
+   */
+  const items = puedeRepartir(user)
+    ? [{ to: '/mi-cuenta/reparto', label: 'Reparto', icon: Bike, ready: true }, ...navItems]
+    : navItems;
 
   const handleLogout = () => {
     logout();
@@ -95,7 +104,7 @@ const ClienteLayout = () => {
 
           {/* Navegación de la cuenta */}
           <nav className="flex flex-col gap-0.5">
-            {navItems.map((item) => {
+            {items.map((item) => {
               const Icon = item.icon;
               const active = location.pathname === item.to;
 

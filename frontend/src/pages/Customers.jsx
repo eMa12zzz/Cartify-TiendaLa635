@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import FilterSelect from '../components/UI/FilterSelect';
 import DataTable from '../components/UI/DataTable';
 import { customerService } from '../api/customerService';
+import { direccionesEnTexto } from '../utils/mascaras';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -77,7 +78,9 @@ const Customers = () => {
               <>
                 <td className="py-4 px-4 text-sm text-gray-800">{item.fullName}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.phoneNumber}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{Array.isArray(item.clientAddress) ? item.clientAddress.join(', ') : item.clientAddress}</td>
+                {/* Las direcciones nuevas son objetos: un join() las imprimiría
+                    como "[object Object]". El helper aplana las dos formas. */}
+                <td className="py-4 px-4 text-sm text-gray-600">{direccionesEnTexto(item.clientAddress)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.email}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.dui}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.userName}</td>

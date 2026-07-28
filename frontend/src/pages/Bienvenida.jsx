@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styled from 'styled-components';
-import { LocateFixed, MapPin, Loader2 } from 'lucide-react';
+import { LocateFixed, MapPin, Loader2, Home, Signpost } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../hooks/useUbicacion';
@@ -145,6 +145,16 @@ const Campo = styled.div`
   }
 `;
 
+/* Nombre y referencia lado a lado; apilados en pantalla angosta. */
+const Dos = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+`;
+
 const Fila = styled.div`
   display: flex;
   gap: 10px;
@@ -226,13 +236,25 @@ const SeguirPosicion = ({ posicion }) => {
 
 const Bienvenida = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { posicion, direccion, setDireccion, buscando, localizando, marcarEn, localizarme } = useUbicacion();
+  const [nombre, setNombre] = useState('');
+  const [referencia, setReferencia] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   const primerNombre = (user?.fullName || '').split(' ')[0];
 
-  const alOmitir = () => navigate('/tienda-dashboard');
+  /*
+   * La misma pantalla sirve para dos cosas: el saludo de entrada y agregar
+   * otra dirección desde Mi Cuenta. Cuando viene con ?volver=, es lo segundo:
+   * cambia el texto y regresa a donde estaba en lugar de ir a servicios.
+   */
+  const volverA = searchParams.get('volver');
+  const esAgregar = !!volverA;
+  const destinoAlSalir = volverA || '/tienda-dashboard';
+
+  const alOmitir = () => navigate(destinoAlSalir);
 
   const alGuardar = async () => {
     const limpia = direccion.trim();
@@ -250,9 +272,17 @@ const Bienvenida = () => {
        */
       const cliente = await clientService.getClientById(user.id);
       const previas = Array.isArray(cliente?.clientAddress) ? cliente.clientAddress : [];
-      await clientService.updateAddresses(user.id, [...previas, limpia]);
+      const nueva = {
+        // Sin nombre puesto, se usa uno según cuántas lleve: "Dirección 2".
+        nombre: nombre.trim() || `Dirección ${previas.length + 1}`,
+        direccion: limpia,
+        referencia: referencia.trim(),
+        lat: posicion?.lat ?? null,
+        lng: posicion?.lng ?? null,
+      };
+      await clientService.updateAddresses(user.id, [...previas, nueva]);
       toast.success('Dirección guardada');
-      navigate('/tienda-dashboard');
+      navigate(destinoAlSalir);
     } catch (error) {
       // El interceptor ya avisa del error; aquí solo se deja seguir.
       setGuardando(false);
@@ -293,12 +323,22 @@ const Bienvenida = () => {
       <Velo />
 
       <Contenido>
+        {/*
+          "Bienvenido" tiene género y la mitad de la clientela es mujer. "Hola"
+          y "le damos la bienvenida" saludan igual de bien sin dejar a nadie
+          fuera, y de paso funcionan si el nombre no está cargado.
+        */}
         <Saludo>
           <Marca>Tienda la 635</Marca>
-          <Titulo>{primerNombre ? `¡Bienvenido, ${primerNombre}!` : '¡Bienvenido!'}</Titulo>
+          <Titulo>
+            {esAgregar
+              ? 'Nueva dirección'
+              : primerNombre ? `¡Hola, ${primerNombre}!` : '¡Hola!'}
+          </Titulo>
           <Bajada>
-            Díganos dónde le dejamos sus pedidos. Toque el mapa para marcar el punto
-            o use su ubicación; puede cambiarla cuando quiera.
+            {esAgregar
+              ? 'Marque el punto en el mapa y póngale un nombre para reconocerla después.'
+              : 'Le damos la bienvenida. Díganos dónde le dejamos sus pedidos: toque el mapa para marcar el punto o use su ubicación.'}
           </Bajada>
         </Saludo>
 
@@ -320,16 +360,55 @@ const Bienvenida = () => {
             {localizando ? 'Ubicándolo…' : 'Usar mi ubicación'}
           </Ubicarme>
 
+          {/*
+            Nombre y referencia. El nombre es para el cliente —para elegir
+            rápido entre "Casa" y "Trabajo" al pagar—; la referencia es para
+            el repartidor, que en el barrio se guía por el portón verde y no
+            por el número de casa.
+          */}
+          <Dos>
+            <div>
+              <Etiqueta htmlFor="nombre">Nombre de la dirección</Etiqueta>
+              <Campo>
+                <Home size={16} color={BROWN} />
+                <input
+                  id="nombre"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  maxLength={30}
+                  placeholder="Casa, Trabajo…"
+                />
+              </Campo>
+            </div>
+            <div>
+              <Etiqueta htmlFor="referencia">Punto de referencia</Etiqueta>
+              <Campo>
+                <Signpost size={16} color={BROWN} />
+                <input
+                  id="referencia"
+                  value={referencia}
+                  onChange={(e) => setReferencia(e.target.value)}
+                  maxLength={80}
+                  placeholder="Frente a la cancha, portón verde…"
+                />
+              </Campo>
+            </div>
+          </Dos>
+
           <Fila>
-            <Boton type="button" onClick={alOmitir}>Omitir por ahora</Boton>
+            <Boton type="button" onClick={alOmitir}>
+              {esAgregar ? 'Cancelar' : 'Omitir por ahora'}
+            </Boton>
             <Boton type="button" $primario onClick={alGuardar} disabled={guardando || buscando}>
-              {guardando ? 'Guardando…' : 'Guardar y entrar'}
+              {guardando ? 'Guardando…' : esAgregar ? 'Guardar dirección' : 'Guardar y entrar'}
             </Boton>
           </Fila>
 
-          <Ayuda>
-            Si la omite, puede agregarla después desde <b>Mi Cuenta → Direcciones</b>.
-          </Ayuda>
+          {!esAgregar && (
+            <Ayuda>
+              Si la omite, puede agregarla después desde <b>Mi Cuenta → Direcciones</b>.
+            </Ayuda>
+          )}
         </Tarjeta>
       </Contenido>
     </Pantalla>

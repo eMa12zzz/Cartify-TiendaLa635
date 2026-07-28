@@ -71,6 +71,21 @@ export const alEscribir = (formateador, alCambiar) => (e) => {
   return formateado;
 };
 
+/*
+ * Una dirección de cliente en una línea, venga como texto (las viejas) o como
+ * objeto { nombre, direccion, referencia } (las nuevas). Sin esto, un join()
+ * sobre las nuevas imprime "[object Object]".
+ */
+export const direccionEnTexto = (dir) => {
+  if (!dir) return '';
+  if (typeof dir === 'string') return dir;
+  const cuerpo = [dir.nombre, dir.direccion].filter(Boolean).join(': ');
+  return dir.referencia ? `${cuerpo} (${dir.referencia})` : cuerpo;
+};
+
+export const direccionesEnTexto = (lista) =>
+  (Array.isArray(lista) ? lista : [lista]).map(direccionEnTexto).filter(Boolean).join(' · ');
+
 // Cuántos caracteres puede tener el campo ya formateado (para maxLength).
 export const LARGO_DUI = 10;        // 8 + guion + 1
 export const LARGO_TELEFONO = 9;    // 4 + guion + 4

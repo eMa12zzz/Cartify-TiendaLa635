@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
 import { useSaldo } from '../../hooks/useSaldo';
+import { useAddresses } from '../../hooks/useAddresses';
 import { orderService } from '../../api/orderService';
 
 // Productos por página en el resumen del pedido confirmado.
@@ -864,6 +866,7 @@ const ShoppingCart = ({
   onLimpiarCarrito,
   onCheckout,
 }) => {
+  const navigate = useNavigate();
   const [view, setView] = useState('cart'); // 'cart' | 'checkout' | 'confirmation'
   const [procesando, setProcesando] = useState(false);
   const [imgErrors, setImgErrors] = useState({});
@@ -886,7 +889,13 @@ const ShoppingCart = ({
    * delivery — no tenía sentido elegirlo.
    */
   const [entrega, setEntrega] = useState('retiro');   // 'retiro' | 'delivery'
-  const [direccion, setDireccion] = useState('');
+  /*
+   * La dirección se elige de las guardadas. Se recuerda cuál eligió para
+   * mandar también su referencia y sus coordenadas con el pedido.
+   */
+  const { addresses: direcciones } = useAddresses();
+  const [indiceDireccion, setIndiceDireccion] = useState(0);
+  const direccionElegida = direcciones[indiceDireccion] || null;
   const [metodoPago, setMetodoPago] = useState('efectivo'); // 'efectivo' | 'tarjeta' | 'saldo'
 
   const COSTO_ENVIO = 4.78;
@@ -946,8 +955,8 @@ const ShoppingCart = ({
     }
     // Con envío a domicilio la dirección es obligatoria; el servidor también
     // lo revisa, pero avisar acá evita que llene todo y falle al final.
-    if (entrega === 'delivery' && !direccion.trim()) {
-      toast.error('Escriba la dirección de entrega');
+    if (entrega === 'delivery' && !direccionElegida) {
+      toast.error('Elija una dirección de entrega');
       return;
     }
     // Se compara contra totalAPagar (ya con el descuento de puntos aplicado),
@@ -969,7 +978,12 @@ const ShoppingCart = ({
         })),
         paymentMethod: metodoPago,
         deliveryType: entrega,
-        deliveryAddress: entrega === 'delivery' ? direccion.trim() : undefined,
+        // Van el texto, la referencia y el punto: con las coordenadas, el
+        // "cómo llegar" del repartidor cae en el portón y no a media cuadra.
+        deliveryAddress: entrega === 'delivery' ? direccionElegida.direccion : undefined,
+        deliveryReference: entrega === 'delivery' ? direccionElegida.referencia : undefined,
+        deliveryLat: entrega === 'delivery' ? direccionElegida.lat : undefined,
+        deliveryLng: entrega === 'delivery' ? direccionElegida.lng : undefined,
         channel: 'web',
         pointsToRedeem: puntosAUsar,
       });
@@ -1140,22 +1154,83 @@ const ShoppingCart = ({
                     </OpcionBtn>
                   </div>
 
+                  {/*
+                    Se elige entre las direcciones que ya guardó, no se escribe
+                    de nuevo. Antes era una caja en blanco: el cliente marcaba
+                    su casa en el mapa, la guardaba, y al pagar la tecleaba
+                    otra vez — con lo cual las coordenadas nunca llegaban al
+                    pedido y el repartidor salía con un texto a medias.
+                  */}
                   {entrega === 'delivery' && (
                     <div style={{ marginTop: 12 }}>
-                      <input
-                        value={direccion}
-                        onChange={(e) => setDireccion(e.target.value)}
-                        placeholder="Dirección: colonia, calle, número y una referencia"
-                        aria-label="Dirección de entrega"
-                        style={{
-                          width: '100%', padding: '11px 14px', fontSize: 14,
-                          border: '1px solid #e5e5e5', borderRadius: 12, outline: 'none',
-                          fontFamily: 'inherit', color: '#111',
-                        }}
-                      />
-                      <p style={{ fontSize: 11, color: '#999', margin: '6px 0 0' }}>
-                        Una referencia ayuda al repartidor: "portón verde", "frente a la tienda de don Beto".
-                      </p>
+                      {direcciones.length === 0 ? (
+                        <div style={{
+                          padding: '14px', border: '1px dashed #e0d3c4', borderRadius: 12,
+                          background: '#FBF6F0', textAlign: 'center',
+                        }}>
+                          <p style={{ fontSize: 13, color: '#7a6a5c', margin: '0 0 10px' }}>
+                            Todavía no tiene direcciones guardadas.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => navigate('/bienvenida?volver=/store')}
+                            style={{
+                              padding: '9px 16px', borderRadius: 999, border: 'none',
+                              background: BROWN, color: '#fff', fontSize: 13, fontWeight: 700,
+                            }}
+                          >
+                            Marcar mi dirección en el mapa
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {direcciones.map((dir, i) => {
+                              const elegida = indiceDireccion === i;
+                              return (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => setIndiceDireccion(i)}
+                                  style={{
+                                    display: 'flex', alignItems: 'flex-start', gap: 10,
+                                    padding: '11px 13px', borderRadius: 12, textAlign: 'left',
+                                    border: `1px solid ${elegida ? BROWN : '#e5e5e5'}`,
+                                    background: elegida ? '#FBF6F0' : '#fff',
+                                  }}
+                                >
+                                  <MapPin size={15} color={elegida ? BROWN : '#bbb'} style={{ marginTop: 2, flexShrink: 0 }} />
+                                  <span style={{ flex: 1, minWidth: 0 }}>
+                                    {dir.nombre && (
+                                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#2A1A0E' }}>
+                                        {dir.nombre}
+                                      </span>
+                                    )}
+                                    <span style={{ display: 'block', fontSize: 12.5, color: '#666' }}>
+                                      {dir.direccion}
+                                    </span>
+                                    {dir.referencia && (
+                                      <span style={{ display: 'block', fontSize: 11, color: '#999', marginTop: 2 }}>
+                                        {dir.referencia}
+                                      </span>
+                                    )}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => navigate('/bienvenida?volver=/store')}
+                            style={{
+                              marginTop: 8, background: 'none', border: 'none', padding: 0,
+                              color: BROWN, fontSize: 12, fontWeight: 700,
+                            }}
+                          >
+                            + Agregar otra dirección
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

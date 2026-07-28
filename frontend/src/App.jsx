@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
+import BurbujaPedido from './components/Store/BurbujaPedido';
 
 /*
  * ============================================================
@@ -51,6 +52,7 @@ import PuntosFidelidad from './pages/cliente/PuntosFidelidad';
 import MisPedidos from './pages/cliente/MisPedidos';
 import Favoritos from './pages/cliente/Favoritos';
 import Bienvenida from './pages/Bienvenida';
+import Reparto from './pages/cliente/Reparto';
 import Recibidos from './pages/cliente/Recibidos';
 import DetallesCuenta from './pages/cliente/DetallesCuenta';
 import Direcciones from './pages/cliente/Direcciones';
@@ -101,6 +103,9 @@ function App() {
         />
         {/* Flotante de WhatsApp: se pinta solo en las pantallas del cliente. */}
         <BotonWhatsApp />
+        {/* Seguimiento del pedido en curso; va a la izquierda para no chocar
+            con el de WhatsApp, que ocupa la esquina derecha. */}
+        <BurbujaPedido />
         <Routes>
 
           {/* ── Rutas Públicas (sin autenticación) ─────────────────── */}
@@ -151,6 +156,8 @@ function App() {
               <Route path="/mi-cuenta"           element={<DetallesCuenta />} />
               <Route path="/mi-cuenta/pedidos"   element={<MisPedidos />} />
               <Route path="/mi-cuenta/favoritos" element={<Favoritos />} />
+              {/* Reparto: la usa el personal desde el teléfono, en la calle */}
+              <Route path="/mi-cuenta/reparto"   element={<Reparto />} />
 
               <Route path="/mi-cuenta/recibidos"   element={<Recibidos />} />
               <Route path="/mi-cuenta/direcciones"    element={<Direcciones />} />

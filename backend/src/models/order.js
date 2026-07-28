@@ -61,8 +61,22 @@ const orderSchema = new Schema({
         default: 'retiro',
     },
     deliveryAddress: { type: String },   // texto de la dirección elegida
+    deliveryReference: { type: String }, // "portón verde, frente a la cancha"
     deliveryLat: { type: Number },       // punto marcado en el mapa
     deliveryLng: { type: Number },
+
+    /*
+     * Cuándo pasó cada cosa y quién la hizo.
+     *
+     * Antes solo existía `status` y el `updatedAt` de los timestamps, que se
+     * pisa con cualquier cambio: no quedaba constancia de a qué hora se
+     * preparó un pedido ni de quién lo entregó. Sin esto no se puede decir
+     * "este pedido tardó 40 minutos" ni reclamarle nada a nadie.
+     */
+    preparedAt: { type: Date },
+    preparedBy: { type: String },        // nombre de quien lo preparó
+    deliveredAt: { type: Date },
+    deliveredBy: { type: String },
     paymentStatus: {
         type: String,
         enum: ['pendiente', 'pagado'],
