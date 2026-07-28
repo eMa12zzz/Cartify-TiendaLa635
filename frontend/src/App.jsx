@@ -50,6 +50,7 @@ import ClienteLayout from './components/Layout/ClienteLayout';
 import PuntosFidelidad from './pages/cliente/PuntosFidelidad';
 import MisPedidos from './pages/cliente/MisPedidos';
 import Favoritos from './pages/cliente/Favoritos';
+import Bienvenida from './pages/Bienvenida';
 import Recibidos from './pages/cliente/Recibidos';
 import DetallesCuenta from './pages/cliente/DetallesCuenta';
 import Direcciones from './pages/cliente/Direcciones';
@@ -110,6 +111,8 @@ function App() {
           <Route path="/verification"    element={<Verification />} />     {/* Código de verificación */}
           <Route path="/create-password" element={<CreatePassword />} />
           <Route path="/login-password"  element={<LoginPassword />} />
+          {/* Primera pantalla tras entrar: el saludo con el mapa */}
+          <Route path="/bienvenida"      element={<Bienvenida />} />
           <Route path="/tienda-dashboard" element={<Dashboard />} />
           <Route path="/store"           element={<Store />} />
           <Route path="/impresiones"     element={<Impresiones />} />
@@ -148,6 +151,7 @@ function App() {
               <Route path="/mi-cuenta"           element={<DetallesCuenta />} />
               <Route path="/mi-cuenta/pedidos"   element={<MisPedidos />} />
               <Route path="/mi-cuenta/favoritos" element={<Favoritos />} />
+
               <Route path="/mi-cuenta/recibidos"   element={<Recibidos />} />
               <Route path="/mi-cuenta/direcciones"    element={<Direcciones />} />
               <Route path="/mi-cuenta/pagos"          element={<MetodoPago />} />

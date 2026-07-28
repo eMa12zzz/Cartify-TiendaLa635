@@ -166,10 +166,10 @@ const LoginPassword = () => {
         return;
       }
 
-      // ✅ Guardar sesión y redirigir al dashboard de la tienda
+      // ✅ Guardar sesión y saludar con el mapa de bienvenida
       localStorage.setItem('token', 'authenticated');
       localStorage.setItem('currentUser', JSON.stringify(user));
-      navigate('/tienda-dashboard');
+      navigate('/bienvenida');
     }, 600);
   };
 
