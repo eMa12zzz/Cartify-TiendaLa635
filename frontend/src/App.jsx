@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { FavoritosProvider } from './context/FavoritosContext';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
 
@@ -48,6 +49,7 @@ import AccountSettings from './pages/AccountSettings';
 import ClienteLayout from './components/Layout/ClienteLayout';
 import PuntosFidelidad from './pages/cliente/PuntosFidelidad';
 import MisPedidos from './pages/cliente/MisPedidos';
+import Favoritos from './pages/cliente/Favoritos';
 import Recibidos from './pages/cliente/Recibidos';
 import DetallesCuenta from './pages/cliente/DetallesCuenta';
 import Direcciones from './pages/cliente/Direcciones';
@@ -60,7 +62,42 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-right" />
+        {/*
+          Los favoritos se cargan una sola vez para toda la app: los mismos
+          corazones aparecen en la tienda y en Mi Cuenta, que son ramas
+          distintas del árbol de rutas. Va dentro del router porque el hook
+          navega al login cuando alguien sin sesión toca un corazón.
+        */}
+        <FavoritosProvider>
+        {/*
+          Los avisos van ABAJO a la derecha: arriba tapaban el carrito y "Mi
+          Cuenta" justo cuando la persona acababa de tocarlos, que es el peor
+          momento posible para taparle el botón.
+
+          Y sin emojis: un 🛒 gigante junto al texto no dice nada que el texto
+          no diga ya, y hace que la tienda parezca un chat. Se quedan los
+          iconos de la librería, que son marcas discretas de éxito o error.
+        */}
+        <Toaster
+          position="bottom-right"
+          gutter={10}
+          toastOptions={{
+            duration: 3500,
+            style: {
+              background: '#fff',
+              color: '#2A1A0E',
+              border: '1px solid #EDE7E0',
+              borderRadius: 14,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.10)',
+              fontSize: 14,
+              fontWeight: 500,
+              padding: '12px 16px',
+              maxWidth: 420,
+            },
+            success: { iconTheme: { primary: '#B46C30', secondary: '#fff' } },
+            error: { duration: 5000, iconTheme: { primary: '#D8542C', secondary: '#fff' } },
+          }}
+        />
         {/* Flotante de WhatsApp: se pinta solo en las pantallas del cliente. */}
         <BotonWhatsApp />
         <Routes>
@@ -110,6 +147,7 @@ function App() {
             <Route element={<ClienteLayout />}>
               <Route path="/mi-cuenta"           element={<DetallesCuenta />} />
               <Route path="/mi-cuenta/pedidos"   element={<MisPedidos />} />
+              <Route path="/mi-cuenta/favoritos" element={<Favoritos />} />
               <Route path="/mi-cuenta/recibidos"   element={<Recibidos />} />
               <Route path="/mi-cuenta/direcciones"    element={<Direcciones />} />
               <Route path="/mi-cuenta/pagos"          element={<MetodoPago />} />
@@ -120,6 +158,7 @@ function App() {
           </Route>
 
         </Routes>
+        </FavoritosProvider>
       </BrowserRouter>
     </AuthProvider>
   );

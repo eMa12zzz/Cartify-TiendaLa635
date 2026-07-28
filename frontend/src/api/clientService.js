@@ -23,6 +23,17 @@ export const clientService = {
   },
 
   // El cliente reemplaza su lista de direcciones (arreglo de strings).
+  // Favoritos del cliente (el corazón de las tarjetas de producto).
+  getFavorites: async (id) => {
+    const response = await api.get(`/client/${id}/favorites`);
+    return response.data;
+  },
+
+  toggleFavorite: async (id, productId) => {
+    const response = await api.patch(`/client/${id}/favorites`, { productId });
+    return response.data;
+  },
+
   updateAddresses: async (id, addresses) => {
     const response = await api.patch(`/client/${id}/addresses`, { addresses });
     return response.data;

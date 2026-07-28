@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Package } from 'lucide-react';
 import styled from 'styled-components';
+import { useFavoritosCtx } from '../../context/FavoritosContext';
 
 // Paleta del diseño (WEB.pdf), medida sobre el mockup.
 const BROWN = '#B46C30';
@@ -213,7 +214,12 @@ const AddButton = styled.button`
 
 // Acepta className/style para que la grilla pueda escalonar su entrada.
 const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, style }) => {
-  const [liked, setLiked] = useState(false);
+  /*
+   * El corazón sale del contexto, no de un useState local: así lo que se
+   * marcó queda guardado en la cuenta y sigue encendido al volver mañana.
+   */
+  const { esFavorito, alternar } = useFavoritosCtx();
+  const liked = esFavorito(producto.id);
   const [imgError, setImgError] = useState(false);
 
   const bajoStock = producto.stock < 10;
@@ -231,7 +237,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
 
   const handleWishlist = (e) => {
     e.stopPropagation();
-    setLiked(prev => !prev);
+    alternar(producto.id, producto.nombre);
   };
 
   return (

@@ -41,6 +41,7 @@ const Header = styled.header`
   height: 64px;
   position: sticky;
   top: 0;
+  /* El sticky ya sirve de referencia para centrar el buscador dentro */
   z-index: 200;
 `;
 
@@ -70,8 +71,27 @@ const LogoMain = styled.span`
  * círculo café a la izquierda (antes era gris con una lupa suelta).
  */
 const SearchBox = styled.div`
+  /*
+   * Centrado de verdad: el buscador queda a la misma distancia del logo que
+   * de los botones de la derecha. Antes tenía flex:1 a secas y se recostaba
+   * contra el logo, dejando un hueco raro antes del carrito.
+   *
+   * Los márgenes automáticos lo centran respecto al header completo, sin
+   * depender de que el logo y los botones midan lo mismo.
+   */
+  /*
+   * Crece con la ventana pero hasta un tope, y dentro de su espacio se centra.
+   *
+   * Los dos extremos se probaron y ninguno sirve: centrado exacto contra el
+   * header se monta encima del carrito (el logo mide 56px y los botones casi
+   * 400), y estirado sin tope se vuelve una barra descomunal en pantalla
+   * grande. Con max-width + márgenes automáticos queda centrado entre el logo
+   * y los botones, que es donde el ojo lo espera.
+   */
   flex: 1;
-  max-width: 460px;
+  min-width: 0;
+  max-width: 520px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   background: var(--papel);
@@ -115,6 +135,7 @@ const HeaderRight = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 `;
 
 /*
@@ -184,7 +205,7 @@ const CartBadge = styled.span`
 /* ─── Category Bar ─── */
 /* En el diseño las categorías van CENTRADAS, no pegadas a la izquierda. */
 const CategoryBar = styled.nav`
-  background: var(--papel);
+  background: transparent;
   padding: 0 28px;
   display: flex;
   justify-content: center;
@@ -207,7 +228,9 @@ const CategoryBar = styled.nav`
  * manda sobre cuál.
  */
 const PasilloBar = styled.nav`
-  background: var(--papel);
+  /* Sin fondo propio: las barras se apoyan en el de la página en vez de
+     cortarla con dos franjas blancas antes de que empiece el contenido. */
+  background: transparent;
   padding: 0 28px;
   display: flex;
   justify-content: center;

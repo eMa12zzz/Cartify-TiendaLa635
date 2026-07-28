@@ -19,6 +19,12 @@ router
   .route("/:id/profile")
   .patch(clientController.updateClientProfile);
 
+// Los productos que el cliente marcó con el corazón.
+router
+  .route("/:id/favorites")
+  .get(clientController.getFavorites)
+  .patch(clientController.toggleFavorite);
+
 // El cliente gestiona su lista de direcciones de entrega.
 router
   .route("/:id/addresses")

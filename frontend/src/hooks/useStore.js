@@ -239,15 +239,23 @@ export const useStore = ({ moduloInicial = null } = {}) => {
       }
       return [...prev, { ...producto, cantidad }];
     });
-    toast.success(`¡${producto.nombre} agregado al carrito!`, {
-      icon: '🛒',
-      style: { borderRadius: '10px', background: '#333', color: '#fff' },
-    });
+    /*
+     * El aviso dice cuántos lleva, no solo que se agregó: al segundo click el
+     * texto era idéntico y no había forma de saber si el toque contó.
+     * El estilo sale del <Toaster> de App: aquí no se pisa nada.
+     */
+    const enCarrito = (carrito.find((i) => i.id === producto.id)?.cantidad || 0) + cantidad;
+    toast.success(
+      enCarrito > 1
+        ? `${producto.nombre} · ${enCarrito} en el carrito`
+        : `${producto.nombre} agregado al carrito`
+    );
   };
 
   const eliminarDelCarrito = (productoId) => {
+    const fuera = carrito.find((i) => i.id === productoId);
     setCarrito((prev) => prev.filter((item) => item.id !== productoId));
-    toast('Producto eliminado', { icon: '🗑️' });
+    toast(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
   };
 
   const actualizarCantidad = (productoId, nuevaCantidad) => {
@@ -259,8 +267,9 @@ export const useStore = ({ moduloInicial = null } = {}) => {
   };
 
   const limpiarCarrito = () => {
+    const cuantos = carrito.length;
     setCarrito([]);
-    toast('Carrito vaciado', { icon: '🗑️' });
+    if (cuantos) toast(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
   };
 
   // Total del carrito, aplicando el NxM (cada N unidades, se pagan M).
