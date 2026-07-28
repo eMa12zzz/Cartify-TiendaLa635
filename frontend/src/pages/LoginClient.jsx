@@ -199,9 +199,17 @@ const LoginClient = () => {
       setLoading(true);
       const res = await loginClientDB({ email: data.email, password: data.password });
       // 3- Guardamos el token y datos del cliente en el contexto
-      login(res.token, 'client', res.client);
-      // El saludo con el mapa saluda por su cuenta: un toast encima sobra.
-      navigate('/bienvenida');
+      /*
+       * El tipo lo dice el servidor: por esta misma puerta entran clientes y
+       * personal, y de eso depende que se vea "Reparto" en el menú.
+       */
+      login(res.token, res.userType || 'client', res.client);
+
+      /*
+       * Al personal no se le pide la dirección de entrega: entra directo a la
+       * tienda. El saludo con el mapa es para quien va a comprar.
+       */
+      navigate(res.userType && res.userType !== 'client' ? '/mi-cuenta/reparto' : '/bienvenida');
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas');
     } finally {
