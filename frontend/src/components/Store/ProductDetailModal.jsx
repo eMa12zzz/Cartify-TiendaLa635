@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, ShoppingBag, Star, ChevronDown, ChevronRight, ChevronLeft, Package, MessageCircle, Leaf } from 'lucide-react';
+import { X, ShoppingBag, Star, ChevronRight, ChevronLeft, Package, MessageCircle } from 'lucide-react';
 import { useReviews } from '../../hooks/useReviews';
+import ProductCard from './ProductCard';
 
 const BROWN = '#B46C30';
 const BROWN_LIGHT = '#F3E7D8';
@@ -195,18 +196,6 @@ const ReviewsTitle = styled.h3`
   margin: 0;
 `;
 
-const SeeAllLink = styled.button`
-  background: none;
-  border: none;
-  color: ${BROWN};
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  &:hover { text-decoration: underline; }
-`;
 
 const RatingSummary = styled.div`
   display: flex;
@@ -333,70 +322,9 @@ const RecsTitle = styled.h3`
 
 const RecsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
-`;
-
-const RecCard = styled.div`
-  background: #fafafa;
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  border: 1px solid #f0f0f0;
-  transition: box-shadow 0.2s, transform 0.2s;
-
-  &:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-  }
-`;
-
-const RecImgBox = styled.div`
-  height: 110px;
-  background: #f7f3ef;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40px;
-  padding: 10px;
-
-  img { max-width: 100%; max-height: 100%; object-fit: contain; }
-`;
-
-const RecInfo = styled.div`
-  padding: 10px 12px 12px;
-`;
-
-const RecName = styled.div`
-  font-size: 12px;
-  font-weight: 600;
-  color: #111;
-  margin-bottom: 2px;
-`;
-
-const RecUnit = styled.div`
-  font-size: 11px;
-  color: #aaa;
-  margin-bottom: 4px;
-`;
-
-const RecPrice = styled.div`
-  font-size: 15px;
-  font-weight: 700;
-  color: #111;
-`;
-
-const RecOldPrice = styled.span`
-  font-size: 11px;
-  color: #bbb;
-  text-decoration: line-through;
-  margin-left: 4px;
-`;
-
-const RecStock = styled.div`
-  font-size: 10px;
-  color: ${BROWN};
-  margin-top: 2px;
+  /* Mismo respiro que la grilla de la tienda, para que se lean igual */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 18px;
 `;
 
 /* ── Right: product info sticky panel ── */
@@ -428,12 +356,6 @@ const PriceLine = styled.div`
   align-items: baseline;
   gap: 10px;
   margin-bottom: 6px;
-`;
-
-const UnitLabel = styled.div`
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 14px;
 `;
 
 const OldPrice = styled.span`
@@ -528,12 +450,9 @@ const haceCuanto = (iso) => {
 };
 
 /* ── Component ── */
-const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosProductos = [] }) => {
+const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProducto, todosLosProductos = [] }) => {
   const [imgError, setImgError] = useState(false);
   const [activeThumb, setActiveThumb] = useState(0);
-  const [openAccordion, setOpenAccordion] = useState(null);
-
-  const bajoStock = producto.stock < 10;
 
   /*
    * Valoraciones REALES. Antes esto era un 4.3 clavado con "5,961 reseñas" y
@@ -569,7 +488,6 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
     onClose();
   };
 
-  const toggleAccordion = (key) => setOpenAccordion(prev => prev === key ? null : key);
 
   return (
     <Overlay onClick={onClose}>
@@ -746,22 +664,22 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
             {recomendados.length > 0 && (
               <RecsSection>
                 <RecsTitle>Recomendaciones</RecsTitle>
+                {/*
+                  La MISMA tarjeta que la tienda. Antes esto tenía su propio
+                  diseño —más chico, con el stock en inglés ("5 Left") y el
+                  click vacío, literalmente un comentario donde debía abrirse
+                  el producto—. Reusarla arregla las tres cosas de una y evita
+                  que dentro de la misma pantalla haya dos formas de mostrar
+                  un producto.
+                */}
                 <RecsGrid>
                   {recomendados.map(p => (
-                    <RecCard key={p.id} onClick={() => { /* open detail */ }}>
-                      <RecImgBox>
-                        {p.imagen ? <img src={p.imagen} alt={p.nombre} /> : <Package size={30} strokeWidth={1.4} />}
-                      </RecImgBox>
-                      <RecInfo>
-                        <RecName>{p.nombre}</RecName>
-                        <RecUnit>{p.marca || 'por unidad'}</RecUnit>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                          <RecPrice>${Number(p.precio).toFixed(2)}</RecPrice>
-                          {p.precioAnterior && <RecOldPrice>${Number(p.precioAnterior).toFixed(2)}</RecOldPrice>}
-                        </div>
-                        <RecStock>{p.stock} Left</RecStock>
-                      </RecInfo>
-                    </RecCard>
+                    <ProductCard
+                      key={p.id}
+                      producto={p}
+                      onVerDetalle={onVerProducto || (() => {})}
+                      onAgregarAlCarrito={onAgregarAlCarrito}
+                    />
                   ))}
                 </RecsGrid>
               </RecsSection>
@@ -787,14 +705,19 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
               </div>
             )}
 
+            {/*
+              El cliente ve si hay o no hay, no cuántas quedan: el inventario
+              es asunto de la tienda. Antes había además un "$2.71/lb" fijo,
+              igual para el queso que para las Pringles, y un "75 Left" a
+              medio traducir.
+            */}
             <PriceLine>
               {producto.precioAnterior && <OldPrice>${Number(producto.precioAnterior).toFixed(2)}</OldPrice>}
               <NewPrice>${Number(producto.precio).toFixed(2)}</NewPrice>
-              <StockBadge $low={bajoStock}>
-                {bajoStock ? `⚠️ ${producto.stock} restantes` : '✓ En stock'}
+              <StockBadge $low={producto.stock === 0}>
+                {producto.stock === 0 ? 'Agotado' : '✓ En stock'}
               </StockBadge>
             </PriceLine>
-            <UnitLabel>$2.71/lb · {producto.stock} Left</UnitLabel>
 
             <AddBtn onClick={handleAgregar} disabled={producto.stock === 0}>
               <ShoppingBag size={18} />

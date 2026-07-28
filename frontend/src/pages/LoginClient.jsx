@@ -200,8 +200,8 @@ const LoginClient = () => {
       const res = await loginClientDB({ email: data.email, password: data.password });
       // 3- Guardamos el token y datos del cliente en el contexto
       login(res.token, 'client', res.client);
-      toast.success('¡Bienvenido de vuelta!');
-      navigate('/tienda-dashboard');
+      // El saludo con el mapa saluda por su cuenta: un toast encima sobra.
+      navigate('/bienvenida');
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas');
     } finally {
