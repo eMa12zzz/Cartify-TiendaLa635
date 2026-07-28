@@ -20,7 +20,16 @@ const clientSchema = new Schema({
     fullName: { type:"String"},
     dui: { type:"String"},
     phoneNumber: { type:"String"},
-    clientAddress: { type:["String"]},
+    /*
+     * Direcciones de entrega: { nombre, direccion, referencia, lat, lng }.
+     *
+     * Va como Mixed y no como subesquema porque los clientes que ya existen
+     * las tienen guardadas como texto suelto. Con un esquema estricto,
+     * Mongoose intentaría convertir esas cadenas en objetos al leerlas y la
+     * pantalla de direcciones se caería para todos ellos. El frontend
+     * normaliza las dos formas.
+     */
+    clientAddress: { type: [Schema.Types.Mixed], default: [] },
     image: { type:"String"},
     public_id: { type:"String"},
     email: { type:"String"},

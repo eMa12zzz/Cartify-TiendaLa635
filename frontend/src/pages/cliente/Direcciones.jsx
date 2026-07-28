@@ -1,70 +1,82 @@
-import { useState } from 'react';
-import { MapPin, Trash2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Trash2, Plus, Signpost } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAddresses } from '../../hooks/useAddresses';
 
 /*
  * Direcciones — el cliente gestiona sus direcciones de entrega (área "Mi Cuenta").
- * La lógica (cargar/agregar/eliminar) vive en useAddresses; aquí solo pintamos.
+ * La lógica (cargar/eliminar) vive en useAddresses; aquí solo pintamos.
+ *
+ * Agregar no se hace aquí: el botón abre la pantalla del mapa. Escribir la
+ * dirección a ciegas en una caja de texto daba direcciones que el repartidor
+ * después no encontraba; marcándola en el mapa quedan las coordenadas.
  */
 const Direcciones = () => {
   const { palette } = useTheme();
   const c = palette.colors;
-  const { addresses, loading, saving, agregar, eliminar } = useAddresses();
-  const [nueva, setNueva] = useState('');
+  const navigate = useNavigate();
+  const { addresses, loading, saving, eliminar } = useAddresses();
 
-  const onAgregar = (e) => {
-    e.preventDefault();
-    agregar(nueva);
-    setNueva('');
-  };
+  // El mapa vuelve aquí al guardar o cancelar.
+  const abrirMapa = () => navigate('/bienvenida?volver=/mi-cuenta/direcciones');
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Direcciones</h1>
-
-      {/* Formulario para agregar una dirección */}
-      <form onSubmit={onAgregar} className="flex gap-2 mb-6">
-        <input
-          value={nueva}
-          onChange={(e) => setNueva(e.target.value)}
-          placeholder="Ej. Calle Principal #123, San Salvador"
-          className="flex-1 px-4 py-2.5 rounded-xl border outline-none transition-colors"
-          style={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }}
-        />
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+        <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>Direcciones</h1>
         <button
-          type="submit"
-          disabled={saving || !nueva.trim()}
-          className="flex items-center gap-1 px-4 py-2.5 rounded-xl font-bold shadow-sm transition-colors disabled:opacity-60"
+          onClick={abrirMapa}
+          className="press flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold shadow-sm"
           style={{ backgroundColor: c.primary, color: c.buttonText }}
         >
-          <Plus className="w-4 h-4" /> Agregar
+          <Plus className="w-4 h-4" /> Agregar en el mapa
         </button>
-      </form>
+      </div>
 
-      {/* Lista de direcciones */}
       {loading ? (
         <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tus direcciones…</p>
       ) : addresses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <MapPin className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
           <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>Sin direcciones guardadas</p>
-          <p className="text-sm" style={{ color: c.textSecondary }}>Agrega una dirección para tus entregas.</p>
+          <p className="text-sm mb-5" style={{ color: c.textSecondary }}>
+            Marque en el mapa dónde le dejamos sus pedidos.
+          </p>
+          <button
+            onClick={abrirMapa}
+            className="press px-5 py-2 rounded-full text-sm font-semibold"
+            style={{ backgroundColor: c.primary, color: c.buttonText }}
+          >
+            Abrir el mapa
+          </button>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {addresses.map((dir, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 p-4 rounded-xl"
+              className="flex items-start gap-3 p-4 rounded-xl"
               style={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}` }}
             >
-              <MapPin className="w-5 h-5 flex-none" style={{ color: c.primary }} />
-              <span className="flex-1 text-sm" style={{ color: c.textPrimary }}>{dir}</span>
+              <MapPin className="w-5 h-5 flex-none mt-0.5" style={{ color: c.primary }} />
+              <div className="flex-1 min-w-0">
+                {dir.nombre && (
+                  <div className="text-sm font-bold mb-0.5" style={{ color: c.textPrimary }}>{dir.nombre}</div>
+                )}
+                <div className="text-sm" style={{ color: dir.nombre ? c.textSecondary : c.textPrimary }}>
+                  {dir.direccion}
+                </div>
+                {dir.referencia && (
+                  <div className="flex items-center gap-1.5 text-xs mt-1" style={{ color: c.textMuted }}>
+                    <Signpost className="w-3.5 h-3.5 flex-none" />
+                    {dir.referencia}
+                  </div>
+                )}
+              </div>
               <button
                 onClick={() => eliminar(i)}
                 disabled={saving}
-                aria-label="Eliminar dirección"
+                aria-label={`Eliminar ${dir.nombre || 'dirección'}`}
                 className="p-1.5 rounded-lg transition-colors disabled:opacity-60"
                 style={{ color: '#dc2626' }}
               >
