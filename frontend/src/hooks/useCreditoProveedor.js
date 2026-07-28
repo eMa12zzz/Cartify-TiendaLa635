@@ -41,7 +41,7 @@ export const useCreditoProveedor = (supplierId) => {
      */
     if (type === 'pago' && cuenta && monto > cuenta.deuda + 0.005) {
       toast(`Está pagando $${monto.toFixed(2)} y la deuda es de $${cuenta.deuda.toFixed(2)}. La diferencia queda a favor.`,
-        { icon: 'ℹ️', duration: 5000 });
+        { duration: 5000 });
     }
 
     setGuardando(true);

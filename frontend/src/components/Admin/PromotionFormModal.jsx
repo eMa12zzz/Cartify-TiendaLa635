@@ -250,7 +250,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     );
 
     if (nuevos.length === 0) {
-      toast('Esa categoría ya está completa en la promoción', { icon: '👍' });
+      toast('Esa categoría ya está completa en la promoción');
       return;
     }
 
@@ -328,7 +328,9 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     const costos = Object.fromEntries(productos.map((p) => [p._id, Number(p.priceCost) || 0]));
     const aviso = avisoVentaBajoCosto({ tipo: type, items, buyQty, payQty, costos, precios });
     if (aviso) {
-      toast(aviso, { icon: '⚠️', duration: 7000, style: { maxWidth: 460 } });
+      // Aviso de perder plata: se queda más tiempo y con el borde en rojo,
+      // que se distingue de un "guardado" sin necesidad de un emoji.
+      toast(aviso, { duration: 7000, style: { maxWidth: 460, borderColor: '#D8542C' } });
     }
 
     /*

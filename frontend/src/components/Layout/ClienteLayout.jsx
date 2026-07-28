@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store,
+  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store, Heart,
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
@@ -21,6 +21,7 @@ import { useAuth } from '../../hooks/useAuth';
 const navItems = [
   { to: '/mi-cuenta',                label: 'Detalles de la Cuenta', icon: User,        ready: true  },
   { to: '/mi-cuenta/pedidos',        label: 'Mis pedidos',           icon: ShoppingBag, ready: true  },
+  { to: '/mi-cuenta/favoritos',      label: 'Mis favoritos',         icon: Heart,       ready: true  },
   { to: '/mi-cuenta/direcciones',    label: 'Direcciones',           icon: MapPin,      ready: true  },
   { to: '/mi-cuenta/pagos',          label: 'Métodos de pago',       icon: CreditCard,  ready: true  },
   { to: '/mi-cuenta/notificaciones', label: 'Notificaciones',        icon: Bell,        ready: true  },

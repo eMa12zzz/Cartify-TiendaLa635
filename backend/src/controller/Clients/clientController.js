@@ -191,6 +191,75 @@ clientController.updateClientProfile = async (req, res) => {
 
 // El cliente reemplaza su lista de direcciones de entrega (área "Mi Cuenta").
 // clientAddress es un arreglo de strings; aquí lo sobrescribimos completo.
+/*
+ * Los favoritos del cliente, con el producto ya poblado: la pantalla de
+ * "Mis favoritos" necesita nombre, precio e imagen, no una lista de ids.
+ */
+clientController.getFavorites = async (req, res) => {
+  try {
+    const cliente = await clientModel
+      .findById(req.params.id)
+      .populate({
+        path: "favorites",
+        populate: [
+          { path: "brandId", select: "name" },
+          { path: "typeId", select: "type" },
+          { path: "moduleId", select: "name" },
+        ],
+      })
+      .select("favorites");
+
+    if (!cliente) return res.status(404).json({ message: "Client not found" });
+
+    /*
+     * Se filtran los nulos: si borraron un producto que alguien tenía en
+     * favoritos, la referencia queda colgando y populate devuelve null. Sin
+     * esto, la pantalla reventaba al leer el nombre de un producto que ya no
+     * existe.
+     */
+    const favoritos = (cliente.favorites || []).filter(Boolean);
+    return res.status(200).json(favoritos);
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal Server Error getFavorites" });
+  }
+};
+
+/*
+ * Marca o desmarca un producto. Un solo endpoint para los dos casos: el
+ * cliente aprieta el mismo corazón para poner y quitar, y así no hay forma de
+ * que el frontend y la base se desincronicen sobre cuál era el estado.
+ */
+clientController.toggleFavorite = async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ message: "Falta el producto" });
+    }
+
+    const cliente = await clientModel.findById(req.params.id).select("favorites");
+    if (!cliente) return res.status(404).json({ message: "Client not found" });
+
+    const actuales = (cliente.favorites || []).map(String);
+    const yaEsta = actuales.includes(String(productId));
+
+    const nuevos = yaEsta
+      ? actuales.filter((id) => id !== String(productId))
+      : [...actuales, productId];
+
+    await clientModel.findByIdAndUpdate(req.params.id, { favorites: nuevos });
+
+    return res.status(200).json({
+      message: yaEsta ? "Quitado de favoritos" : "Agregado a favoritos",
+      esFavorito: !yaEsta,
+      favorites: nuevos,
+    });
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal Server Error toggleFavorite" });
+  }
+};
+
 clientController.updateAddresses = async (req, res) => {
   try {
     const { addresses } = req.body;

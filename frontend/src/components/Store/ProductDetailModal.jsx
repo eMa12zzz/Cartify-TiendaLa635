@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { X, ShoppingBag, Star, ChevronDown, ChevronRight, ChevronLeft, Package, MessageCircle, Leaf } from 'lucide-react';
+import { useReviews } from '../../hooks/useReviews';
 
 const BROWN = '#B46C30';
 const BROWN_LIGHT = '#F3E7D8';
@@ -318,33 +319,6 @@ const ReviewText = styled.p`
   margin: 0;
 `;
 
-/* ── Accordion ── */
-const AccordionItem = styled.div`
-  border-top: 1px solid #f0f0f0;
-`;
-
-const AccordionBtn = styled.button`
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-  cursor: pointer;
-  text-align: left;
-`;
-
-const AccordionBody = styled.div`
-  padding-bottom: 16px;
-  font-size: 13px;
-  color: #666;
-  line-height: 1.65;
-`;
-
 /* ── Recommendations ── */
 const RecsSection = styled.div`
   margin-top: 40px;
@@ -538,19 +512,20 @@ const FeatureIcon = styled.span`
   flex-shrink: 0;
 `;
 
-/* ── Helper: fake reviews ── */
-const fakeReviews = [
-  { id: 1, name: 'Carlos M.', rating: 5, date: 'hace 2 días', text: '¡Increíble producto! Esta reseña se recibió como parte de una promoción. Los precios son excelentes y la calidad es justo lo que esperaba. Lo recomiendo totalmente a cualquier usuario.' },
-  { id: 2, name: 'Ana R.', rating: 4, date: 'hace 1 semana', text: 'Muy buen producto, llegó en perfecto estado. El empaque es cuidadoso y el sabor es auténtico. Definitivamente volvería a comprar.' },
-];
-
-const fakeRatingBars = [
-  { stars: 5, pct: 62, count: '4.2k' },
-  { stars: 4, pct: 20, count: '1.3k' },
-  { stars: 3, pct: 10, count: '4.2k' },
-  { stars: 2, pct: 5,  count: '4.2k' },
-  { stars: 1, pct: 3,  count: '4.2k' },
-];
+/*
+ * Fecha en palabras: "hace 2 días" se lee mejor que un 03/08/2026 en una
+ * reseña, que es donde importa si la opinión es reciente.
+ */
+const haceCuanto = (iso) => {
+  const dias = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (isNaN(dias)) return '';
+  if (dias <= 0) return 'hoy';
+  if (dias === 1) return 'ayer';
+  if (dias < 7) return `hace ${dias} días`;
+  if (dias < 30) return `hace ${Math.floor(dias / 7)} semana${dias < 14 ? '' : 's'}`;
+  if (dias < 365) return `hace ${Math.floor(dias / 30)} mes${dias < 60 ? '' : 'es'}`;
+  return 'hace más de un año';
+};
 
 /* ── Component ── */
 const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosProductos = [] }) => {
@@ -559,8 +534,28 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
   const [openAccordion, setOpenAccordion] = useState(null);
 
   const bajoStock = producto.stock < 10;
-  const rating = 4.3;
-  const reviewCount = 5961;
+
+  /*
+   * Valoraciones REALES. Antes esto era un 4.3 clavado con "5,961 reseñas" y
+   * dos comentarios firmados por gente inventada, iguales en todos los
+   * productos: publicidad engañosa puesta frente a quien está por comprar.
+   */
+  const { total: reviewCount, promedio: rating, reparto, reviews, miValoracion, puedeOpinar, guardar, guardando } = useReviews(producto.id);
+  const [estrellas, setEstrellas] = useState(0);
+  const [comentario, setComentario] = useState('');
+
+  // Barras del desglose, calculadas sobre lo que hay de verdad.
+  const barras = [5, 4, 3, 2, 1].map((stars) => ({
+    stars,
+    count: reparto?.[stars] || 0,
+    pct: reviewCount ? Math.round(((reparto?.[stars] || 0) / reviewCount) * 100) : 0,
+  }));
+
+  const enviarValoracion = async () => {
+    if (!estrellas) return;
+    const ok = await guardar({ rating: estrellas, comment: comentario });
+    if (ok) { setEstrellas(0); setComentario(''); }
+  };
 
   // fake thumbnails using same emoji/image
   const thumbs = [0, 1, 2];
@@ -626,71 +621,126 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
             <ReviewsBlock>
               <ReviewsHeader>
                 <ReviewsTitle>Reseñas de clientes</ReviewsTitle>
-                <SeeAllLink>Recientes <ChevronRight size={13} /></SeeAllLink>
               </ReviewsHeader>
 
-              <RatingSummary>
-                <BigRating>
-                  <BigNumber>{rating}</BigNumber>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 2, margin: '4px 0 2px' }}>
-                    {[1,2,3,4,5].map(i => (
-                      <Star key={i} size={12} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
-                    ))}
+              {/*
+                Sin reseñas se dice sin adornos. Antes aquí había un 4.3 con
+                "5,961 reseñas" que no existían: mejor una tienda honesta y
+                vacía que una que finge tener miles de clientes contentos.
+              */}
+              {reviewCount === 0 ? (
+                <p style={{ fontSize: 12, color: '#888', margin: '0 0 14px', lineHeight: 1.5 }}>
+                  Todavía nadie ha opinado sobre este producto.
+                  {puedeOpinar ? ' Si ya lo compró, sea el primero.' : ''}
+                </p>
+              ) : (
+                <>
+                  <RatingSummary>
+                    <BigRating>
+                      <BigNumber>{rating}</BigNumber>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 2, margin: '4px 0 2px' }}>
+                        {[1,2,3,4,5].map(i => (
+                          <Star key={i} size={12} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
+                        ))}
+                      </div>
+                      <BigLabel>({reviewCount})</BigLabel>
+                    </BigRating>
+                    <RatingBars>
+                      {barras.map(row => (
+                        <RatingBarRow key={row.stars}>
+                          <span style={{ minWidth: 8 }}>{row.stars}</span>
+                          <Star size={10} fill="#f59e0b" stroke="#f59e0b" />
+                          <BarBg><BarFill $pct={row.pct} /></BarBg>
+                          <BarCount>{row.count}</BarCount>
+                        </RatingBarRow>
+                      ))}
+                    </RatingBars>
+                  </RatingSummary>
+
+                  {reviews.map(r => {
+                    const nombre = r.clientId?.fullName || 'Cliente';
+                    return (
+                      <ReviewCard key={r._id}>
+                        <ReviewerRow>
+                          <Avatar>{nombre[0]}</Avatar>
+                          <div>
+                            <ReviewerName>{nombre}</ReviewerName>
+                            <ReviewDate>{haceCuanto(r.createdAt)}</ReviewDate>
+                          </div>
+                        </ReviewerRow>
+                        <ReviewStars>
+                          {[1,2,3,4,5].map(i => (
+                            <Star key={i} size={12} fill={i <= r.rating ? '#f59e0b' : 'none'} stroke={i <= r.rating ? '#f59e0b' : '#ddd'} />
+                          ))}
+                        </ReviewStars>
+                        {r.comment && <ReviewText>{r.comment}</ReviewText>}
+                      </ReviewCard>
+                    );
+                  })}
+                </>
+              )}
+
+              {/*
+                Dejar opinión. Solo se ofrece a clientes; el servidor además
+                exige haber comprado el producto, así que una reseña de aquí
+                vale algo.
+              */}
+              {puedeOpinar && (
+                <div style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 4 }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: '#333', margin: '0 0 8px' }}>
+                    {miValoracion ? 'Su opinión' : 'Deje su opinión'}
+                  </p>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                    {[1,2,3,4,5].map(i => {
+                      const marcada = i <= (estrellas || miValoracion?.rating || 0);
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setEstrellas(i)}
+                          aria-label={`${i} estrella${i > 1 ? 's' : ''}`}
+                          style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0 }}
+                        >
+                          <Star size={20} fill={marcada ? '#f59e0b' : 'none'} stroke={marcada ? '#f59e0b' : '#ccc'} />
+                        </button>
+                      );
+                    })}
                   </div>
-                  <BigLabel>({reviewCount.toLocaleString()})</BigLabel>
-                </BigRating>
-                <RatingBars>
-                  {fakeRatingBars.map(row => (
-                    <RatingBarRow key={row.stars}>
-                      <span style={{ minWidth: 8 }}>{row.stars}</span>
-                      <Star size={10} fill="#f59e0b" stroke="#f59e0b" />
-                      <BarBg><BarFill $pct={row.pct} /></BarBg>
-                      <BarCount>+ {row.count}</BarCount>
-                    </RatingBarRow>
-                  ))}
-                </RatingBars>
-              </RatingSummary>
-
-              <ReviewsHeader style={{ marginBottom: 8 }}>
-                <ReviewsTitle>Reseñas</ReviewsTitle>
-              </ReviewsHeader>
-
-              {fakeReviews.map(r => (
-                <ReviewCard key={r.id}>
-                  <ReviewerRow>
-                    <Avatar>{r.name[0]}</Avatar>
-                    <div>
-                      <ReviewerName>{r.name}</ReviewerName>
-                      <ReviewDate>{r.date}</ReviewDate>
-                    </div>
-                  </ReviewerRow>
-                  <ReviewStars>
-                    {[1,2,3,4,5].map(i => (
-                      <Star key={i} size={12} fill={i <= r.rating ? '#f59e0b' : 'none'} stroke={i <= r.rating ? '#f59e0b' : '#ddd'} />
-                    ))}
-                  </ReviewStars>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: '#888', margin: '0 0 4px' }}>¡Increíble producto!</p>
-                  <ReviewText>{r.text}</ReviewText>
-                </ReviewCard>
-              ))}
+                  <textarea
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    maxLength={500}
+                    rows={2}
+                    placeholder={miValoracion?.comment || 'Cuente cómo le fue con el producto (opcional)'}
+                    style={{
+                      width: '100%', border: '1px solid #e5e5e5', borderRadius: 10,
+                      padding: '8px 10px', fontSize: 12, fontFamily: 'inherit', resize: 'none',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={enviarValoracion}
+                    disabled={!estrellas || guardando}
+                    style={{
+                      marginTop: 8, width: '100%', padding: '9px 0', borderRadius: 999,
+                      border: 'none', background: estrellas ? BROWN : '#e5e5e5',
+                      color: estrellas ? '#fff' : '#999', fontSize: 12, fontWeight: 700,
+                    }}
+                  >
+                    {guardando ? 'Enviando…' : miValoracion ? 'Actualizar mi opinión' : 'Enviar opinión'}
+                  </button>
+                </div>
+              )}
             </ReviewsBlock>
 
-            {/* Accordion: Detalles, Conservación, Ingredientes */}
-            <div style={{ marginTop: 24 }}>
-              {[
-                { key: 'detalles', label: 'Detalles', body: `Categoría: ${producto.categoria} · Marca: ${producto.marca || '—'} · Stock: ${producto.stock} unidades · Vence: ${producto.fechaExpiracion || '—'}` },
-                { key: 'conservacion', label: 'Conservación y almacenamiento', body: 'Conservar en lugar fresco y seco, alejado de la humedad y fuentes de calor. Una vez abierto, consumir preferiblemente en el plazo indicado en el envase.' },
-                { key: 'ingredientes', label: 'Ingredientes o Valor Nutricional', body: 'Consulte la etiqueta del producto para información detallada sobre ingredientes y valores nutricionales.' },
-              ].map(item => (
-                <AccordionItem key={item.key}>
-                  <AccordionBtn onClick={() => toggleAccordion(item.key)}>
-                    {item.label}
-                    <ChevronDown size={16} style={{ transform: openAccordion === item.key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                  </AccordionBtn>
-                  {openAccordion === item.key && <AccordionBody>{item.body}</AccordionBody>}
-                </AccordionItem>
-              ))}
-            </div>
+            {/*
+              Aquí iban tres desplegables: "Detalles", "Conservación y
+              almacenamiento" e "Ingredientes o Valor Nutricional". Los dos
+              últimos eran texto de relleno idéntico en todos los productos
+              ("consulte la etiqueta"), y el primero repetía la categoría y el
+              stock que ya se ven arriba. Ocupaban media pantalla sin decir
+              nada, así que se quitaron.
+            */}
 
             {/* Recommendations */}
             {recomendados.length > 0 && (
@@ -723,14 +773,19 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
             <BrandTag>{producto.marca}</BrandTag>
             <ProductName>{producto.nombre}</ProductName>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <div style={{ display: 'flex', gap: 2 }}>
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} size={14} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
-                ))}
+            {/* Las estrellas de arriba solo aparecen si alguien opinó */}
+            {reviewCount > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {[1,2,3,4,5].map(i => (
+                    <Star key={i} size={14} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
+                  ))}
+                </div>
+                <span style={{ fontSize: 13, color: '#888' }}>
+                  {rating} ({reviewCount} {reviewCount === 1 ? 'reseña' : 'reseñas'})
+                </span>
               </div>
-              <span style={{ fontSize: 13, color: '#888' }}>{rating} ({reviewCount.toLocaleString()} reseñas)</span>
-            </div>
+            )}
 
             <PriceLine>
               {producto.precioAnterior && <OldPrice>${Number(producto.precioAnterior).toFixed(2)}</OldPrice>}
@@ -756,10 +811,11 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosPro
                   <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: BROWN, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Ver más →</button>
                 </FeatureRow>
               )}
-              <FeatureRow>
-                <FeatureIcon><Leaf size={17} strokeWidth={1.8} /></FeatureIcon>
-                100% Natural
-              </FeatureRow>
+              {/*
+                Aquí decía "100% Natural" en TODOS los productos, incluidos el
+                cloro y las Pringles. Era una afirmación sobre la mercadería
+                que la tienda no hizo y que en varios casos es falsa.
+              */}
               {producto.descripcion && (
                 <p style={{ fontSize: 13, color: '#666', lineHeight: 1.65, marginTop: 12 }}>
                   {producto.descripcion}

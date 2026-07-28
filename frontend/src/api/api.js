@@ -59,9 +59,7 @@ api.interceptors.response.use(
     (error) => {
         // 4- Si no hay respuesta del servidor, es un error de red o conexión
         if (!error.response) {
-            toast.error('Error de conexión. Verifica que el servidor backend esté encendido.', {
-                style: { background: '#ff4b4b', color: '#fff' }
-            });
+            toast.error('Error de conexión. Verifica que el servidor backend esté encendido.');
             return Promise.reject(error);
         }
 
@@ -72,33 +70,23 @@ api.interceptors.response.use(
         switch (status) {
             case 400:
                 // Error del cliente: datos incorrectos, campos vacíos, duplicados, etc.
-                toast.error(data?.message || 'Petición incorrecta o datos faltantes.', {
-                    style: { background: '#ff4b4b', color: '#fff' }
-                });
+                toast.error(data?.message || 'Petición incorrecta o datos faltantes.');
                 break;
             case 401:
                 // No autorizado: el token expiró o no existe
-                toast.error('Sesión expirada o inválida. Debes iniciar sesión.', {
-                    style: { background: '#ff4b4b', color: '#fff' }
-                });
+                toast.error('Sesión expirada o inválida. Debes iniciar sesión.');
                 break;
             case 403:
                 // Prohibido: el usuario existe pero no tiene permiso para esa acción
-                toast.error('Acceso denegado. No tienes permisos para esta acción.', {
-                    style: { background: '#ff4b4b', color: '#fff' }
-                });
+                toast.error('Acceso denegado. No tienes permisos para esta acción.');
                 break;
             case 500:
                 // Error del servidor: algo falló en el backend (base de datos, etc.)
-                toast.error('Error interno del servidor.', {
-                    style: { background: '#ff4b4b', color: '#fff' }
-                });
+                toast.error('Error interno del servidor.');
                 break;
             default:
                 // Cualquier otro error no contemplado arriba
-                toast.error(data?.message || 'Ha ocurrido un error inesperado.', {
-                    style: { background: '#ff4b4b', color: '#fff' }
-                });
+                toast.error(data?.message || 'Ha ocurrido un error inesperado.');
         }
 
         // 7- Rechazamos la promesa para que el catch() del componente también lo reciba

@@ -54,7 +54,13 @@ const clientSchema = new Schema({
         last4: { type: String },
       },
     ],
-    favorites: { type: Schema.Types.ObjectId, ref: "productModel"},
+    /*
+     * Los productos que el cliente marcó con el corazón.
+     *
+     * Era UN solo ObjectId: cabía un favorito por persona, así que el segundo
+     * corazón habría borrado el primero. Ahora es una lista.
+     */
+    favorites: [{ type: Schema.Types.ObjectId, ref: "productModel" }],
     isVerified: { type:"Boolean", default: false},
     isActive: { type:"Boolean", default: true}
 },
