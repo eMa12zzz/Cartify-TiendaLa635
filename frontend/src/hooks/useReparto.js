@@ -1,0 +1,87 @@
+import { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { orderService } from '../api/orderService';
+import { useAuth } from './useAuth';
+
+/*
+ * ============================================================
+ * REPARTO — useReparto.js
+ * ============================================================
+ * Los pedidos a domicilio que hay que llevar, para quien los lleva.
+ *
+ * Vive en el área de cliente y no en el panel a propósito: el repartidor
+ * trabaja desde el teléfono en la calle, y el panel está pensado para una
+ * pantalla grande detrás del mostrador.
+ * ============================================================
+ */
+
+// Solo empleados y administradores reparten.
+export const puedeRepartir = (user) => !!user && user.type !== 'client';
+
+export const useReparto = () => {
+  const { user } = useAuth();
+  const [pedidos, setPedidos] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [moviendo, setMoviendo] = useState(null);
+
+  const habilitado = puedeRepartir(user);
+
+  const cargar = useCallback(async () => {
+    if (!habilitado) { setCargando(false); return; }
+    try {
+      setCargando(true);
+      const todos = await orderService.getAllOrders();
+      /*
+       * Solo los de domicilio que aún no se entregaron: un pedido de retiro no
+       * se reparte, y uno entregado ya no es trabajo pendiente.
+       */
+      const paraLlevar = (Array.isArray(todos) ? todos : []).filter(
+        (o) => o.deliveryType === 'delivery' && ['pagado', 'preparando'].includes(o.status)
+      );
+      setPedidos(paraLlevar);
+    } catch (error) {
+      console.error('Error cargando el reparto:', error);
+    } finally {
+      setCargando(false);
+    }
+  }, [habilitado]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  /*
+   * Avanza el estado y deja constancia de quién lo hizo. El nombre viaja al
+   * servidor porque es lo que después permite decir "lo entregó Andrés".
+   */
+  const avanzar = async (pedido, estado) => {
+    setMoviendo(pedido._id);
+    try {
+      await orderService.updateStatus(pedido._id, estado, user?.fullName || user?.userName || '');
+      toast.success(estado === 'entregado' ? 'Pedido entregado' : 'Pedido en preparación');
+      await cargar();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setMoviendo(null);
+    }
+  };
+
+  return { pedidos, cargando, moviendo, habilitado, avanzar, recargar: cargar };
+};
+
+/*
+ * Enlace de navegación al punto de entrega.
+ *
+ * Se abre el mapa que la persona ya tiene en el teléfono (Google Maps, Waze,
+ * el de Apple) en vez de dibujar una ruta nosotros: ahí tiene navegación por
+ * voz, tráfico y calles actualizadas. Construir eso sería peor y de gratis.
+ *
+ * Con coordenadas apunta al portón exacto; sin ellas, lo mejor que se puede
+ * hacer es buscar el texto de la dirección.
+ */
+export const enlaceDeRuta = (pedido) => {
+  if (pedido?.deliveryLat != null && pedido?.deliveryLng != null) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${pedido.deliveryLat},${pedido.deliveryLng}`;
+  }
+  const texto = encodeURIComponent(pedido?.deliveryAddress || '');
+  return `https://www.google.com/maps/search/?api=1&query=${texto}`;
+};

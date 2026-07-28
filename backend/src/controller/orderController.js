@@ -15,7 +15,7 @@ orderController.createOrder = async (req, res) => {
   try {
     const {
       clientId, items, paymentMethod, channel, pointsToRedeem,
-      deliveryType, deliveryAddress, deliveryLat, deliveryLng,
+      deliveryType, deliveryAddress, deliveryReference, deliveryLat, deliveryLng,
     } = req.body;
 
     // Validación básica: sin cliente o sin productos no hay pedido.
@@ -128,6 +128,9 @@ orderController.createOrder = async (req, res) => {
       paymentMethod: metodo,
       deliveryType: entrega,
       deliveryAddress: entrega === "delivery" ? deliveryAddress : undefined,
+      // La referencia y el punto van con el pedido: sin ellos, quien reparte
+      // sale con un texto y sin saber a qué portón tocar.
+      deliveryReference: entrega === "delivery" ? deliveryReference : undefined,
       deliveryLat: entrega === "delivery" ? deliveryLat : undefined,
       deliveryLng: entrega === "delivery" ? deliveryLng : undefined,
       channel: channel || "web",
@@ -247,9 +250,33 @@ orderController.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Estado inválido" });
     }
 
+    /*
+     * Se sella la hora y el nombre de quien movió el pedido. `quien` lo manda
+     * la pantalla del empleado; si no viene, queda el sello de tiempo igual,
+     * que es lo que de verdad hace falta para saber cuánto tardó.
+     *
+     * Solo se escribe la primera vez: si alguien vuelve a marcar "preparando"
+     * después de un error, la hora original no se pierde.
+     */
+    const { quien } = req.body;
+    const actual = await orderModel.findById(req.params.id);
+    if (!actual) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    const cambios = { status };
+    if (status === "preparando" && !actual.preparedAt) {
+      cambios.preparedAt = new Date();
+      cambios.preparedBy = quien || "";
+    }
+    if (status === "entregado" && !actual.deliveredAt) {
+      cambios.deliveredAt = new Date();
+      cambios.deliveredBy = quien || "";
+    }
+
     const updated = await orderModel.findByIdAndUpdate(
       req.params.id,
-      { status },
+      cambios,
       { new: true }
     );
 

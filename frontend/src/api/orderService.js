@@ -31,8 +31,9 @@ export const orderService = {
   },
 
   // Cambiar el estado de un pedido (preparando, entregado, cancelado).
-  updateStatus: async (id, status) => {
-    const response = await api.put(`/order/${id}/status`, { status });
+  // `quien` deja constancia de quién movió el pedido (lo sella el servidor).
+  updateStatus: async (id, status, quien) => {
+    const response = await api.put(`/order/${id}/status`, { status, quien });
     return response.data;
   },
 
