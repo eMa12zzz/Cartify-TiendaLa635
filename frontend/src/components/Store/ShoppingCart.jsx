@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift } from 'lucide-react';
+import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
 import { useSaldo } from '../../hooks/useSaldo';
 import { useDireccionCtx } from '../../context/DireccionContext';
+import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { orderService } from '../../api/orderService';
 
 // Productos por página en el resumen del pedido confirmado.
@@ -901,6 +902,9 @@ const ShoppingCart = ({
     activa: direccionElegida,
     elegir: setIndiceDireccion,
   } = useDireccionCtx();
+
+  // Cuánto hemos tardado de verdad en llegar a esa zona (no un rango inventado).
+  const zona = useTiempoPorZona(direccionElegida?.lat, direccionElegida?.lng);
   const [metodoPago, setMetodoPago] = useState('efectivo'); // 'efectivo' | 'tarjeta' | 'saldo'
 
   const COSTO_ENVIO = 4.78;
@@ -1158,6 +1162,31 @@ const ShoppingCart = ({
                       </div>
                     </OpcionBtn>
                   </div>
+
+                  {/*
+                    El tiempo REAL a su zona, sacado de las entregas que ya
+                    hicimos por ahí. Va aquí, junto al botón de envío, porque
+                    este es el momento en que la persona se pregunta "¿y en
+                    cuánto me llega?" — responderlo después, en el correo de
+                    confirmación, ya no le sirve para decidir.
+                  */}
+                  {entrega === 'delivery' && zona.hayDatos && (
+                    <div style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 8,
+                      marginTop: 10, padding: '10px 12px', borderRadius: 12,
+                      background: '#EFFAF1', border: '1px solid #D3EEDA',
+                    }}>
+                      <Clock size={15} color="#14663A" style={{ flexShrink: 0, marginTop: 1 }} />
+                      <div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#14663A' }}>
+                          {zona.texto} a {direccionElegida?.nombre || 'su dirección'}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#3C7A55', marginTop: 1 }}>
+                          {zona.respaldo}. No es una promesa: es lo que hemos tardado.
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/*
                     Se elige entre las direcciones que ya guardó, no se escribe

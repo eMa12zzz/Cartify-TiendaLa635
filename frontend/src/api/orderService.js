@@ -53,6 +53,15 @@ export const orderService = {
     return response.data;
   },
 
+  /*
+   * Cuánto tardamos de verdad en llegar a un punto, según las entregas ya
+   * hechas por esa zona. Devuelve { hayDatos, entregas, tipico, holgado }.
+   */
+  getTiempoPorZona: async (lat, lng) => {
+    const response = await api.get('/order/tiempo-zona', { params: { lat, lng } });
+    return response.data;
+  },
+
   // Crear un pedido de IMPRESIÓN (lleva archivo → FormData).
   createPrintOrder: async (formData) => {
     const response = await api.post('/order/print', formData, {

@@ -505,4 +505,117 @@ orderController.getCourierPosition = async (req, res) => {
   }
 };
 
+/*
+ * ============================================================
+ * SELECT — Cuánto tardamos DE VERDAD en llegar a esta zona.
+ * ============================================================
+ * Todas las tiendas prometen "30 a 45 minutos" y ese número no sale de
+ * ningún lado. Aquí ya tenemos con qué responder de verdad: cada pedido
+ * entregado guarda a qué punto fue y a qué hora llegó.
+ *
+ * Cómo se calcula:
+ *   1. Se buscan las entregas pasadas CERCA del punto que preguntan (no por
+ *      colonia: los nombres de colonia son un desastre y la gente los
+ *      escribe de diez maneras distintas).
+ *   2. Se toma la MEDIANA, no el promedio. Un pedido que se quedó olvidado
+ *      tres horas un domingo no tiene por qué empeorarle el estimado a todo
+ *      el barrio; la mediana lo ignora sin tener que andar borrando datos.
+ *   3. Si hay menos de 3 entregas cerca, NO se inventa un número. Se dice
+ *      que todavía no hay con qué, que es la verdad.
+ *
+ * Se miran solo los últimos 90 días: cómo se repartía hace un año no dice
+ * nada de cómo se reparte hoy.
+ */
+const RADIO_ZONA_M = 1500;      // qué tan cerca cuenta como "su zona"
+const MINIMO_ENTREGAS = 3;      // menos que esto no es un dato, es una anécdota
+const DIAS_DE_HISTORIA = 90;
+
+// Distancia en metros entre dos puntos (Haversine).
+const distanciaMetros = (a, b) => {
+  const R = 6371000;
+  const rad = (g) => (g * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+
+// Percentil de una lista YA ordenada.
+const percentil = (ordenados, p) => {
+  if (!ordenados.length) return null;
+  const i = Math.min(ordenados.length - 1, Math.floor((p / 100) * ordenados.length));
+  return ordenados[i];
+};
+
+orderController.getTiempoPorZona = async (req, res) => {
+  try {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ message: "Se necesitan lat y lng" });
+    }
+
+    const desde = new Date();
+    desde.setDate(desde.getDate() - DIAS_DE_HISTORIA);
+
+    const entregados = await orderModel
+      .find({
+        status: "entregado",
+        deliveryType: "delivery",
+        deliveredAt: { $ne: null, $gte: desde },
+        deliveryLat: { $ne: null },
+        deliveryLng: { $ne: null },
+      })
+      .select("deliveryLat deliveryLng createdAt deliveredAt");
+
+    const punto = { lat, lng };
+    const minutos = [];
+
+    for (const o of entregados) {
+      const cerca = distanciaMetros(punto, { lat: o.deliveryLat, lng: o.deliveryLng });
+      if (cerca > RADIO_ZONA_M) continue;
+
+      // Lo que le importa al cliente es desde que paga hasta que recibe, no
+      // solo el rato que el repartidor anduvo en la calle.
+      const tardanza = (new Date(o.deliveredAt) - new Date(o.createdAt)) / 60000;
+
+      /*
+       * Se descartan los imposibles: entregas "negativas" (alguien movió el
+       * estado a mano) y las de más de 4 horas, que casi siempre son un
+       * pedido que se marcó entregado al día siguiente, no un reparto lento.
+       */
+      if (tardanza > 0 && tardanza < 240) minutos.push(tardanza);
+    }
+
+    if (minutos.length < MINIMO_ENTREGAS) {
+      return res.status(200).json({
+        hayDatos: false,
+        entregas: minutos.length,
+        message: "Todavía no hay suficientes entregas por esa zona",
+      });
+    }
+
+    minutos.sort((a, b) => a - b);
+
+    // Se redondea a 5 minutos: dar "27 minutos" finge una precisión que no
+    // existe, y la gente lo cobra como promesa.
+    const aCinco = (n) => Math.max(5, Math.round(n / 5) * 5);
+
+    return res.status(200).json({
+      hayDatos: true,
+      entregas: minutos.length,
+      tipico: aCinco(percentil(minutos, 50)),  // la mitad llega antes de esto
+      holgado: aCinco(percentil(minutos, 80)), // 8 de cada 10 llegan antes
+      radioMetros: RADIO_ZONA_M,
+    });
+
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export default orderController;
