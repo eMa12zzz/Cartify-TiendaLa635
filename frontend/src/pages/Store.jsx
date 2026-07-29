@@ -11,6 +11,7 @@ import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
 import PromoDetailModal from '../components/Store/PromoDetailModal';
 import FilaProductos from '../components/Store/FilaProductos';
+import SelectorDireccion from '../components/Store/SelectorDireccion';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
@@ -639,6 +640,9 @@ const Store = () => {
           <LogoTop>Tienda</LogoTop>
           <LogoMain>la 635</LogoMain>
         </LogoArea>
+
+        {/* A dónde le llevamos el pedido, cambiable sin salir de comprar */}
+        <SelectorDireccion />
 
         <SearchBox>
           <SearchIcon><Search size={17} strokeWidth={2.4} /></SearchIcon>

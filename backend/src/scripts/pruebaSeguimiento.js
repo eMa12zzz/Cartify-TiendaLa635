@@ -11,6 +11,7 @@
  * Cómo correrlo, desde backend/:
  *   node src/scripts/pruebaSeguimiento.js crear [correo]  -> crea el pedido
  *   node src/scripts/pruebaSeguimiento.js simular         -> mueve el puntito 3 min
+ *   node src/scripts/pruebaSeguimiento.js simular cerca   -> ya viene llegando (30 s)
  *   node src/scripts/pruebaSeguimiento.js borrar          -> limpia lo que creó
  *
  * El correo es opcional: sirve para que el pedido quede a nombre de la cuenta
@@ -81,19 +82,32 @@ const crear = async (correo) => {
  * está probando es el seguimiento, no la ruta: al cliente le llega la misma
  * información que le llegaría de un teléfono real.
  */
-const simular = async () => {
+const simular = async (cerca) => {
   const pedido = await orderModel.findOne({ deliveryReference: MARCA });
   if (!pedido) {
     console.log("No hay pedido de prueba. Corra primero: node src/scripts/pruebaSeguimiento.js crear");
     return;
   }
 
-  console.log("Saliendo de la tienda hacia la casa...");
+  /*
+   * Modo "cerca": arranca ya a la vuelta de la esquina y va rápido, para
+   * probar el aviso de las últimas cuadras sin esperar el viaje completo.
+   */
+  const desde = cerca
+    ? {
+        lat: CASA.lat + (TIENDA.lat - CASA.lat) * 0.28,
+        lng: CASA.lng + (TIENDA.lng - CASA.lng) * 0.28,
+      }
+    : TIENDA;
+  const pasos = cerca ? 8 : PASOS;
+  const espera = cerca ? 3000 : ESPERA_MS;
 
-  for (let i = 0; i <= PASOS; i++) {
-    const avance = i / PASOS;
-    const lat = TIENDA.lat + (CASA.lat - TIENDA.lat) * avance;
-    const lng = TIENDA.lng + (CASA.lng - TIENDA.lng) * avance;
+  console.log(cerca ? "Ya viene llegando..." : "Saliendo de la tienda hacia la casa...");
+
+  for (let i = 0; i <= pasos; i++) {
+    const avance = i / pasos;
+    const lat = desde.lat + (CASA.lat - desde.lat) * avance;
+    const lng = desde.lng + (CASA.lng - desde.lng) * avance;
 
     /*
      * Si un envío se cae, se sigue con el siguiente. Un teléfono en la calle
@@ -113,8 +127,8 @@ const simular = async () => {
       estado = "sin señal";
     }
 
-    console.log(`  ${i}/${PASOS} → ${lat.toFixed(5)}, ${lng.toFixed(5)}  (${estado})`);
-    if (i < PASOS) await new Promise((res) => setTimeout(res, ESPERA_MS));
+    console.log(`  ${i}/${pasos} → ${lat.toFixed(5)}, ${lng.toFixed(5)}  (${estado})`);
+    if (i < pasos) await new Promise((res) => setTimeout(res, espera));
   }
 
   console.log("Llegó. El puntito queda encendido hasta que se marque entregado.");
@@ -130,7 +144,7 @@ const run = async () => {
 
   const que = process.argv[2] || "crear";
   if (que === "crear") await crear(process.argv[3]);
-  else if (que === "simular") await simular();
+  else if (que === "simular") await simular(process.argv[3] === "cerca");
   else if (que === "borrar") await borrar();
   else console.log("Use: crear | simular | borrar");
 
