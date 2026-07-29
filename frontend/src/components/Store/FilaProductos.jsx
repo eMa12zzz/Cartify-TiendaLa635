@@ -83,8 +83,17 @@ const Fila = styled.div`
    * Los márgenes negativos devuelven el espacio: el aire existe para la
    * sombra pero no separa la fila del resto de la página.
    */
-  padding: 14px 0 18px;
-  margin: -14px 0 -14px;
+  padding: 24px 16px 44px;
+  margin: -24px -16px -40px;
+
+  /*
+   * Fundido en las orillas: el aire lateral se desplaza con el contenido, así
+   * que al hacer scroll la tarjeta que sale se cortaba a filo. Con el
+   * degradado se desvanece. Mide lo mismo que el padding, para que en reposo
+   * caiga sobre espacio vacío y no toque la primera tarjeta.
+   */
+  mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
 
   &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
