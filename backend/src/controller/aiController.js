@@ -200,4 +200,158 @@ aiController.generarCopyPromo = async (req, res) => {
   }
 };
 
+/*
+ * ============================================================
+ * ENTENDER LO QUE PIDIÓ EL CLIENTE (asistente de voz)
+ * ============================================================
+ * El asistente entiende por reglas: normaliza la frase, expande sinónimos y
+ * busca el producto. Eso responde al instante, es gratis y funciona sin
+ * internet — pero se rompe con "¿tiene algo para la fiebre?" o "deme lo de
+ * siempre para el desayuno".
+ *
+ * Esta ruta es el PLAN B, no el plan A: solo se llama cuando las reglas ya
+ * se dieron por vencidas. Así el caso común ("quiero dos manzanas") sigue
+ * siendo instantáneo y la IA se gasta únicamente en lo que hoy no funciona.
+ *
+ * Reglas de la casa para el modelo:
+ *   - Solo puede elegir productos de la lista que se le manda. Nada de
+ *     inventar un jarabe que la tienda no vende.
+ *   - Si no hay nada parecido, lo dice; no ofrece otra cosa por rellenar.
+ *   - Frases cortas: esto se lee EN VOZ ALTA, no se lee en pantalla.
+ */
+const ESQUEMA_INTENCION = {
+  type: Type.OBJECT,
+  properties: {
+    accion: {
+      type: Type.STRING,
+      description: "Una de: agregar, quitar, vaciar, total, comprar, ninguna",
+    },
+    producto: {
+      type: Type.STRING,
+      description: "Nombre EXACTO tal como viene en la lista de productos. Vacío si no aplica.",
+    },
+    cantidad: { type: Type.NUMBER, description: "Cuántas unidades. 1 si no lo dijo." },
+    respuesta: {
+      type: Type.STRING,
+      description: "Lo que el asistente dice en voz alta. Una o dos frases, máximo 140 caracteres.",
+    },
+  },
+  required: ["accion", "respuesta"],
+};
+
+const MODO_ASISTENTE = [
+  "Eres el asistente de voz de Tienda La 635, una tienda de barrio en El Salvador.",
+  "Un cliente te habló y las reglas del sistema no entendieron qué quería. Tu trabajo es",
+  "descifrarlo y decir qué hacer con el carrito.",
+  "",
+  "Cómo trabajas:",
+  "- SOLO puedes elegir productos de la lista que te paso. Si lo que pide no está en esa",
+  "  lista, la acción es 'ninguna' y se lo decís con amabilidad. Nunca inventes productos.",
+  "- Si pide algo por su uso ('algo para la tos', 'para el desayuno'), buscá en la lista",
+  "  qué le sirve y ofrecelo por su nombre.",
+  "- Tu respuesta se ESCUCHA, no se lee: frases cortas, sin listas, sin emojis.",
+  "- Hablás en español salvadoreño, tratando al cliente de usted.",
+  "- Entre los clientes hay personas mayores: se entiende de una sola escuchada.",
+  "- Si de plano no entendés, acción 'ninguna' y pedile que lo repita con otras palabras.",
+].join("\n");
+
+aiController.entenderPedido = async (req, res) => {
+  try {
+    const { frase, productos = [], carrito = [] } = req.body;
+
+    if (!frase || !String(frase).trim()) {
+      return res.status(400).json({ message: "Hace falta la frase" });
+    }
+
+    const ia = getIA();
+    // Sin llave configurada no hay plan B: se responde que no entendió, que
+    // es exactamente lo que el asistente hacía antes de existir esta ruta.
+    if (!ia) {
+      return res.status(200).json({ accion: "ninguna", entendido: false, origen: "sin-ia" });
+    }
+
+    /*
+     * Se manda solo nombre y precio, y como mucho 120 productos. El catálogo
+     * entero en cada pregunta gastaría la cuota gratis en dos días y haría la
+     * respuesta más lenta, que es justo lo que no se puede permitir cuando
+     * alguien está parado esperando que le contesten.
+     */
+    const catalogo = productos
+      .slice(0, 120)
+      .map((p) => `${p.nombre}${p.precio != null ? ` ($${p.precio})` : ""}`)
+      .join("\n");
+
+    const enCarrito = carrito.length
+      ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
+      : "vacío";
+
+    const contents = [
+      `El cliente dijo: "${frase}"`,
+      "",
+      `En su carrito lleva: ${enCarrito}`,
+      "",
+      "Productos que la tienda tiene hoy:",
+      catalogo,
+    ].join("\n");
+
+    try {
+      const respuesta = await ia.models.generateContent({
+        model: MODELO_IA,
+        contents,
+        config: {
+          systemInstruction: MODO_ASISTENTE,
+          responseMimeType: "application/json",
+          responseSchema: ESQUEMA_INTENCION,
+          // Baja a propósito: aquí no se quiere creatividad, se quiere que
+          // entienda bien y elija de la lista.
+          temperature: 0.2,
+        },
+      });
+
+      const texto = respuesta.text;
+      if (!texto) throw new Error("La IA no devolvió texto");
+
+      const idea = JSON.parse(texto);
+
+      /*
+       * No se confía en que el modelo copió bien el nombre: se verifica
+       * contra la lista real. Si se lo inventó, se ignora el producto y queda
+       * solo la respuesta hablada.
+       */
+      const nombreReal = productos.find(
+        (p) => (p.nombre || "").toLowerCase() === String(idea.producto || "").toLowerCase()
+      )?.nombre || "";
+
+      /*
+       * Sin frase que decir, no hay respuesta que dar.
+       *
+       * Pasa de vez en cuando: el modelo devuelve el JSON con la respuesta
+       * vacía. Si eso se dejara pasar, el asistente contestaría "Listo, ¿algo
+       * más?" sin haber hecho nada — peor que admitir que no entendió.
+       */
+      const dice = String(idea.respuesta || "").trim();
+      if (!dice) {
+        return res.status(200).json({ accion: "ninguna", entendido: false, origen: "vacia" });
+      }
+
+      return res.status(200).json({
+        accion: idea.accion || "ninguna",
+        producto: nombreReal,
+        cantidad: Number(idea.cantidad) > 0 ? Math.round(Number(idea.cantidad)) : 1,
+        respuesta: dice,
+        entendido: true,
+        origen: "ia",
+      });
+    } catch (errorIA) {
+      // Cuota agotada, sin internet, llave mala... el asistente sigue vivo:
+      // simplemente vuelve a decir que no entendió.
+      console.log("IA no disponible para el asistente: " + errorIA.message);
+      return res.status(200).json({ accion: "ninguna", entendido: false, origen: "error" });
+    }
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export default aiController;

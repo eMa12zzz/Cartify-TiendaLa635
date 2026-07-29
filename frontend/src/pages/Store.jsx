@@ -205,7 +205,11 @@ const CategoryBar = styled.nav`
   justify-content: center;
   gap: 8px;
   overflow-x: auto;
-  border-bottom: 1px solid var(--linea);
+  /*
+   * Sin raya abajo. La única línea de la pantalla es la del encabezado, que
+   * sí separa dos cosas distintas; esta partía la tienda en dos por gusto y
+   * competía con el borde de las tarjetas de promoción que van justo abajo.
+   */
   height: 60px;
   align-items: center;
   &::-webkit-scrollbar { display: none; }
@@ -436,11 +440,48 @@ const LiveDot = styled.span`
 const TrendingGrid = styled.div`
   display: flex;
   gap: 14px;
-  margin-top: 16px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
   scroll-padding-left: 2px;
-  padding-bottom: 4px;
+
+  /*
+   * Aire arriba y abajo, comido con márgenes negativos.
+   *
+   * Un contenedor con overflow-x recorta también por ARRIBA y por ABAJO: el
+   * navegador no deja tener un eje recortado y el otro suelto. Sin este
+   * respiro, la tarjeta que crece al pasar el cursor se quedaba con la
+   * sombra cortada a filo, como apoyada sobre una regla.
+   *
+   * Los márgenes negativos devuelven el espacio, así el aire existe para la
+   * sombra pero la fila no se separa del resto de la página.
+   */
+  /*
+   * El respiro sale de la sombra en hover, no de un numero al azar: la
+   * tarjeta sube 4px y su sombra es 0 12px 32px, o sea que se derrama unos
+   * 20px hacia arriba y unos 32px hacia abajo. Con menos que esto se corta
+   * a filo, y el recorte lateral se comia la sombra de la primera y la
+   * ultima tarjeta, que son las pegadas al borde del scroll.
+   *
+   * Los margenes negativos devuelven el espacio; el -4 de arriba conserva
+   * los 16px de separacion con el titulo que tenia esta fila.
+   */
+  padding: 24px 16px 44px;
+  margin: -8px -16px -40px;
+
+  /*
+   * Fundido en las orillas.
+   *
+   * El aire lateral resuelve la sombra de la primera y la última tarjeta,
+   * pero se desplaza CON el contenido: apenas se hace scroll, la tarjeta que
+   * va saliendo vuelve a cortarse a filo contra el borde. El degradado hace
+   * que se desvanezca en vez de cortarse, y de paso avisa que hay más.
+   *
+   * El fundido mide lo mismo que el padding, así que en reposo cae sobre
+   * espacio vacío y no toca la primera tarjeta.
+   */
+  mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+
   &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
 

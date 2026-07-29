@@ -7,4 +7,8 @@ const router = express.Router();
 router.route("/promo-copy")
     .post(aiController.generarCopyPromo);
 
+// Descifra lo que pidió el cliente por voz cuando las reglas no lo entienden.
+router.route("/entender")
+    .post(aiController.entenderPedido);
+
 export default router;

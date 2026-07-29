@@ -1,4 +1,5 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useSyncExternalStore } from 'react';
+import { aiService } from '../api/aiService';
 
 /*
  * useVoiceAssistant — el "cerebro" del asistente por voz (Modo Kiosco).
@@ -36,6 +37,89 @@ const VELOCIDADES = [
   { v: 1.15, label: 'Rápida' },
 ];
 
+/*
+ * ============================================================
+ * LAS VOCES
+ * ============================================================
+ * Antes se agarraba la PRIMERA voz en español que tuviera el navegador y ya.
+ * En Windows esa suele ser Sabina o Helena, y a quien no le gusta se aguanta.
+ *
+ * Las voces no las ponemos nosotros: son las que el sistema tiene instaladas,
+ * así que la lista cambia de una computadora a otra y de un teléfono a otro.
+ * Por eso se leen del navegador en vez de tener una lista fija nuestra.
+ *
+ * Ojo con `getVoices()`: la primera vez casi siempre devuelve una lista vacía
+ * porque el navegador todavía las está cargando, y avisa después con el
+ * evento `voiceschanged`. Ese detalle es la razón de que a veces "no había
+ * voces" y sonaba la de por defecto.
+ */
+const LLAVE_VOZ = 'kartify:voz-asistente';
+
+// Nombre limpio para mostrar: los del sistema vienen como
+// "Microsoft Sabina - Spanish (Mexico)" o "Google español de Estados Unidos".
+const nombreBonito = (voz) => {
+  if (!voz) return '';
+  const limpio = voz.name
+    .replace(/^(Microsoft|Google|Apple)\s+/i, '')
+    .replace(/\s*-\s*Spanish.*$/i, '')
+    .replace(/\s*\(.*\)\s*$/, '')
+    .trim();
+
+  /*
+   * Las de Google no tienen nombre propio: se llaman "español" o "español de
+   * Estados Unidos". Dejarlas así daba etiquetas como "español de Estados
+   * Unidos · Estados Unidos", repitiendo el país dos veces. Se les pone
+   * "Español" a secas y el país va aparte, igual que a las demás.
+   */
+  if (/^español/i.test(limpio)) return 'Español';
+
+  return limpio || voz.name;
+};
+
+// De qué país es la voz, que es lo que de verdad cambia cómo suena.
+const paisDeVoz = (voz) => {
+  const region = (voz?.lang || '').split('-')[1];
+  const paises = {
+    SV: 'El Salvador', MX: 'México', ES: 'España', US: 'Estados Unidos',
+    AR: 'Argentina', CO: 'Colombia', CL: 'Chile', PE: 'Perú',
+    VE: 'Venezuela', GT: 'Guatemala', CR: 'Costa Rica', PA: 'Panamá',
+    DO: 'Rep. Dominicana', EC: 'Ecuador', UY: 'Uruguay', PY: 'Paraguay',
+    BO: 'Bolivia', HN: 'Honduras', NI: 'Nicaragua', PR: 'Puerto Rico',
+    CU: 'Cuba',
+  };
+  return paises[region] || region || '';
+};
+
+/*
+ * Las voces del sistema, leídas como lo que son: estado que vive FUERA de
+ * React. La caché por nombres es obligatoria — `getVoices()` devuelve un
+ * arreglo nuevo en cada llamada, y sin comparar contenido React entraría en
+ * un ciclo infinito de renders.
+ */
+let cacheVoces = [];
+let cacheClave = '';
+
+const leerVocesDelSistema = () => {
+  const lista = (typeof window !== 'undefined' && window.speechSynthesis?.getVoices?.()) || [];
+  const soloEs = lista.filter((v) => (v.lang || '').toLowerCase().startsWith('es'));
+  const clave = soloEs.map((v) => v.name).join('|');
+  if (clave !== cacheClave) {
+    cacheClave = clave;
+    cacheVoces = soloEs;
+  }
+  return cacheVoces;
+};
+
+const suscribirVoces = (avisar) => {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return () => {};
+  // La lista llega tarde: el navegador avisa con este evento cuando termina
+  // de cargarlas. Sin escucharlo, el primer render se queda sin voces.
+  window.speechSynthesis.addEventListener('voiceschanged', avisar);
+  return () => window.speechSynthesis.removeEventListener('voiceschanged', avisar);
+};
+
+const SIN_VOCES = [];
+
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const normalizar = (s) => sinAcentos(s).toLowerCase().trim();
 const contarItems = (lista) => lista.reduce((a, i) => a + i.cantidad, 0);
@@ -69,7 +153,20 @@ export const useVoiceAssistant = ({
   const [escuchando, setEscuchando] = useState(false);
   const [muteado, setMuteado] = useState(false);
   const [velIndex, setVelIndex] = useState(1); // Normal
+
+  /*
+   * La voz elegida se guarda por NOMBRE y no por posición: la lista del
+   * sistema cambia de orden entre navegadores, y guardar un índice hacía que
+   * mañana sonara otra persona.
+   */
+  const vocesDelSistema = useSyncExternalStore(suscribirVoces, leerVocesDelSistema, () => SIN_VOCES);
+  const [vozElegida, setVozElegida] = useState(() => {
+    try { return localStorage.getItem(LLAVE_VOZ) || ''; } catch { return ''; }
+  });
   const [transcripcion, setTranscripcion] = useState('');
+  // Mientras la IA descifra la frase: la pantalla lo dice para que el
+  // silencio de un segundo no se lea como que el asistente se colgó.
+  const [pensando, setPensando] = useState(false);
   const [historial, setHistorial] = useState([]);
 
   const dataRef = useRef({ productos, carrito, totalCarrito });
@@ -82,6 +179,9 @@ export const useVoiceAssistant = ({
   const hablandoRef = useRef(false);
   const muteRef = useRef(false); muteRef.current = muteado;
   const rateRef = useRef(0.95); rateRef.current = VELOCIDADES[velIndex].v;
+  // El que habla se lee por ref: quien pronuncia se decide al momento de
+  // hablar, no cuando se registró la función.
+  const vozRef = useRef(''); vozRef.current = vozElegida;
   const ultimaRespuestaRef = useRef('');
   const procesarRef = useRef(null);
   const hablarRef = useRef(null);
@@ -161,9 +261,20 @@ export const useVoiceAssistant = ({
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = 'es-SV';
     u.rate = rateRef.current;
-    // Elegimos una voz en español si el navegador tiene alguna.
-    const vozEs = window.speechSynthesis.getVoices().find((v) => v.lang && v.lang.toLowerCase().startsWith('es'));
-    if (vozEs) u.voice = vozEs;
+    /*
+     * La voz que eligió la persona; si esa ya no está (cambió de computadora,
+     * la desinstalaron), se cae a la primera en español en vez de quedarse
+     * muda o hablar en inglés.
+     */
+    const enEspanol = leerVocesDelSistema();
+    const elegida = enEspanol.find((v) => v.name === vozRef.current);
+    const voz = elegida || enEspanol[0];
+    if (voz) {
+      u.voice = voz;
+      // El idioma tiene que ir con la voz: dejar es-SV con una voz de España
+      // hace que algunos navegadores la ignoren y hablen en inglés.
+      u.lang = voz.lang;
+    }
     u.onend = continuar;
     u.onerror = continuar;
     window.speechSynthesis.speak(u);
@@ -177,6 +288,54 @@ export const useVoiceAssistant = ({
       return nombre.split(' ').some((w) => w.length > 2 && t.includes(w));
     });
   };
+
+  /*
+   * El plan B: preguntarle a la IA qué quiso decir.
+   *
+   * Mientras piensa, el micrófono queda apagado a propósito: si siguiera
+   * escuchando, cualquier "¿aló?" del cliente entraría como una frase nueva y
+   * se le encimarían dos respuestas. Se enciende de nuevo al hablar.
+   */
+  const preguntarALaIA = useCallback(async (frase) => {
+    const { productos, carrito } = dataRef.current;
+    const fns = fnRef.current;
+
+    setPensando(true);
+    try {
+      const idea = await aiService.entenderPedido({
+        frase,
+        productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })),
+        carrito: carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
+      });
+
+      // La IA no pudo: se responde igual que cuando no existía.
+      if (!idea?.entendido) {
+        hablarRef.current?.('No encontré ese producto. ¿Puede repetirlo?');
+        return;
+      }
+
+      /*
+       * La acción se ejecuta con las MISMAS funciones del carrito que usan
+       * las reglas. La IA decide qué hacer; quien lo hace sigue siendo el
+       * código de siempre, que ya sabe de precios y de existencias.
+       */
+      const prod = idea.producto
+        ? productos.find((p) => p.nombre === idea.producto)
+        : null;
+
+      if (idea.accion === 'agregar' && prod) {
+        fns.agregarAlCarrito?.(prod, idea.cantidad || 1);
+      } else if (idea.accion === 'quitar' && prod) {
+        fns.eliminarDelCarrito?.(prod.id);
+      } else if (idea.accion === 'vaciar') {
+        fns.limpiarCarrito?.();
+      }
+
+      hablarRef.current?.(idea.respuesta);
+    } finally {
+      setPensando(false);
+    }
+  }, []);
 
   const procesar = useCallback((texto) => {
     const t = expandirSinonimos(normalizar(texto));
@@ -255,7 +414,17 @@ export const useVoiceAssistant = ({
     }
 
     if (agregados.length === 0) {
-      hablar('No encontré ese producto. ¿Puedes repetirlo?');
+      /*
+       * Aquí las reglas se dieron por vencidas. Antes se acababa la
+       * conversación con un "no encontré ese producto"; ahora se le pregunta
+       * a la IA qué quiso decir.
+       *
+       * El orden importa: primero reglas (instantáneo, gratis, sin internet)
+       * y la IA solo para lo que no entienden. Si la IA tampoco puede —sin
+       * llave, sin cuota, sin señal— se responde igual que antes, así que
+       * nunca queda peor que como estaba.
+       */
+      preguntarALaIA(texto);
       return;
     }
 
@@ -275,7 +444,7 @@ export const useVoiceAssistant = ({
     }
 
     hablar(mensaje);
-  }, [hablar]);
+  }, [hablar, preguntarALaIA]);
 
   procesarRef.current = procesar;
   hablarRef.current = hablar;
@@ -317,9 +486,46 @@ export const useVoiceAssistant = ({
     };
   }, []);
 
+  /*
+   * Cambiar de voz. Se prueba en el momento con una frase corta: elegir a
+   * ciegas de una lista de nombres —"Sabina", "Helena", "Jorge"— no le dice
+   * nada a nadie hasta que la escucha.
+   */
+  const cambiarVoz = useCallback((nombre) => {
+    setVozElegida(nombre);
+    vozRef.current = nombre;
+    try { localStorage.setItem(LLAVE_VOZ, nombre); } catch { /* modo privado */ }
+
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    const voz = leerVocesDelSistema().find((v) => v.name === nombre);
+    if (!voz) return;
+
+    window.speechSynthesis.cancel();
+    const prueba = new SpeechSynthesisUtterance('Hola, así sueno. ¿Qué le doy?');
+    prueba.voice = voz;
+    prueba.lang = voz.lang;
+    prueba.rate = rateRef.current;
+    window.speechSynthesis.speak(prueba);
+  }, []);
+
+  /*
+   * La lista para la pantalla, ya lista para pintar. Si el sistema no tiene
+   * ninguna voz en español, esto viene vacío y la pantalla no muestra el
+   * selector: mejor eso que ofrecer una lista de voces en inglés.
+   */
+  const voces = vocesDelSistema.map((v) => ({
+    nombre: v.name,
+    etiqueta: nombreBonito(v),
+    pais: paisDeVoz(v),
+  }));
+
+  // Cuál está sonando: la guardada, o la primera si esa ya no existe.
+  const vozActual = voces.find((v) => v.nombre === vozElegida)?.nombre || voces[0]?.nombre || '';
+
   return {
-    activo, escuchando, muteado, transcripcion, historial,
+    activo, escuchando, muteado, transcripcion, historial, pensando,
     velLabel: VELOCIDADES[velIndex].label,
     iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado,
+    voces, vozActual, cambiarVoz,
   };
 };

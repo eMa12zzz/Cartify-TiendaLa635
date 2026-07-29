@@ -146,11 +146,15 @@ const PromoBanners = ({ onSelectPromo }) => {
         style={{
           position: 'relative',
           /*
-           * Alto de la tarjeta MÁS un respiro arriba y abajo. Ese respiro es
-           * para que al crecer con el cursor —y con su sombra— no se corte
-           * contra el borde del carrusel, que recorta lo que se sale.
+           * Alto de la tarjeta MÁS un respiro, sobre todo abajo.
+           *
+           * El carrusel recorta lo que se sale (tiene que hacerlo, para que
+           * las de la orilla se corten contra el borde de la pantalla), y la
+           * sombra de las tarjetas cae unos 40 px hacia abajo: sin este aire
+           * se cortaba a filo y se veía una raya gris bajo las promociones.
+           * También deja lugar a que crezcan con el cursor.
            */
-          height: enFila ? `calc(${FILA.alto} + 18px)` : 'clamp(120px, 25vw, 256px)',
+          height: enFila ? `calc(${FILA.alto} + 52px)` : 'clamp(120px, 25vw, 256px)',
           /*
            * La perspectiva es lo que hace que las del fondo se vean atrás y
            * no solo más chicas. Con una sola promo no hay fondo que mostrar.
@@ -270,8 +274,9 @@ const PromoBanners = ({ onSelectPromo }) => {
               transition={{ duration: reducirMovimiento ? 0.2 : 0.55, ease: EASE_OUT }}
               style={{
                 position: 'absolute',
-                // Centrada en el respiro que se le dio al carrusel.
-                top: enFila ? 9 : 0,
+                // Arriba del respiro: el aire que sobra va abajo, que es
+                // hacia donde cae la sombra.
+                top: enFila ? 10 : 0,
                 left: '50%',
                 width: L.ancho,
                 marginLeft: L.margen,
@@ -300,9 +305,13 @@ const PromoBanners = ({ onSelectPromo }) => {
         })}
       </div>
 
-      {/* Controles: solo tienen sentido si hay más de una promo */}
+      {/*
+        Controles: solo tienen sentido si hay más de una promo. En fila se
+        suben con margen negativo, porque el aire de abajo del carrusel es
+        para que quepa la sombra, no para separar los botones.
+      */}
       {!unaSola && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: enFila ? 10 : 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: enFila ? -20 : 14 }}>
           <button
             onClick={anterior}
             aria-label="Promoción anterior"
