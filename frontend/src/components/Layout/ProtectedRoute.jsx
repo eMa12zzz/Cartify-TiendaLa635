@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 /*
@@ -26,10 +26,17 @@ import { useAuth } from '../../hooks/useAuth';
  */
 const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
+  const { pathname, search } = useLocation();
 
-  // 1- Si el usuario no está autenticado, lo mandamos al login
+  /*
+   * 1- Sin sesión, al login — pero avisándole a dónde iba.
+   *
+   * Mandarlo al login y después soltarlo en la portada obliga a volver a
+   * buscar lo que estaba haciendo. Con `volver` la sesión lo devuelve al
+   * mismo lugar, que es lo único que la persona quería.
+   */
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={`/iniciar-sesion?volver=${encodeURIComponent(pathname + search)}`} replace />;
   }
 
   // 2- Si está autenticado, renderizamos la ruta hija (AdminLayout y sus páginas)

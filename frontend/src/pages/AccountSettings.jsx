@@ -15,9 +15,10 @@ const AccountSettings = () => {
 
   const userType = user?.type || 'employee';
 
+  // El personal sale por su propia puerta: el panel tiene su login aparte.
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/admin');
   };
 
   const [formData, setFormData] = useState({

@@ -1,0 +1,171 @@
+import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+import { Menu, Store as StoreIcon, Check } from 'lucide-react';
+import { useDropdown } from '../../hooks/useDropdown';
+import { useModulos } from '../../hooks/useModulos';
+import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
+
+/*
+ * ============================================================
+ * MENÚ DE LA TIENDA — el nombre que abre los pasillos
+ * ============================================================
+ * Tocar el nombre de la tienda despliega sus módulos.
+ *
+ * Antes ese clic mandaba a la pantalla de Servicios: quien estaba comprando
+ * perdía la tienda de vista para elegir un pasillo y tenía que volver. Ahora
+ * los pasillos se abren ahí mismo, encima de los productos, y se elige sin
+ * salir de ningún lado.
+ *
+ * La lógica de qué módulos hay y a dónde lleva cada uno no vive aquí: sale
+ * de useModulos y de las reglas de utils/modulos.
+ * ============================================================
+ */
+
+const BROWN = '#B46C30';
+
+const Zona = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+const Boton = styled.button`
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 12px;
+  transition: background-color var(--dur-press, 120ms) var(--ease-out, ease);
+
+  &:hover { background: var(--marca-50, #FAF5F0); }
+`;
+
+const Hamburguesa = styled.span`
+  color: #6b6b6b;
+  display: flex;
+  align-items: center;
+`;
+
+// Las dos líneas del nombre, con el MISMO peso y color: "Tienda" no es una
+// etiqueta que acompaña, es parte del nombre del negocio.
+const Nombre = styled.span`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.05;
+`;
+
+const Linea = styled.span`
+  font-size: 19px;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: -0.5px;
+`;
+
+const Panel = styled.div`
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 268px;
+  background: #fff;
+  border: 1px solid #F0E7DE;
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
+  padding: 6px;
+  z-index: 300;
+  animation: cardIn 180ms var(--ease-out, ease);
+`;
+
+const Titulo = styled.p`
+  font-size: 11px;
+  color: #9a938c;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 8px 10px 6px;
+`;
+
+const Opcion = styled.button`
+  width: 100%;
+  background: ${(p) => (p.$activa ? 'var(--marca-50, #FAF5F0)' : 'none')};
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 10px;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2A1A0E;
+
+  &:hover { background: var(--marca-50, #FAF5F0); }
+`;
+
+const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
+  const navigate = useNavigate();
+  const { isOpen, toggle, close, ref } = useDropdown();
+  const { modulos } = useModulos();
+
+  /*
+   * A dónde lleva cada módulo. Los pasillos normales NO navegan: cambian el
+   * pasillo de esta misma pantalla, que es más rápido y no pierde el carrito
+   * de vista. Solo los de flujo propio (impresiones) abren otra pantalla.
+   */
+  const abrir = (modulo) => {
+    close();
+    if (flujoDeModulo(modulo) === 'impresiones') {
+      navigate('/impresiones');
+      return;
+    }
+    onElegirModulo?.(modulo._id);
+  };
+
+  const verTodo = () => {
+    close();
+    onElegirModulo?.(null);
+  };
+
+  return (
+    <Zona ref={ref}>
+      <Boton onClick={toggle} aria-expanded={isOpen} aria-haspopup="menu" aria-label="Pasillos de la tienda">
+        <Hamburguesa><Menu size={20} strokeWidth={2.2} /></Hamburguesa>
+        <Nombre>
+          <Linea>Tienda</Linea>
+          <Linea>la 635</Linea>
+        </Nombre>
+      </Boton>
+
+      {isOpen && (
+        <Panel role="menu">
+          <Titulo>Pasillos de la tienda</Titulo>
+
+          <Opcion role="menuitem" $activa={!moduloSeleccionado} onClick={verTodo}>
+            <StoreIcon size={17} strokeWidth={2.1} color={!moduloSeleccionado ? BROWN : '#9a938c'} />
+            Toda la tienda
+            {!moduloSeleccionado && <Check size={15} strokeWidth={2.6} color={BROWN} style={{ marginLeft: 'auto' }} />}
+          </Opcion>
+
+          {modulos.map((m) => {
+            const Icono = iconoDeModulo(m);
+            const activa = String(moduloSeleccionado) === String(m._id);
+            return (
+              <Opcion key={m._id} role="menuitem" $activa={activa} onClick={() => abrir(m)}>
+                <Icono size={17} strokeWidth={2.1} color={activa ? BROWN : '#9a938c'} />
+                {m.name}
+                {activa && <Check size={15} strokeWidth={2.6} color={BROWN} style={{ marginLeft: 'auto' }} />}
+              </Opcion>
+            );
+          })}
+        </Panel>
+      )}
+    </Zona>
+  );
+};
+
+export default MenuTienda;

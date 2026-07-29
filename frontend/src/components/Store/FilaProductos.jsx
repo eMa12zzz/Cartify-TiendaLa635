@@ -71,7 +71,21 @@ const Fila = styled.div`
   gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  padding-bottom: 4px;
+
+  /*
+   * Aire arriba y abajo, comido con márgenes negativos.
+   *
+   * Un contenedor con overflow-x recorta también por ARRIBA y por ABAJO (el
+   * navegador no deja tener un eje recortado y el otro suelto). Sin este
+   * respiro, la tarjeta que crece al pasar el cursor se quedaba con la
+   * sombra cortada a filo, como pegada sobre una línea.
+   *
+   * Los márgenes negativos devuelven el espacio: el aire existe para la
+   * sombra pero no separa la fila del resto de la página.
+   */
+  padding: 14px 0 18px;
+  margin: -14px 0 -14px;
+
   &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
 

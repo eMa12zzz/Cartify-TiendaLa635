@@ -157,7 +157,7 @@ const CreatePassword = () => {
       
       // Limpiamos los rastros y redirigimos a iniciar sesión
       localStorage.removeItem('verificationFlow');
-      navigate('/');
+      navigate('/iniciar-sesion');
 
     } catch (error) {
       console.error(error);

@@ -50,7 +50,9 @@ export const useFavoritos = () => {
   const alternar = async (productoId, nombre = 'El producto') => {
     if (!esCliente) {
       toast('Inicie sesión para guardar sus favoritos');
-      navigate('/');
+      // Se le devuelve a la tienda después de entrar: estaba viendo un
+      // producto, no buscando su cuenta.
+      navigate('/iniciar-sesion?volver=/');
       return;
     }
 

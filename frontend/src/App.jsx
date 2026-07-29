@@ -115,7 +115,17 @@ function App() {
         <Routes>
 
           {/* ── Rutas Públicas (sin autenticación) ─────────────────── */}
-          <Route path="/"                element={<LoginClient />} />      {/* Login de clientes */}
+          {/*
+           * La puerta de la tienda es la TIENDA, no el login.
+           *
+           * Antes lo primero que veía cualquiera era un formulario de inicio
+           * de sesión, y eso es pedirle matrimonio a alguien que solo venía a
+           * ver los precios. Ahora se entra, se mira y se llena el carrito
+           * sin cuenta; la sesión se pide cuando de verdad hace falta (al
+           * pagar, en Mi Cuenta, para guardar favoritos).
+           */}
+          <Route path="/"                element={<Store />} />
+          <Route path="/iniciar-sesion"  element={<LoginClient />} />      {/* Login de clientes */}
           <Route path="/admin"           element={<LoginAdmin />} />       {/* Login de administradores */}
           <Route path="/register"        element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

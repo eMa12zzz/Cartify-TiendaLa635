@@ -12,11 +12,12 @@ import PromoBanners from '../components/Store/PromoBanners';
 import PromoDetailModal from '../components/Store/PromoDetailModal';
 import FilaProductos from '../components/Store/FilaProductos';
 import SelectorDireccion from '../components/Store/SelectorDireccion';
+import MenuTienda from '../components/Store/MenuTienda';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
 import { useModulos } from '../hooks/useModulos';
-import { iconoDeModulo } from '../utils/modulos';
+import { useAuth } from '../hooks/useAuth';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#B46C30';
@@ -26,7 +27,12 @@ const BROWN_LIGHT = '#F3E7D8';
 /* ─── Layout ─── */
 const Container = styled.div`
   min-height: 100vh;
-  background: var(--banda);
+  /*
+   * Fondo blanco. El beige de antes competía con las tarjetas —que también
+   * son claras— y hacía ver la página como una hoja vieja; con blanco los
+   * productos y las promociones son lo único con color.
+   */
+  background: #fff;
   font-family: var(--fuente);
 `;
 
@@ -34,7 +40,12 @@ const Container = styled.div`
 const Header = styled.header`
   background: white;
   padding: 0 28px;
-  border-bottom: 1px solid #ebebeb;
+  /*
+   * La raya que separa el navbar de la tienda. Antes el header era blanco
+   * sobre un fondo beige y el contraste ya los separaba solo; ahora que todo
+   * es blanco, sin esta línea el encabezado flota sin principio ni fin.
+   */
+  border-bottom: 1px solid #e6e2dd;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -46,26 +57,8 @@ const Header = styled.header`
   z-index: 200;
 `;
 
-const LogoArea = styled.div`
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  flex-shrink: 0;
-`;
-
-const LogoTop = styled.span`
-  font-size: 11px;
-  color: #aaa;
-  line-height: 1;
-`;
-
-const LogoMain = styled.span`
-  font-size: 22px;
-  font-weight: 800;
-  color: #111;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-`;
+/* El nombre de la tienda y sus estilos se mudaron a MenuTienda: ahora abre
+   los pasillos en vez de navegar a Servicios. */
 
 /*
  * Buscador del diseño: pill blanca con borde suave y el icono metido en un
@@ -222,60 +215,11 @@ const CategoryBar = styled.nav`
 `;
 
 /*
- * ── Barra de pasillos ──
- * Un nivel por ENCIMA de las categorías: Abarrotes, Panadería, Pupusería son
- * partes de la misma tienda, no tiendas distintas. Por eso son pestañas y no
- * pastillas: si se vieran igual que las categorías, nadie entendería cuál
- * manda sobre cuál.
+ * La barra de pasillos y sus estilos se eliminaron: los pasillos ahora se
+ * eligen desde el menú del nombre de la tienda (MenuTienda). Tener las dos
+ * cosas era decir lo mismo dos veces, y la barra empujaba los productos media
+ * pantalla hacia abajo antes de que se viera un solo precio.
  */
-const PasilloBar = styled.nav`
-  /* Sin fondo propio: las barras se apoyan en el de la página en vez de
-     cortarla con dos franjas blancas antes de que empiece el contenido. */
-  background: transparent;
-  padding: 0 28px;
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  overflow-x: auto;
-  height: 52px;
-  align-items: center;
-  &::-webkit-scrollbar { display: none; }
-
-  @media (max-width: 900px) { justify-content: flex-start; }
-`;
-
-const PasilloBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 16px;
-  height: 100%;
-  border: none;
-  background: none;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: ${props => (props.$active ? 700 : 500)};
-  color: ${props => (props.$active ? BROWN : 'var(--tinta-suave)')};
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  position: relative;
-  transition: color var(--dur-press) var(--ease-out);
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 12px;
-    right: 12px;
-    bottom: 0;
-    height: 3px;
-    border-radius: 3px 3px 0 0;
-    background: ${props => (props.$active ? BROWN : 'transparent')};
-    transition: background-color var(--dur-press) var(--ease-out);
-  }
-
-  &:hover { color: ${BROWN}; }
-`;
 
 /* Pill blanca con borde; la activa es café SÓLIDO con texto blanco. */
 const CatBtn = styled.button`
@@ -530,6 +474,8 @@ const Store = () => {
    */
   const [searchParams] = useSearchParams();
   const { pasillos } = useModulos();
+  // La tienda se ve con o sin cuenta; la sesión solo cambia qué botones salen.
+  const { isAuthenticated } = useAuth();
 
   const {
     moduloSeleccionado,
@@ -636,10 +582,15 @@ const Store = () => {
 
       {/* ── Header ── */}
       <Header>
-        <LogoArea onClick={() => navigate('/tienda-dashboard')}>
-          <LogoTop>Tienda</LogoTop>
-          <LogoMain>la 635</LogoMain>
-        </LogoArea>
+        {/*
+          El nombre de la tienda abre sus pasillos en vez de mandar a otra
+          pantalla: se elige el módulo sin perder de vista lo que se estaba
+          comprando.
+        */}
+        <MenuTienda
+          moduloSeleccionado={moduloSeleccionado}
+          onElegirModulo={setModuloSeleccionado}
+        />
 
         {/* A dónde le llevamos el pedido, cambiable sin salir de comprar */}
         <SelectorDireccion />
@@ -668,36 +619,30 @@ const Store = () => {
             <ShoppingBag size={16} strokeWidth={2.2} /> Carrito
             {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
           </CartBtn>
-          <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta"><User size={16} strokeWidth={2.2} /> Mi Cuenta</IconBtn>
+          {/*
+            Sin sesión el botón invita a entrar; con sesión lleva a su cuenta.
+            La tienda se puede ver sin cuenta, así que "Mi Cuenta" a alguien
+            que no tiene ninguna sería una puerta a un cuarto que no existe.
+          */}
+          {isAuthenticated ? (
+            <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">
+              <User size={16} strokeWidth={2.2} /> Mi Cuenta
+            </IconBtn>
+          ) : (
+            <IconBtn onClick={() => navigate('/iniciar-sesion?volver=/')} title="Iniciar sesión">
+              <User size={16} strokeWidth={2.2} /> Ingresar
+            </IconBtn>
+          )}
           {/* Cerrar sesión vive solo en Mi Cuenta: acá era muy fácil apretarlo
               sin querer, al lado del carrito. */}
         </HeaderRight>
       </Header>
 
       {/*
-        Los pasillos de la tienda. Solo aparecen si hay más de uno: con una
-        sola estantería, la barra sería una pestaña sola sin nada que elegir.
+        La barra de pasillos se fue: ahora los pasillos viven en el menú del
+        nombre de la tienda. Tener las dos era decir lo mismo dos veces y
+        empujaba los productos media pantalla hacia abajo.
       */}
-      {pasillos.length > 1 && (
-        <PasilloBar>
-          <PasilloBtn $active={!moduloSeleccionado} onClick={() => setModuloSeleccionado(null)}>
-            Toda la tienda
-          </PasilloBtn>
-          {pasillos.map((m) => {
-            const Icono = iconoDeModulo(m);
-            return (
-              <PasilloBtn
-                key={m._id}
-                $active={String(moduloSeleccionado) === String(m._id)}
-                onClick={() => setModuloSeleccionado(m._id)}
-              >
-                <Icono size={16} strokeWidth={2} />
-                {m.name}
-              </PasilloBtn>
-            );
-          })}
-        </PasilloBar>
-      )}
 
       {/* ── Category Bar ── */}
       <CategoryBar>

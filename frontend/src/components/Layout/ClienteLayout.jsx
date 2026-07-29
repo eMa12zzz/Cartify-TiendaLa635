@@ -50,6 +50,11 @@ const ClienteLayout = () => {
     ? [{ to: '/mi-cuenta/reparto', label: 'Reparto', icon: Bike, ready: true }, ...navItems]
     : navItems;
 
+  /*
+   * Al cerrar sesión se queda EN la tienda, no en un formulario de login.
+   * Salirse de la cuenta no es salirse del negocio: la mayoría sigue viendo
+   * precios un rato más.
+   */
   const handleLogout = () => {
     logout();
     navigate('/');
