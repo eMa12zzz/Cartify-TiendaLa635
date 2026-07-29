@@ -1,9 +1,10 @@
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Bike, Navigation, Signpost, Phone, Package, MapPin } from 'lucide-react';
+import { Bike, Navigation, Signpost, Phone, Package, MapPin, Radio, Sun, TriangleAlert } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useReparto, enlaceDeRuta } from '../../hooks/useReparto';
+import { useViajeEnVivo } from '../../hooks/useViajeEnVivo';
 
 /*
  * Reparto — los pedidos a domicilio pendientes, para quien los lleva.
@@ -11,6 +12,9 @@ import { useReparto, enlaceDeRuta } from '../../hooks/useReparto';
  * Vive en el área de cliente porque el repartidor trabaja desde el teléfono
  * en la calle. Cada pedido muestra el punto en el mapa, la referencia y un
  * botón que abre la navegación del teléfono.
+ *
+ * Además, desde aquí se comparte la ubicación en vivo: el pedido que se suma
+ * al viaje empieza a mandar dónde va, y el cliente lo ve avanzar.
  */
 
 const pinEntrega = divIcon({
@@ -24,6 +28,19 @@ const pinEntrega = divIcon({
   iconAnchor: [13, 26],
 });
 
+// El repartidor en su propio mapa: círculo con halo, para distinguirlo de una
+// sola mirada del pin del destino.
+const pinRepartidor = divIcon({
+  className: '',
+  html: `<div style="
+    width:18px;height:18px;border-radius:50%;
+    background:#2563eb;border:3px solid #fff;
+    box-shadow:0 0 0 6px rgba(37,99,235,.22), 0 3px 8px rgba(0,0,0,.3);
+  "></div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
 const dinero = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 
 const hora = (iso) =>
@@ -33,6 +50,17 @@ const Reparto = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { pedidos, cargando, moviendo, habilitado, avanzar } = useReparto();
+  const {
+    enViaje, posicion, error: errorGPS, pantallaDespierta,
+    vaEnViaje, empezarViaje, quitarDelViaje,
+  } = useViajeEnVivo();
+
+  // Entregar cierra el viaje de ese pedido: nadie tiene que acordarse de
+  // apagar el compartir después de tocar el timbre.
+  const entregar = async (pedido) => {
+    await avanzar(pedido, 'entregado');
+    if (vaEnViaje(pedido._id)) quitarDelViaje(pedido._id);
+  };
 
   // Un cliente no reparte: si llega aquí de casualidad, se le dice y ya.
   if (!habilitado) {
@@ -49,9 +77,50 @@ const Reparto = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-1" style={{ color: c.textPrimary }}>Reparto</h1>
-      <p className="text-sm mb-6" style={{ color: c.textSecondary }}>
+      <p className="text-sm mb-4" style={{ color: c.textSecondary }}>
         Pedidos a domicilio que faltan por entregar.
       </p>
+
+      {/*
+        Mientras se comparte la ubicación conviene decirlo grande y sin
+        rodeos: es la ubicación de una persona: nadie debería descubrir por
+        casualidad que su teléfono estuvo transmitiendo.
+      */}
+      {enViaje.length > 0 && (
+        <div
+          className="rounded-2xl p-3.5 mb-5 flex items-start gap-3"
+          style={{ backgroundColor: '#EFF5FF', border: '1px solid #CFE0FF' }}
+        >
+          <span className="relative flex-none mt-0.5">
+            <Radio className="w-5 h-5" style={{ color: '#1D4ED8' }} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-bold" style={{ color: '#173F94' }}>
+              Compartiendo su ubicación · {enViaje.length} {enViaje.length === 1 ? 'pedido' : 'pedidos'}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: '#3E5FA3' }}>
+              {pantallaDespierta
+                ? 'La pantalla se mantendrá encendida mientras dure el viaje.'
+                : 'Deje la pantalla encendida: si el teléfono se bloquea, el cliente deja de verlo avanzar.'}
+            </p>
+            {pantallaDespierta && (
+              <p className="text-xs mt-1 inline-flex items-center gap-1" style={{ color: '#3E5FA3' }}>
+                <Sun className="w-3.5 h-3.5" /> Pantalla activa
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {errorGPS && (
+        <div
+          className="rounded-2xl p-3.5 mb-5 flex items-start gap-3"
+          style={{ backgroundColor: '#FFF6E9', border: '1px solid #F3DFC0' }}
+        >
+          <TriangleAlert className="w-5 h-5 flex-none mt-0.5" style={{ color: '#B4590C' }} />
+          <p className="text-sm" style={{ color: '#7A3E08' }}>{errorGPS}</p>
+        </div>
+      )}
 
       {cargando ? (
         <p className="text-sm" style={{ color: c.textSecondary }}>Cargando los pedidos…</p>
@@ -69,6 +138,7 @@ const Reparto = () => {
         <div className="flex flex-col gap-4">
           {pedidos.map((p) => {
             const hayPunto = p.deliveryLat != null && p.deliveryLng != null;
+            const compartiendo = vaEnViaje(p._id);
             return (
               <div
                 key={p._id}
@@ -93,6 +163,11 @@ const Reparto = () => {
                     >
                       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                       <Marker position={[p.deliveryLat, p.deliveryLng]} icon={pinEntrega} />
+                      {/* Su propio punto, para confirmar de un vistazo que el
+                          GPS está agarrando y no está mandando cualquier cosa */}
+                      {compartiendo && posicion && (
+                        <Marker position={[posicion.lat, posicion.lng]} icon={pinRepartidor} />
+                      )}
                     </MapContainer>
                   </div>
                 )}
@@ -173,13 +248,38 @@ const Reparto = () => {
                       </button>
                     ) : (
                       <button
-                        onClick={() => avanzar(p, 'entregado')}
+                        onClick={() => entregar(p)}
                         disabled={moviendo === p._id}
                         className="press flex-1 py-2.5 rounded-full text-sm font-bold border disabled:opacity-60"
                         style={{ borderColor: '#16a34a', color: '#16a34a' }}
                       >
                         {moviendo === p._id ? 'Marcando…' : 'Marcar entregado'}
                       </button>
+                    )}
+
+                    {/*
+                      Compartir el viaje solo tiene sentido si el pedido trae
+                      punto en el mapa: sin destino no hay nada que calcular
+                      del otro lado, y sería pedir la ubicación por gusto.
+                    */}
+                    {hayPunto && (
+                      compartiendo ? (
+                        <button
+                          onClick={() => quitarDelViaje(p._id)}
+                          className="press w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold border"
+                          style={{ borderColor: '#1D4ED8', color: '#1D4ED8', backgroundColor: '#EFF5FF' }}
+                        >
+                          <Radio className="w-4 h-4" /> Dejar de compartir
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => empezarViaje(p._id)}
+                          className="press w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold border"
+                          style={{ borderColor: c.cardBorder, color: c.textPrimary }}
+                        >
+                          <Bike className="w-4 h-4" /> Voy en camino
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

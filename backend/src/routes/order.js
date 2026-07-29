@@ -21,4 +21,10 @@ router
   .route("/:id/status")
   .put(orderController.updateOrderStatus); // PUT /api/order/:id/status -> cambiar estado
 
+// Seguimiento en vivo: el repartidor escribe su punto, el cliente lo lee.
+router
+  .route("/:id/courier")
+  .get(orderController.getCourierPosition)      // GET /api/order/:id/courier -> dónde va
+  .put(orderController.updateCourierPosition);  // PUT /api/order/:id/courier -> mandar posición
+
 export default router;

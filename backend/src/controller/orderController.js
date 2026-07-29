@@ -1,3 +1,4 @@
+import { isValidObjectId } from "mongoose";
 import orderModel from "../models/order.js";
 import clientModel from "../models/client.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
@@ -274,6 +275,16 @@ orderController.updateOrderStatus = async (req, res) => {
       cambios.deliveredBy = quien || "";
     }
 
+    /*
+     * Se acabó el viaje, se acaba el rastro. Cuando el pedido llega o se
+     * cancela, la posición del repartidor deja de tener sentido para todos:
+     * el cliente ya recibió y la tienda no necesita un mapa de por dónde
+     * anduvo su empleado. Se borra el punto, no solo se apaga.
+     */
+    if (status === "entregado" || status === "cancelado") {
+      cambios.courier = { active: false };
+    }
+
     const updated = await orderModel.findByIdAndUpdate(
       req.params.id,
       cambios,
@@ -388,6 +399,106 @@ orderController.createPrintOrder = async (req, res) => {
       order: newOrder,
       emailedToPrinter: emailed,
     });
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/*
+ * UPDATE — El repartidor manda dónde va.
+ *
+ * Lo llama el teléfono de quien reparte cada pocos segundos mientras dura el
+ * viaje. Es la mitad barata del seguimiento en vivo: escribe cuatro números y
+ * ya. Con `activo: false` se apaga el compartir sin tener que entregar
+ * (se cansó, se le acabó la batería, o se bajó del pedido).
+ */
+orderController.updateCourierPosition = async (req, res) => {
+  try {
+    const { lat, lng, quien, activo } = req.body;
+
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    const pedido = await orderModel.findById(req.params.id).select("deliveryType status");
+    if (!pedido) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+    if (pedido.deliveryType !== "delivery") {
+      return res.status(400).json({ message: "Este pedido no es a domicilio" });
+    }
+    // Un pedido cerrado no se sigue: si ya llegó o se canceló, no hay viaje.
+    if (["entregado", "cancelado"].includes(pedido.status)) {
+      return res.status(400).json({ message: "Este pedido ya se cerró" });
+    }
+
+    // Apagar el compartir: se borra el punto, no se deja el último quieto.
+    if (activo === false) {
+      await orderModel.findByIdAndUpdate(req.params.id, { courier: { active: false } });
+      return res.status(200).json({ message: "Seguimiento detenido" });
+    }
+
+    // El navegador manda números; si llega otra cosa, no la guardamos.
+    const nLat = Number(lat);
+    const nLng = Number(lng);
+    if (!Number.isFinite(nLat) || !Number.isFinite(nLng)) {
+      return res.status(400).json({ message: "Coordenadas inválidas" });
+    }
+
+    const courier = {
+      active: true,
+      lat: nLat,
+      lng: nLng,
+      name: quien || "",
+      updatedAt: new Date(),
+    };
+
+    await orderModel.findByIdAndUpdate(req.params.id, { courier });
+
+    return res.status(200).json({ message: "Posición actualizada", courier });
+
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/*
+ * SELECT — Dónde va el repartidor, para el cliente que espera.
+ *
+ * Devuelve solo el punto y el destino, no el pedido entero: esta ruta se
+ * consulta cada pocos segundos y sería un desperdicio arrastrar los productos
+ * y los datos del cliente en cada vuelta.
+ */
+orderController.getCourierPosition = async (req, res) => {
+  try {
+    /*
+     * Un id con mala forma revienta en el casteo de Mongoose y sale como 500.
+     * En una ruta que se consulta cada diez segundos eso son cientos de
+     * errores en el log tapando los que sí importan: mejor un 404 y ya.
+     */
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    const pedido = await orderModel
+      .findById(req.params.id)
+      .select("courier status deliveryType deliveryLat deliveryLng");
+
+    if (!pedido) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    return res.status(200).json({
+      status: pedido.status,
+      deliveryType: pedido.deliveryType,
+      destino: (pedido.deliveryLat != null && pedido.deliveryLng != null)
+        ? { lat: pedido.deliveryLat, lng: pedido.deliveryLng }
+        : null,
+      courier: pedido.courier?.active ? pedido.courier : null,
+    });
+
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({ message: "Internal server error" });
