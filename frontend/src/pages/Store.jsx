@@ -875,6 +875,8 @@ const Store = () => {
           producto={productoSeleccionado}
           onClose={handleCerrarDetalle}
           onAgregarAlCarrito={agregarAlCarrito}
+          // Click en una recomendación: cambia el producto del mismo modal.
+          onVerProducto={handleAbrirDetalle}
           todosLosProductos={productosDelPasillo?.length ? productosDelPasillo : productos}
         />
       )}
