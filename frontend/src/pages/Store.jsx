@@ -617,6 +617,21 @@ const Store = () => {
             limpiarCarrito={limpiarCarrito}
             carrito={carrito}
             totalCarrito={totalCarrito}
+            /*
+              A dónde puede llevar la voz. La tienda es la que sabe abrir un
+              producto o cambiar de pasillo sin recargar la página, así que
+              el asistente pide y ella mueve.
+            */
+            categorias={categorias}
+            irAProducto={handleAbrirDetalle}
+            irACategoria={(cat) => {
+              setCategoriaSeleccionada(cat);
+              // Que el pasillo elegido quede a la vista: si la persona está
+              // abajo mirando otra fila, cambiar el filtro sin subir no se
+              // nota y parece que el asistente no hizo nada.
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            irARuta={(ruta) => navigate(ruta)}
           />
         )}
       </AnimatePresence>

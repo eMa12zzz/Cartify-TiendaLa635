@@ -145,9 +145,37 @@ const expandirSinonimos = (t) => {
   return out;
 };
 
+/*
+ * ============================================================
+ * LLEVARLO A DONDE PIDIÓ
+ * ============================================================
+ * Las secciones de la cuenta a las que se puede ir hablando. La clave son las
+ * palabras que la gente usa de verdad, no el nombre del menú: nadie dice
+ * "llévame a Puntos de fidelidad", dice "cuántos puntos llevo".
+ */
+const DESTINOS_CUENTA = [
+  { ruta: '/mi-cuenta/pedidos',        palabras: /\b(mis pedidos|mi pedido|pedidos|ordenes|compras)\b/, nombre: 'sus pedidos' },
+  { ruta: '/mi-cuenta/puntos',         palabras: /\b(puntos|fidelidad|premios)\b/,                      nombre: 'sus puntos' },
+  { ruta: '/mi-cuenta/favoritos',      palabras: /\b(favoritos|guardados|me gusta)\b/,                  nombre: 'sus favoritos' },
+  { ruta: '/mi-cuenta/direcciones',    palabras: /\b(direcciones|direccion|donde vivo)\b/,              nombre: 'sus direcciones' },
+  { ruta: '/mi-cuenta/pagos',          palabras: /\b(pagos|tarjetas|saldo|metodos de pago)\b/,          nombre: 'sus métodos de pago' },
+  { ruta: '/mi-cuenta/recibidos',      palabras: /\b(recibos|facturas|comprobantes)\b/,                 nombre: 'sus recibos' },
+  { ruta: '/mi-cuenta/notificaciones', palabras: /\b(notificaciones|avisos|alertas)\b/,                 nombre: 'sus avisos' },
+  { ruta: '/mi-cuenta',                palabras: /\b(mi cuenta|mis datos|mi perfil)\b/,                 nombre: 'su cuenta' },
+];
+
+// Cómo pide la gente que la lleven a algún lado.
+const PIDE_IR = /\b(ver|vamos|llevame|llévame|muestrame|muéstrame|enseñame|enséñame|abrir|abre|quiero ver|busca|buscar|donde esta|dónde está|ir a)\b/;
+
 export const useVoiceAssistant = ({
   productos = [], carrito = [], totalCarrito = 0,
   agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+  // A dónde puede llevar a la persona. Los pone la tienda, que es la que
+  // sabe abrir un producto o cambiar de categoría sin recargar la página.
+  irAProducto, irACategoria, irARuta, categorias = [],
+  // Qué hacer cuando la persona confirma la compra. Lo pone quien monta el
+  // asistente, porque de eso dependen el pedido y los puntos.
+  alConfirmarCompra,
 }) => {
   const [activo, setActivo] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
@@ -167,12 +195,18 @@ export const useVoiceAssistant = ({
   // Mientras la IA descifra la frase: la pantalla lo dice para que el
   // silencio de un segundo no se lea como que el asistente se colgó.
   const [pensando, setPensando] = useState(false);
+  // Si está hablando ahora mismo. La pantalla lo usa para ofrecer
+  // interrumpirlo en vez de detenerlo.
+  const [hablando, setHablando] = useState(false);
   const [historial, setHistorial] = useState([]);
 
-  const dataRef = useRef({ productos, carrito, totalCarrito });
-  dataRef.current = { productos, carrito, totalCarrito };
+  const dataRef = useRef({ productos, carrito, totalCarrito, categorias });
+  dataRef.current = { productos, carrito, totalCarrito, categorias };
   const fnRef = useRef({});
-  fnRef.current = { agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito };
+  fnRef.current = {
+    agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+    irAProducto, irACategoria, irARuta, alConfirmarCompra,
+  };
 
   const recognitionRef = useRef(null);
   const activoRef = useRef(false);
@@ -248,6 +282,7 @@ export const useVoiceAssistant = ({
 
     const continuar = () => {
       hablandoRef.current = false;
+      setHablando(false);
       if (activoRef.current) setTimeout(() => arrancarReconocimiento(), 350);
     };
 
@@ -258,6 +293,7 @@ export const useVoiceAssistant = ({
 
     window.speechSynthesis.cancel();
     hablandoRef.current = true;
+    setHablando(true);
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = 'es-SV';
     u.rate = rateRef.current;
@@ -349,7 +385,9 @@ export const useVoiceAssistant = ({
     if (confirmandoRef.current) {
       if (/\b(si|sí|claro|confirmo|dale|correcto|comprar)\b/.test(t)) {
         confirmandoRef.current = false;
-        hablar('¡Listo! Lleva tu carrito a caja, un empleado te ayudará a pagar. ¡Gracias!');
+        // Quien cierra la compra es la tienda, no el asistente: aquí solo se
+        // avisa que la persona dijo que sí.
+        fns.alConfirmarCompra?.();
       } else if (/\b(no|cancela|espera|todavia|todavía|aun|aún)\b/.test(t)) {
         confirmandoRef.current = false;
         hablar('Ok, seguimos. ¿Qué más quieres agregar?');
@@ -396,6 +434,51 @@ export const useVoiceAssistant = ({
         fns.actualizarCantidad?.(prod.id, enCarrito.cantidad - c);
         hablar(`Quité ${c} ${prod.nombre}. Te quedan ${enCarrito.cantidad - c}.`);
       }
+      return;
+    }
+
+    /*
+     * ── Llevarlo a donde pidió ──
+     *
+     * Va ANTES de agregar al carrito y eso es la clave: "quiero una manzana"
+     * la mete al carrito, pero "quiero VER las manzanas" lo lleva al
+     * producto. La diferencia entera está en el verbo, así que si la frase
+     * pide ver algo, no se toca el carrito.
+     *
+     * Sirve sobre todo con el asistente en segundo plano: se sigue navegando
+     * la tienda con la voz mientras se mira la pantalla.
+     */
+    if (PIDE_IR.test(t)) {
+      // 1. ¿Una sección de su cuenta?
+      const destino = DESTINOS_CUENTA.find((d) => d.palabras.test(t));
+      if (destino && fns.irARuta) {
+        fns.irARuta(destino.ruta);
+        hablar(`Le abro ${destino.nombre}.`);
+        return;
+      }
+
+      // 2. ¿Un producto? Es lo más específico, así que gana sobre la categoría.
+      const prod = buscarProducto(t);
+      if (prod && fns.irAProducto) {
+        fns.irAProducto(prod);
+        hablar(`Aquí está ${prod.nombre}, a $${Number(prod.precio).toFixed(2)}.`);
+        return;
+      }
+
+      // 3. ¿Una categoría o pasillo?
+      const cat = (dataRef.current.categorias || []).find((c) => {
+        const n = normalizar(String(c));
+        return n.length > 2 && t.includes(n);
+      });
+      if (cat && fns.irACategoria) {
+        fns.irACategoria(cat);
+        hablar(`Le muestro ${cat}.`);
+        return;
+      }
+
+      // Pidió ver algo que no se encontró: que lo descifre la IA, que para
+      // eso está — quizá pidió "lo de la limpieza" y hay una categoría así.
+      preguntarALaIA(texto);
       return;
     }
 
@@ -455,6 +538,26 @@ export const useVoiceAssistant = ({
     setActivo(true);
     arrancarReconocimiento();
   }, [soportado, hablar, arrancarReconocimiento]);
+
+  /*
+   * Interrumpir al asistente. Se corta lo que está diciendo y se pone a
+   * escuchar de una vez.
+   *
+   * Es de las cosas que más se agradecen: el asistente termina con "¿algo
+   * más?" y uno ya sabe qué quiere, pero tenía que aguantarse la frase
+   * completa antes de poder hablar. Una persona de verdad se deja
+   * interrumpir; esto es lo mismo.
+   */
+  const interrumpir = useCallback(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    hablandoRef.current = false;
+    setHablando(false);
+    activoRef.current = true;
+    setActivo(true);
+    arrancarReconocimiento();
+  }, [arrancarReconocimiento]);
 
   const detener = useCallback(() => {
     activoRef.current = false;
@@ -523,9 +626,9 @@ export const useVoiceAssistant = ({
   const vozActual = voces.find((v) => v.nombre === vozElegida)?.nombre || voces[0]?.nombre || '';
 
   return {
-    activo, escuchando, muteado, transcripcion, historial, pensando,
+    activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
     velLabel: VELOCIDADES[velIndex].label,
-    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado,
+    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado, interrumpir,
     voces, vozActual, cambiarVoz,
   };
 };
