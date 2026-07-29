@@ -25,6 +25,7 @@ import loyaltyRoutes from "./src/routes/loyalty.js";
 import printServiceRoutes from "./src/routes/printService.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import aiRoutes from "./src/routes/ai.js";
+import kioscoRoutes from "./src/routes/kiosco.js";
 import giftCardRoutes from "./src/routes/giftCard.js";
 import supplierCreditRoutes from "./src/routes/supplierCredit.js";
 import wompiRoutes from "./src/routes/wompi.js"
@@ -64,6 +65,8 @@ app.use("/api/client", clientRoutes);
 app.use("/api/promotion", promotionRoutes);
 app.use("/api/shopping", shoppingRoutes);
 app.use("/api/order", orderRoutes);
+// Vincular la compra del kiosco con la cuenta del cliente por QR.
+app.use("/api/kiosco", kioscoRoutes);
 app.use("/api/loyaltyConfig", loyaltyConfigRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
 app.use("/api/printService", printServiceRoutes);

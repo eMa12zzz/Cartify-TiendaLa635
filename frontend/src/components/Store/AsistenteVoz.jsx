@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Mic, X, ShoppingCart, Volume2, VolumeX, Gauge, Minimize2 } from 'lucide-react';
+import { Mic, X, ShoppingCart, Volume2, VolumeX, Gauge, Minimize2, QrCode, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+import { useKiosco } from '../../hooks/useKiosco';
+import { orderService } from '../../api/orderService';
 
 /*
  * AsistenteVoz — pantalla grande (kiosco) del asistente por voz.
@@ -14,17 +16,90 @@ const EASE_OUT = [0.23, 1, 0.32, 1];
 const AsistenteVoz = ({
   onClose, productos, carrito, totalCarrito,
   agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+  categorias, irAProducto, irACategoria, irARuta,
 }) => {
   const reduce = useReducedMotion();
   const [minimizado, setMinimizado] = useState(false); // asistente en segundo plano
   const {
-    activo, escuchando, muteado, transcripcion, historial, velLabel, pensando,
-    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado,
+    activo, escuchando, muteado, transcripcion, historial, velLabel, pensando, hablando,
+    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado, interrumpir,
     voces, vozActual, cambiarVoz,
   } = useVoiceAssistant({
     productos, carrito, totalCarrito,
     agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+    categorias,
+    /*
+     * Antes de llevar a la persona a algún lado, el asistente se hace a un
+     * lado: mostrar un producto y dejar la pantalla negra encima sería
+     * enseñarle algo tapado. Sigue vivo y escuchando en segundo plano, que
+     * es justo la gracia — se sigue navegando con la voz.
+     */
+    irAProducto: (p) => { setMinimizado(true); irAProducto?.(p); },
+    irACategoria: (c) => { setMinimizado(true); irACategoria?.(c); },
+    irARuta: (r) => { setMinimizado(true); irARuta?.(r); },
+    alConfirmarCompra: () => cerrarCompra(),
   });
+
+  hablarRef.current = hablar;
+
+  // La cuenta del cliente, si escaneó el QR con su teléfono.
+  const kiosco = useKiosco();
+
+  /*
+   * Hablar por referencia: cerrarCompra se define antes de que el hook
+   * exista, porque el hook la recibe como parámetro. El ref rompe ese huevo
+   * y gallina sin tener que partir el componente en dos.
+   */
+  const hablarRef = useRef(null);
+
+  /*
+   * Cerrar la compra del kiosco.
+   *
+   * Con cuenta vinculada, el pedido se crea A SU NOMBRE: es lo que hace que
+   * los puntos le caigan solos, porque el backend los calcula al crear el
+   * pedido. El pago sigue siendo en caja, con efectivo o tarjeta — el kiosco
+   * no cobra, solo deja el pedido listo.
+   *
+   * Y pase lo que pase, el código se quema. Si no, el siguiente que se para
+   * en el kiosco encontraría la sesión abierta y le seguiría cargando
+   * compras y puntos a la cuenta de quien ya se fue.
+   */
+  const cerrarCompra = async () => {
+    const cliente = kiosco.cliente;
+
+    if (!cliente) {
+      hablarRef.current?.('¡Listo! Lleve su carrito a caja, un empleado le ayudará a pagar. ¡Gracias!');
+      return;
+    }
+
+    try {
+      await orderService.createOrder({
+        clientId: cliente.id,
+        items: carrito.map((i) => ({
+          productId: i.id,
+          name: i.nombre,
+          price: i.precio,
+          amount: i.cantidad,
+        })),
+        total: totalCarrito,
+        paymentMethod: 'efectivo', // se define en caja; el kiosco no cobra
+        paymentStatus: 'pendiente',
+        deliveryType: 'retiro',
+        channel: 'kiosco',
+      });
+
+      hablarRef.current?.(
+        `¡Listo, ${cliente.nombre}! Su pedido quedó a su nombre y sus puntos ya están sumados. Pase a caja a pagar.`
+      );
+      limpiarCarrito?.();
+    } catch {
+      // El pedido no se pudo crear: se lo decimos, no se lo inventamos.
+      hablarRef.current?.('No pude registrar su pedido. Pase a caja y un empleado le ayuda.');
+    } finally {
+      // El código muere aquí, con pedido o sin él.
+      kiosco.cerrar();
+    }
+  };
 
   const chatRef = useRef(null);
   const saludadoRef = useRef(false);
@@ -52,10 +127,14 @@ const AsistenteVoz = ({
    */
   const estadoTexto = pensando
     ? 'Pensando…'
-    : !activo ? 'Toca para empezar' : escuchando ? 'Escuchando…' : 'Un momento…';
+    : hablando ? 'Toca para interrumpir'
+    : !activo ? 'Toca para empezar'
+    : escuchando ? 'Escuchando…' : 'Un momento…';
   const estadoColor = pensando
     ? '#93c5fd'
-    : !activo ? '#e5e7eb' : escuchando ? '#fca5a5' : '#fcd34d';
+    : hablando ? '#a7f3d0'
+    : !activo ? '#e5e7eb'
+    : escuchando ? '#fca5a5' : '#fcd34d';
   const micColor = escuchando ? '#dc2626' : activo ? '#d97706' : '#B47C4D';
 
   const pill = { backgroundColor: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)' };
@@ -99,6 +178,59 @@ const AsistenteVoz = ({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2, ease: EASE_OUT }}
     >
+      {/*
+        ── Vincular la compra con su cuenta ──
+        El kiosco no sabe quién está enfrente, así que sin esto ninguna compra
+        de aquí suma puntos. En vez de pedirle a la gente que escriba su
+        contraseña en una pantalla pública —que es regalar contraseñas—, se
+        escanea un QR con su propio teléfono, donde ya tiene sesión.
+      */}
+      <div className="absolute bottom-5 left-5 z-[60]">
+        {kiosco.cliente ? (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-white shadow-lg"
+            style={{ background: 'rgba(20,102,58,0.92)' }}
+          >
+            <UserCheck className="w-5 h-5 flex-none" />
+            <div className="text-left">
+              <div className="text-sm font-bold">{kiosco.cliente.nombre}</div>
+              <div className="text-xs opacity-80">
+                Sus puntos se le acreditan solos · {kiosco.cliente.puntos} pts
+              </div>
+            </div>
+            <button
+              onClick={kiosco.desvincular}
+              className="ml-1 text-xs underline opacity-80"
+              aria-label="Quitar la cuenta de esta compra"
+            >
+              Quitar
+            </button>
+          </div>
+        ) : kiosco.imagenQR ? (
+          <div className="p-3 rounded-2xl bg-white shadow-lg text-center" style={{ width: 190 }}>
+            <img src={kiosco.imagenQR} alt={`Código ${kiosco.codigo}`} className="w-full rounded-lg" />
+            <p className="text-[11px] mt-1.5 font-semibold" style={{ color: '#2A1A0E' }}>
+              Escanee para sumar sus puntos
+            </p>
+            {/* El código escrito es el plan B: si la cámara no agarra, se
+                puede teclear en el teléfono. */}
+            <p className="text-[13px] font-black tracking-[3px]" style={{ color: '#B46C30' }}>
+              {kiosco.codigo}
+            </p>
+          </div>
+        ) : (
+          <button
+            onClick={kiosco.abrir}
+            disabled={kiosco.abriendo}
+            className="flex items-center gap-2 px-4 py-3 rounded-full text-white font-medium text-base shadow-lg disabled:opacity-60"
+            style={pill}
+          >
+            <QrCode className="w-5 h-5" />
+            {kiosco.abriendo ? 'Generando…' : '¿Tiene cuenta? Sume sus puntos'}
+          </button>
+        )}
+      </div>
+
       {/* Silenciar / activar la voz */}
       <button
         onClick={toggleMute}
@@ -155,13 +287,18 @@ const AsistenteVoz = ({
             )}
           </AnimatePresence>
           <motion.button
-            onClick={activo ? detener : iniciar}
+            /*
+             * Si está hablando, el toque lo INTERRUMPE y se pone a escuchar.
+             * Antes había que aguantarse la frase completa aunque uno ya
+             * supiera qué decir; ahora se le corta como a una persona.
+             */
+            onClick={hablando ? interrumpir : activo ? detener : iniciar}
             className="relative w-full h-full rounded-full flex items-center justify-center shadow-2xl"
             style={{ backgroundColor: micColor }}
             whileTap={{ scale: 0.97 }}
             animate={{ scale: pulsa ? [1, 1.04, 1] : 1 }}
             transition={pulsa ? { duration: 1.2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.16, ease: EASE_OUT }}
-            aria-label={activo ? 'Detener' : 'Empezar a hablar'}
+            aria-label={hablando ? 'Interrumpir y hablar' : activo ? 'Detener' : 'Empezar a hablar'}
           >
             <Mic className="w-16 h-16 md:w-20 md:h-20 text-white" />
           </motion.button>

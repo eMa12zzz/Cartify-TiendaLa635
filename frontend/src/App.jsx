@@ -6,6 +6,7 @@ import { DireccionProvider } from './context/DireccionContext';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
 import BurbujaPedido from './components/Store/BurbujaPedido';
+import VincularKiosco from './pages/VincularKiosco';
 
 /*
  * ============================================================
@@ -126,6 +127,8 @@ function App() {
            */}
           <Route path="/"                element={<Store />} />
           <Route path="/iniciar-sesion"  element={<LoginClient />} />      {/* Login de clientes */}
+          {/* Lo que abre el teléfono al escanear el QR del kiosco */}
+          <Route path="/vincular/:codigo" element={<VincularKiosco />} />
           <Route path="/admin"           element={<LoginAdmin />} />       {/* Login de administradores */}
           <Route path="/register"        element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
