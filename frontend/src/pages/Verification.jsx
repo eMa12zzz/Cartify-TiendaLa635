@@ -209,7 +209,7 @@ const Verification = () => {
         });
         toast.success('¡Registro exitoso! Ya puedes iniciar sesión.');
         localStorage.removeItem('verificationFlow');
-        navigate('/');
+        navigate('/iniciar-sesion');
       } 
       else if (flow === 'recovery') {
         // 2- Verificamos el código para Recuperación de contraseña
@@ -223,7 +223,7 @@ const Verification = () => {
         // 3- Flujo 2FA de Empleado (Por defecto)
         if (!pendingToken) {
           setError('Sesión inválida, vuelve a iniciar sesión');
-          setTimeout(() => navigate('/'), 2000);
+          setTimeout(() => navigate('/iniciar-sesion'), 2000);
           return;
         }
         

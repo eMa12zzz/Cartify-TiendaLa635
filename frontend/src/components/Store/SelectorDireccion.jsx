@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { MapPin, ChevronDown, Check, Plus, Signpost, TriangleAlert } from 'lucide-react';
 import { useDropdown } from '../../hooks/useDropdown';
 import { useDireccionCtx } from '../../context/DireccionContext';
+import { useAuth } from '../../hooks/useAuth';
 
 /*
  * ============================================================
@@ -172,6 +173,7 @@ const SelectorDireccion = () => {
   const navigate = useNavigate();
   const { isOpen, toggle, close, ref } = useDropdown();
   const { direcciones, indice, etiqueta, cargando, elegir, activa } = useDireccionCtx();
+  const { user } = useAuth();
 
   // Una dirección "completa" es la que trae punto en el mapa; sin eso no hay
   // seguimiento en vivo ni tiempo estimado, solo un texto para el repartidor.
@@ -186,6 +188,13 @@ const SelectorDireccion = () => {
     close();
     navigate('/bienvenida?volver=/store');
   };
+
+  /*
+   * Sin cuenta no hay direcciones que mostrar. Quien entra de curioso no
+   * tiene por qué ver un "Entregar en" vacío ni que le pidan una dirección
+   * antes de haber visto un solo precio.
+   */
+  if (user?.type !== 'client') return null;
 
   // Mientras carga no se pinta nada: un "Sin dirección" que parpadea y
   // después cambia se siente roto aunque no lo esté.

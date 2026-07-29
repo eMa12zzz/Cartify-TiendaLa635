@@ -186,7 +186,7 @@ const LoginPassword = () => {
 
       <Body>
         <Card>
-          <BackButton onClick={() => navigate('/')}>←</BackButton>
+          <BackButton onClick={() => navigate('/iniciar-sesion')}>←</BackButton>
 
           <SectionTitle>Bienvenido de vuelta</SectionTitle>
           <Subtitle>Ingresa tu contraseña para continuar</Subtitle>

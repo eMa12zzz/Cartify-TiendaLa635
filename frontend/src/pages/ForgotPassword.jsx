@@ -97,7 +97,7 @@ const ForgotPassword = () => {
           <div className="mt-8 text-center flex flex-col gap-2">
             <p className="text-xs text-gray-500">
               ¿Ya la recordaste?{' '}
-              <Link to="/" className="text-[#B47C4D] hover:text-[#9C6026] font-semibold transition-colors">
+              <Link to="/iniciar-sesion" className="text-[#B47C4D] hover:text-[#9C6026] font-semibold transition-colors">
                 Iniciar sesión
               </Link>
             </p>

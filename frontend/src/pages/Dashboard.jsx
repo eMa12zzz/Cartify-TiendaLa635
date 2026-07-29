@@ -147,10 +147,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
-      navigate('/');
+      navigate('/iniciar-sesion?volver=/tienda-dashboard');
     }
   }, [navigate]);
 
+  // Cerrar sesión deja en la tienda, que ahora es pública.
   const handleLogout = () => {
     localStorage.clear();
     navigate('/');

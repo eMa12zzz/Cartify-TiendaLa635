@@ -958,8 +958,15 @@ const ShoppingCart = ({
 
   // Crea el pedido REAL. (El cobro con pasarela todavía no se conecta.)
   const handlePlaceOrder = async () => {
+    /*
+     * La tienda se recorre sin cuenta, pero para pagar sí hace falta: el
+     * pedido tiene que ir a nombre de alguien y a una dirección. En vez de
+     * dejar el aviso y que la persona busque dónde entrar, se la lleva al
+     * login y se la devuelve al carrito con todo lo que ya había puesto.
+     */
     if (!user?.id) {
-      toast.error('Inicia sesión como cliente para completar tu pedido');
+      toast('Inicie sesión para terminar su pedido');
+      navigate('/iniciar-sesion?volver=/');
       return;
     }
     // Con envío a domicilio la dirección es obligatoria; el servidor también

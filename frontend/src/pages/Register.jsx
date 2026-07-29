@@ -372,7 +372,7 @@ const Register = () => {
 
           <FooterText>
             ¿Ya tienes una cuenta?{' '}
-            <FooterLink onClick={() => navigate('/')}>Iniciar Sesión</FooterLink>
+            <FooterLink onClick={() => navigate('/iniciar-sesion')}>Iniciar Sesión</FooterLink>
           </FooterText>
         </Card>
       </Body>

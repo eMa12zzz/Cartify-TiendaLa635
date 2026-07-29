@@ -23,7 +23,19 @@ import { iconoDePromo } from '../../utils/iconosPromo';
  * Una sola pieza para los dos lados: el carrusel del cliente y la vista previa
  * del admin, así lo que se ve antes de guardar es lo que verá la gente.
  */
-const PROPORCION = '2.5 / 1';
+/*
+ * Más alta que antes (era 2.5:1).
+ *
+ * En el carrusel las tres tarjetas ya no pueden crecer a lo ancho —el aire
+ * entre ellas y el asomo de las que vienen se comen ese espacio— así que
+ * ganan tamaño por el alto, que no compite con nada. De paso el texto de la
+ * promoción respira: con 2.5:1 las descripciones largas llegaban al borde.
+ *
+ * Se cambia aquí y no solo en la tienda a propósito: la vista previa del
+ * admin usa esta misma pieza, y lo que se ve antes de guardar tiene que ser
+ * lo que verá la gente.
+ */
+const PROPORCION = '2.2 / 1';
 
 // Cuánto ocupa la foto cuando acompaña al texto.
 const ANCHO_IMAGEN = '46%';
@@ -65,7 +77,18 @@ const PromoCard = ({
         borderRadius: 20,
         overflow: 'hidden',
         background: aSangre ? '#EDE7E0' : colores.fondo,
-        boxShadow: atenuada ? '0 8px 24px rgba(0,0,0,0.16)' : '0 16px 40px rgba(140,86,40,0.28)',
+        /*
+         * Sombra en dos capas y bajita.
+         *
+         * La de antes era una sola mancha café a 16 px hacia abajo: se veía
+         * como una alfombra sucia debajo de la tarjeta, sobre todo en el
+         * carrusel donde hay tres seguidas. Una capa corta que asienta la
+         * tarjeta y otra ancha y muy tenue que le da altura leen mucho mejor
+         * que una sola sombra fuerte.
+         */
+        boxShadow: atenuada
+          ? '0 2px 6px rgba(0,0,0,0.10), 0 8px 20px rgba(0,0,0,0.07)'
+          : '0 2px 8px rgba(90,55,25,0.12), 0 12px 28px rgba(90,55,25,0.13)',
         /*
          * La letra se mide contra el ancho de ESTA tarjeta (cqw), no contra el
          * de la ventana. Con vw la misma tarjeta se veía bien en la tienda
