@@ -12,7 +12,15 @@ export const clientColors = {
   primaryLight: '#f5ede4',
   accent: '#a06a35',
   buttonText: '#ffffff',
-  mainBg: '#f6f6f6',
+  /*
+   * Fondo blanco, igual que la tienda.
+   *
+   * El gris de antes venía de cuando la tienda también era beige; ahora que
+   * la tienda es blanca, pasar de una a otra se sentía como cambiar de sitio
+   * web. El contenido se sigue distinguiendo por su borde, no por el color
+   * del fondo.
+   */
+  mainBg: '#ffffff',
   topbarBg: '#ffffff',
   cardBg: '#ffffff',
   cardBorder: '#ebebeb',

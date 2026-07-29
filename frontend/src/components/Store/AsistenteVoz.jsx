@@ -18,8 +18,9 @@ const AsistenteVoz = ({
   const reduce = useReducedMotion();
   const [minimizado, setMinimizado] = useState(false); // asistente en segundo plano
   const {
-    activo, escuchando, muteado, transcripcion, historial, velLabel,
+    activo, escuchando, muteado, transcripcion, historial, velLabel, pensando,
     iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado,
+    voces, vozActual, cambiarVoz,
   } = useVoiceAssistant({
     productos, carrito, totalCarrito,
     agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
@@ -44,8 +45,17 @@ const AsistenteVoz = ({
   const items = carrito.reduce((a, i) => a + i.cantidad, 0);
   const pulsa = escuchando && !reduce;
 
-  const estadoTexto = !activo ? 'Toca para empezar' : escuchando ? 'Escuchando…' : 'Un momento…';
-  const estadoColor = !activo ? '#e5e7eb' : escuchando ? '#fca5a5' : '#fcd34d';
+  /*
+   * "Pensando" va primero: cuando la IA está descifrando la frase pasa cerca
+   * de un segundo en silencio, y sin avisar eso se lee como que el asistente
+   * se colgó. Decirlo convierte la espera en algo que está pasando.
+   */
+  const estadoTexto = pensando
+    ? 'Pensando…'
+    : !activo ? 'Toca para empezar' : escuchando ? 'Escuchando…' : 'Un momento…';
+  const estadoColor = pensando
+    ? '#93c5fd'
+    : !activo ? '#e5e7eb' : escuchando ? '#fca5a5' : '#fcd34d';
   const micColor = escuchando ? '#dc2626' : activo ? '#d97706' : '#B47C4D';
 
   const pill = { backgroundColor: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)' };
@@ -159,10 +169,39 @@ const AsistenteVoz = ({
 
         <p className="mt-4 text-base md:text-lg font-semibold" style={{ color: estadoColor }}>{estadoTexto}</p>
 
-        {/* Control de velocidad de la voz */}
-        <button onClick={cambiarVelocidad} className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm shadow" style={pill}>
-          <Gauge className="w-4 h-4" /> Velocidad: {velLabel}
-        </button>
+        {/* Velocidad y voz, uno al lado del otro */}
+        <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+          <button onClick={cambiarVelocidad} className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm shadow" style={pill}>
+            <Gauge className="w-4 h-4" /> Velocidad: {velLabel}
+          </button>
+
+          {/*
+            Quién habla. Solo aparece si el sistema tiene más de una voz en
+            español: con una sola, un selector de un elemento es un botón que
+            no hace nada.
+
+            Al elegir se escucha de una vez — los nombres ("Sabina", "Jorge")
+            no le dicen nada a nadie hasta que la oye.
+          */}
+          {voces.length > 1 && (
+            <label className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm shadow cursor-pointer" style={pill}>
+              <Volume2 className="w-4 h-4" />
+              <span className="sr-only">Voz del asistente</span>
+              <select
+                value={vozActual}
+                onChange={(e) => cambiarVoz(e.target.value)}
+                className="bg-transparent text-white text-sm outline-none cursor-pointer"
+                style={{ maxWidth: 190 }}
+              >
+                {voces.map((v) => (
+                  <option key={v.nombre} value={v.nombre} style={{ color: '#111' }}>
+                    {v.etiqueta}{v.pais ? ` · ${v.pais}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
 
         {/* Transcripción en vivo (mientras escucha) */}
         {escuchando && transcripcion && (

@@ -19,15 +19,24 @@ import { puedeRepartir } from '../../hooks/useReparto';
  * `ready` marca los ítems ya cableados; los demás se muestran deshabilitados
  * ("Pronto") mientras se conectan en los siguientes pasos de la Fase 1.
  */
+/*
+ * `label` es el nombre corto que se ve en la barra; `titulo` es el largo, que
+ * queda como ayuda al dejar el cursor encima.
+ *
+ * En vertical cabía "Detalles de la Cuenta" completo, pero en horizontal esos
+ * nombres largos empujaban las últimas secciones fuera de la pantalla y había
+ * que deslizar para descubrir que existían. Un menú que esconde la mitad de
+ * sus opciones es medio menú.
+ */
 const navItems = [
-  { to: '/mi-cuenta',                label: 'Detalles de la Cuenta', icon: User,        ready: true  },
-  { to: '/mi-cuenta/pedidos',        label: 'Mis pedidos',           icon: ShoppingBag, ready: true  },
-  { to: '/mi-cuenta/favoritos',      label: 'Mis favoritos',         icon: Heart,       ready: true  },
-  { to: '/mi-cuenta/direcciones',    label: 'Direcciones',           icon: MapPin,      ready: true  },
-  { to: '/mi-cuenta/pagos',          label: 'Métodos de pago',       icon: CreditCard,  ready: true  },
-  { to: '/mi-cuenta/notificaciones', label: 'Notificaciones',        icon: Bell,        ready: true  },
-  { to: '/mi-cuenta/puntos',         label: 'Puntos de fidelidad',   icon: Star,        ready: true  },
-  { to: '/mi-cuenta/recibidos',      label: 'Recibos',               icon: Receipt,     ready: true  },
+  { to: '/mi-cuenta',                label: 'Mis datos',      titulo: 'Detalles de la cuenta', icon: User,        ready: true },
+  { to: '/mi-cuenta/pedidos',        label: 'Pedidos',        titulo: 'Mis pedidos',           icon: ShoppingBag, ready: true },
+  { to: '/mi-cuenta/favoritos',      label: 'Favoritos',      titulo: 'Mis favoritos',         icon: Heart,       ready: true },
+  { to: '/mi-cuenta/direcciones',    label: 'Direcciones',    titulo: 'Direcciones de entrega',icon: MapPin,      ready: true },
+  { to: '/mi-cuenta/pagos',          label: 'Pagos',          titulo: 'Métodos de pago',       icon: CreditCard,  ready: true },
+  { to: '/mi-cuenta/notificaciones', label: 'Avisos',         titulo: 'Notificaciones',        icon: Bell,        ready: true },
+  { to: '/mi-cuenta/puntos',         label: 'Puntos',         titulo: 'Puntos de fidelidad',   icon: Star,        ready: true },
+  { to: '/mi-cuenta/recibidos',      label: 'Recibos',        titulo: 'Recibos',               icon: Receipt,     ready: true },
 ];
 
 const ClienteLayout = () => {
@@ -61,16 +70,10 @@ const ClienteLayout = () => {
   };
 
   /*
-   * Sombreado al pasar el mouse. Se hace tocando el estilo del elemento en vez
-   * de con estado de React porque los colores vienen del tema elegido y no de
-   * clases de Tailwind: un :hover en CSS no sabría qué color usar, y meter
-   * estado por cada fila del menú re-renderiza el sidebar entero al mover el
-   * mouse.
+   * El sombreado al pasar el mouse se fue con el menú lateral: en pestañas
+   * horizontales el subrayado ya dice cuál está activa, y pintarles el fondo
+   * encima las volvía botones apretados uno contra otro.
    */
-  const sombrear = (e) => { e.currentTarget.style.backgroundColor = c.primaryLight; };
-  const desSombrear = (activo) => (e) => {
-    e.currentTarget.style.backgroundColor = activo ? c.primaryLight : 'transparent';
-  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: c.mainBg, color: c.textPrimary }}>
@@ -79,108 +82,135 @@ const ClienteLayout = () => {
         className="h-14 px-6 flex items-center justify-between"
         style={{ backgroundColor: c.topbarBg, borderBottom: `1px solid ${c.sidebarBorder}` }}
       >
-        <div className="font-bold leading-none text-sm" style={{ color: c.textPrimary }}>
+        <Link to="/store" className="font-bold leading-none text-sm" style={{ color: c.textPrimary }}>
           Tienda<br />la 635
-        </div>
-        <Link
-          to="/store"
-          className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full transition-colors"
-          style={{ border: `1px solid ${c.sidebarBorder}`, color: c.textSecondary }}
-        >
-          <Store className="w-4 h-4" /> Ir a la tienda
         </Link>
-      </nav>
 
-      {/* ── Cuerpo: sidebar + contenido ── */}
-      <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-6 px-4 py-6">
-        <aside className="w-full md:w-56 flex-shrink-0">
-          {/* Encabezado del usuario */}
-          <div className="flex items-center gap-3 mb-5 px-2">
+        {/* Quién está dentro. Se mudó del menú lateral a aquí: ahora que la
+            navegación es horizontal, este es el único lugar donde el dato
+            cabe sin robarle sitio a las secciones. */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2">
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center font-bold"
+              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
               style={{ backgroundColor: c.primary, color: c.buttonText }}
             >
               {initials}
             </div>
-            <div className="text-sm font-semibold truncate" style={{ color: c.textPrimary }}>
+            <span className="text-sm font-semibold truncate max-w-[160px]" style={{ color: c.textPrimary }}>
               {displayName}
-            </div>
+            </span>
           </div>
 
-          {/* Navegación de la cuenta */}
-          <nav className="flex flex-col gap-0.5">
-            {items.map((item) => {
-              const Icon = item.icon;
-              const active = location.pathname === item.to;
+          <Link
+            to="/store"
+            className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full transition-colors"
+            style={{ border: `1px solid ${c.sidebarBorder}`, color: c.textSecondary }}
+          >
+            <Store className="w-4 h-4" /> Ir a la tienda
+          </Link>
+        </div>
+      </nav>
 
-              // Ítems aún no cableados: visibles pero deshabilitados.
-              if (!item.ready) {
-                return (
-                  <div
-                    key={item.to}
-                    title="Próximamente"
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-not-allowed opacity-50"
-                    style={{ color: c.textMuted }}
-                  >
-                    <Icon className="w-4 h-4" /> {item.label}
-                    <span
-                      className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full"
-                      style={{ backgroundColor: c.cardBorder, color: c.textSecondary }}
-                    >
-                      Pronto
-                    </span>
-                  </div>
-                );
-              }
+      {/*
+        ── Cuerpo: sidebar + contenido ──
+        El menú va ARRIBA, en horizontal, y el contenido al centro con aire a
+        los lados.
 
+        Con el menú de lado, cada página arrancaba corrida a la derecha y el
+        ojo tenía que saltar la columna del menú antes de llegar a lo que
+        venía a ver. Arriba se recorre de un vistazo —son ocho secciones, no
+        cuarenta— y deja la pantalla entera para el contenido.
+      */}
+      {/*
+        Sin raya abajo: la barra de arriba ya trae la suya, y dos líneas
+        paralelas a pocos píxeles una de otra dejaban el menú metido en una
+        franja aparte en vez de leerse como parte de la página.
+      */}
+      <div className="px-4 sm:px-6" style={{ backgroundColor: c.topbarBg }}>
+        {/*
+          Deslizable en pantalla chica: en un teléfono no caben ocho pestañas,
+          y partirlas en dos filas movía el contenido hacia abajo cada vez.
+        */}
+        <nav
+          className="flex items-center gap-1 overflow-x-auto max-w-6xl mx-auto"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {items.map((item) => {
+            const Icon = item.icon;
+            const active = location.pathname === item.to;
+
+            // Ítems aún no cableados: visibles pero deshabilitados.
+            if (!item.ready) {
               return (
-                <Link
+                <div
                   key={item.to}
-                  to={item.to}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
-                  style={{
-                    color: active ? c.primary : c.textSecondary,
-                    backgroundColor: active ? c.primaryLight : 'transparent',
-                  }}
-                  onMouseEnter={sombrear}
-                  onMouseLeave={desSombrear(active)}
+                  title="Próximamente"
+                  className="flex items-center gap-2 px-3 py-3 text-sm whitespace-nowrap cursor-not-allowed opacity-50"
+                  style={{ color: c.textMuted }}
                 >
                   <Icon className="w-4 h-4" /> {item.label}
-                </Link>
+                </div>
               );
-            })}
-          </nav>
+            }
 
-          <hr className="my-3" style={{ borderColor: c.sidebarBorder }} />
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                title={item.titulo || item.label}
+                className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors relative"
+                style={{
+                  color: active ? c.primary : c.textSecondary,
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" /> {item.label}
+                {/* La rayita de abajo: dice dónde está uno sin pintar toda la
+                    pestaña, que en horizontal se ve pesado */}
+                {active && (
+                  <span
+                    className="absolute left-2 right-2 bottom-0 h-[3px] rounded-t"
+                    style={{ backgroundColor: c.primary }}
+                  />
+                )}
+              </Link>
+            );
+          })}
 
-          <div className="flex flex-col gap-0.5">
-            {/* Cerrar sesión pide confirmación: es la única acción del menú
-                que te saca de la aplicación. */}
-            <button
-              onClick={() => setConfirmarSalida(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left"
-              style={{ color: c.textSecondary, backgroundColor: 'transparent' }}
-              onMouseEnter={sombrear}
-              onMouseLeave={desSombrear(false)}
-            >
-              <LogOut className="w-4 h-4" /> Cerrar sesión
-            </button>
-            <Link
-              to="/mi-cuenta/ayuda"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
-              style={{
-                color: location.pathname === '/mi-cuenta/ayuda' ? c.primary : c.textSecondary,
-                backgroundColor: location.pathname === '/mi-cuenta/ayuda' ? c.primaryLight : 'transparent',
-              }}
-            >
-              <HelpCircle className="w-4 h-4" /> Centro de ayuda
-            </Link>
-          </div>
-        </aside>
+          {/* Ayuda y salir se van al final, separados: no son secciones de la
+              cuenta sino cosas que se hacen desde ella. */}
+          <span className="flex-1 min-w-[8px]" />
 
+          <Link
+            to="/mi-cuenta/ayuda"
+            title="Centro de ayuda"
+            className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors"
+            style={{
+              color: location.pathname === '/mi-cuenta/ayuda' ? c.primary : c.textSecondary,
+              fontWeight: location.pathname === '/mi-cuenta/ayuda' ? 700 : 500,
+            }}
+          >
+            <HelpCircle className="w-4 h-4 flex-shrink-0" /> Ayuda
+          </Link>
+
+          {/* Cerrar sesión pide confirmación: es la única acción del menú que
+              te saca de la aplicación. */}
+          <button
+            onClick={() => setConfirmarSalida(true)}
+            title="Cerrar sesión"
+            className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors"
+            style={{ color: c.textSecondary }}
+          >
+            <LogOut className="w-4 h-4 flex-shrink-0" /> Salir
+          </button>
+        </nav>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-7">
         {/* Contenido de la página activa */}
         <main
-          className="flex-1 rounded-2xl p-7"
+          className="min-w-0 rounded-2xl p-6 sm:p-8"
           style={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}` }}
         >
           {/* Transición sutil entre páginas del cliente (criterio de Emil) */}
