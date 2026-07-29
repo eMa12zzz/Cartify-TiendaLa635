@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { FavoritosProvider } from './context/FavoritosContext';
+import { DireccionProvider } from './context/DireccionContext';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
 import BurbujaPedido from './components/Store/BurbujaPedido';
@@ -72,6 +73,11 @@ function App() {
           navega al login cuando alguien sin sesión toca un corazón.
         */}
         <FavoritosProvider>
+        {/*
+          La dirección de entrega también se comparte: el encabezado la
+          muestra y el carrito la cobra. Ver DireccionContext.
+        */}
+        <DireccionProvider>
         {/*
           Los avisos van ABAJO a la derecha: arriba tapaban el carrito y "Mi
           Cuenta" justo cuando la persona acababa de tocarlos, que es el peor
@@ -169,6 +175,7 @@ function App() {
           </Route>
 
         </Routes>
+        </DireccionProvider>
         </FavoritosProvider>
       </BrowserRouter>
     </AuthProvider>

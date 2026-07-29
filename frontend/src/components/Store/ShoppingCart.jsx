@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
 import { useSaldo } from '../../hooks/useSaldo';
-import { useAddresses } from '../../hooks/useAddresses';
+import { useDireccionCtx } from '../../context/DireccionContext';
 import { orderService } from '../../api/orderService';
 
 // Productos por página en el resumen del pedido confirmado.
@@ -890,12 +890,17 @@ const ShoppingCart = ({
    */
   const [entrega, setEntrega] = useState('retiro');   // 'retiro' | 'delivery'
   /*
-   * La dirección se elige de las guardadas. Se recuerda cuál eligió para
-   * mandar también su referencia y sus coordenadas con el pedido.
+   * La dirección se elige de las guardadas, y es la MISMA que muestra el
+   * encabezado de la tienda: viene del contexto. Cambiarla aquí la cambia
+   * arriba y al revés — dos lugares diciendo cosas distintas sobre a dónde
+   * va el pedido es la peor manera de perder una entrega.
    */
-  const { addresses: direcciones } = useAddresses();
-  const [indiceDireccion, setIndiceDireccion] = useState(0);
-  const direccionElegida = direcciones[indiceDireccion] || null;
+  const {
+    direcciones,
+    indice: indiceDireccion,
+    activa: direccionElegida,
+    elegir: setIndiceDireccion,
+  } = useDireccionCtx();
   const [metodoPago, setMetodoPago] = useState('efectivo'); // 'efectivo' | 'tarjeta' | 'saldo'
 
   const COSTO_ENVIO = 4.78;

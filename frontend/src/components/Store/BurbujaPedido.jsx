@@ -234,12 +234,25 @@ const BurbujaPedido = () => {
                   <EncuadreDeViaje punto={seguimiento.punto} destino={seguimiento.destino} />
                 </MapContainer>
               </div>
-              <div style={{ padding: '10px 14px', background: '#F7FAFF', borderBottom: '1px solid #EAF0FA' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#173F94', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/*
+                En las últimas cuadras la franja se pone verde y cambia el
+                texto. No es adorno: es la diferencia entre "está en camino"
+                (información) y "levántese" (una instrucción).
+              */}
+              <div style={{
+                padding: '10px 14px',
+                background: seguimiento.yaCasi ? '#EFFAF1' : '#F7FAFF',
+                borderBottom: `1px solid ${seguimiento.yaCasi ? '#D3EEDA' : '#EAF0FA'}`,
+              }}>
+                <div style={{
+                  fontSize: 13, fontWeight: 800,
+                  color: seguimiento.yaCasi ? '#14663A' : '#173F94',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}>
                   <Bike size={15} strokeWidth={2.4} />
-                  {seguimiento.espera}
+                  {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
                 </div>
-                <div style={{ fontSize: 11.5, color: '#5B76B0', marginTop: 2 }}>
+                <div style={{ fontSize: 11.5, color: seguimiento.yaCasi ? '#3C7A55' : '#5B76B0', marginTop: 2 }}>
                   {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
                   {/* La distancia solo sale si el pedido guardó su punto en el
                       mapa; los viejos traen nada más la dirección escrita */}
@@ -330,9 +343,13 @@ const BurbujaPedido = () => {
           padding: '0 18px 0 14px',
           borderRadius: 999,
           border: 'none',
-          background: BROWN,
+          // Verde cuando está por tocar: se distingue de un vistazo, aunque
+          // la persona esté al otro lado del cuarto.
+          background: seguimiento.yaCasi ? '#14663A' : BROWN,
           color: '#fff',
-          boxShadow: '0 10px 26px rgba(140,86,40,0.42)',
+          boxShadow: seguimiento.yaCasi
+            ? '0 10px 26px rgba(20,102,58,0.42)'
+            : '0 10px 26px rgba(140,86,40,0.42)',
           fontSize: 13.5,
           fontWeight: 700,
         }}
@@ -345,7 +362,7 @@ const BurbujaPedido = () => {
         {enCamino || (esDomicilio && estado === 'preparando')
           ? <Bike size={19} strokeWidth={2.2} />
           : <paso.Icono size={19} strokeWidth={2.2} />}
-        {enCamino ? seguimiento.espera : paso.label}
+        {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
         {/* El puntito que respira: dice "esto sigue en curso" sin decir nada */}
         <span style={{
           width: 8, height: 8, borderRadius: '50%', background: '#8ee6a8',

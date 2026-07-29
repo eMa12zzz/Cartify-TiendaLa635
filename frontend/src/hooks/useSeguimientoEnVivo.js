@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { orderService } from '../api/orderService';
 import { distanciaMetros, minutosDeViaje, textoDeEspera, formatoDistancia } from '../utils/geo';
 
@@ -24,6 +25,16 @@ import { distanciaMetros, minutosDeViaje, textoDeEspera, formatoDistancia } from
 const CADA_CUANTO_MS = 10000;      // se pregunta cada 10 segundos
 const SENAL_FRIA_MS = 90000;       // sin noticias en minuto y medio: se avisa
 
+/*
+ * A esta distancia se avisa que ya casi tocan la puerta.
+ *
+ * 250 metros son como dos cuadras: el punto justo donde vale la pena
+ * levantarse. Antes es falsa alarma y uno se queda parado en la puerta; y si
+ * se espera a que esté enfrente, el repartidor termina tocando dos veces
+ * mientras la persona busca las llaves.
+ */
+const YA_CASI_M = 250;
+
 export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
   /*
    * Todo en un solo estado y con el id adentro. Así, cuando se cambia de
@@ -40,12 +51,16 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
    */
   const anteriorRef = useRef(null);
 
+  // Para no repetir el aviso de "ya casi llega" en cada vuelta del reloj.
+  const avisadoRef = useRef(false);
+
   useEffect(() => {
     if (!pedidoId || !activo) return;
 
     let vivo = true;
     let reloj = null;
     anteriorRef.current = null;
+    avisadoRef.current = false;
 
     const preguntar = async () => {
       try {
@@ -77,6 +92,29 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
           if (segundos > 0 && metros != null) velocidad = metros / segundos;
         }
         if (courier) anteriorRef.current = { ...courier, velocidad };
+
+        /*
+         * ── "Ya casi toca su puerta" ──
+         * El aviso que de verdad importa. Mirar un puntito acercarse es
+         * entretenido, pero lo que la gente quiere es que le digan CUÁNDO
+         * levantarse: nadie se queda con el teléfono en la mano midiendo
+         * cuadras.
+         *
+         * Una sola vez por pedido (el ref), y solo si el repartidor viene
+         * llegando de verdad — sin destino guardado no hay contra qué medir.
+         */
+        if (courier && data?.destino && !avisadoRef.current) {
+          const faltan = distanciaMetros(courier, data.destino);
+          if (faltan != null && faltan <= YA_CASI_M) {
+            avisadoRef.current = true;
+            toast('Su pedido ya casi toca su puerta', {
+              id: `ya-casi-${pedidoId}`,
+              duration: 8000,
+            });
+            // Un tirón en el bolsillo, para quien no tenga la tienda a la vista.
+            navigator.vibrate?.([120, 60, 120]);
+          }
+        }
 
         setDatos({
           id: pedidoId,
@@ -142,5 +180,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
     distancia: formatoDistancia(metrosFaltantes),
     espera: textoDeEspera(minutos),
     minutos,
+    // Últimas dos cuadras: la UI lo usa para ponerse en modo "levántese ya".
+    yaCasi: metrosFaltantes != null && metrosFaltantes <= YA_CASI_M,
   };
 };
