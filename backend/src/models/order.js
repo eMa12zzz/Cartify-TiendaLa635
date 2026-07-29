@@ -77,6 +77,26 @@ const orderSchema = new Schema({
     preparedBy: { type: String },        // nombre de quien lo preparó
     deliveredAt: { type: Date },
     deliveredBy: { type: String },
+
+    /*
+     * Dónde va el repartidor, en vivo.
+     *
+     * Solo se llena mientras alguien está llevando ESTE pedido, y se borra al
+     * entregarlo o cancelarlo. No es un historial: no queremos guardar por
+     * dónde anduvo un empleado después de que terminó su trabajo, y el cliente
+     * tampoco tiene por qué verlo una vez recibió su compra.
+     *
+     * `updatedAt` es lo que permite ser honestos: si el último punto tiene
+     * tres minutos, se le dice al cliente que la señal se enfrió en vez de
+     * dejarle un puntito quieto haciéndose el vivo.
+     */
+    courier: {
+        active: { type: Boolean, default: false },
+        lat: { type: Number },
+        lng: { type: Number },
+        name: { type: String },          // quién va manejando
+        updatedAt: { type: Date },       // cuándo mandó su última posición
+    },
     paymentStatus: {
         type: String,
         enum: ['pendiente', 'pagado'],
