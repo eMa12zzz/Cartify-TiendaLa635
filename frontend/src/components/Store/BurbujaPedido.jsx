@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import { divIcon, latLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Package, ChefHat, Bike, Check, X, ChevronRight } from 'lucide-react';
+import { Package, ChefHat, Bike, Check, X, ChevronRight, Clock } from 'lucide-react';
 import { useMyOrders } from '../../hooks/useMyOrders';
 import { useAuth } from '../../hooks/useAuth';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
+import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 
 /*
  * ============================================================
@@ -109,6 +110,14 @@ const BurbujaPedido = () => {
     : null;
 
   const seguimiento = useSeguimientoEnVivo(enCurso?._id, !!enCurso);
+
+  /*
+   * Cuánto se ha tardado en llegar a esa zona, según las entregas pasadas.
+   * Es la respuesta para el rato en que todavía nadie ha salido: el pedido
+   * está "Preparando" y no hay puntito que mirar, pero la persona igual
+   * quiere saber si le da tiempo de bañarse.
+   */
+  const zona = useTiempoPorZona(enCurso?.deliveryLat, enCurso?.deliveryLng);
 
   // Solo los clientes tienen pedidos que seguir.
   if (user?.type !== 'client') return null;
@@ -260,6 +269,27 @@ const BurbujaPedido = () => {
                     ? `a ${seguimiento.distancia} de su dirección`
                     : 'Le llevan su pedido'}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/*
+            El tiempo real a su zona, mientras nadie ha salido todavía.
+            Desaparece en cuanto hay repartidor en vivo: ahí el dato bueno es
+            el de arriba, calculado con dónde va de verdad, y dos tiempos
+            distintos en la misma tarjeta solo confunden.
+          */}
+          {!enCamino && esDomicilio && estado !== 'entregado' && zona.hayDatos && (
+            <div style={{
+              padding: '10px 14px', background: '#F8FAF8',
+              borderBottom: '1px solid #EDF2ED',
+            }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#14663A', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={14} strokeWidth={2.4} />
+                {zona.texto}
+              </div>
+              <div style={{ fontSize: 11, color: '#6E8A78', marginTop: 1 }}>
+                {zona.respaldo}
               </div>
             </div>
           )}

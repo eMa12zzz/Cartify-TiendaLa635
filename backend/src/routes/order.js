@@ -13,6 +13,12 @@ router
   .route("/print")
   .post(uploadPrint.single("file"), orderController.createPrintOrder); // POST /api/order/print -> pedido de impresión
 
+// Cuánto tardamos de verdad en llegar a un punto, según las entregas pasadas.
+// Va ANTES de /:id/... para que "tiempo-zona" no se lea como un id de pedido.
+router
+  .route("/tiempo-zona")
+  .get(orderController.getTiempoPorZona); // GET /api/order/tiempo-zona?lat=&lng=
+
 router
   .route("/client/:clientId")
   .get(orderController.getOrdersByClient); // GET /api/order/client/:clientId -> pedidos de un cliente

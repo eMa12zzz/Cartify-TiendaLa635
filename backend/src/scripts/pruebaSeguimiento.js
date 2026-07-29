@@ -12,6 +12,7 @@
  *   node src/scripts/pruebaSeguimiento.js crear [correo]  -> crea el pedido
  *   node src/scripts/pruebaSeguimiento.js simular         -> mueve el puntito 3 min
  *   node src/scripts/pruebaSeguimiento.js simular cerca   -> ya viene llegando (30 s)
+ *   node src/scripts/pruebaSeguimiento.js historial       -> entregas pasadas, para el tiempo por zona
  *   node src/scripts/pruebaSeguimiento.js borrar          -> limpia lo que creó
  *
  * El correo es opcional: sirve para que el pedido quede a nombre de la cuenta
@@ -51,8 +52,20 @@ const crear = async (correo) => {
   }
 
   // Un solo pedido de prueba a la vez: si ya había uno, se reemplaza en vez
-  // de ir dejando pedidos fantasma acumulados en la base.
-  await orderModel.deleteMany({ deliveryReference: MARCA });
+  // de ir dejando pedidos fantasma acumulados en la base. El historial de
+  // entregas (marcado igual) se respeta: solo se borra lo que está en curso.
+  await orderModel.deleteMany({ deliveryReference: MARCA, status: { $ne: "entregado" } });
+
+  /*
+   * Se entrega a la dirección REAL del cliente cuando la tiene. Así el
+   * pedido cae en la misma zona que su historial y el tiempo estimado sale;
+   * con la casa inventada quedaba a un kilómetro y medio y no coincidía.
+   */
+  const suya = (cliente.clientAddress || [])
+    .map((d) => (typeof d === "string" ? null : d))
+    .find((d) => d?.lat != null && d?.lng != null);
+
+  const destino = suya ? { lat: suya.lat, lng: suya.lng } : CASA;
 
   const pedido = await orderModel.create({
     clientId: cliente._id,
@@ -62,10 +75,10 @@ const crear = async (correo) => {
     status: "preparando",
     paymentMethod: "efectivo",
     deliveryType: "delivery",
-    deliveryAddress: "Colonia Escalón, Calle de prueba #100",
+    deliveryAddress: suya?.direccion || "Colonia Escalón, Calle de prueba #100",
     deliveryReference: MARCA,
-    deliveryLat: CASA.lat,
-    deliveryLng: CASA.lng,
+    deliveryLat: destino.lat,
+    deliveryLng: destino.lng,
     preparedAt: new Date(),
     preparedBy: "Prueba",
     pointsEarned: 0,
@@ -74,7 +87,7 @@ const crear = async (correo) => {
   console.log("Pedido de prueba creado.");
   console.log("  id:      ", String(pedido._id));
   console.log("  cliente: ", cliente.fullName, "-", cliente.email);
-  console.log("  destino: ", CASA.lat, CASA.lng);
+  console.log("  destino: ", destino.lat, destino.lng, suya ? `(${suya.nombre || suya.direccion})` : "(casa de prueba)");
 };
 
 /*
@@ -83,11 +96,18 @@ const crear = async (correo) => {
  * información que le llegaría de un teléfono real.
  */
 const simular = async (cerca) => {
-  const pedido = await orderModel.findOne({ deliveryReference: MARCA });
+  // El que está en curso, no una de las entregas del historial.
+  const pedido = await orderModel.findOne({
+    deliveryReference: MARCA,
+    status: { $ne: "entregado" },
+  });
   if (!pedido) {
     console.log("No hay pedido de prueba. Corra primero: node src/scripts/pruebaSeguimiento.js crear");
     return;
   }
+
+  // Se va hacia donde de verdad va el pedido, no hacia la casa de ejemplo.
+  const meta = { lat: pedido.deliveryLat, lng: pedido.deliveryLng };
 
   /*
    * Modo "cerca": arranca ya a la vuelta de la esquina y va rápido, para
@@ -95,8 +115,8 @@ const simular = async (cerca) => {
    */
   const desde = cerca
     ? {
-        lat: CASA.lat + (TIENDA.lat - CASA.lat) * 0.28,
-        lng: CASA.lng + (TIENDA.lng - CASA.lng) * 0.28,
+        lat: meta.lat + (TIENDA.lat - meta.lat) * 0.28,
+        lng: meta.lng + (TIENDA.lng - meta.lng) * 0.28,
       }
     : TIENDA;
   const pasos = cerca ? 8 : PASOS;
@@ -106,8 +126,8 @@ const simular = async (cerca) => {
 
   for (let i = 0; i <= pasos; i++) {
     const avance = i / pasos;
-    const lat = desde.lat + (CASA.lat - desde.lat) * avance;
-    const lng = desde.lng + (CASA.lng - desde.lng) * avance;
+    const lat = desde.lat + (meta.lat - desde.lat) * avance;
+    const lng = desde.lng + (meta.lng - desde.lng) * avance;
 
     /*
      * Si un envío se cae, se sigue con el siguiente. Un teléfono en la calle
@@ -134,6 +154,72 @@ const simular = async (cerca) => {
   console.log("Llegó. El puntito queda encendido hasta que se marque entregado.");
 };
 
+/*
+ * Historial de entregas ya hechas, para que el "tiempo real por zona" tenga
+ * de dónde salir.
+ *
+ * Sin esto la pantalla no muestra nada — y con razón: el cálculo se niega a
+ * inventar un tiempo cuando no hay entregas por esa zona. Estos pedidos son
+ * de PRUEBA y llevan la misma marca, así que se van con `borrar`.
+ *
+ * Los tiempos van entre 20 y 50 minutos con un par de días malos metidos a
+ * propósito: si todas las entregas fueran igual de rápidas, la mediana no
+ * estaría demostrando nada.
+ */
+const historial = async (correo) => {
+  const cliente = correo
+    ? await clientModel.findOne({ email: correo })
+    : await clientModel.findOne({ isActive: true });
+  if (!cliente) { console.log("No se encontró el cliente."); return; }
+
+  /*
+   * El historial se siembra alrededor de la dirección REAL del cliente, no
+   * de la casa de prueba: si cae a cinco kilómetros, el cálculo dice —con
+   * razón— que no hay entregas por su zona, y no se vería nada.
+   */
+  const suya = (cliente.clientAddress || [])
+    .map((d) => (typeof d === "string" ? null : d))
+    .find((d) => d?.lat != null && d?.lng != null);
+
+  const centro = suya ? { lat: suya.lat, lng: suya.lng } : CASA;
+  console.log(`Zona: ${suya ? suya.nombre || suya.direccion : "casa de prueba"} (${centro.lat.toFixed(5)}, ${centro.lng.toFixed(5)})`);
+
+  const tardanzas = [22, 26, 31, 28, 35, 24, 41, 29, 33, 27, 88, 30];
+  const pedidos = [];
+
+  for (let i = 0; i < tardanzas.length; i++) {
+    // Repartidas alrededor de la casa de prueba, dentro de la misma zona.
+    const jitter = () => (Math.random() - 0.5) * 0.006; // ~ ±330 m
+    const creado = new Date(Date.now() - (i + 1) * 36 * 3600 * 1000); // día y medio entre cada una
+    const entregado = new Date(creado.getTime() + tardanzas[i] * 60000);
+
+    pedidos.push({
+      clientId: cliente._id,
+      items: [{ name: "Pedido de historial", price: 5, amount: 1 }],
+      subtotal: 5,
+      total: 5,
+      status: "entregado",
+      paymentMethod: "efectivo",
+      deliveryType: "delivery",
+      deliveryAddress: "Entrega de historial (prueba)",
+      deliveryReference: MARCA,
+      deliveryLat: centro.lat + jitter(),
+      deliveryLng: centro.lng + jitter(),
+      createdAt: creado,
+      preparedAt: creado,
+      deliveredAt: entregado,
+      deliveredBy: "Repartidor de prueba",
+      pointsEarned: 0,
+    });
+  }
+
+  // timestamps:true pisaría createdAt; con insertMany y la opción de abajo
+  // se respetan las fechas que le estamos dando a cada entrega.
+  await orderModel.insertMany(pedidos, { timestamps: false });
+  console.log(`Historial creado: ${pedidos.length} entregas por la zona de prueba.`);
+  console.log(`Tardanzas (min): ${tardanzas.join(", ")}`);
+};
+
 const borrar = async () => {
   const r = await orderModel.deleteMany({ deliveryReference: MARCA });
   console.log("Pedidos de prueba borrados:", r.deletedCount);
@@ -145,8 +231,9 @@ const run = async () => {
   const que = process.argv[2] || "crear";
   if (que === "crear") await crear(process.argv[3]);
   else if (que === "simular") await simular(process.argv[3] === "cerca");
+  else if (que === "historial") await historial(process.argv[3]);
   else if (que === "borrar") await borrar();
-  else console.log("Use: crear | simular | borrar");
+  else console.log("Use: crear | simular [cerca] | historial | borrar");
 
   await mongoose.disconnect();
 };
