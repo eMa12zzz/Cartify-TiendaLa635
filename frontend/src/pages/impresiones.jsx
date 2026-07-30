@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Upload, FileCheck2, Store, User, FileUp, LayoutGrid } from 'lucide-react';
+import { Store, User, FileUp, LayoutGrid } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { printServiceService } from '../api/printServiceService';
 import { orderService } from '../api/orderService';
 import { useAuth } from '../hooks/useAuth';
 import { usePrintComposer } from '../hooks/usePrintComposer';
 import PrintComposer from '../components/Store/PrintComposer';
+import SubidorArchivo from '../components/UI/SubidorArchivo';
 import { calcularPrecioImpresion } from '../utils/precioImpresion';
 
 const BROWN = '#B46C30';
@@ -24,10 +25,6 @@ const Content = styled.div`padding: 32px 28px 60px; max-width: 760px; margin: 0 
 const StepTitle = styled.h2`font-size: 18px; font-weight: 800; color: #111; margin: 0 0 14px;`;
 const Tabs = styled.div`display: flex; gap: 8px; margin-bottom: 18px;`;
 const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : '#e0e0e0')}; background: ${p => (p.$active ? '#F3E7D8' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#555')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
-const Dropzone = styled.div`border: 2px dashed ${p => (p.$active ? BROWN : '#d8d8d8')}; background: ${p => (p.$active ? '#F3E7D8' : '#ececec')}; border-radius: 14px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); &:hover { border-color: ${BROWN}; background: #F3E7D8; }`;
-const DropHint = styled.p`font-size: 13px; color: #999; margin: 0;`;
-const FileChip = styled.div`display: flex; align-items: center; gap: 10px; font-size: 14px; color: ${BROWN_DARK}; font-weight: 600;`;
-const HiddenInput = styled.input`display: none;`;
 const SizesGrid = styled.div`display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }`;
 const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.5px solid ${p => (p.$active ? BROWN : '#cfcfcf')}; background: ${p => (p.$active ? '#F3E7D8' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#222')}; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); padding: 10px; &:hover { border-color: ${BROWN}; }`;
 const OptionsCard = styled.div`background: white; border: 1px solid #ebebeb; border-radius: 14px; padding: 20px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px;`;
@@ -46,13 +43,16 @@ const Bloque = styled.div`margin-bottom: 32px;`;
 const Impresiones = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const inputRef = useRef(null);
 
   const [servicios, setServicios] = useState([]);
   const [servicioId, setServicioId] = useState(null);
   const [modo, setModo] = useState('archivo'); // 'archivo' | 'editor'
   const [archivo, setArchivo] = useState(null);
-  const [arrastrando, setArrastrando] = useState(false);
+  /*
+   * La pantalla no se desmonta al enviar, así que para que el subidor vuelva a
+   * quedar vacío hay que avisarle: cada envío exitoso sube este número.
+   */
+  const [enviosHechos, setEnviosHechos] = useState(0);
   const [color, setColor] = useState(false);
   const [copias, setCopias] = useState(1);
   const [dobleCara, setDobleCara] = useState(false);
@@ -85,8 +85,9 @@ const Impresiones = () => {
     dobleCara: dobleCara,
   });
 
-  const seleccionarArchivo = (e) => { const f = e.target.files?.[0]; if (f) setArchivo(f); setError(''); };
-  const handleDrop = (e) => { e.preventDefault(); setArrastrando(false); const f = e.dataTransfer.files?.[0]; if (f) setArchivo(f); setError(''); };
+  // El subidor se encarga de la preview y las validaciones; aquí solo guardamos
+  // el archivo, que es lo que va a viajar en el FormData.
+  const seleccionarArchivo = (file) => { setArchivo(file); setError(''); };
 
   const enviar = async () => {
     if (!servicioId) { setError('Selecciona un formato de impresión.'); return; }
@@ -112,7 +113,8 @@ const Impresiones = () => {
 
       const r = await orderService.createPrintOrder(fd);
       toast.success(r?.emailedToPrinter ? '¡Enviado a la impresora!' : '¡Pedido de impresión creado! Un empleado lo preparará.');
-      setArchivo(null); setCopias(1); setColor(false); setDobleCara(false); setPapel('Normal');
+      setArchivo(null); setEnviosHechos((n) => n + 1);
+      setCopias(1); setColor(false); setDobleCara(false); setPapel('Normal');
     } catch (e) {
       console.error(e); // el interceptor de Axios ya muestra el error
     } finally {
@@ -161,20 +163,23 @@ const Impresiones = () => {
 
         <Bloque>
           {modo === 'archivo' ? (
-            <Dropzone
-              $active={arrastrando}
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setArrastrando(true); }}
-              onDragLeave={() => setArrastrando(false)}
-              onDrop={handleDrop}
-            >
-              {archivo ? (
-                <FileChip><FileCheck2 size={20} /> {archivo.name}</FileChip>
-              ) : (
-                <><Upload size={26} color="#555" /><DropHint>Subir archivo: pdf, jpg, png...</DropHint></>
-              )}
-              <HiddenInput ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={seleccionarArchivo} />
-            </Dropzone>
+            /*
+             * Aquí la preview no es un lujo: el cliente PAGA por imprimir esto.
+             * Ver el PDF completo antes de mandarlo es lo que evita el clásico
+             * "imprimí el archivo equivocado" pagado y ya impreso.
+             */
+            <SubidorArchivo
+              accept=".pdf,.jpg,.jpeg,.png"
+              maxMB={10}
+              onArchivo={seleccionarArchivo}
+              reinicio={enviosHechos}
+              alto={150}
+              altoPreview={340}
+              ajuste="contain"
+              titulo="Arrastra tu archivo o haz clic para elegirlo"
+              ayuda="PDF, JPG o PNG"
+              etiquetaAria="Subir el archivo a imprimir"
+            />
           ) : !servicio ? (
             <p style={{ color: '#999', fontSize: 14 }}>Primero elige un formato para armar tu hoja.</p>
           ) : (

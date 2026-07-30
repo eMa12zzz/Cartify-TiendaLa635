@@ -14,10 +14,11 @@ productTypeController.getProductTypes = async (req, res) => {
 
     } catch (error) {
 
-        console.log("error " + error);
+        // El nombre de la función se queda en el log, que es donde sirve.
+        console.log("error getProductTypes: " + error);
 
         res.status(500).json({
-            message: 'Internal Server Error getProductTypes'
+            message: 'Error interno del servidor'
         });
     }
 };
@@ -35,7 +36,7 @@ productTypeController.insertProductType = async (req, res) => {
         // Validación
         if (!moduleId || !type || !subtype) {
             return res.status(400).json({
-                message: 'Required fields'
+                message: 'Faltan campos obligatorios'
             });
         }
 
@@ -52,15 +53,15 @@ productTypeController.insertProductType = async (req, res) => {
         await newProductType.save();
 
         res.status(201).json({
-            message: 'Product Type created successfully'
+            message: 'Categoría creada'
         });
 
     } catch (error) {
 
-        console.log("error " + error);
+        console.log("error insertProductType: " + error);
 
         res.status(500).json({
-            message: 'Internal Server Error insertProductType'
+            message: 'Error interno del servidor'
         });
     }
 };
@@ -75,7 +76,7 @@ productTypeController.updateProductType = async (req, res) => {
         // Validación
         if (!moduleId || !type || !subtype) {
             return res.status(400).json({
-                message: 'Required fields'
+                message: 'Faltan campos obligatorios'
             });
         }
 
@@ -95,20 +96,20 @@ productTypeController.updateProductType = async (req, res) => {
 
         if (!updatedProductType) {
             return res.status(404).json({
-                message: 'Product Type not found'
+                message: 'No se encontró la categoría'
             });
         }
 
         res.status(200).json({
-            message: 'Product Type updated successfully'
+            message: 'Categoría actualizada'
         });
 
     } catch (error) {
 
-        console.log("error " + error);
+        console.log("error updateProductType: " + error);
 
         res.status(500).json({
-            message: 'Internal Server Error updateProductType'
+            message: 'Error interno del servidor'
         });
     }
 };
@@ -122,20 +123,20 @@ productTypeController.deleteProductType = async (req, res) => {
 
         if (!deletedProductType) {
             return res.status(404).json({
-                message: 'Product Type not found'
+                message: 'No se encontró la categoría'
             });
         }
 
         res.status(200).json({
-            message: 'Product Type deleted successfully'
+            message: 'Categoría eliminada'
         });
 
     } catch (error) {
 
-        console.log("error " + error);
+        console.log("error deleteProductType: " + error);
 
         res.status(500).json({
-            message: 'Internal Server Error deleteProductType'
+            message: 'Error interno del servidor'
         });
     }
 };

@@ -13,6 +13,7 @@ import PromoDetailModal from '../components/Store/PromoDetailModal';
 import FilaProductos from '../components/Store/FilaProductos';
 import SelectorDireccion from '../components/Store/SelectorDireccion';
 import MenuTienda from '../components/Store/MenuTienda';
+import PieTienda from '../components/Store/PieTienda';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
@@ -784,6 +785,10 @@ const Store = () => {
             titulo={seccion.titulo}
             subtitulo={seccion.subtitulo}
             productos={seccion.productos}
+            total={seccion.todos?.length}
+            // El nombre de la sección y "Ver todos" abren la misma pantalla:
+            // son dos puertas a lo mismo, no dos cosas distintas.
+            onVerTodos={() => navigate(`/seccion/${seccion.clave}`)}
             onVerDetalle={handleAbrirDetalle}
             onAgregarAlCarrito={agregarAlCarrito}
           />
@@ -857,6 +862,10 @@ const Store = () => {
           )}
         </div>
       </Content>
+
+      {/* El cierre de la página: sin esto los productos se acababan y quedaba
+          el blanco, como si la tienda se hubiera cortado a medias. */}
+      <PieTienda />
 
       {/* ── Modals ── */}
       {/*

@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Phone, User, Hash, MapPin, Lock, Camera, Loader2 } from 'lucide-react';
+import { Mail, Phone, User, Hash, MapPin, Lock, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BotonOjo } from '../components/UI/CampoContrasena';
+import SubidorArchivo from '../components/UI/SubidorArchivo';
 import api from '../api/api';
 
 const BROWN = '#B46C30';
@@ -111,20 +112,9 @@ const Input = styled.input`
   }
 `;
 
-const FileInputWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
+// Espacio para que el subidor no quede pegado al botón de continuar.
+const BloqueFoto = styled.div`
   margin-bottom: 16px;
-  padding: 12px;
-  border: 1.5px dashed #e0e0e0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.2s;
-  
-  &:hover {
-    border-color: ${BROWN};
-  }
 `;
 
 const ErrorMsg = styled.span`
@@ -178,19 +168,16 @@ const FooterLink = styled.span`
 
 const Register = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [verPass, setVerPass] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  
+
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   // 1- Manejar la selección de archivo de imagen
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
+  // La preview y las validaciones las hace SubidorArchivo; aquí solo guardamos
+  // el archivo tal cual, que es lo que se adjunta al FormData más abajo.
+  const handleFileChange = (file) => setSelectedFile(file);
 
   // 2- Enviar datos al backend
   const onSubmit = async (data) => {
@@ -350,19 +337,21 @@ const Register = () => {
             </InputContainer>
 
             <Label>Foto de Perfil (Opcional)</Label>
-            <FileInputWrapper onClick={() => fileInputRef.current?.click()}>
-              <Camera size={20} color={BROWN} />
-              <span style={{ fontSize: 14, color: '#555' }}>
-                {selectedFile ? selectedFile.name : 'Haz clic para subir una imagen...'}
-              </span>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
+            <BloqueFoto>
+              {/* Recorte "cover": es una foto de perfil, se ve como se verá después. */}
+              <SubidorArchivo
                 accept="image/*"
-                onChange={handleFileChange}
+                maxMB={8}
+                onArchivo={handleFileChange}
+                ajuste="cover"
+                alto={140}
+                altoPreview={180}
+                radio={8}
+                titulo="Arrastra tu foto o haz clic para elegirla"
+                ayuda="JPG o PNG, hasta 8 MB"
+                etiquetaAria="Subir foto de perfil"
               />
-            </FileInputWrapper>
+            </BloqueFoto>
 
             <Button type="submit" disabled={loading}>
               {loading ? <Loader2 size={18} className="animate-spin" /> : 'Continuar'}

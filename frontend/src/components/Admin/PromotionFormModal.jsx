@@ -7,6 +7,7 @@ import { validarPromocion, avisoVentaBajoCosto, bloquearTeclasNumero } from '../
 import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promos';
 import { usePromoAI } from '../../hooks/usePromoAI';
 import PromoCard from '../Store/PromoCard';
+import SubidorArchivo from '../UI/SubidorArchivo';
 import { TEMAS, TEMAS_BASE, TEMAS_FESTIVOS } from '../../utils/temasPromo';
 import { ICONOS_PROMO } from '../../utils/iconosPromo';
 
@@ -190,9 +191,18 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     setValorCategoria('');
   }, [isOpen, promoData]);
 
-  const onImagen = (e) => {
-    const file = e.target.files?.[0];
-    if (file) { setImagen(file); setPreview(URL.createObjectURL(file)); }
+  /*
+   * El subidor ya nos entrega el archivo y la URL que está mostrando: reusamos
+   * esa misma en lugar de crear otra. Dos createObjectURL del mismo archivo son
+   * dos blobs vivos y solo uno se llegaría a revocar.
+   *
+   * Al quitarla se apaga también "banner completo": sin foto no hay banner
+   * completo que valga, y dejarlo prendido escondía el título sin motivo.
+   */
+  const onImagen = (file, url) => {
+    setImagen(file);
+    setPreview(url);
+    if (!file) setImagenCompleta(false);
   };
 
   const addProducto = (p) => {
@@ -604,17 +614,25 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-3 mt-3">
-                    <input type="file" accept="image/*" onChange={onImagen} className="text-sm text-gray-700 flex-1" />
-                    {preview && (
-                      <button
-                        type="button"
-                        onClick={() => { setImagen(null); setPreview(null); setImagenCompleta(false); }}
-                        className="press text-xs text-gray-500 hover:text-red-500 whitespace-nowrap"
-                      >
-                        Quitar imagen
-                      </button>
-                    )}
+                  {/*
+                    Va chiquito a propósito: la vista previa que manda es la
+                    PromoCard de arriba, que muestra el banner armado. Esto de
+                    acá solo confirma qué archivo se eligió y deja quitarlo.
+                  */}
+                  <div className="mt-3">
+                    <SubidorArchivo
+                      accept="image/*"
+                      maxMB={8}
+                      valorInicial={promoData?.image || null}
+                      onArchivo={onImagen}
+                      ajuste="cover"
+                      alto={100}
+                      altoPreview={132}
+                      radio={12}
+                      titulo="Arrastra la imagen del banner o haz clic para elegirla"
+                      ayuda="Opcional"
+                      etiquetaAria="Subir la imagen de la promoción"
+                    />
                   </div>
 
                   {/*

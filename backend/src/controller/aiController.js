@@ -2,6 +2,7 @@ import { Type } from "@google/genai";
 import productModel from "../models/product.js";
 import { getIA, MODELO_IA } from "../utils/iaClient.js";
 import { generarCopyPlantilla } from "../utils/plantillasPromo.js";
+import { esFamiliaValida, LISTA_PARA_IA } from "../utils/familias.js";
 
 const aiController = {};
 
@@ -196,7 +197,7 @@ aiController.generarCopyPromo = async (req, res) => {
     }
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -350,7 +351,226 @@ aiController.entenderPedido = async (req, res) => {
     }
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * ============================================================
+ * ACOMODAR EL PRODUCTO EN SU ESTANTE (clasificador de familias)
+ * ============================================================
+ * La portada de la tienda arma sus filas temáticas por FAMILIA. El 90% del
+ * catálogo lo resuelve el frontend con puras reglas ("queso" -> quesos), gratis
+ * y al instante. Esta ruta atiende solo lo que las reglas no supieron: nombres
+ * de marca que no dicen qué son ("Volt", "Ricitos"), productos nuevos, cosas
+ * que a nadie se le ocurrió meter en el léxico.
+ *
+ * Igual que el asistente de voz, esta es la ayuda de última hora, no el plan
+ * principal. Y con dos candados que son lo importante de todo esto:
+ *
+ *   1. Lo que se resuelve SE GUARDA en el producto (familia + familiaOrigen).
+ *      Cada producto se clasifica una vez en la vida, no en cada visita. Sin
+ *      esto la cuota gratis se acaba en dos días.
+ *   2. Antes de molestar al modelo se revisa la base: si el producto ya tiene
+ *      familia guardada, se devuelve esa y la IA ni se entera. Hace falta
+ *      porque el navegador no siempre sabe lo que ya está guardado, y sin esta
+ *      revisión se estaría preguntando lo mismo en cada carga de la página.
+ * ============================================================
+ */
+const ESQUEMA_CLASIFICACION = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      id: { type: Type.STRING, description: "El id del producto, tal cual venía en la lista" },
+      familia: {
+        type: Type.STRING,
+        description: "Clave EXACTA de la lista de familias. Vacío si no encaja en ninguna.",
+      },
+    },
+    required: ["id", "familia"],
+  },
+};
+
+// Marca de "ya se preguntó y no encajó en ningún estante". Va en familiaOrigen.
+const SIN_FAMILIA = "ia-sin-familia";
+
+const MODO_ESTANTES = [
+  "Eres el encargado de acomodar los estantes de Tienda La 635, una tienda de abarrotes",
+  "de barrio en El Salvador. Te pasan una lista de productos y decís en qué estante va cada uno.",
+  "",
+  "Cómo trabajas:",
+  "- SOLO podés usar las claves de familia de la lista cerrada que te paso. Ni una más.",
+  "- Si un producto no encaja en ninguna, devolvés la familia vacía. NUNCA te inventes",
+  "  un estante nuevo ni lo metás a la fuerza donde no va: dejarlo sin estante es correcto.",
+  "- Vas por el producto, no por la marca: 'Volt' es una bebida energizante, 'Ricitos' es",
+  "  una fritura, 'Musún' es café. Si la marca no te dice nada, dejalo vacío.",
+  "- Conocés las marcas y los nombres que se usan en El Salvador.",
+  "- Devolvés TODOS los ids que te mandaron, ninguno de más, ninguno de menos.",
+].join("\n");
+
+/*
+ * POST /api/ai/clasificar
+ * Recibe { productos: [{ id, nombre }] } y devuelve { familias: [{ id, familia }] }.
+ *
+ * Nunca responde 500 por culpa de la IA: sin llave, sin cuota o sin internet
+ * contesta 200 con la lista vacía. Del otro lado hay un cliente mirando la
+ * tienda, y que la portada tenga una fila menos no es un error que valga la
+ * pena contarle a nadie.
+ */
+aiController.clasificarProductos = async (req, res) => {
+  try {
+    const enviados = Array.isArray(req.body.productos) ? req.body.productos : [];
+    if (!enviados.length) {
+      return res.status(200).json({ familias: [], origen: "sin-productos" });
+    }
+
+    /*
+     * Máximo 60 por tanda: es lo que cabe en una petición sin volverla lenta ni
+     * arriesgar que el modelo se coma la mitad de la lista. Los ids se filtran
+     * con la forma de un ObjectId — un id mal formado haría que la consulta
+     * reventara y devolviera un 500 por una tontería.
+     */
+    const pedidos = enviados
+      .filter((p) => /^[a-f\d]{24}$/i.test(String(p?.id || "")))
+      .slice(0, 60);
+
+    if (!pedidos.length) {
+      return res.status(200).json({ familias: [], origen: "sin-productos" });
+    }
+
+    const ids = pedidos.map((p) => String(p.id));
+    const guardados = await productModel.find({ _id: { $in: ids } }, "name familia familiaOrigen");
+
+    const yaSabidas = [];
+    const porResolver = [];
+    guardados.forEach((p) => {
+      const idProducto = String(p._id);
+      if (esFamiliaValida(p.familia)) {
+        yaSabidas.push({ id: idProducto, familia: p.familia });
+        return;
+      }
+      /*
+       * Ya se preguntó por este y la IA dijo que no encaja en ningún estante.
+       * "No sé" también es una respuesta y también se guarda: si no, cada
+       * visita se volvería a gastar cuota preguntando por el mismo servicio de
+       * impresión que nunca va a ser un abarrote.
+       */
+      if (p.familiaOrigen === SIN_FAMILIA) return;
+
+      // El nombre sale de la base, no de lo que mandó el navegador: es el mismo
+      // cuidado que se tiene en el resto del archivo.
+      porResolver.push({ id: idProducto, nombre: p.name || "" });
+    });
+
+    // Todo estaba guardado: se contesta al instante y la IA ni se enteró.
+    if (!porResolver.length) {
+      return res.status(200).json({ familias: yaSabidas, origen: "guardado" });
+    }
+
+    const ia = getIA();
+    // Sin llave configurada no hay plan B, y no hace falta: la tienda arma sus
+    // filas con lo que las reglas sí resolvieron, exactamente como antes.
+    if (!ia) {
+      return res.status(200).json({ familias: yaSabidas, origen: "sin-ia" });
+    }
+
+    const contents = [
+      "Familias disponibles (usá la clave de la izquierda):",
+      LISTA_PARA_IA,
+      "",
+      "Productos que hay que acomodar:",
+      porResolver.map((p) => `${p.id} | ${p.nombre}`).join("\n"),
+    ].join("\n");
+
+    try {
+      const respuesta = await ia.models.generateContent({
+        model: MODELO_IA,
+        contents,
+        config: {
+          systemInstruction: MODO_ESTANTES,
+          responseMimeType: "application/json",
+          responseSchema: ESQUEMA_CLASIFICACION,
+          // Aquí no se quiere creatividad de ningún tipo: se quiere que acierte
+          // y que mañana conteste lo mismo que hoy.
+          temperature: 0.1,
+        },
+      });
+
+      const texto = respuesta.text;
+      if (!texto) throw new Error("La IA no devolvió texto");
+
+      const clasificadas = JSON.parse(texto);
+      if (!Array.isArray(clasificadas)) throw new Error("La IA no devolvió una lista");
+
+      /*
+       * Desconfianza sana, la misma que con los nombres del asistente de voz:
+       *   - el id tiene que ser uno de los que preguntamos (no uno que se sacó
+       *     de la manga ni uno que ya estaba resuelto),
+       *   - la familia tiene que estar en la lista cerrada.
+       * Lo que no cumpla se descarta sin decir nada: ese producto simplemente
+       * se queda sin estante, que es un resultado válido.
+       */
+      const preguntados = new Set(porResolver.map((p) => p.id));
+      const aceptadas = [];
+      const vistos = new Set();
+
+      clasificadas.forEach((item) => {
+        const idProducto = String(item?.id || "");
+        const familia = String(item?.familia || "");
+        if (!preguntados.has(idProducto) || vistos.has(idProducto)) return;
+        if (!esFamiliaValida(familia)) return;
+        vistos.add(idProducto);
+        aceptadas.push({ id: idProducto, familia });
+      });
+
+      /*
+       * Se guarda para no volver a preguntar nunca por estos productos.
+       * `familiaOrigen` deja el rastro de quién lo decidió: si algún día hay
+       * que revisar o borrar lo que puso la IA, se sabe cuál fue.
+       * El modelo usa strict:false, así que estos dos campos entran sin tocar
+       * el schema (están documentados arriba del modelo).
+       */
+      const escrituras = aceptadas.map((f) => ({
+        updateOne: {
+          filter: { _id: f.id },
+          update: { $set: { familia: f.familia, familiaOrigen: "ia" } },
+        },
+      }));
+
+      // Los que quedaron sin estante se marcan como preguntados, para no
+      // volver a gastar cuota en ellos nunca más.
+      porResolver
+        .filter((p) => !vistos.has(p.id))
+        .forEach((p) => {
+          escrituras.push({
+            updateOne: {
+              filter: { _id: p.id },
+              update: { $set: { familiaOrigen: SIN_FAMILIA } },
+            },
+          });
+        });
+
+      if (escrituras.length) {
+        try {
+          await productModel.bulkWrite(escrituras);
+        } catch (errorGuardado) {
+          // Si no se pudo guardar, la respuesta igual sirve para esta visita:
+          // la próxima vez se volverá a preguntar y ya.
+          console.log("No se pudo guardar la clasificación: " + errorGuardado.message);
+        }
+      }
+
+      return res.status(200).json({ familias: [...yaSabidas, ...aceptadas], origen: "ia" });
+    } catch (errorIA) {
+      // Cuota agotada, sin internet, llave mala... se devuelve lo que ya se
+      // sabía y la portada se arma con eso. Nadie ve un error.
+      console.log("IA no disponible para clasificar: " + errorIA.message);
+      return res.status(200).json({ familias: yaSabidas, origen: "error" });
+    }
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

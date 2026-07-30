@@ -9,13 +9,15 @@ import { useAuth } from './useAuth';
  * pinta el formulario y llama a guardar().
  */
 export const useClientProfile = () => {
-  const { user } = useAuth();
+  const { user, esCliente } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const cargar = useCallback(async () => {
-    if (!user?.id) {
+    // Solo los clientes tienen perfil de cliente: con sesión de personal esto
+    // daría 404 y un aviso rojo. Ver el porqué completo en useAuth.
+    if (!esCliente) {
       setLoading(false);
       return;
     }
@@ -28,12 +30,12 @@ export const useClientProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, esCliente]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   const guardar = async (campos) => {
-    if (!user?.id) return;
+    if (!esCliente) return;
     try {
       setSaving(true);
       const res = await clientService.updateProfile(user.id, campos);

@@ -28,7 +28,7 @@ wompiController.generarToken = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     console.log("error" + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -60,7 +60,7 @@ wompiController.paymentTest = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     console.log("error" + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -87,7 +87,7 @@ wompiController.payment3DS = async (req, res) => {
     return res.status(200).json(data);
   } catch (error) {
     console.log("error" + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

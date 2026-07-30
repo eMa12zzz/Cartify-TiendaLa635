@@ -11,8 +11,9 @@ employeeController.getEmployees = async (req, res) => {
         const employee = await employeeModel.find();
         res.status(200).json(employee);
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error get Employee' });
+        // El nombre de la función se queda en el log, que es donde sirve.
+        console.log("error getEmployees: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -37,10 +38,10 @@ employeeController.insertEmployee = async (req, res) => {
 
     //3- Guardamos en la base de datos
     await newEmployee.save();
-    res.status(201).json({ message: 'Employee created successfully' });
+    res.status(201).json({ message: 'Empleado creado' });
   } catch (error) {
-    console.log("error " + error);
-    res.status(500).json({ message: 'Internal Server Error insertEmployee' });
+    console.log("error insertEmployee: " + error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 
 
@@ -56,7 +57,7 @@ employeeController.updateEmployee = async (req, res) => {
 
     if (!email || !userName || !password || !fullName || !dui || !phoneNumber) {
       return res.status(400).json({
-        message: "Required fields"
+        message: "Faltan campos obligatorios"
       });
     }
 
@@ -64,7 +65,7 @@ employeeController.updateEmployee = async (req, res) => {
 
     if (!employeeFound) {
       return res.status(404).json({
-        message: "Employee not found"
+        message: "No se encontró el empleado"
       });
     }
 
@@ -93,14 +94,14 @@ employeeController.updateEmployee = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Employee updated successfully"
+      message: "Empleado actualizado"
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateEmployee: " + error);
 
     return res.status(500).json({
-      message: "Internal server error update Employee"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -110,12 +111,13 @@ employeeController.deleteEmployee = async (req, res) => {
     try {
         const deleteEmployee = await employeeModel.findByIdAndDelete(req.params.id);
         if (!deleteEmployee) {
-            return res.status(404).json({ message: 'Employee not found' });
+            return res.status(404).json({ message: 'No se encontró el empleado' });
         }
-        return res.status(200).json({ message: 'Employee deleted successfully' });
+        return res.status(200).json({ message: 'Empleado eliminado' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error deleteAdmin' });
+        // El log decía "deleteAdmin" por copiar y pegar; aquí se borran empleados.
+        console.log("error deleteEmployee: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 

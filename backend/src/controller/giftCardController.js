@@ -68,7 +68,7 @@ giftCardController.insertGiftCard = async (req, res) => {
     });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -82,7 +82,7 @@ giftCardController.getGiftCards = async (req, res) => {
     return res.status(200).json(tarjetas);
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -104,7 +104,7 @@ giftCardController.deleteGiftCard = async (req, res) => {
     return res.status(200).json({ message: "Tarjeta eliminada" });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -177,7 +177,7 @@ giftCardController.redeemGiftCard = async (req, res) => {
     });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -189,7 +189,7 @@ giftCardController.getBalance = async (req, res) => {
     return res.status(200).json({ balance: cliente.balance || 0 });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

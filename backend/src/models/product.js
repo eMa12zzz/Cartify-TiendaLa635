@@ -13,6 +13,17 @@ Campos:
     moduleId: objectId,
     supplierId: objectId,
     isActive: Boolean,
+
+    Campos que no están declarados en el schema (entran por strict:false) pero
+    que sí se usan y se guardan:
+    familia: String,        clave del estante al que pertenece el producto
+                            ("quesos", "bebidas-energizantes"...). La lista
+                            cerrada de claves está en src/utils/familias.js.
+                            Con ella la tienda arma sus filas temáticas solas.
+    familiaOrigen: String,  quién decidió esa familia: 'ia' cuando la resolvió
+                            el clasificador de /api/ai/clasificar. Sirve para
+                            saber qué se puede revisar o borrar si algún día
+                            una clasificación quedó mal.
 */
 
 import{ Schema, model } from 'mongoose';

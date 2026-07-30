@@ -50,7 +50,7 @@ kioskController.crearSesion = async (req, res) => {
         return res.status(500).json({ message: "No se pudo generar un código libre" });
     } catch (error) {
         console.log("error " + error);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Error interno del servidor" });
     }
 };
 
@@ -96,7 +96,7 @@ kioskController.estadoSesion = async (req, res) => {
         });
     } catch (error) {
         console.log("error " + error);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Error interno del servidor" });
     }
 };
 
@@ -141,7 +141,7 @@ kioskController.vincularSesion = async (req, res) => {
         });
     } catch (error) {
         console.log("error " + error);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Error interno del servidor" });
     }
 };
 
@@ -153,7 +153,7 @@ kioskController.cerrarSesion = async (req, res) => {
         return res.status(200).json({ message: "Sesión cerrada" });
     } catch (error) {
         console.log("error " + error);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Error interno del servidor" });
     }
 };
 

@@ -14,7 +14,7 @@ shoppingController.getShoppings = async (req, res) => {
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -39,7 +39,7 @@ shoppingController.insertShopping = async (req, res) => {
       products.length === 0
     ) {
       return res.status(400).json({
-        message: "All fields are required, including at least one product"
+        message: "Faltan campos obligatorios: agregue al menos un producto"
       });
     }
 
@@ -53,13 +53,13 @@ shoppingController.insertShopping = async (req, res) => {
     await newShopping.save();
 
     return res.status(201).json({
-      message: "Shopping created successfully"
+      message: "Compra registrada"
     });
 
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -83,7 +83,7 @@ shoppingController.updateShopping = async (req, res) => {
       products.length === 0
     ) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "Faltan campos obligatorios"
       });
     }
 
@@ -91,7 +91,7 @@ shoppingController.updateShopping = async (req, res) => {
 
     if (!shoppingFound) {
       return res.status(404).json({
-        message: "Shopping not found"
+        message: "No se encontró la compra"
       });
     }
 
@@ -109,13 +109,13 @@ shoppingController.updateShopping = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Shopping updated successfully"
+      message: "Compra actualizada"
     });
 
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -127,20 +127,20 @@ shoppingController.deleteShopping = async (req, res) => {
 
     if (!shoppingFound) {
       return res.status(404).json({
-        message: "Shopping not found"
+        message: "No se encontró la compra"
       });
     }
 
     await shoppingModel.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
-      message: "Shopping deleted successfully"
+      message: "Compra eliminada"
     });
 
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };

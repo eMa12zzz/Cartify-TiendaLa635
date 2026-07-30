@@ -13,14 +13,14 @@ loginAdminController.login = async (req, res) => {
   // Validar email
   if (!email || !emailRegex.test(email)) {
     return res.status(400).json({
-      message: "Invalid email",
+      message: "El correo no es válido",
     });
   }
 
   // Validar contraseña
   if (!password) {
     return res.status(400).json({
-      message: "Password required",
+      message: "Escriba su contraseña",
     });
   }
 
@@ -30,21 +30,21 @@ loginAdminController.login = async (req, res) => {
 
     if (!adminFound) {
       return res.status(404).json({
-        message: "Administrator not found",
+        message: "No se encontró el administrador",
       });
     }
 
     // Verificar si está activo
     if (!adminFound.isActive) {
       return res.status(403).json({
-        message: "Account disabled",
+        message: "La cuenta está desactivada",
       });
     }
 
     // Verificar si la cuenta está bloqueada
     if (adminFound.timeOut && adminFound.timeOut > Date.now()) {
       return res.status(403).json({
-        message: "Account temporarily blocked. Try again later.",
+        message: "Cuenta bloqueada un rato. Intente de nuevo en unos minutos.",
       });
     }
 
@@ -65,14 +65,14 @@ loginAdminController.login = async (req, res) => {
         await adminFound.save();
 
         return res.status(403).json({
-          message: "Account blocked due to multiple failed login attempts",
+          message: "Cuenta bloqueada por varios intentos fallidos. Espere 5 minutos.",
         });
       }
 
       await adminFound.save();
 
       return res.status(401).json({
-        message: "Incorrect password",
+        message: "La contraseña es incorrecta",
       });
     }
 
@@ -101,7 +101,7 @@ loginAdminController.login = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Login successful",
+      message: "Sesión iniciada",
       token,
       admin: {
         id: adminFound._id,
@@ -111,10 +111,10 @@ loginAdminController.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Error:", error);
+    console.log("Error login admin:", error);
 
     return res.status(500).json({
-      message: "Internal server error",
+      message: "Error interno del servidor",
     });
   }
 };
