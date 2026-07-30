@@ -13,10 +13,12 @@ clientController.getClients = async (req, res) => {
     return res.status(200).json(clients);
 
   } catch (error) {
-    console.log("error " + error);
+    // El nombre de la función se queda en el log, no en la respuesta:
+    // a quien está comprando no le sirve de nada saber que se llama getClients.
+    console.log("error getClients: " + error);
 
     return res.status(500).json({
-      message: "Internal Server Error get Clients",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -28,16 +30,16 @@ clientController.getClientById = async (req, res) => {
     const client = await clientModel.findById(req.params.id).select("-password");
 
     if (!client) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json(client);
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error getClientById: " + error);
 
     return res.status(500).json({
-      message: "Internal Server Error get Client",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -68,7 +70,7 @@ clientController.updateClient = async (req, res) => {
       !userName
     ) {
       return res.status(400).json({
-        message: "Required fields",
+        message: "Faltan campos obligatorios",
       });
     }
 
@@ -76,7 +78,7 @@ clientController.updateClient = async (req, res) => {
 
     if (!clientFound) {
       return res.status(404).json({
-        message: "Client not found",
+        message: "No se encontró el cliente",
       });
     }
 
@@ -113,15 +115,15 @@ clientController.updateClient = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Client updated successfully",
+      message: "Cliente actualizado",
       client: updatedClient,
     });
 
   } catch (error) {
-    console.log("error:", error);
+    console.log("error updateClient:", error);
 
     return res.status(500).json({
-      message: "Internal Server Error update Client",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -134,7 +136,7 @@ clientController.deleteClient = async (req, res) => {
 
     if (!clientFound) {
       return res.status(404).json({
-        message: "Client not found",
+        message: "No se encontró el cliente",
       });
     }
 
@@ -146,14 +148,14 @@ clientController.deleteClient = async (req, res) => {
     await clientModel.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
-      message: "Client deleted successfully",
+      message: "Cliente eliminado",
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error deleteClient: " + error);
 
     return res.status(500).json({
-      message: "Internal Server Error delete Client",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -176,15 +178,15 @@ clientController.updateClientProfile = async (req, res) => {
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Perfil actualizado", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateClientProfile: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update profile",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -209,7 +211,7 @@ clientController.getFavorites = async (req, res) => {
       })
       .select("favorites");
 
-    if (!cliente) return res.status(404).json({ message: "Client not found" });
+    if (!cliente) return res.status(404).json({ message: "No se encontró el cliente" });
 
     /*
      * Se filtran los nulos: si borraron un producto que alguien tenía en
@@ -220,8 +222,8 @@ clientController.getFavorites = async (req, res) => {
     const favoritos = (cliente.favorites || []).filter(Boolean);
     return res.status(200).json(favoritos);
   } catch (error) {
-    console.log("error " + error);
-    return res.status(500).json({ message: "Internal Server Error getFavorites" });
+    console.log("error getFavorites: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -238,7 +240,7 @@ clientController.toggleFavorite = async (req, res) => {
     }
 
     const cliente = await clientModel.findById(req.params.id).select("favorites");
-    if (!cliente) return res.status(404).json({ message: "Client not found" });
+    if (!cliente) return res.status(404).json({ message: "No se encontró el cliente" });
 
     const actuales = (cliente.favorites || []).map(String);
     const yaEsta = actuales.includes(String(productId));
@@ -255,8 +257,8 @@ clientController.toggleFavorite = async (req, res) => {
       favorites: nuevos,
     });
   } catch (error) {
-    console.log("error " + error);
-    return res.status(500).json({ message: "Internal Server Error toggleFavorite" });
+    console.log("error toggleFavorite: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -273,15 +275,15 @@ clientController.updateAddresses = async (req, res) => {
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Direcciones actualizadas", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateAddresses: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update addresses",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -307,15 +309,15 @@ clientController.updatePaymentMethods = async (req, res) => {
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Métodos de pago actualizados", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updatePaymentMethods: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update payment methods",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -336,15 +338,15 @@ clientController.updateNotifications = async (req, res) => {
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Preferencias actualizadas", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateNotifications: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update notifications",
+      message: "Error interno del servidor",
     });
   }
 };

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { mensajeEnEspanol } from '../utils/mensajesBackend';
 
 /*
  * ============================================================
@@ -66,11 +67,25 @@ api.interceptors.response.use(
         // 5- Si sí hay respuesta, extraemos el código de estado HTTP y el mensaje
         const { status, data } = error.response;
 
+        /*
+         * 5.1- El mensaje del servidor pasa por el traductor ANTES de pintarse.
+         *
+         * Este es el único lugar de toda la app donde el texto que escribió el
+         * backend se convierte en un aviso que ve el cliente. Por eso se
+         * traduce aquí y no en cada pantalla: aunque mañana alguien agregue un
+         * endpoint nuevo y se le escape un "Product not found", la tienda de
+         * la 635 nunca va a mostrar inglés. Ver frontend/src/utils/mensajesBackend.js.
+         *
+         * Si el mensaje ya viene en español (que es lo normal hoy), el
+         * traductor lo devuelve intacto y no estorba.
+         */
+        const mensaje = mensajeEnEspanol(data?.message, status);
+
         // 6- Mostramos un mensaje diferente según el tipo de error recibido
         switch (status) {
             case 400:
                 // Error del cliente: datos incorrectos, campos vacíos, duplicados, etc.
-                toast.error(data?.message || 'Petición incorrecta o datos faltantes.');
+                toast.error(mensaje);
                 break;
             case 401:
                 // No autorizado: el token expiró o no existe
@@ -85,8 +100,10 @@ api.interceptors.response.use(
                 toast.error('Error interno del servidor.');
                 break;
             default:
-                // Cualquier otro error no contemplado arriba
-                toast.error(data?.message || 'Ha ocurrido un error inesperado.');
+                // Cualquier otro error no contemplado arriba (404, 409, 422...).
+                // El traductor ya eligió un respaldo acorde al código, así que
+                // aquí no hace falta un `||` con un texto genérico.
+                toast.error(mensaje);
         }
 
         // 7- Rechazamos la promesa para que el catch() del componente también lo reciba

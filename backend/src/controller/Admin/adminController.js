@@ -13,10 +13,11 @@ adminController.getAdmins = async (req, res) => {
     return res.status(200).json(admins);
 
   } catch (error) {
-    console.log("Error:", error);
+    // El nombre de la función se queda en el log, que es donde sirve.
+    console.log("Error getAdmins:", error);
 
     return res.status(500).json({
-      message: "Internal Server Error getAdmins",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -53,7 +54,7 @@ adminController.insertAdmin = async (req, res) => {
 
     if (adminExists) {
       return res.status(400).json({
-        message: "Administrator already exists",
+        message: "Ya existe un administrador con ese correo",
       });
     }
 
@@ -71,14 +72,14 @@ adminController.insertAdmin = async (req, res) => {
     await newAdmin.save();
 
     return res.status(201).json({
-      message: "Admin created successfully",
+      message: "Administrador creado",
     });
 
   } catch (error) {
-    console.log("Error:", error);
+    console.log("Error insertAdmin:", error);
 
     return res.status(500).json({
-      message: "Internal Server Error insertAdmin",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -112,7 +113,7 @@ adminController.updateAdmin = async (req, res) => {
 
     if (!adminFound) {
       return res.status(404).json({
-        message: "Admin not found",
+        message: "No se encontró el administrador",
       });
     }
 
@@ -134,14 +135,14 @@ adminController.updateAdmin = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Admin updated successfully",
+      message: "Administrador actualizado",
     });
 
   } catch (error) {
-    console.log("Error:", error);
+    console.log("Error updateAdmin:", error);
 
     return res.status(500).json({
-      message: "Internal Server Error updateAdmin",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -154,19 +155,19 @@ adminController.deleteAdmin = async (req, res) => {
 
     if (!deleteAdmin) {
       return res.status(404).json({
-        message: "Admin not found",
+        message: "No se encontró el administrador",
       });
     }
 
     return res.status(200).json({
-      message: "Admin deleted successfully",
+      message: "Administrador eliminado",
     });
 
   } catch (error) {
-    console.log("Error:", error);
+    console.log("Error deleteAdmin:", error);
 
     return res.status(500).json({
-      message: "Internal Server Error deleteAdmin",
+      message: "Error interno del servidor",
     });
   }
 };

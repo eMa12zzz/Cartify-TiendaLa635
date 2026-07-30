@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { reglaDui, reglaTelefono, bloquearNoDigitos } from '../../utils/validaciones';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../../utils/mascaras';
 import CampoContrasena from '../UI/CampoContrasena';
-import { UploadCloud } from 'lucide-react';
+import SubidorArchivo from '../UI/SubidorArchivo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modalTransition } from '../../utils/motion';
 import { useEffect, useState } from 'react';
@@ -11,8 +11,7 @@ import toast from 'react-hot-toast';
 const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
   const { register, handleSubmit, reset, watch } = useForm();
   const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  
+
   const isEditing = !!employee;
   const watchIsActive = watch('isActive');
 
@@ -28,7 +27,6 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           password: '', // Don't pre-fill password for security
           isActive: employee.isActive !== false
         });
-        setImagePreview(employee.image || null);
         setSelectedImage(null);
       } else {
         reset({
@@ -40,19 +38,13 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           password: '',
           isActive: true
         });
-        setImagePreview(null);
         setSelectedImage(null);
       }
     }
   }, [isOpen, employee, reset]);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
+  // La preview la pinta SubidorArchivo; acá solo guardamos lo que se sube.
+  const handleImageChange = (file) => setSelectedImage(file);
 
   const onSubmit = (data) => {
     /*
@@ -126,24 +118,31 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
               />
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/40 rounded-xl bg-white/5 my-4 p-4 text-center cursor-pointer hover:bg-white/10 transition-colors relative overflow-hidden min-h-[200px]">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-              ) : (
-                <>
-                  <UploadCloud className="w-8 h-8 mb-2 opacity-80" />
-                  <p className="text-xs opacity-90">
-                    Foto del empleado <span className="opacity-70">(opcional)</span>
-                  </p>
-                </>
-              )}
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleImageChange} />
+            {/*
+              "cover" y no "contain": es una foto de carnet, se recorta igual
+              que se va a ver después en la ficha del empleado.
+            */}
+            <div className="my-4">
+              <SubidorArchivo
+                accept="image/*"
+                maxMB={8}
+                valorInicial={employee?.image || null}
+                onArchivo={handleImageChange}
+                variante="oscuro"
+                ajuste="cover"
+                alto={200}
+                radio={12}
+                titulo="Foto del empleado (opcional)"
+                ayuda="Arrastra la imagen o haz clic para elegirla"
+                etiquetaAria="Subir foto del empleado"
+              />
             </div>
             
+            {/* La zona de arriba ya dice cómo subirla; acá solo lo que ella no dice. */}
             <p className="text-xs text-white/70 text-center">
               {isEditing
-                ? 'Haz clic o arrastra para cambiar la foto'
-                : 'Haz clic o arrastra si querés ponerle foto; se puede agregar después'}
+                ? 'Toca la foto para cambiarla'
+                : 'Si no la sube ahora, se puede agregar después'}
             </p>
           </div>
         </div>

@@ -1,8 +1,8 @@
-import { UploadCloud, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modalTransition } from '../../utils/motion';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import SubidorArchivo from '../UI/SubidorArchivo';
 import { reglaPrecio, reglaEntero, reglaCodigoBarras, bloquearTeclasNumero, bloquearNoDigitos } from '../../utils/validaciones';
 import { flujoDeModulo, iconoDeModulo, modulosVisibles } from '../../utils/modulos';
 import toast from 'react-hot-toast';
@@ -10,8 +10,8 @@ import toast from 'react-hot-toast';
 const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands = [], suppliers = [], categories = [], modules = [] }) => {
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
   const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  
+
+
   // 1- Observamos los campos clave para filtrado en cascada
   const watchModuleId = watch('moduleId');
   const watchTypeId = watch('typeId');
@@ -55,6 +55,16 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
   
   const isEditing = !!product;
 
+  /*
+   * La imagen que ya tiene el producto, para que al editar se vea la actual.
+   * El Array.isArray no es paranoia: image llega como arreglo casi siempre,
+   * pero hay productos viejos con la URL suelta, y ahí image[0] devolvía la
+   * primera LETRA del enlace.
+   */
+  const imagenGuardada = Array.isArray(product?.image)
+    ? (product.image[0] || null)
+    : (product?.image || null);
+
   // 3- Efecto para rellenar datos si es edición, o limpiar si es creación
   useEffect(() => {
     if (isOpen) {
@@ -73,7 +83,6 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
           barCode: product.barCode || '',
           isActive: product.isActive !== false
         });
-        setImagePreview(product.image?.[0] || product.image || null);
         setSelectedImage(null);
       } else {
         reset({
@@ -90,7 +99,6 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
           barCode: '',
           isActive: true
         });
-        setImagePreview(null);
         setSelectedImage(null);
       }
     }
@@ -125,13 +133,9 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
   if (!isOpen) return null;
 
   // 5- Manejar el cambio de la imagen del producto
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
+  // La preview y el manejo del blob viven en SubidorArchivo; acá solo queda el
+  // archivo que se va a mandar en el FormData.
+  const handleImageChange = (file) => setSelectedImage(file);
 
   // 6- Validar y empaquetar los datos para enviarlos al backend (FormData)
   const onSubmit = (data) => {
@@ -213,18 +217,25 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
               />
             </div>
 
-            <div className="w-full h-48 min-h-[192px] flex flex-col items-center justify-center border-2 border-dashed border-white/40 rounded-xl bg-white/5 my-4 p-4 text-center cursor-pointer hover:bg-white/10 transition-colors relative overflow-hidden flex-shrink-0">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-contain p-2" />
-              ) : (
-                <>
-                  <UploadCloud className="w-8 h-8 mb-2 opacity-80" />
-                  <p className="text-xs opacity-90">
-                    Arrastra la imagen o selecciona de tus archivos
-                  </p>
-                </>
-              )}
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleImageChange} />
+            {/*
+              "contain": el producto se ve entero, aunque la foto venga cuadrada
+              o apaisada. Al editar arranca mostrando la que ya tiene guardada,
+              para que no parezca que se perdió.
+            */}
+            <div className="my-4 flex-shrink-0">
+              <SubidorArchivo
+                accept="image/*"
+                maxMB={8}
+                valorInicial={imagenGuardada}
+                onArchivo={handleImageChange}
+                variante="oscuro"
+                ajuste="contain"
+                alto={192}
+                radio={12}
+                titulo="Arrastra la imagen o selecciona de tus archivos"
+                ayuda={isEditing ? '' : 'Obligatoria para un producto nuevo'}
+                etiquetaAria="Subir la imagen del producto"
+              />
             </div>
 
             <div className="flex gap-4">

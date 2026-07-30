@@ -342,7 +342,7 @@ dashboardController.getSummary = async (req, res) => {
     });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -358,7 +358,7 @@ dashboardController.getChart = async (req, res) => {
     return res.status(200).json({ grafica, periodo });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

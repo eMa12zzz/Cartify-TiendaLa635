@@ -54,7 +54,7 @@ const entrarComoPersonal = async (res, { doc, tipo }, password) => {
   res.cookie("authCookie", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
 
   return res.status(200).json({
-    message: "Login successful",
+    message: "Sesión iniciada",
     token,
     userType: tipo,
     client: {
@@ -74,11 +74,11 @@ loginClientController.login = async (req, res) => {
 
   // Validar email
   if (!email || !emailRegex.test(email)) {
-    return res.status(400).json({ message: "Invalid email" });
+    return res.status(400).json({ message: "El correo no es válido" });
   }
   if (!password) {
    return res.status(400).json({
-      message:"Password required"
+      message:"Escriba su contraseña"
    });
  }
 
@@ -96,18 +96,18 @@ loginClientController.login = async (req, res) => {
 
     // Verificar si está activo
     if (!clientFound.isActive) {
-      return res.status(403).json({ message: "Account disabled" });
+      return res.status(403).json({ message: "La cuenta está desactivada" });
     }
 
     // Verificar si está verificado
     if (!clientFound.isVerified) {
-      return res.status(403).json({ message: "Account not verified" });
+      return res.status(403).json({ message: "La cuenta todavía no está verificada" });
     }
 
     // Verificar bloqueo temporal
     if (clientFound.timeOut && clientFound.timeOut > Date.now()) {
       return res.status(403).json({
-        message: "Account temporarily blocked. Try again later."
+        message: "Cuenta bloqueada un rato. Intente de nuevo en unos minutos."
       });
     }
 
@@ -143,14 +143,14 @@ loginClientController.login = async (req, res) => {
         await clientFound.save();
 
         return res.status(403).json({
-          message: "Account blocked due to multiple failed login attempts"
+          message: "Cuenta bloqueada por varios intentos fallidos. Espere 5 minutos."
         });
       }
 
       await clientFound.save();
 
       return res.status(401).json({
-        message: "Incorrect password"
+        message: "La contraseña es incorrecta"
       });
     }
 
@@ -179,7 +179,7 @@ loginClientController.login = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Login successful",
+      message: "Sesión iniciada",
       token,
       userType: "client",
       client: {
@@ -192,9 +192,9 @@ loginClientController.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("error: ", error);
+    console.log("error login cliente: ", error);
     return res.status(500).json({
-      message: "Internal server error",
+      message: "Error interno del servidor",
     });
   }
 };

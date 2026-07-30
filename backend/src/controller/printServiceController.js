@@ -8,7 +8,7 @@ printServiceController.getServices = async (req, res) => {
     return res.status(200).json(services);
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -31,7 +31,7 @@ printServiceController.insertService = async (req, res) => {
     return res.status(201).json({ message: "Servicio creado" });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -58,7 +58,7 @@ printServiceController.updateService = async (req, res) => {
     return res.status(200).json({ message: "Servicio actualizado" });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -69,7 +69,7 @@ printServiceController.deleteService = async (req, res) => {
     return res.status(200).json({ message: "Servicio eliminado" });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

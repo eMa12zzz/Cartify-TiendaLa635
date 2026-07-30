@@ -29,8 +29,9 @@ reviewController.getByProduct = async (req, res) => {
 
     return res.status(200).json({ total, promedio, reparto, reviews });
   } catch (error) {
-    console.log("error " + error);
-    return res.status(500).json({ message: "Internal Server Error getByProduct" });
+    // El nombre de la función se queda en el log, que es donde sirve.
+    console.log("error getByProduct: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -74,8 +75,8 @@ reviewController.upsert = async (req, res) => {
 
     return res.status(200).json({ message: "¡Gracias por su opinión!", review });
   } catch (error) {
-    console.log("error " + error);
-    return res.status(500).json({ message: "Internal Server Error upsert review" });
+    console.log("error upsert review: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -91,8 +92,8 @@ reviewController.remove = async (req, res) => {
     if (!borrada) return res.status(404).json({ message: "No tiene una valoración en este producto" });
     return res.status(200).json({ message: "Valoración eliminada" });
   } catch (error) {
-    console.log("error " + error);
-    return res.status(500).json({ message: "Internal Server Error remove review" });
+    console.log("error remove review: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

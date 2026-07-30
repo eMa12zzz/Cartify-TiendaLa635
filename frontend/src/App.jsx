@@ -29,6 +29,7 @@ import ForgotPassword from './pages/ForgotPassword'; // Solicitar recuperación 
 // --- Tienda pública ---
 import Dashboard from './pages/Dashboard';        // Panel de la tienda para clientes
 import Store from './pages/Store';
+import Seccion from './pages/Seccion';       // Una sección de la portada, completa
 import Impresiones from './pages/impresiones';
 
 // --- Panel Administrativo ---
@@ -139,6 +140,8 @@ function App() {
           <Route path="/bienvenida"      element={<Bienvenida />} />
           <Route path="/tienda-dashboard" element={<Dashboard />} />
           <Route path="/store"           element={<Store />} />
+          {/* "Ver todos" de una fila de la portada: /seccion/familia-quesos */}
+          <Route path="/seccion/:clave"  element={<Seccion />} />
           <Route path="/impresiones"     element={<Impresiones />} />
 
           {/*

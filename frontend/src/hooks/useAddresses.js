@@ -26,14 +26,21 @@ export const normalizarDireccion = (item) => {
 };
 
 export const useAddresses = () => {
-  const { user } = useAuth();
+  const { user, esCliente } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
-      if (!user?.id) { setLoading(false); return; }
+      /*
+       * Este hook cuelga del DireccionProvider, que envuelve TODA la app en
+       * App.jsx —incluido el panel—. Sin el filtro por tipo, entrar al panel
+       * con sesión de administrador disparaba una consulta de cliente con un
+       * id que no es de cliente, y el 404 se convertía en un aviso rojo
+       * flotando sobre la pantalla de Clientes. El filtro sale de useAuth.
+       */
+      if (!esCliente) { setLoading(false); return; }
       try {
         setLoading(true);
         const cliente = await clientService.getClientById(user.id);
@@ -46,11 +53,11 @@ export const useAddresses = () => {
       }
     };
     cargar();
-  }, [user?.id]);
+  }, [user?.id, esCliente]);
 
   // Guarda la lista completa en la base y actualiza el estado local.
   const guardar = async (nuevas) => {
-    if (!user?.id) return;
+    if (!esCliente) return;
     try {
       setSaving(true);
       await clientService.updateAddresses(user.id, nuevas);

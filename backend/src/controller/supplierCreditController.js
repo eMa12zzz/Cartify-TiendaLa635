@@ -29,7 +29,7 @@ supplierCreditController.getAccount = async (req, res) => {
     });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -86,7 +86,7 @@ supplierCreditController.getSummary = async (req, res) => {
     });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -150,7 +150,7 @@ supplierCreditController.insertMovement = async (req, res) => {
     });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -162,7 +162,7 @@ supplierCreditController.deleteMovement = async (req, res) => {
     return res.status(200).json({ message: "Movimiento eliminado" });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -185,7 +185,7 @@ supplierCreditController.updateLimit = async (req, res) => {
     return res.status(200).json({ message: "Crédito actualizado", supplier: proveedor });
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

@@ -22,7 +22,7 @@ registerClientController.register = async (req, res) => {
   try {
     const existsClient = await clientModel.findOne({ email });
     if (existsClient) {
-      return res.status(400).json({ message: "Client already exists with this email" });
+      return res.status(400).json({ message: "Ya existe una cuenta con ese correo" });
     }
 
     // 2. Extraer la imagen directamente de req.file (Igual que en tu CRUD de empleados)
@@ -120,14 +120,14 @@ registerClientController.register = async (req, res) => {
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.log("error " + error);
-        return res.status(500).json({ message: "Error sending email" });
+        console.log("error enviando correo de verificación: " + error);
+        return res.status(500).json({ message: "No se pudo enviar el correo" });
       }
-      return res.status(200).json({ message: "Email sent" });
+      return res.status(200).json({ message: "Le enviamos el código a su correo" });
     });
   } catch (error) {
-    console.log("error" + error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.log("error register cliente: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -137,7 +137,7 @@ registerClientController.verifyCode = async (req, res) => {
     const token = req.cookies.registrationCookie;
 
     if (!token) {
-      return res.status(400).json({ message: "Verification session expired." });
+      return res.status(400).json({ message: "El registro venció. Vuelva a empezar." });
     }
 
     const decoded = jsonwebtoken.verify(token, config.JWT.secret);
@@ -157,7 +157,7 @@ registerClientController.verifyCode = async (req, res) => {
     } = decoded;
 
     if (verificationCodeRequest !== storedCode) {
-      return res.status(400).json({ message: "Invalid code" });
+      return res.status(400).json({ message: "El código no es válido" });
     }
 
     // 6. Guardamos en la base de datos usando el mismo estilo que tu employeeController
@@ -178,11 +178,12 @@ registerClientController.verifyCode = async (req, res) => {
     await newClient.save();
     res.clearCookie("registrationCookie");
 
-    return res.status(200).json({message: "Client registered successfully"});
+    return res.status(200).json({message: "Cuenta creada"});
 
   } catch (error) {
-    console.log("error"+error);
-    return res.status(500).json({message: "Internal server error or Invalid Token"});
+    // El token vencido o manipulado cae aquí; el detalle va al log.
+    console.log("error verifyCode: "+error);
+    return res.status(500).json({message: "Error interno del servidor"});
   }
 };
 registerClientController.getAll = async (req, res) => {
@@ -191,7 +192,7 @@ registerClientController.getAll = async (req, res) => {
     return res.status(200).json(clients);
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error fetching clients" });
+    return res.status(500).json({ message: "No se pudo cargar la lista de clientes" });
   }
 };
 

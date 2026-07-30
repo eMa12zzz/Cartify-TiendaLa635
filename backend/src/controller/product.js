@@ -22,7 +22,7 @@ productController.getProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -64,7 +64,7 @@ productController.insertProduct = async (req, res) => {
       !req.file
     ) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "Faltan campos obligatorios"
       });
     }
 
@@ -95,7 +95,7 @@ productController.insertProduct = async (req, res) => {
     await newProduct.save();
 
     return res.status(201).json({
-      message: "Product created successfully"
+      message: "Producto creado"
     });
 
   } catch (error) {
@@ -103,7 +103,7 @@ productController.insertProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -141,7 +141,7 @@ productController.updateProduct = async (req, res) => {
       !supplierId
     ) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "Faltan campos obligatorios"
       });
     }
 
@@ -156,7 +156,7 @@ productController.updateProduct = async (req, res) => {
 
     if (!productFound) {
       return res.status(404).json({
-        message: "Product not found"
+        message: "No se encontró el producto"
       });
     }
 
@@ -193,7 +193,7 @@ productController.updateProduct = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Product updated successfully"
+      message: "Producto actualizado"
     });
 
   } catch (error) {
@@ -201,7 +201,7 @@ productController.updateProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -215,7 +215,7 @@ productController.deleteProduct = async (req, res) => {
 
     if (!productFound) {
       return res.status(404).json({
-        message: "Product not found"
+        message: "No se encontró el producto"
       });
     }
 
@@ -226,7 +226,7 @@ productController.deleteProduct = async (req, res) => {
     await productModel.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
-      message: "Product deleted successfully"
+      message: "Producto eliminado"
     });
 
   } catch (error) {
@@ -234,7 +234,7 @@ productController.deleteProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };

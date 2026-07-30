@@ -14,6 +14,8 @@
  * ============================================================
  */
 
+import { clasificarPorReglas, tituloDeFamilia, esFamiliaValida } from './familias';
+
 // Palabras que aparecen en todos lados y no dicen nada del producto.
 const VACIAS = new Set([
   'de', 'del', 'la', 'el', 'los', 'las', 'con', 'sin', 'para', 'por', 'y', 'en',
@@ -21,7 +23,12 @@ const VACIAS = new Set([
   'lb', 'lbs', 'pack', 'unidad', 'unidades', 'grande', 'pequeno', 'mediano',
 ]);
 
-const sinTildes = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+/*
+ * Quita tildes y ñ para poder comparar. Se exporta porque familias.js normaliza
+ * exactamente igual: si cada archivo tuviera su propia versión, un día una
+ * dejaría pasar la ñ y "jabón de baño" nunca cazaría con "jabon de bano".
+ */
+export const sinTildes = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 /*
  * Parte el nombre en las palabras que de verdad describen el producto.
@@ -35,6 +42,32 @@ export const palabrasClave = (nombre) =>
     .filter((p) => p.length >= 3 && !VACIAS.has(p) && !/^\d+$/.test(p));
 
 const id = (v) => (v && typeof v === 'object' ? v._id : v) || null;
+
+/*
+ * ============================================================
+ * LA CADENA DE DECISIÓN DE LA FAMILIA
+ * ============================================================
+ * En este orden, y con este orden hay una razón:
+ *   1. La familia YA GUARDADA en el producto — sea de reglas o de IA, ya se
+ *      decidió una vez y no se vuelve a decidir. Es la que manda.
+ *   2. El mapa que trae la IA en caliente (useClasificacionIA), para que la
+ *      portada se acomode en la misma visita, sin esperar a recargar.
+ *   3. Las reglas locales — instantáneas, gratis y sin internet.
+ *   4. null: no se supo. Quien llame decide su plan B.
+ * Lo que venga de la base o de la IA se valida contra la taxonomía: una clave
+ * inventada se ignora como si no existiera.
+ */
+export const familiaDeProducto = (producto, familiasExtra = {}) => {
+  if (!producto) return null;
+
+  const guardada = producto.familia;
+  if (esFamiliaValida(guardada)) return guardada;
+
+  const enCaliente = familiasExtra?.[producto.id || producto._id];
+  if (esFamiliaValida(enCaliente)) return enCaliente;
+
+  return clasificarPorReglas(producto);
+};
 
 /*
  * Puntaje de parecido entre dos productos (0 = nada que ver).
@@ -55,6 +88,17 @@ export const puntajeSimilitud = (a, b) => {
   const catA = id(a.typeId) || a.categoria;
   const catB = id(b.typeId) || b.categoria;
   if (catA && catB && catA === catB) puntos += 35;
+
+  /*
+   * 2.5. Misma familia (energizantes, quesos, limpieza...). Pesa casi como la
+   * categoría porque hace el mismo trabajo, pero mejor: la categoría la
+   * escribe a mano quien sube el producto y casi todo quedó en "General",
+   * mientras que la familia se deduce del nombre. Gracias a esto un Red Bull
+   * ya se parece a un Monster aunque no compartan ni una palabra.
+   */
+  const famA = familiaDeProducto(a);
+  const famB = familiaDeProducto(b);
+  if (famA && famB && famA === famB) puntos += 30;
 
   // 3. Misma marca.
   const marcaA = id(a.brandId) || a.marca;
@@ -91,28 +135,47 @@ export const productosSimilares = (producto, catalogo, cantidad = 6, umbral = 20
     .map((x) => x.otro);
 
 /*
- * Agrupa el catálogo por "familias" de productos parecidos, para armar filas
- * temáticas solas. Ej: {"queso": [Cheddar, Mozzarella], "gaseosa": [Cola, ...]}
+ * Agrupa el catálogo en familias para armar filas temáticas solas.
+ * Ej: [{clave:'quesos', titulo:'Quesos', productos:[Cheddar, Mozzarella]}]
+ *
+ * `familiasExtra` es el mapa {idProducto: familia} que devuelve la IA en
+ * caliente; es opcional y sin él la función se comporta igual que siempre.
+ *
+ * Cuando la familia sale de la taxonomía, la fila se llama como el estante
+ * ("Bebidas energizantes"). Cuando no se supo, se cae en lo de antes: la
+ * primera palabra del nombre. Ese respaldo es feo pero honesto — antes hacía
+ * TODO el trabajo, ahora solo atiende lo que nadie más pudo clasificar.
+ *
+ * Las claves llevan prefijo ("familia:" o "raiz:") porque si no, una familia de
+ * la taxonomía y una raíz que se llamaran igual se mezclarían en el mismo
+ * grupo sin que nadie se diera cuenta.
+ *
  * Solo devuelve grupos con al menos `minimo` productos: un grupo de uno no es
  * una sección, es un producto suelto.
  */
-export const agruparPorFamilia = (catalogo, minimo = 3) => {
-  const familias = new Map();
+export const agruparPorFamilia = (catalogo, minimo = 3, familiasExtra = {}) => {
+  const grupos = new Map();
 
   (catalogo || []).forEach((p) => {
-    // La primera palabra significativa suele ser el tipo: "Queso", "Gaseosa".
-    const raiz = palabrasClave(p.nombre || p.name)[0];
+    const familia = familiaDeProducto(p, familiasExtra);
+    // Sin familia, la primera palabra significativa suele ser el tipo:
+    // "Queso Cheddar" -> "queso".
+    const raiz = familia || palabrasClave(p.nombre || p.name)[0];
     if (!raiz) return;
-    if (!familias.has(raiz)) familias.set(raiz, []);
-    familias.get(raiz).push(p);
+
+    const clave = familia ? `familia:${familia}` : `raiz:${raiz}`;
+    if (!grupos.has(clave)) {
+      grupos.set(clave, {
+        clave: familia || raiz,
+        // "queso" -> "Queso" para el título de la sección de respaldo.
+        titulo: familia ? tituloDeFamilia(familia) : raiz.charAt(0).toUpperCase() + raiz.slice(1),
+        productos: [],
+      });
+    }
+    grupos.get(clave).productos.push(p);
   });
 
-  return [...familias.entries()]
-    .filter(([, lista]) => lista.length >= minimo)
-    .sort((a, b) => b[1].length - a[1].length)
-    .map(([raiz, lista]) => ({
-      // "queso" -> "Queso" para el título de la sección.
-      titulo: raiz.charAt(0).toUpperCase() + raiz.slice(1),
-      productos: lista,
-    }));
+  return [...grupos.values()]
+    .filter((g) => g.productos.length >= minimo)
+    .sort((a, b) => b.productos.length - a.productos.length);
 };

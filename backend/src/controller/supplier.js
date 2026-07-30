@@ -9,8 +9,9 @@ supplierController.getSupplier = async (req, res) => {
         const suppliers = await supplierModel.find();
         res.status(200).json(suppliers);
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error getSuppliers' });
+        // El nombre de la función se queda en el log, que es donde sirve.
+        console.log("error getSuppliers: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -41,10 +42,10 @@ supplierController.insertSupplier = async (req, res) => {
 
         const newSupplier = new supplierModel({ name: name.trim(), phoneNumber, email: email.trim(), creditDays, brandIds: brandIds || [], isActive: isActive !== undefined ? isActive : true });
         await newSupplier.save();
-        res.status(201).json({ message: 'Supplier created successfully' });
+        res.status(201).json({ message: 'Proveedor creado' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error insertSupplier' });
+        console.log("error insertSupplier: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -56,7 +57,7 @@ supplierController.updateSupplier = async (req, res) => {
 
         //Valores requeridos
         if (!name || !phoneNumber || !email) {
-            return res.status(400).json({ message: 'required fields' });
+            return res.status(400).json({ message: 'Faltan campos obligatorios' });
         }
 
         /*
@@ -75,13 +76,13 @@ supplierController.updateSupplier = async (req, res) => {
         );
         
         if (!updateSupplier) {
-            return res.status(404).json({ message: 'Supplier not found' });
+            return res.status(404).json({ message: 'No se encontró el proveedor' });
         }
-        return res.status(200).json({ message: 'Supplier updated successfully' });
+        return res.status(200).json({ message: 'Proveedor actualizado' });
 
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error updateSupplier' });
+        console.log("error updateSupplier: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -90,12 +91,14 @@ supplierController.deleteSupplier = async (req, res) => {
     try {
         const deleteSupplier = await supplierModel.findByIdAndDelete(req.params.id);
         if (!deleteSupplier) {
-            return res.status(404).json({ message: 'Admin not found' });
+            // Decía "Admin not found": copiar y pegar de otro controlador.
+            // Aquí lo que no aparece es el proveedor.
+            return res.status(404).json({ message: 'No se encontró el proveedor' });
         }
-        return res.status(200).json({ message: 'Supplier deleted successfully' });
+        return res.status(200).json({ message: 'Proveedor eliminado' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error deleteSupplier' });
+        console.log("error deleteSupplier: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 

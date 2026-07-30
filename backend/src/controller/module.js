@@ -9,8 +9,9 @@ moduleController.getModule = async (req, res) => {
         const modules = await moduleModel.find();
         res.status(200).json(modules);
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error getModules' });
+        // El nombre de la función se queda en el log, que es donde sirve.
+        console.log("error getModules: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -40,10 +41,10 @@ moduleController.insertModule = async (req, res) => {
             orden: Number(orden) || 0,
         });
         await newModule.save();
-        res.status(201).json({ message: 'Module created successfully' });
+        res.status(201).json({ message: 'Módulo creado' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error insertModule' });
+        console.log("error insertModule: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -55,7 +56,7 @@ moduleController.updateModule = async (req, res) => {
 
         //Valores requeridos
         if (!name || !description) {
-            return res.status(400).json({ message: 'required fields' });
+            return res.status(400).json({ message: 'Faltan campos obligatorios' });
         }
 
         const datos = { name, description, isActive };
@@ -76,13 +77,13 @@ moduleController.updateModule = async (req, res) => {
         );
         
         if (!updateModule) {
-            return res.status(404).json({ message: 'Module not found' });
+            return res.status(404).json({ message: 'No se encontró el módulo' });
         }
-        return res.status(200).json({ message: 'Module updated successfully' });
+        return res.status(200).json({ message: 'Módulo actualizado' });
 
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error updateModule' });
+        console.log("error updateModule: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -91,12 +92,12 @@ moduleController.deleteModule = async (req, res) => {
     try {
         const deleteModule = await moduleModel.findByIdAndDelete(req.params.id);
         if (!deleteModule) {
-            return res.status(404).json({ message: 'Module not found' });
+            return res.status(404).json({ message: 'No se encontró el módulo' });
         }
-        return res.status(200).json({ message: 'Module deleted successfully' });
+        return res.status(200).json({ message: 'Módulo eliminado' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error deleteModule' });
+        console.log("error deleteModule: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 

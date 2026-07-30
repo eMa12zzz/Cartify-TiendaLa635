@@ -11,4 +11,9 @@ router.route("/promo-copy")
 router.route("/entender")
     .post(aiController.entenderPedido);
 
+// Acomoda en su estante los productos que las reglas del frontend no supieron
+// clasificar. Lo que resuelve queda guardado en el producto.
+router.route("/clasificar")
+    .post(aiController.clasificarProductos);
+
 export default router;
