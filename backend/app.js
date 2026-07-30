@@ -25,6 +25,7 @@ import printServiceRoutes from "./src/routes/printService.js";
 import wompiRoutes from "./src/routes/wompi.js"
 import loginAdminRoutes from "./src/routes/loginAdmin.js";
 import logoutAdminRoutes from "./src/routes/logoutAdmin.js";
+import reviewRoutes from "./src/routes/review.js";
 
 //cosas
 const app = express();
@@ -64,6 +65,7 @@ app.use("/api/printService", printServiceRoutes);
 app.use("/api/wompi", wompiRoutes);
 app.use("/api/loginAdmin", loginAdminRoutes);
 app.use("/api/logoutAdmin", logoutAdminRoutes);
+app.use("/api/review", reviewRoutes);
 
 //enpoint
 
