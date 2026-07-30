@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import { productService } from '../api/productService';
 import { promotionService } from '../api/promotionService';
 import { promoVigente } from '../utils/promos';
+import { familiasQueCoinciden } from '../utils/familias';
+import { familiaDeProducto } from '../utils/similitud';
 
 /*
  * useStore — estado de la tienda (catálogo real + carrito) con PROMOCIONES.
@@ -180,10 +182,23 @@ export const useStore = ({ moduloInicial = null } = {}) => {
 
     if (terminoBusqueda.trim()) {
       const busqueda = terminoBusqueda.toLowerCase().trim();
+      /*
+       * El buscador también entiende ESTANTES, no solo etiquetas.
+       *
+       * Nadie le pone "Bebida energizante" de nombre a una lata de Red Bull, así
+       * que buscar "energizante" no encontraba ni una aunque la tienda tuviera
+       * cinco. Lo mismo con "limpieza", "lácteos" o "papelería": son las
+       * palabras con las que piensa el cliente, no las que trae la etiqueta.
+       *
+       * Suma resultados, nunca los quita: lo que ya se encontraba por nombre,
+       * marca o categoría se sigue encontrando igual.
+       */
+      const familiasBuscadas = familiasQueCoinciden(busqueda);
       filtrados = filtrados.filter((p) =>
         p.nombre?.toLowerCase().includes(busqueda) ||
         p.marca?.toLowerCase().includes(busqueda) ||
-        p.categoria?.toLowerCase().includes(busqueda)
+        p.categoria?.toLowerCase().includes(busqueda) ||
+        (familiasBuscadas && familiasBuscadas.has(familiaDeProducto(p)))
       );
     }
 

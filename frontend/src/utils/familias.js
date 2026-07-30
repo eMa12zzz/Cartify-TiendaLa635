@@ -72,6 +72,8 @@ export const FAMILIAS = [
       'seven up', '7up', 'mirinda', 'tropical', 'jarritos', 'dr pepper',
       'canada dry', 'salva cola', 'gaseosa', 'soda', 'crush', 'squirt',
       'ginger ale', 'cola champagne',
+      // La kolashampan es de aquí y no se llama "gaseosa" en ninguna etiqueta.
+      'kolashampan', 'kola shampan', 'cola champan',
     ],
   },
   {
@@ -186,9 +188,15 @@ export const FAMILIAS = [
   {
     clave: 'pastas-y-sopas',
     titulo: 'Pastas y sopas',
+    /*
+     * Las marcas de sopa instantánea van por su nombre porque el producto casi
+     * nunca dice "sopa": en la góndola es "Maruchan sabor camarón" y ya. Sin
+     * ellas, cada una de estas se le iba a preguntar a la IA sin necesidad.
+     */
     terminos: [
       'pasta', 'espagueti', 'spaghetti', 'fideo', 'sopa', 'maggi', 'ramen',
       'macarrones', 'coditos', 'tallarin', 'caldo', 'sopa instantanea',
+      'maruchan', 'nissin', 'yaki', 'knorr',
     ],
   },
   {
@@ -309,6 +317,34 @@ const TITULOS = Object.fromEntries(FAMILIAS.map((f) => [f.clave, f.titulo]));
 export const tituloDeFamilia = (clave) => TITULOS[clave] || '';
 
 export const esFamiliaValida = (clave) => CLAVES_VALIDAS.has(String(clave || ''));
+
+/*
+ * Qué familias responden a lo que se escribió en el buscador.
+ *
+ * Para qué sirve: nadie le pone "Bebida energizante" de nombre a una lata de
+ * Red Bull, así que buscar "energizante" no encontraba absolutamente nada
+ * aunque la tienda tuviera cinco. Igual con "limpieza", "lácteos" o "papelería"
+ * —son categorías mentales del cliente, no palabras de las etiquetas—. Ahora el
+ * clasificador también responde el buscador.
+ *
+ * Se compara por INICIO de palabra y no por "contiene", que es la diferencia
+ * entre que "ques" encuentre los quesos (bien, la persona va escribiendo) y que
+ * "las" saque todos los enlatados (mal: "enLATAdos" contiene "las"). Menos de
+ * tres letras no se atiende: con una o dos, todo se parece a todo.
+ */
+export const familiasQueCoinciden = (busqueda) => {
+  const q = normalizar(busqueda);
+  if (q.length < 3) return null;
+
+  const empiezaAlguna = (texto) =>
+    normalizar(texto).split(' ').some((palabra) => palabra.startsWith(q));
+
+  const claves = FAMILIAS
+    .filter((f) => empiezaAlguna(f.titulo) || empiezaAlguna(f.clave.replace(/-/g, ' ')))
+    .map((f) => f.clave);
+
+  return claves.length ? new Set(claves) : null;
+};
 
 // Texto comparable: sin tildes, sin ñ, en minúsculas y sin signos.
 const normalizar = (t) => sinTildes(t).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
