@@ -30,7 +30,21 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
   // Una referencia por casilla, para poder saltar sola a la siguiente.
   const casillas = useRef(Array.from({ length: LARGO }, () => createRef())).current;
 
+  /*
+   * Ojo con la forma de actualizar: `setCodigo(anterior => ...)` y no
+   * `setCodigo([...codigo])`.
+   *
+   * No es cosmético. Cuando los caracteres entran más rápido de lo que React
+   * alcanza a redibujar —al pegar, con el autocompletado del teclado, o
+   * simplemente escribiendo rápido— dos llamadas seguidas leen el MISMO
+   * `codigo` viejo del closure, y la segunda pisa lo que escribió la primera.
+   * El síntoma es un código al que le faltan caracteres y un "código
+   * inválido" que no se entiende, porque en la pantalla se ve bien lo poco
+   * que quedó.
+   */
   const escribir = (indice, texto) => {
+    setError('');
+
     // Al pegar el código completo desde el correo llegan seis caracteres de
     // golpe: se reparten en las casillas en vez de tomar solo el primero.
     if (texto.length > 1) {
@@ -42,10 +56,11 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
       return;
     }
 
-    const nuevo = [...codigo];
-    nuevo[indice] = texto;
-    setCodigo(nuevo);
-    setError('');
+    setCodigo((anterior) => {
+      const nuevo = [...anterior];
+      nuevo[indice] = texto;
+      return nuevo;
+    });
 
     if (texto && indice < LARGO - 1) casillas[indice + 1].current?.focus();
   };
@@ -55,11 +70,17 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
    * corregir un caracter obliga a tocar la casilla exacta con el dedo.
    */
   const alBorrar = (indice) => {
-    if (codigo[indice] || indice === 0) return;
-    const nuevo = [...codigo];
-    nuevo[indice - 1] = '';
-    setCodigo(nuevo);
-    casillas[indice - 1].current?.focus();
+    if (indice === 0) return;
+
+    setCodigo((anterior) => {
+      // Si la casilla tiene algo, el propio TextInput ya la borra.
+      if (anterior[indice]) return anterior;
+      const nuevo = [...anterior];
+      nuevo[indice - 1] = '';
+      return nuevo;
+    });
+
+    if (!codigo[indice]) casillas[indice - 1].current?.focus();
   };
 
   const verificar = async () => {
