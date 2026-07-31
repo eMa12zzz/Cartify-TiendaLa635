@@ -13,7 +13,7 @@
  * ============================================================
  */
 
-import { createRef, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
@@ -22,70 +22,35 @@ import { verificarCodigoCorreo } from '../api/authApi';
 
 const LARGO = 6;
 
+/*
+ * ── Por qué UN input y no seis ──
+ *
+ * Lo natural es poner seis campos de un caracter y mover el foco solo. Se
+ * probó y se rompe: los caracteres entran más rápido de lo que React redibuja
+ * y de lo que el foco alcanza a moverse, así que escribir "abc123" dejaba
+ * "ab2". Pasa al pegar el código del correo, con el autocompletado del
+ * teclado, y escribiendo rápido a secas — y el síntoma engaña, porque el
+ * servidor contesta "código inválido" mientras en pantalla se ve bien lo poco
+ * que quedó.
+ *
+ * La cura no es afinar la carrera sino no tenerla: un solo TextInput
+ * invisible guarda el código entero, y las seis casillas son dibujo. El
+ * teclado, el pegado y el retroceso funcionan como en cualquier campo normal
+ * porque son un campo normal.
+ */
 const Verification = ({ correo, alVerificar, alVolver }) => {
-  const [codigo, setCodigo] = useState(Array(LARGO).fill(''));
+  const [codigo, setCodigo] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const campo = useRef(null);
 
-  // Una referencia por casilla, para poder saltar sola a la siguiente.
-  const casillas = useRef(Array.from({ length: LARGO }, () => createRef())).current;
-
-  /*
-   * Ojo con la forma de actualizar: `setCodigo(anterior => ...)` y no
-   * `setCodigo([...codigo])`.
-   *
-   * No es cosmético. Cuando los caracteres entran más rápido de lo que React
-   * alcanza a redibujar —al pegar, con el autocompletado del teclado, o
-   * simplemente escribiendo rápido— dos llamadas seguidas leen el MISMO
-   * `codigo` viejo del closure, y la segunda pisa lo que escribió la primera.
-   * El síntoma es un código al que le faltan caracteres y un "código
-   * inválido" que no se entiende, porque en la pantalla se ve bien lo poco
-   * que quedó.
-   */
-  const escribir = (indice, texto) => {
+  const escribir = (texto) => {
+    setCodigo(texto.replace(/\s/g, '').slice(0, LARGO));
     setError('');
-
-    // Al pegar el código completo desde el correo llegan seis caracteres de
-    // golpe: se reparten en las casillas en vez de tomar solo el primero.
-    if (texto.length > 1) {
-      const pegado = texto.replace(/\s/g, '').slice(0, LARGO).split('');
-      const nuevo = Array(LARGO).fill('');
-      pegado.forEach((caracter, i) => { nuevo[i] = caracter; });
-      setCodigo(nuevo);
-      casillas[Math.min(pegado.length, LARGO - 1)].current?.focus();
-      return;
-    }
-
-    setCodigo((anterior) => {
-      const nuevo = [...anterior];
-      nuevo[indice] = texto;
-      return nuevo;
-    });
-
-    if (texto && indice < LARGO - 1) casillas[indice + 1].current?.focus();
-  };
-
-  /*
-   * El retroceso en una casilla vacía va a la anterior y la borra. Sin esto,
-   * corregir un caracter obliga a tocar la casilla exacta con el dedo.
-   */
-  const alBorrar = (indice) => {
-    if (indice === 0) return;
-
-    setCodigo((anterior) => {
-      // Si la casilla tiene algo, el propio TextInput ya la borra.
-      if (anterior[indice]) return anterior;
-      const nuevo = [...anterior];
-      nuevo[indice - 1] = '';
-      return nuevo;
-    });
-
-    if (!codigo[indice]) casillas[indice - 1].current?.focus();
   };
 
   const verificar = async () => {
-    const completo = codigo.join('');
-    if (completo.length !== LARGO) {
+    if (codigo.length !== LARGO) {
       setError(`Ingrese el código de ${LARGO} caracteres`);
       return;
     }
@@ -93,7 +58,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
     try {
       setCargando(true);
       setError('');
-      await verificarCodigoCorreo(completo);
+      await verificarCodigoCorreo(codigo);
       alVerificar();
     } catch (err) {
       setError(err.message || 'El código no es válido o ya venció.');
@@ -119,24 +84,34 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
             <Text style={estilos.correo}>{correo || 'su correo'}</Text>
           </Text>
 
-          <View style={estilos.casillas}>
-            {codigo.map((caracter, indice) => (
-              <TextInput
+          {/* Tocar cualquier casilla abre el teclado sobre el campo de verdad. */}
+          <Pressable style={estilos.casillas} onPress={() => campo.current?.focus()}>
+            {Array.from({ length: LARGO }, (_, indice) => (
+              <View
                 key={indice}
-                ref={casillas[indice]}
-                style={[estilos.casilla, caracter && estilos.casillaLlena]}
-                value={caracter}
-                onChangeText={(texto) => escribir(indice, texto)}
-                onKeyPress={({ nativeEvent }) => {
-                  if (nativeEvent.key === 'Backspace') alBorrar(indice);
-                }}
-                maxLength={LARGO}
-                autoCapitalize="none"
-                autoFocus={indice === 0}
-                selectTextOnFocus
-              />
+                style={[
+                  estilos.casilla,
+                  codigo[indice] && estilos.casillaLlena,
+                  // La casilla que sigue se marca, para saber dónde va uno.
+                  indice === codigo.length && estilos.casillaActiva,
+                ]}
+              >
+                <Text style={estilos.caracter}>{codigo[indice] || ''}</Text>
+              </View>
             ))}
-          </View>
+
+            <TextInput
+              ref={campo}
+              style={estilos.campoOculto}
+              value={codigo}
+              onChangeText={escribir}
+              maxLength={LARGO}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+              caretHidden
+            />
+          </Pressable>
         </View>
 
         {error ? <Text style={estilos.error}>{error}</Text> : null}
@@ -201,10 +176,8 @@ const estilos = StyleSheet.create({
   casilla: {
     flex: 1,
     height: 54,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORES.texto,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: COLORES.borde,
     borderRadius: 8,
@@ -212,6 +185,29 @@ const estilos = StyleSheet.create({
   },
   casillaLlena: {
     borderColor: COLORES.marca,
+  },
+  casillaActiva: {
+    borderColor: COLORES.marca,
+    backgroundColor: COLORES.marcaSuave,
+  },
+  caracter: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORES.texto,
+  },
+  /*
+   * El campo de verdad: cubre la fila de casillas para que el toque caiga en
+   * él, pero no se ve. No se usa `display: none` ni `width: 0` porque un campo
+   * sin tamaño no siempre recibe el foco en Android.
+   */
+  campoOculto: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 54,
+    opacity: 0,
+    color: 'transparent',
   },
   error: {
     color: COLORES.error,
