@@ -19,9 +19,9 @@
  *      `expo-image-picker`, que no está instalado. El recuadro está puesto,
  *      con su sitio y su medida, para que al conectarlo no se mueva nada.
  *
- * OJO: por ahora esto es solo la interfaz. El envío finge la espera; cuando
- * exista la capa de API móvil, ahí va el POST a /registerClient con el
- * FormData y el salto a la pantalla de verificación.
+ * Enviar NO crea la cuenta: el backend guarda los datos 15 minutos y manda un
+ * código de 6 caracteres al correo. Por eso de aquí se sale a Verificación y
+ * no a la tienda.
  * ============================================================
  */
 
@@ -39,6 +39,7 @@ import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import { Camara, Candado, Numeral, Persona, Pin, Sobre, Telefono } from '../components/UI/Iconos';
+import { registrarCliente } from '../api/authApi';
 import { COLORES } from '../theme/colores';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 import {
@@ -71,9 +72,10 @@ const REGLAS = {
   password: validarContrasena,
 };
 
-const Register = ({ irALogin }) => {
+const Register = ({ irALogin, alPedirCodigo }) => {
   const [valores, setValores] = useState(VALORES_INICIALES);
   const [errores, setErrores] = useState({});
+  const [avisoServidor, setAvisoServidor] = useState('');
   const [cargando, setCargando] = useState(false);
 
   /*
@@ -84,16 +86,27 @@ const Register = ({ irALogin }) => {
     const valor = formateador ? formateador(texto) : texto;
     setValores((v) => ({ ...v, [campo]: valor }));
     if (errores[campo]) setErrores((e) => ({ ...e, [campo]: null }));
+    if (avisoServidor) setAvisoServidor('');
   };
 
-  const enviar = () => {
+  const enviar = async () => {
     const encontrados = validarFormulario(valores, REGLAS);
     setErrores(encontrados);
     if (!sinErrores(encontrados)) return;
 
-    setCargando(true);
-    // TODO: POST /registerClient con FormData + navegar a Verificación.
-    setTimeout(() => setCargando(false), 900);
+    try {
+      setCargando(true);
+      setAvisoServidor('');
+
+      await registrarCliente({ ...valores, email: valores.email.trim() });
+
+      // La cuenta todavía no existe: nace cuando vuelva el código del correo.
+      alPedirCodigo(valores.email.trim());
+    } catch (err) {
+      setAvisoServidor(err.message || 'No se pudo completar el registro');
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -196,6 +209,12 @@ const Register = ({ irALogin }) => {
             <Text style={estilos.ayudaFoto}>JPG o PNG, hasta 8 MB</Text>
           </Pressable>
 
+          {avisoServidor ? (
+            <View style={estilos.aviso}>
+              <Text style={estilos.avisoTexto}>{avisoServidor}</Text>
+            </View>
+          ) : null}
+
           <Boton texto="Continuar" alPresionar={enviar} cargando={cargando} estilo={estilos.boton} />
 
           <Text style={estilos.pie}>
@@ -258,6 +277,20 @@ const estilos = StyleSheet.create({
   ayudaFoto: {
     fontSize: 12,
     color: COLORES.marcador,
+  },
+  aviso: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCD9DA',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 4,
+  },
+  avisoTexto: {
+    color: '#B4231F',
+    fontSize: 13,
+    lineHeight: 19,
   },
   boton: {
     marginTop: 10,

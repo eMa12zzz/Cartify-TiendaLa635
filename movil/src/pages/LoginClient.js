@@ -13,10 +13,6 @@
  * favorito), así que la pantalla tiene que verse como parte de la misma tienda
  * y no como un peaje. De ahí la salida de arriba y el "puede seguir viendo la
  * tienda sin cuenta" bajo el título.
- *
- * OJO: por ahora esto es solo la interfaz. El envío finge un segundo de espera
- * para que se vea el estado de carga; cuando exista la capa de API móvil, ese
- * `setTimeout` se cambia por la llamada real y el guardado del token.
  * ============================================================
  */
 
@@ -35,6 +31,8 @@ import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
 import { Bici, Candado, Corazon, Estrella, Flecha, Sobre } from '../components/UI/Iconos';
+import { loginClientDB } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 import { COLORES } from '../theme/colores';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 
@@ -59,8 +57,10 @@ const VENTAJAS = [
 ];
 
 const LoginClient = ({ irARegistro, irATienda }) => {
+  const { login } = useAuth();
   const [valores, setValores] = useState({ email: '', password: '' });
   const [errores, setErrores] = useState({});
+  const [avisoServidor, setAvisoServidor] = useState('');
   const [recordarme, setRecordarme] = useState(false);
   const [cargando, setCargando] = useState(false);
 
@@ -69,9 +69,10 @@ const LoginClient = ({ irARegistro, irATienda }) => {
     // El error se borra al corregir, no al reenviar: nadie quiere seguir viendo
     // "formato inválido" en rojo mientras arregla el correo.
     if (errores[campo]) setErrores((e) => ({ ...e, [campo]: null }));
+    if (avisoServidor) setAvisoServidor('');
   };
 
-  const enviar = () => {
+  const enviar = async () => {
     const encontrados = validarFormulario(valores, {
       email: validarCorreo,
       password: validarContrasena,
@@ -79,9 +80,30 @@ const LoginClient = ({ irARegistro, irATienda }) => {
     setErrores(encontrados);
     if (!sinErrores(encontrados)) return;
 
-    setCargando(true);
-    // TODO: aquí va loginClientDB({ email, password }) y guardar el token.
-    setTimeout(() => setCargando(false), 900);
+    try {
+      setCargando(true);
+      setAvisoServidor('');
+
+      const res = await loginClientDB({
+        email: valores.email.trim(),
+        password: valores.password,
+      });
+
+      /*
+       * El tipo lo dice el servidor: por esta misma puerta entran clientes y
+       * personal, y de eso depende qué se le muestra después.
+       */
+      login(res.token, res.userType || 'client', res.client);
+    } catch (err) {
+      /*
+       * El error del servidor va dentro de la tarjeta y no en una alerta que
+       * hay que cerrar: "la contraseña es incorrecta" se lee al lado del campo
+       * que hay que corregir, con la contraseña todavía escrita.
+       */
+      setAvisoServidor(err.message || 'No se pudo iniciar sesión');
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -137,6 +159,12 @@ const LoginClient = ({ irARegistro, irATienda }) => {
                 <Text style={estilos.enlace}>¿Olvidaste tu contraseña?</Text>
               </Pressable>
             </View>
+
+            {avisoServidor ? (
+              <View style={estilos.aviso}>
+                <Text style={estilos.avisoTexto}>{avisoServidor}</Text>
+              </View>
+            ) : null}
 
             <Boton texto="Iniciar sesión" alPresionar={enviar} cargando={cargando} />
 
@@ -241,6 +269,20 @@ const estilos = StyleSheet.create({
     fontSize: 13,
     color: COLORES.marca,
     fontWeight: '600',
+  },
+  aviso: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCD9DA',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 14,
+  },
+  avisoTexto: {
+    color: '#B4231F',
+    fontSize: 13,
+    lineHeight: 19,
   },
   pie: {
     textAlign: 'center',
