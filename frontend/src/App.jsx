@@ -30,6 +30,7 @@ import ForgotPassword from './pages/ForgotPassword'; // Solicitar recuperación 
 import Dashboard from './pages/Dashboard';        // Panel de la tienda para clientes
 import Store from './pages/Store';
 import Seccion from './pages/Seccion';       // Una sección de la portada, completa
+import NoEncontrado from './pages/NoEncontrado'; // 404: cualquier dirección que no exista
 import Impresiones from './pages/impresiones';
 
 // --- Panel Administrativo ---
@@ -189,6 +190,18 @@ function App() {
               <Route path="/mi-cuenta/ayuda"       element={<CentroAyuda />} />
             </Route>
           </Route>
+
+          {/*
+           * ── Cualquier otra cosa ────────────────────────────────────
+           * Va de ÚLTIMA y a propósito: React Router elige la ruta más
+           * específica, así que este comodín solo entra cuando ninguna de
+           * arriba coincidió.
+           *
+           * Sin esta línea, una dirección mal escrita —o un enlace viejo que
+           * alguien compartió por WhatsApp— renderizaba una pantalla en blanco
+           * absoluto: ni encabezado, ni aviso, ni salida.
+           */}
+          <Route path="*" element={<NoEncontrado />} />
 
         </Routes>
         </DireccionProvider>
