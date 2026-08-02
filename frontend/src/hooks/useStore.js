@@ -172,7 +172,7 @@ const escribirLineas = (llave, lista) => {
   window.dispatchEvent(new Event(EVENTO_CARRITO));
 };
 
-export const useStore = ({ moduloInicial = null } = {}) => {
+export const useStore = ({ moduloInicial = null, busquedaInicial = '' } = {}) => {
   const [productos, setProductos] = useState([]);
   /*
    * El pasillo en el que está parado el cliente. null = toda la tienda.
@@ -180,7 +180,8 @@ export const useStore = ({ moduloInicial = null } = {}) => {
    */
   const [moduloSeleccionado, setModuloSeleccionado] = useState(moduloInicial);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
-  const [terminoBusqueda, setTerminoBusqueda] = useState('');
+  // Arranca con lo que venga en ?q= (ver Store.jsx), o vacío.
+  const [terminoBusqueda, setTerminoBusqueda] = useState(busquedaInicial);
   const [cargando, setCargando] = useState(false);
   const [filtroPrecio, setFiltroPrecio] = useState('todos');
   const [promoSeleccionada, setPromoSeleccionada] = useState(null);

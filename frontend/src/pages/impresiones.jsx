@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Store, User, FileUp, LayoutGrid } from 'lucide-react';
+import { FileUp, LayoutGrid } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { printServiceService } from '../api/printServiceService';
 import { orderService } from '../api/orderService';
@@ -9,20 +8,18 @@ import { useAuth } from '../hooks/useAuth';
 import { usePrintComposer } from '../hooks/usePrintComposer';
 import { useMaterialesImpresion } from '../hooks/useMaterialesImpresion';
 import PrintComposer from '../components/Store/PrintComposer';
+import HeaderTienda from '../components/Store/HeaderTienda';
+import PieTienda from '../components/Store/PieTienda';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import { calcularPrecioImpresion } from '../utils/precioImpresion';
 
 const BROWN = '#B46C30';
 const BROWN_DARK = '#8A5222';
 
-const Container = styled.div`min-height: 100vh; background: #f6f6f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;`;
-const Header = styled.header`background: white; padding: 0 28px; border-bottom: 1px solid #ebebeb; display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 64px; position: sticky; top: 0; z-index: 200;`;
-const LogoArea = styled.div`display: flex; flex-direction: column; cursor: pointer; flex-shrink: 0;`;
-const LogoTop = styled.span`font-size: 11px; color: #aaa; line-height: 1;`;
-const LogoMain = styled.span`font-size: 22px; font-weight: 800; color: #111; letter-spacing: -0.5px; line-height: 1.2;`;
-const HeaderRight = styled.div`display: flex; align-items: center; gap: 8px;`;
-const NavBtn = styled.button`background: white; color: #333; border: 1.5px solid #e0e0e0; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 30px; font-size: 13px; font-weight: 600; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); &:hover { border-color: ${BROWN}; color: ${BROWN}; }`;
-const Content = styled.div`padding: 32px 28px 60px; max-width: 760px; margin: 0 auto;`;
+/* Columna flex por lo mismo que la tienda: con poco contenido, el pie tiene
+   que aterrizar abajo y no quedar flotando a media pantalla. */
+const Container = styled.div`min-height: 100vh; background: #f6f6f6; font-family: var(--fuente); display: flex; flex-direction: column;`;
+const Content = styled.div`flex: 1; padding: 32px 28px 60px; max-width: 760px; margin: 0 auto; width: 100%;`;
 const StepTitle = styled.h2`font-size: 18px; font-weight: 800; color: #111; margin: 0 0 14px;`;
 const Tabs = styled.div`display: flex; gap: 8px; margin-bottom: 18px;`;
 const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : '#e0e0e0')}; background: ${p => (p.$active ? '#F3E7D8' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#555')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
@@ -55,7 +52,6 @@ const ContinueBtn = styled.button`width: 100%; padding: 15px; background: ${BROW
 const Bloque = styled.div`margin-bottom: 32px;`;
 
 const Impresiones = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [servicios, setServicios] = useState([]);
@@ -160,16 +156,14 @@ const Impresiones = () => {
 
   return (
     <Container>
-      <Header>
-        <LogoArea onClick={() => navigate('/tienda-dashboard')}>
-          <LogoTop>Tienda</LogoTop>
-          <LogoMain>la 635</LogoMain>
-        </LogoArea>
-        <HeaderRight>
-          <NavBtn onClick={() => navigate('/store')}><Store size={16} /> Ir a la tienda</NavBtn>
-          <NavBtn onClick={() => navigate('/mi-cuenta')}><User size={16} /> Mi Cuenta</NavBtn>
-        </HeaderRight>
-      </Header>
+      {/*
+        El MISMO encabezado de la tienda. Antes esta pantalla tenía una barra
+        propia de dos botones —"Ir a la tienda" y "Mi Cuenta"— que la hacía
+        sentir otro sitio: sin pasillos, sin dirección de entrega, sin buscador
+        y sin carrito. Impresiones no es otra tienda, es otro pasillo de la
+        misma; ahora se ve así. Ver HeaderTienda.
+      */}
+      <HeaderTienda />
 
       <Content>
         <StepTitle>1. Elige el formato</StepTitle>
@@ -302,6 +296,10 @@ const Impresiones = () => {
           {enviando ? 'Preparando…' : 'Enviar a imprimir'}
         </ContinueBtn>
       </Content>
+
+      {/* El mismo pie que la tienda: acá también se acaba la página, y sin él
+          quedaba cortada. */}
+      <PieTienda />
     </Container>
   );
 };

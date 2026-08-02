@@ -8,6 +8,7 @@ import { useMyOrders } from '../hooks/useMyOrders';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import ProductCard from '../components/Store/ProductCard';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
+import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
 
 /*
@@ -36,13 +37,15 @@ const Contenedor = styled.div`
 
 /* La barra cruza toda la pantalla —es el techo de la página— pero lo que lleva
    adentro se alinea con los productos, no con la orilla del monitor. */
+/*
+ * Ya NO es sticky: el encabezado de la tienda lo es, y dos barras pegadas
+ * arriba a la vez se montan una encima de la otra. Esta se queda quieta y se
+ * va con el scroll — es un botón de volver, no una barra de navegación.
+ */
 const Barra = styled.header`
-  position: sticky;
-  top: 0;
-  z-index: 200;
   background: var(--papel);
   border-bottom: 1px solid var(--linea);
-  height: 64px;
+  height: 56px;
   display: flex;
   align-items: center;
 `;
@@ -161,11 +164,25 @@ const Seccion = () => {
 
   return (
     <Contenedor>
+      {/*
+        El MISMO encabezado de la tienda, siempre arriba. Esta pantalla tenía
+        una barra propia con un solo botón, así que al abrir una sección se
+        perdían de vista el buscador, los pasillos y el carrito — y para
+        volver a comprar había que retroceder primero.
+      */}
+      <HeaderTienda />
+
       <Barra>
         <BarraInterior>
+          {/*
+            Dice "Volver" a secas y no "Volver a la tienda": lleva a donde
+            estabas, que puede ser la tienda filtrada por una búsqueda. Prometer
+            "la tienda" y devolver una lista de resultados es mentir en el
+            botón. Para ir a la tienda limpia está el nombre en el encabezado.
+          */}
           <Volver onClick={volver}>
             <ArrowLeft size={17} strokeWidth={2.3} />
-            Volver a la tienda
+            Volver
           </Volver>
         </BarraInterior>
       </Barra>
@@ -188,7 +205,7 @@ const Seccion = () => {
             </p>
             <Volver onClick={volver}>
               <ArrowLeft size={17} strokeWidth={2.3} />
-              Volver a la tienda
+              Volver
             </Volver>
           </Vacio>
         ) : (
