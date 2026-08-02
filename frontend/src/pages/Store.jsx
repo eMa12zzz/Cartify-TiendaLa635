@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Search, Mic, ShoppingBag, User, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
@@ -11,14 +11,12 @@ import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
 import PromoDetailModal from '../components/Store/PromoDetailModal';
 import FilaProductos from '../components/Store/FilaProductos';
-import SelectorDireccion from '../components/Store/SelectorDireccion';
-import MenuTienda from '../components/Store/MenuTienda';
+import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
 import { useModulos } from '../hooks/useModulos';
-import { useAuth } from '../hooks/useAuth';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = '#B46C30';
@@ -35,263 +33,23 @@ const Container = styled.div`
    */
   background: #fff;
   font-family: var(--fuente);
-`;
 
-/* ─── Header ─── */
-const Header = styled.header`
-  background: white;
-  padding: 0 28px;
   /*
-   * La raya que separa el navbar de la tienda. Antes el header era blanco
-   * sobre un fondo beige y el contraste ya los separaba solo; ahora que todo
-   * es blanco, sin esta línea el encabezado flota sin principio ni fin.
+   * Columna flex para que el pie se quede ABAJO cuando la página es corta.
+   *
+   * Con min-height: 100vh a secas, una búsqueda de cinco productos dejaba el
+   * pie flotando a media pantalla y 259 píxeles de blanco debajo: la página
+   * parecía cortada, como si le faltara algo por cargar. Ahora el contenido
+   * empuja (flex: 1) y el pie aterriza en el borde de abajo aunque haya poco
+   * que mostrar.
    */
-  border-bottom: 1px solid #e6e2dd;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  height: 64px;
-  position: sticky;
-  top: 0;
-  /* El sticky ya sirve de referencia para centrar el buscador dentro */
-  z-index: 200;
-
-  /*
-   * En teléfono el encabezado pasa a DOS renglones.
-   *
-   * Todo esto —nombre, dirección, buscador, asistente, carrito y cuenta— nunca
-   * cupo en una sola fila de 375px: el buscador tiene flex:1 y min-width:0, así
-   * que era él quien cedía, y terminaba midiendo 14 píxeles mientras los
-   * botones se salían 181px fuera de la pantalla.
-   *
-   * Se parte donde menos duele: arriba quedan el nombre y los botones (que se
-   * reconocen por su icono), y el buscador se lleva un renglón entero para él
-   * solo. En una tienda de barrio la gente no navega pasillos, viene por algo
-   * concreto y lo escribe — ese renglón es el que más se usa de la pantalla.
-   */
-  @media (max-width: 700px) {
-    height: auto;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 8px;
-    padding: 8px 16px 10px;
-  }
+  flex-direction: column;
 `;
 
-/* El nombre de la tienda y sus estilos se mudaron a MenuTienda: ahora abre
-   los pasillos en vez de navegar a Servicios. */
-
-/*
- * Buscador del diseño: pill blanca con borde suave y el icono metido en un
- * círculo café a la izquierda (antes era gris con una lupa suelta).
- */
-const SearchBox = styled.div`
-  /*
-   * Centrado de verdad: el buscador queda a la misma distancia del logo que
-   * de los botones de la derecha. Antes tenía flex:1 a secas y se recostaba
-   * contra el logo, dejando un hueco raro antes del carrito.
-   *
-   * Los márgenes automáticos lo centran respecto al header completo, sin
-   * depender de que el logo y los botones midan lo mismo.
-   */
-  /*
-   * Crece con la ventana pero hasta un tope, y dentro de su espacio se centra.
-   *
-   * Los dos extremos se probaron y ninguno sirve: centrado exacto contra el
-   * header se monta encima del carrito (el logo mide 56px y los botones casi
-   * 400), y estirado sin tope se vuelve una barra descomunal en pantalla
-   * grande. Con max-width + márgenes automáticos queda centrado entre el logo
-   * y los botones, que es donde el ojo lo espera.
-   */
+/* Lo que crece para empujar el pie hasta abajo. */
+const Cuerpo = styled.div`
   flex: 1;
-  min-width: 0;
-  max-width: 520px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  background: var(--papel);
-  border: 1px solid var(--linea);
-  border-radius: var(--radio-pill);
-  padding: 0 6px 0 6px;
-  gap: 10px;
-  height: 46px;
-  transition: box-shadow var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out);
-
-  &:focus-within {
-    border-color: ${BROWN};
-    box-shadow: 0 0 0 3px ${BROWN}1F;
-  }
-
-  /*
-   * El renglón de abajo, completo. El order lo manda después de los botones
-   * aunque en el código venga antes: en el HTML el buscador va en medio porque
-   * ahí es donde se lee en pantalla grande, y no vale la pena mover el marcado
-   * —y con él el orden del tabulador— solo para acomodar el teléfono.
-   */
-  @media (max-width: 700px) {
-    order: 3;
-    flex-basis: 100%;
-    max-width: none;
-    margin: 0;
-    height: 44px;
-  }
-
-  input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 14px;
-    color: var(--tinta);
-    &::placeholder { color: var(--tinta-tenue); }
-  }
-`;
-
-/* El círculo café que envuelve la lupa. */
-const SearchIcon = styled.span`
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: ${BROWN};
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const HeaderRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-
-  /* Pegados a la derecha una vez que el buscador se bajó de renglón. */
-  @media (max-width: 700px) {
-    margin-left: auto;
-    gap: 6px;
-  }
-`;
-
-/*
- * El texto de los botones del encabezado.
- *
- * En pantalla angosta se oculta pero NO se borra: queda escondido a la vista y
- * disponible para el lector de pantalla, así el botón sigue llamándose
- * "Carrito" para quien no lo ve. Con display:none se habría quedado mudo.
- */
-const Etiqueta = styled.span`
-  @media (max-width: 900px) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-`;
-
-/*
- * En el diseño TODO en el header son pills. Hay dos sabores:
- *   - $solida : café relleno con texto blanco (el Asistente).
- *   - normal  : blanca con borde (Mi Cuenta, salir).
- */
-const IconBtn = styled.button`
-  background: ${props => (props.$solida ? BROWN : 'var(--papel)')};
-  border: 1px solid ${props => (props.$solida ? BROWN : 'var(--linea)')};
-  color: ${props => (props.$solida ? '#fff' : 'var(--tinta-suave)')};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 16px;
-  height: 42px;
-  border-radius: var(--radio-pill);
-  font-size: 14px;
-  font-weight: ${props => (props.$solida ? 600 : 500)};
-  font-family: inherit;
-  white-space: nowrap;
-  transition: background-color var(--dur-press) var(--ease-out),
-              border-color var(--dur-press) var(--ease-out),
-              color var(--dur-press) var(--ease-out),
-              transform var(--dur-press) var(--ease-out);
-
-  /* En táctil un toque deja el hover pegado, así que el hover es solo del ratón. */
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      background: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-50)')};
-      border-color: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-400)')};
-      color: ${props => (props.$solida ? '#fff' : BROWN)};
-    }
-  }
-  &:active { transform: scale(0.97); }
-
-  /*
-   * Sin texto, cuadrado y de 44px: el mínimo con el que un pulgar acierta sin
-   * pensarlo. Entre los clientes de la tienda hay gente mayor, y un botón de
-   * 32px al lado de otro es una trampa.
-   */
-  @media (max-width: 900px) {
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    justify-content: center;
-    gap: 0;
-  }
-`;
-
-const CartBtn = styled.button`
-  background: ${BROWN};
-  color: white;
-  border: 1px solid ${BROWN};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 18px;
-  height: 42px;
-  border-radius: var(--radio-pill);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  white-space: nowrap;
-  transition: background-color var(--dur-press) var(--ease-out),
-              border-color var(--dur-press) var(--ease-out),
-              transform var(--dur-press) var(--ease-out);
-
-  @media (hover: hover) and (pointer: fine) {
-    &:hover { background: ${BROWN_DARK}; border-color: ${BROWN_DARK}; }
-  }
-  &:active { transform: scale(0.97); }
-
-  /*
-   * El carrito es lo único que conserva ancho propio al encogerse: lleva el
-   * número de artículos al lado del icono, y ese número es media razón por la
-   * que la gente mira el botón.
-   */
-  @media (max-width: 900px) {
-    height: 44px;
-    padding: 0 12px;
-    gap: 6px;
-  }
-`;
-
-const CartBadge = styled.span`
-  background: white;
-  color: ${BROWN};
-  border-radius: 50%;
-  min-width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 0 4px;
 `;
 
 /* ─── Category Bar ─── */
@@ -665,7 +423,6 @@ const Store = () => {
   const [searchParams] = useSearchParams();
   const { pasillos } = useModulos();
   // La tienda se ve con o sin cuenta; la sesión solo cambia qué botones salen.
-  const { isAuthenticated } = useAuth();
 
   const {
     moduloSeleccionado,
@@ -695,7 +452,15 @@ const Store = () => {
     abrirPromo,
     cerrarPromo,
     verPromoEnTienda,
-  } = useStore({ moduloInicial: searchParams.get('modulo') });
+  /*
+   * El `q` lo manda el buscador del encabezado cuando se escribe desde una
+   * pantalla que no maneja la búsqueda —Impresiones—. Así teclear algo allá
+   * hace lo que uno espera: llegar a la tienda con eso ya buscado.
+   */
+  } = useStore({
+    moduloInicial: searchParams.get('modulo'),
+    busquedaInicial: searchParams.get('q') || '',
+  });
 
   // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
   const destacados = useFilaDeslizable();
@@ -785,69 +550,29 @@ const Store = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Header ── */}
-      <Header>
-        {/*
-          El nombre de la tienda abre sus pasillos en vez de mandar a otra
-          pantalla: se elige el módulo sin perder de vista lo que se estaba
-          comprando.
-        */}
-        <MenuTienda
-          moduloSeleccionado={moduloSeleccionado}
-          onElegirModulo={setModuloSeleccionado}
-        />
-
-        {/* A dónde le llevamos el pedido, cambiable sin salir de comprar */}
-        <SelectorDireccion />
-
-        <SearchBox>
-          <SearchIcon><Search size={17} strokeWidth={2.4} /></SearchIcon>
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            value={terminoBusqueda}
-            onChange={(e) => setTerminoBusqueda(e.target.value)}
-          />
-          {terminoBusqueda && (
-            <button
-              onClick={() => setTerminoBusqueda('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 16 }}
-            >✕</button>
-          )}
-        </SearchBox>
-
-        <HeaderRight>
-          <IconBtn $solida onClick={() => setMostrarAsistente(true)} title="Asistente por voz">
-            <Mic size={18} strokeWidth={2.2} /> <Etiqueta>Asistente</Etiqueta>
-          </IconBtn>
-          <CartBtn onClick={() => setMostrarCarrito(true)} title="Carrito">
-            <ShoppingBag size={18} strokeWidth={2.2} /> <Etiqueta>Carrito</Etiqueta>
-            {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
-          </CartBtn>
-          {/*
-            Sin sesión el botón invita a entrar; con sesión lleva a su cuenta.
-            La tienda se puede ver sin cuenta, así que "Mi Cuenta" a alguien
-            que no tiene ninguna sería una puerta a un cuarto que no existe.
-          */}
-          {isAuthenticated ? (
-            <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">
-              <User size={18} strokeWidth={2.2} /> <Etiqueta>Mi Cuenta</Etiqueta>
-            </IconBtn>
-          ) : (
-            <IconBtn onClick={() => navigate('/iniciar-sesion?volver=/')} title="Iniciar sesión">
-              <User size={18} strokeWidth={2.2} /> <Etiqueta>Ingresar</Etiqueta>
-            </IconBtn>
-          )}
-          {/* Cerrar sesión vive solo en Mi Cuenta: acá era muy fácil apretarlo
-              sin querer, al lado del carrito. */}
-        </HeaderRight>
-      </Header>
+      {/* ── Header ──
+          Es el mismo componente que usa Impresiones. Vivía escrito aquí
+          adentro, y por eso Impresiones había terminado con una barra propia
+          de dos botones, sin pasillos ni carrito. Ver HeaderTienda. */}
+      <HeaderTienda
+        moduloSeleccionado={moduloSeleccionado}
+        onElegirModulo={setModuloSeleccionado}
+        terminoBusqueda={terminoBusqueda}
+        onBuscar={setTerminoBusqueda}
+        cantidadItems={cantidadItems}
+        onAbrirCarrito={() => setMostrarCarrito(true)}
+        onAbrirAsistente={() => setMostrarAsistente(true)}
+      />
 
       {/*
         La barra de pasillos se fue: ahora los pasillos viven en el menú del
         nombre de la tienda. Tener las dos era decir lo mismo dos veces y
         empujaba los productos media pantalla hacia abajo.
       */}
+
+      {/* Todo lo que va entre el encabezado y el pie: es lo que crece y empuja
+          el pie hasta abajo cuando hay pocos productos que mostrar. */}
+      <Cuerpo>
 
       {/* ── Category Bar ── */}
       <CategoryBar>
@@ -1010,6 +735,8 @@ const Store = () => {
           )}
         </div>
       </Content>
+
+      </Cuerpo>
 
       {/* El cierre de la página: sin esto los productos se acababan y quedaba
           el blanco, como si la tienda se hubiera cortado a medias. */}
