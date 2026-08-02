@@ -9,6 +9,7 @@ import StatCard from '../components/UI/StatCard';
 import { useDashboard } from '../hooks/useDashboard';
 import { useTheme } from '../context/ThemeContext';
 import { modalTransition, overlayTransition, modalInitial, modalAnimate } from '../utils/motion';
+import { formatearFecha } from '../utils/fechas';
 
 /*
  * AdminDashboard — el resumen operativo de la tienda, con datos REALES.
@@ -112,8 +113,16 @@ const AdminDashboard = () => {
       ['Puntos canjeados (30 días)', String(data.puntosCanjeados)],
     ]);
 
+    // El PDF cuenta lo mismo que la pantalla: los eliminados llevan su nota y
+    // no fingen tener bodega.
     y = tabla('Productos Más Vendidos', y, ['#', 'Producto', 'Vendidos', 'En bodega', 'Precio'],
-      data.masVendidos.map((p, i) => [i + 1, p.nombre || '—', p.vendidos, p.stock ?? '—', money(p.precio)]), brownDark);
+      data.masVendidos.map((p, i) => [
+        i + 1,
+        p.eliminado ? `${p.nombre} (eliminado)` : p.nombre,
+        p.vendidos,
+        p.eliminado ? '—' : (p.stock ?? '—'),
+        money(p.precio),
+      ]), brownDark);
 
     if (y > 220) { doc.addPage(); y = 20; }
     y = tabla('Ventas y Compras', y, ['Periodo', 'Ventas ($)', 'Compras ($)', 'Diferencia ($)'],
@@ -132,6 +141,11 @@ const AdminDashboard = () => {
   if (loading || !data) {
     return <p className="text-gray-500">Cargando el resumen de la tienda…</p>;
   }
+
+  // Las ventas huérfanas (productos que nunca tuvieron módulo) viajan aparte
+  // del gráfico; se anuncian debajo en vez de competir con las áreas reales.
+  const sinModulo = data.ventasSinModulo || 0;
+  const mayorModulo = data.ventasPorModulo[0]?.total || 1; // escala de las barras
 
   const alertas = [
     {
@@ -164,9 +178,9 @@ const AdminDashboard = () => {
     <div className="flex flex-col gap-6 w-full pb-8">
       {/* ── Encabezado ── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-bold tracking-wider text-[#C28C5D]">{fechaLarga()}</p>
-          <h1 className="text-4xl font-extrabold text-[#C28C5D]">Resumen de hoy</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Resumen de hoy</h1>
         </div>
         <button
           onClick={() => setModal('pdf')}
@@ -242,10 +256,16 @@ const AdminDashboard = () => {
 
       {/* ── Gráfica + alertas ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        {/*
+          min-w-0 en la caja de la gráfica: el ResponsiveContainer mide a su
+          padre para saber cuánto ancho tiene, y sin esto el padre se estiraba
+          hasta el ancho que la gráfica pedía en vez de al revés. La página
+          entera terminaba corriéndose de lado en teléfono.
+        */}
+        <div className="lg:col-span-2 min-w-0 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h3 className="text-xl font-bold text-gray-800">Ventas y compras</h3>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {PERIODOS.map((p) => (
                 <button
                   key={p.id}
@@ -284,7 +304,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Requiere tu atención */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="min-w-0 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 mb-4">Requiere tu atención</h3>
           <div className="flex flex-col gap-3">
             {alertas.map((a) => {
@@ -298,9 +318,9 @@ const AdminDashboard = () => {
                   style={{ backgroundColor: a.bg }}
                 >
                   <Icon className="w-5 h-5 flex-none mt-0.5" style={{ color: a.color }} />
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-bold text-gray-800">{a.titulo}</div>
-                    <div className="text-xs text-gray-600">{a.sub}</div>
+                    <div className="text-xs text-gray-600 break-words">{a.sub}</div>
                   </div>
                 </button>
               );
@@ -310,16 +330,22 @@ const AdminDashboard = () => {
       </div>
 
       {/* ── Productos más vendidos ── */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
+      <div className="min-w-0 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <h3 className="text-xl font-bold text-gray-800">Productos más vendidos</h3>
           <button onClick={() => navigate('/inventario')} className="text-sm font-medium text-[#B47C4D] hover:underline">Ver todo</button>
         </div>
         {data.masVendidos.length === 0 ? (
           <p className="text-sm text-gray-500">Aún no hay ventas registradas.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          /*
+            Seis columnas no caben en un teléfono y no hay forma de que quepan.
+            En vez de dejar que estiren la página, la tabla se corre de lado
+            DENTRO de su caja: lo que no cabe se busca deslizando aquí, y el
+            resto del panel se queda quieto.
+          */
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[680px]">
               <thead>
                 <tr className="border-b border-gray-100">
                   {['Producto', 'Categoría', 'Vendidos', 'En bodega', 'Precio', 'Estado'].map((h) => (
@@ -335,18 +361,30 @@ const AdminDashboard = () => {
                   const bajo = maxNum > 0
                     ? stockNum <= maxNum * data.umbrales.ratioBajo
                     : stockNum <= data.umbrales.stockBajoAbs;
+                  /*
+                   * Del producto que ya se borró del inventario sí sabemos qué
+                   * y a cuánto se vendió, pero no queda bodega que reportar:
+                   * decir "Quedan 0" mandaría a reponer algo que ya no existe.
+                   */
                   return (
                     <tr key={p._id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-4 px-4 text-sm font-medium text-gray-800">{p.nombre || '—'}</td>
+                      <td className="py-4 px-4 text-sm font-medium text-gray-800">{p.nombre}</td>
                       <td className="py-4 px-4 text-sm text-gray-600">{p.categoria || '—'}</td>
                       <td className="py-4 px-4 text-sm text-gray-600">{p.vendidos}</td>
-                      <td className="py-4 px-4 text-sm text-gray-600">{p.stock ?? '—'}</td>
+                      <td className="py-4 px-4 text-sm text-gray-600">{p.eliminado ? '—' : (p.stock ?? '—')}</td>
                       <td className="py-4 px-4 text-sm text-gray-600">{money(p.precio)}</td>
                       <td className="py-4 px-4 text-sm">
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${bajo ? 'text-red-500' : 'text-green-500'}`}
-                              style={{ backgroundColor: bajo ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)' }}>
-                          {bajo ? `Quedan ${p.stock ?? 0}` : 'En stock'}
-                        </span>
+                        {p.eliminado ? (
+                          <span className="text-xs font-bold px-2 py-1 rounded-full text-gray-500"
+                                style={{ backgroundColor: 'rgba(107,114,128,.12)' }}>
+                            Producto eliminado
+                          </span>
+                        ) : (
+                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${bajo ? 'text-red-500' : 'text-green-500'}`}
+                                style={{ backgroundColor: bajo ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)' }}>
+                            {bajo ? `Quedan ${p.stock ?? 0}` : 'En stock'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -359,32 +397,43 @@ const AdminDashboard = () => {
 
       {/* ── Ventas por módulo + sin movimiento ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="min-w-0 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 mb-1">Ventas por módulo</h3>
           <p className="text-xs text-gray-500 mb-4">Cuál área de la tienda está rindiendo</p>
-          {data.ventasPorModulo.length === 0 ? (
+          {data.ventasPorModulo.length === 0 && !sinModulo ? (
             <p className="text-sm text-gray-500">Sin ventas todavía.</p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {data.ventasPorModulo.map((m) => {
-                const mayor = data.ventasPorModulo[0].total || 1;
-                return (
+            <>
+              <div className="flex flex-col gap-3">
+                {data.ventasPorModulo.map((m) => (
                   <div key={m.modulo}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-gray-800">{m.modulo}</span>
-                      <span className="text-gray-600">{money(m.total)}</span>
+                    <div className="flex justify-between gap-3 text-sm mb-1">
+                      <span className="font-medium text-gray-800 truncate">{m.modulo}</span>
+                      <span className="text-gray-600 flex-none">{money(m.total)}</span>
                     </div>
                     <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                      <div className="h-full rounded-full bg-[#B47C4D]" style={{ width: `${(m.total / mayor) * 100}%` }} />
+                      <div className="h-full rounded-full bg-[#B47C4D]" style={{ width: `${(m.total / mayorModulo) * 100}%` }} />
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+              {/*
+                Las ventas viejas sin módulo ya no compiten en el gráfico —una
+                barra gigante de "Sin módulo asignado" aplastaba a las demás y
+                no decía nada de ningún área—, pero tampoco desaparecen: esa
+                plata entró de verdad y callarla sería peor que mostrarla mal.
+              */}
+              {sinModulo > 0 && (
+                <p className="text-xs text-gray-400 mt-4 leading-relaxed">
+                  {money(sinModulo)} de ventas antiguas sin módulo asignado. No entran en la
+                  comparación porque no se sabe de qué área salieron.
+                </p>
+              )}
+            </>
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="min-w-0 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 mb-1">Sin movimiento</h3>
           <p className="text-xs text-gray-500 mb-4">Nadie los ha comprado — evalúa dejar de surtirlos</p>
           {data.sinMovimiento.length === 0 ? (
@@ -392,9 +441,9 @@ const AdminDashboard = () => {
           ) : (
             <div className="flex flex-col gap-2">
               {data.sinMovimiento.map((p) => (
-                <div key={p._id} className="flex justify-between text-sm">
-                  <span className="text-gray-800">{p.name}</span>
-                  <span className="text-gray-500">{p.stock} en bodega · {money(p.salePrice)}</span>
+                <div key={p._id} className="flex justify-between gap-3 text-sm">
+                  <span className="text-gray-800 truncate">{p.name}</span>
+                  <span className="text-gray-500 flex-none">{p.stock} en bodega · {money(p.salePrice)}</span>
                 </div>
               ))}
             </div>
@@ -425,7 +474,7 @@ const AdminDashboard = () => {
                   <span className="text-gray-500">
                     {modal === 'reponer'
                       ? `${p.stock}${p.maxQuantity ? ` de ${p.maxQuantity}` : ''} en bodega`
-                      : new Date(p.expirationDate).toLocaleDateString('es-SV')}
+                      : formatearFecha(p.expirationDate) || 'Sin fecha'}
                   </span>
                 </div>
               ))}

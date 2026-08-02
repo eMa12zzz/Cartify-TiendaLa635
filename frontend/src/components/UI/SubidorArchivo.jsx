@@ -355,7 +355,13 @@ const SubidorArchivo = ({
 
       {hayAlgo && (
         <Pie $c={c}>
-          <NombreArchivo title={nombre}>{nombre}</NombreArchivo>
+          {/*
+            El $c va SIEMPRE, aunque el padre ya lo tenga: styled-components no
+            hereda props. Sin él, la regla de color leía una paleta inexistente
+            y reventaba el render entero en cuanto alguien elegía un archivo —
+            que es exactamente cuando esta línea aparece por primera vez.
+          */}
+          <NombreArchivo $c={c} title={nombre}>{nombre}</NombreArchivo>
           {peso && <Peso>{peso}</Peso>}
         </Pie>
       )}

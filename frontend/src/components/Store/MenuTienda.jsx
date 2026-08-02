@@ -38,9 +38,17 @@ const Boton = styled.button`
   gap: 10px;
   padding: 4px 8px 4px 4px;
   border-radius: 12px;
-  transition: background-color var(--dur-press, 120ms) var(--ease-out, ease);
+  transition: background-color var(--dur-press, 120ms) var(--ease-out, ease),
+              transform var(--dur-press, 120ms) var(--ease-out, ease);
 
-  &:hover { background: var(--marca-50, #FAF5F0); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: var(--marca-50, #FAF5F0); }
+  }
+  &:active { transform: scale(0.97); }
+
+  /* Menos aire entre el icono y el nombre: en el encabezado de dos renglones
+     cada píxel de alto se lo quita a los productos. */
+  @media (max-width: 700px) { gap: 7px; }
 `;
 
 const Hamburguesa = styled.span`
@@ -63,6 +71,8 @@ const Linea = styled.span`
   font-weight: 800;
   color: #111;
   letter-spacing: -0.5px;
+
+  @media (max-width: 700px) { font-size: 15.5px; }
 `;
 
 const Panel = styled.div`
@@ -77,6 +87,17 @@ const Panel = styled.div`
   padding: 6px;
   z-index: 300;
   animation: cardIn 180ms var(--ease-out, ease);
+
+  /*
+   * Con muchos pasillos la lista pasaba de largo del teléfono y los últimos
+   * quedaban fuera de alcance. Que se desplace el panel, nunca la página.
+   */
+  @media (max-width: 700px) {
+    width: min(268px, calc(100vw - 32px));
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 `;
 
 const Titulo = styled.p`
@@ -103,8 +124,11 @@ const Opcion = styled.button`
   font-size: 14px;
   font-weight: 600;
   color: #2A1A0E;
+  min-height: 44px;
 
-  &:hover { background: var(--marca-50, #FAF5F0); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: var(--marca-50, #FAF5F0); }
+  }
 `;
 
 const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {

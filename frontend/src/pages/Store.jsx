@@ -56,6 +56,27 @@ const Header = styled.header`
   top: 0;
   /* El sticky ya sirve de referencia para centrar el buscador dentro */
   z-index: 200;
+
+  /*
+   * En teléfono el encabezado pasa a DOS renglones.
+   *
+   * Todo esto —nombre, dirección, buscador, asistente, carrito y cuenta— nunca
+   * cupo en una sola fila de 375px: el buscador tiene flex:1 y min-width:0, así
+   * que era él quien cedía, y terminaba midiendo 14 píxeles mientras los
+   * botones se salían 181px fuera de la pantalla.
+   *
+   * Se parte donde menos duele: arriba quedan el nombre y los botones (que se
+   * reconocen por su icono), y el buscador se lleva un renglón entero para él
+   * solo. En una tienda de barrio la gente no navega pasillos, viene por algo
+   * concreto y lo escribe — ese renglón es el que más se usa de la pantalla.
+   */
+  @media (max-width: 700px) {
+    height: auto;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px 16px 10px;
+  }
 `;
 
 /* El nombre de la tienda y sus estilos se mudaron a MenuTienda: ahora abre
@@ -102,6 +123,20 @@ const SearchBox = styled.div`
     box-shadow: 0 0 0 3px ${BROWN}1F;
   }
 
+  /*
+   * El renglón de abajo, completo. El order lo manda después de los botones
+   * aunque en el código venga antes: en el HTML el buscador va en medio porque
+   * ahí es donde se lee en pantalla grande, y no vale la pena mover el marcado
+   * —y con él el orden del tabulador— solo para acomodar el teléfono.
+   */
+  @media (max-width: 700px) {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin: 0;
+    height: 44px;
+  }
+
   input {
     flex: 1;
     border: none;
@@ -131,6 +166,33 @@ const HeaderRight = styled.div`
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+
+  /* Pegados a la derecha una vez que el buscador se bajó de renglón. */
+  @media (max-width: 700px) {
+    margin-left: auto;
+    gap: 6px;
+  }
+`;
+
+/*
+ * El texto de los botones del encabezado.
+ *
+ * En pantalla angosta se oculta pero NO se borra: queda escondido a la vista y
+ * disponible para el lector de pantalla, así el botón sigue llamándose
+ * "Carrito" para quien no lo ve. Con display:none se habría quedado mudo.
+ */
+const Etiqueta = styled.span`
+  @media (max-width: 900px) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
 `;
 
 /*
@@ -155,12 +217,30 @@ const IconBtn = styled.button`
   white-space: nowrap;
   transition: background-color var(--dur-press) var(--ease-out),
               border-color var(--dur-press) var(--ease-out),
-              color var(--dur-press) var(--ease-out);
+              color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
 
-  &:hover {
-    background: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-50)')};
-    border-color: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-400)')};
-    color: ${props => (props.$solida ? '#fff' : BROWN)};
+  /* En táctil un toque deja el hover pegado, así que el hover es solo del ratón. */
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-50)')};
+      border-color: ${props => (props.$solida ? BROWN_DARK : 'var(--marca-400)')};
+      color: ${props => (props.$solida ? '#fff' : BROWN)};
+    }
+  }
+  &:active { transform: scale(0.97); }
+
+  /*
+   * Sin texto, cuadrado y de 44px: el mínimo con el que un pulgar acierta sin
+   * pensarlo. Entre los clientes de la tienda hay gente mayor, y un botón de
+   * 32px al lado de otro es una trampa.
+   */
+  @media (max-width: 900px) {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
   }
 `;
 
@@ -179,8 +259,25 @@ const CartBtn = styled.button`
   font-weight: 600;
   font-family: inherit;
   white-space: nowrap;
-  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out);
-  &:hover { background: ${BROWN_DARK}; border-color: ${BROWN_DARK}; }
+  transition: background-color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${BROWN_DARK}; border-color: ${BROWN_DARK}; }
+  }
+  &:active { transform: scale(0.97); }
+
+  /*
+   * El carrito es lo único que conserva ancho propio al encogerse: lleva el
+   * número de artículos al lado del icono, y ese número es media razón por la
+   * que la gente mira el botón.
+   */
+  @media (max-width: 900px) {
+    height: 44px;
+    padding: 0 12px;
+    gap: 6px;
+  }
 `;
 
 const CartBadge = styled.span`
@@ -214,9 +311,24 @@ const CategoryBar = styled.nav`
   height: 60px;
   align-items: center;
   &::-webkit-scrollbar { display: none; }
+  scrollbar-width: none;
 
   /* Con muchas categorías deja de centrar y se vuelve deslizable. */
   @media (max-width: 900px) { justify-content: flex-start; }
+
+  /*
+   * Deslizable con el dedo, sin arrastrar la página con él: el que se corre es
+   * ESTE renglón, no el cuerpo. El fundido de la orilla derecha es lo que
+   * avisa que hay más categorías — sin él, "Snacks" cortado a filo se lee como
+   * el final de la lista.
+   */
+  @media (max-width: 700px) {
+    padding: 0 16px;
+    height: 54px;
+    scroll-padding-inline: 16px;
+    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
+  }
 `;
 
 /*
@@ -241,10 +353,17 @@ const CatBtn = styled.button`
   white-space: nowrap;
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   flex-shrink: 0;
-  &:hover {
-    border-color: ${BROWN};
-    color: ${props => (props.$active ? '#fff' : BROWN)};
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: ${BROWN};
+      color: ${props => (props.$active ? '#fff' : BROWN)};
+    }
   }
+  &:active { transform: scale(0.97); }
+
+  /* 44px de alto en pantalla táctil: el pulgar no apunta, aproxima. */
+  @media (pointer: coarse), (max-width: 560px) { height: 44px; }
 `;
 
 /* ─── Content ─── */
@@ -252,6 +371,10 @@ const Content = styled.div`
   padding: 24px 28px 40px;
   max-width: 1400px;
   margin: 0 auto;
+
+  /* Mismo margen lateral que el pie y que la pantalla de sección, para que al
+     pasar de una a otra los productos no se corran de lugar. */
+  @media (max-width: 560px) { padding: 20px 16px 32px; }
 `;
 
 const SectionHeader = styled.div`
@@ -259,6 +382,14 @@ const SectionHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 18px;
+  gap: 12px;
+
+  /* El título es largo ("Todo en Abarrotes") y Filtros no puede encogerse:
+     arriba el nombre, abajo el botón, en vez de aplastarse mutuamente. */
+  @media (max-width: 560px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 `;
 
 /* En el diseño los títulos de sección son grandes y pesados. */
@@ -270,7 +401,11 @@ const SectionTitle = styled.h2`
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+
+  @media (max-width: 560px) { font-size: 21px; }
 `;
 
 /* Va pegada al título, así que no hereda su peso ni su tamaño. */
@@ -497,6 +632,19 @@ const ProductsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
   gap: 16px;
+
+  /*
+   * DOS columnas en el teléfono, no una.
+   *
+   * Con el mínimo en 195px no cabían dos (2×195+16 = 406 en 343 de ancho), así
+   * que la cuadrícula caía a una sola columna y cada producto ocupaba la
+   * pantalla entera: para ver seis había que bajar tres veces. Bajando el
+   * mínimo a 150 entran dos, que es como se compara precio contra precio.
+   */
+  @media (max-width: 560px) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -670,10 +818,10 @@ const Store = () => {
 
         <HeaderRight>
           <IconBtn $solida onClick={() => setMostrarAsistente(true)} title="Asistente por voz">
-            <Mic size={16} strokeWidth={2.2} /> Asistente
+            <Mic size={18} strokeWidth={2.2} /> <Etiqueta>Asistente</Etiqueta>
           </IconBtn>
-          <CartBtn onClick={() => setMostrarCarrito(true)}>
-            <ShoppingBag size={16} strokeWidth={2.2} /> Carrito
+          <CartBtn onClick={() => setMostrarCarrito(true)} title="Carrito">
+            <ShoppingBag size={18} strokeWidth={2.2} /> <Etiqueta>Carrito</Etiqueta>
             {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
           </CartBtn>
           {/*
@@ -683,11 +831,11 @@ const Store = () => {
           */}
           {isAuthenticated ? (
             <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">
-              <User size={16} strokeWidth={2.2} /> Mi Cuenta
+              <User size={18} strokeWidth={2.2} /> <Etiqueta>Mi Cuenta</Etiqueta>
             </IconBtn>
           ) : (
             <IconBtn onClick={() => navigate('/iniciar-sesion?volver=/')} title="Iniciar sesión">
-              <User size={16} strokeWidth={2.2} /> Ingresar
+              <User size={18} strokeWidth={2.2} /> <Etiqueta>Ingresar</Etiqueta>
             </IconBtn>
           )}
           {/* Cerrar sesión vive solo en Mi Cuenta: acá era muy fácil apretarlo

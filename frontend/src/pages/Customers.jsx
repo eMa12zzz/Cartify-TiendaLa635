@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import FilterSelect from '../components/UI/FilterSelect';
 import DataTable from '../components/UI/DataTable';
 import { customerService } from '../api/customerService';
-import { direccionesEnTexto } from '../utils/mascaras';
+import { direccionesEnTexto, formatearDui, formatearTelefono } from '../utils/mascaras';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -77,12 +77,15 @@ const Customers = () => {
             renderRow={(item) => (
               <>
                 <td className="py-4 px-4 text-sm text-gray-800">{item.fullName}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.phoneNumber}</td>
+                {/* Los registros viejos traen el teléfono y el DUI escritos a
+                    mano de mil maneras; la máscara los empareja al mostrarlos. */}
+                <td className="py-4 px-4 text-sm text-gray-600">{formatearTelefono(item.phoneNumber)}</td>
                 {/* Las direcciones nuevas son objetos: un join() las imprimiría
-                    como "[object Object]". El helper aplana las dos formas. */}
+                    como "[object Object]". El helper aplana las dos formas y
+                    descarta lo que no se puede mostrar. */}
                 <td className="py-4 px-4 text-sm text-gray-600">{direccionesEnTexto(item.clientAddress)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.email}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.dui}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{formatearDui(item.dui)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.userName}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.isVerified ? 'Verificado' : 'No verificado'}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.loyaltyPoints ?? item.lolayitypoints ?? 0}</td>

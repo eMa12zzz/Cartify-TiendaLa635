@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import TableActions from '../UI/TableActions';
+import { formatearFecha } from '../../utils/fechas';
 
 const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
   // Calcular porcentaje para la barra de cantidades (asumimos maximo de 100 si no existe)
@@ -8,6 +9,13 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
   const quantityPercentage = Math.min(100, Math.max(0, (currentStock / maxStock) * 100));
 
   const imageUrl = Array.isArray(product.image) ? product.image[0] : product.image;
+
+  /*
+   * Hay productos que no vencen (o a los que nadie les puso fecha). Antes se
+   * formateaban igual y salían con "31/12/1969", el instante cero de Unix
+   * disfrazado de vencimiento. Si no hay fecha se dice, no se inventa una.
+   */
+  const vence = formatearFecha(product.expirationDate);
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -60,9 +68,11 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
         </p>
 
         <div className="mt-auto flex justify-between items-end">
-          <p className="text-xs font-medium text-gray-800">
-            Fecha de exp: {new Date(product.expirationDate).toLocaleDateString()}
-          </p>
+          {vence ? (
+            <p className="text-xs font-medium text-gray-800">Fecha de exp: {vence}</p>
+          ) : (
+            <p className="text-xs text-gray-400">Sin fecha de vencimiento</p>
+          )}
           <TableActions 
             onView={onView ? () => onView(product) : undefined}
             onEdit={() => onEdit(product)}

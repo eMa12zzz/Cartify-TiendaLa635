@@ -72,14 +72,35 @@ export const alEscribir = (formateador, alCambiar) => (e) => {
 };
 
 /*
+ * Un id de Mongo suelto: 24 caracteres hexadecimales y nada más.
+ *
+ * Algunos clientes viejos guardaron en su lista de direcciones la REFERENCIA a
+ * otra colección en vez del texto, y esa colección hoy no la lee nadie. Ese id
+ * no se puede resolver desde aquí, así que en pantalla no es una dirección:
+ * es ruido. Mejor una celda vacía que "69f7e752e15b0468fbbf0c31".
+ */
+const pareceIdDeMongo = (texto) => /^[a-f0-9]{24}$/i.test(texto);
+
+/*
  * Una dirección de cliente en una línea, venga como texto (las viejas) o como
  * objeto { nombre, direccion, referencia } (las nuevas). Sin esto, un join()
  * sobre las nuevas imprime "[object Object]".
+ *
+ * Lo que no se entienda devuelve cadena vacía y direccionesEnTexto lo descarta:
+ * a nadie le sirve leer a medias el formato interno de la base.
  */
 export const direccionEnTexto = (dir) => {
   if (!dir) return '';
-  if (typeof dir === 'string') return dir;
+
+  if (typeof dir === 'string') {
+    const texto = dir.trim();
+    return pareceIdDeMongo(texto) ? '' : texto;
+  }
+
+  if (typeof dir !== 'object') return '';
+
   const cuerpo = [dir.nombre, dir.direccion].filter(Boolean).join(': ');
+  if (!cuerpo) return ''; // un objeto sin nombre ni dirección no tiene nada que mostrar
   return dir.referencia ? `${cuerpo} (${dir.referencia})` : cuerpo;
 };
 

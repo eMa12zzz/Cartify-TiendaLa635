@@ -69,11 +69,11 @@ const Orders = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
-      <h1 className="text-4xl font-extrabold text-[#C28C5D] mb-2">Pedidos</h1>
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D] mb-2">Pedidos</h1>
 
       {/* Resumen real */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           <div><h4 className="text-sm font-bold text-blue-500 mb-1">Por preparar</h4><p className="text-3xl font-extrabold text-gray-800">{counts.pagado}</p></div>
           <div><h4 className="text-sm font-bold text-orange-500 mb-1">En preparación</h4><p className="text-3xl font-extrabold text-gray-800">{counts.preparando}</p></div>
           <div><h4 className="text-sm font-bold text-green-500 mb-1">Entregados</h4><p className="text-3xl font-extrabold text-gray-800">{counts.entregado}</p></div>
@@ -97,14 +97,14 @@ const Orders = () => {
             );
           })}
         </div>
-        <div className="relative">
+        <div className="relative flex-1 min-w-[12rem] sm:flex-none">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Buscar por cliente..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] w-56 shadow-sm"
+            className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] w-full sm:w-56 shadow-sm"
           />
         </div>
       </div>
@@ -135,16 +135,18 @@ const Orders = () => {
                 transition={{ duration: DUR.modal, ease: EASE_OUT, delay: stagger(i) }}
                 className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 {/* Encabezado: cliente + estado */}
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-sm font-bold text-gray-800">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  {/* Teléfono, folio y fecha en una línea no caben en 375px: se
+                      deja que envuelvan en vez de estirar la tarjeta. */}
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-gray-800 break-words">
                       {order.clientId?.fullName || 'Cliente'}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 break-words">
                       {order.clientId?.phoneNumber || 's/tel'} · #{String(order._id).slice(-6).toUpperCase()} · {formatFecha(order.createdAt)}
                     </div>
                   </div>
-                  <span className={`text-xs font-bold ${estado.clase}`}>{estado.label}</span>
+                  <span className={`text-xs font-bold flex-none ${estado.clase}`}>{estado.label}</span>
                 </div>
 
                 {/* Impresión (con archivo) o productos a preparar */}
@@ -188,16 +190,16 @@ const Orders = () => {
                 ) : (
                   <div className="rounded-xl bg-gray-50 p-3 mb-3">
                     {order.items?.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm py-0.5">
-                        <span className="text-gray-800 font-medium">{item.amount}× {item.name || item.productId?.name || 'Producto'}</span>
-                        <span className="text-gray-500">${(item.price * item.amount).toFixed(2)}</span>
+                      <div key={i} className="flex items-center justify-between gap-3 text-sm py-0.5">
+                        <span className="text-gray-800 font-medium min-w-0 truncate">{item.amount}× {item.name || item.productId?.name || 'Producto'}</span>
+                        <span className="text-gray-500 flex-none">${(item.price * item.amount).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
                 {/* Pie: total + acción */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-base font-bold text-gray-800">Total: ${Number(order.total).toFixed(2)}</span>
 
                   {order.status === 'pagado' && (

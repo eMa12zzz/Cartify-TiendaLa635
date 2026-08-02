@@ -14,7 +14,7 @@ printServiceController.getServices = async (req, res) => {
 
 printServiceController.insertService = async (req, res) => {
   try {
-    const { name, widthCm, heightCm, pricePerCopy, allowsColor, colorSurcharge, isActive } = req.body;
+    const { name, widthCm, heightCm, pricePerCopy, allowsColor, colorSurcharge, isActive, materialId } = req.body;
     if (!name || pricePerCopy === undefined || pricePerCopy === '') {
       return res.status(400).json({ message: "Nombre y precio por copia son requeridos" });
     }
@@ -26,6 +26,9 @@ printServiceController.insertService = async (req, res) => {
       allowsColor: allowsColor !== undefined ? allowsColor : true,
       colorSurcharge: colorSurcharge ? Number(colorSurcharge) : 0,
       isActive: isActive !== undefined ? isActive : true,
+      // Vacío se guarda como null, no como "": una cadena vacía en un campo de
+      // ObjectId hace reventar la consulta que después lo popula.
+      materialId: materialId || null,
     });
     await nuevo.save();
     return res.status(201).json({ message: "Servicio creado" });
@@ -37,7 +40,7 @@ printServiceController.insertService = async (req, res) => {
 
 printServiceController.updateService = async (req, res) => {
   try {
-    const { name, widthCm, heightCm, pricePerCopy, allowsColor, colorSurcharge, isActive } = req.body;
+    const { name, widthCm, heightCm, pricePerCopy, allowsColor, colorSurcharge, isActive, materialId } = req.body;
     if (!name || pricePerCopy === undefined || pricePerCopy === '') {
       return res.status(400).json({ message: "Nombre y precio por copia son requeridos" });
     }
@@ -51,6 +54,7 @@ printServiceController.updateService = async (req, res) => {
         allowsColor,
         colorSurcharge: colorSurcharge ? Number(colorSurcharge) : 0,
         isActive,
+        materialId: materialId || null,
       },
       { new: true }
     );

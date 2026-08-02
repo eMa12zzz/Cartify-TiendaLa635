@@ -51,7 +51,6 @@ clientController.updateClient = async (req, res) => {
       fullName,
       dui,
       phoneNumber,
-      ClientAddress,
       email,
       userName,
       password,
@@ -60,15 +59,15 @@ clientController.updateClient = async (req, res) => {
     email = email?.trim();
     userName = userName?.trim();
 
-    // La contraseña ya NO es obligatoria
-    if (
-      !fullName ||
-      !dui ||
-      !phoneNumber ||
-      !ClientAddress ||
-      !email ||
-      !userName
-    ) {
+    /*
+     * Obligatorios: nombre, teléfono, correo y usuario.
+     *
+     * El DUI quedó fuera a propósito: es opcional desde el registro y exigirlo
+     * aquí impediría corregirle el teléfono a un cliente que nunca lo dio.
+     * La dirección también salió: las de entrega se editan por su propio
+     * endpoint (updateAddresses), no por este.
+     */
+    if (!fullName || !phoneNumber || !email || !userName) {
       return res.status(400).json({
         message: "Faltan campos obligatorios",
       });
@@ -84,12 +83,21 @@ clientController.updateClient = async (req, res) => {
 
     const updatedData = {
       fullName,
-      dui,
       phoneNumber,
-      ClientAddress,
       email,
       userName,
     };
+
+    /*
+     * El DUI es opcional. Si viene con algo se guarda; si viene vacío se
+     * BORRA el campo con $unset en vez de dejar una cadena "". Son veinte
+     * clientes con el mismo "" lo que rompería un índice único el día que
+     * alguien lo agregue; sin el campo, ese índice los ignora a todos.
+     */
+    if (dui !== undefined) {
+      if (dui?.trim()) updatedData.dui = dui.trim();
+      else updatedData.$unset = { ...(updatedData.$unset || {}), dui: 1 };
+    }
 
     // Solo actualizar la contraseña si viene una nueva
     if (password && password.trim() !== "") {

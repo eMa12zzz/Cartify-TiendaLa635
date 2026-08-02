@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Phone, User, Hash, MapPin, Lock, Loader2 } from 'lucide-react';
+import { Mail, Phone, User, Hash, Lock, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
+import { reglaDuiOpcional, reglaTelefono, bloquearNoDigitos } from '../utils/validaciones';
+import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 import api from '../api/api';
 
 const BROWN = '#B46C30';
@@ -186,9 +188,14 @@ const Register = () => {
       
       const formData = new FormData();
       formData.append('fullName', data.fullName); // El backend espera 'fullName'
-      formData.append('dui', data.dui);
+      /*
+       * El DUI solo viaja si la persona lo escribió. Mandar la cadena vacía
+       * dejaría a todos los que no lo pusieron guardados con el mismo valor
+       * "", y el día que alguien busque por DUI o le ponga un índice único al
+       * campo, eso se convierte en un problema.
+       */
+      if (data.dui?.trim()) formData.append('dui', data.dui.trim());
       formData.append('phoneNumber', data.phoneNumber);
-      formData.append('ClientAddress', data.clientAddress);
       formData.append('email', data.email);
       formData.append('userName', data.userName);
       formData.append('password', data.password);
@@ -260,14 +267,24 @@ const Register = () => {
               </InputWrapper>
             </InputContainer>
 
+            {/*
+              El DUI es opcional: quien no lo anda a mano igual se registra hoy.
+              Solo se revisa si escribió algo (ver reglaDuiOpcional).
+            */}
             <InputContainer>
-              <Label>DUI</Label>
+              <Label>DUI (opcional)</Label>
               <InputWrapper>
                 <IconWrapper><Hash size={18} /></IconWrapper>
                 <Input
                   type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_DUI}
                   placeholder="00000000-0"
-                  {...register("dui", { required: "El DUI es obligatorio" })}
+                  {...register("dui", reglaDuiOpcional)}
+                  onKeyDown={bloquearNoDigitos}
+                  // El guion se pone solo: si cada quien lo escribe a su manera,
+                  // el mismo DUI termina guardado de tres formas distintas.
+                  onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
                 />
                 {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
               </InputWrapper>
@@ -279,25 +296,24 @@ const Register = () => {
                 <IconWrapper><Phone size={18} /></IconWrapper>
                 <Input
                   type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_TELEFONO}
                   placeholder="7000-0000"
-                  {...register("phoneNumber", { required: "El teléfono es obligatorio" })}
+                  {...register("phoneNumber", reglaTelefono)}
+                  onKeyDown={bloquearNoDigitos}
+                  onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
                 />
                 {errors.phoneNumber && <ErrorMsg>{errors.phoneNumber.message}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
-            <InputContainer>
-              <Label>Dirección</Label>
-              <InputWrapper>
-                <IconWrapper><MapPin size={18} /></IconWrapper>
-                <Input
-                  type="text"
-                  placeholder="San Salvador, El Salvador"
-                  {...register("clientAddress", { required: "La dirección es obligatoria" })}
-                />
-                {errors.clientAddress && <ErrorMsg>{errors.clientAddress.message}</ErrorMsg>}
-              </InputWrapper>
-            </InputContainer>
+            {/*
+              Aquí había un campo de "Dirección" en texto plano. Se quitó: lo
+              que escribía la persona se guardaba aparte y NUNCA se usaba para
+              entregar nada. Las direcciones de verdad se agregan en
+              "Mi cuenta > Direcciones", con referencia y punto en el mapa, y de
+              ahí las toman el encabezado de la tienda y el checkout.
+            */}
 
             <InputContainer>
               <Label>Correo Electrónico</Label>

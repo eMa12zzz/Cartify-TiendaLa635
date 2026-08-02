@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useClientProfile } from '../../hooks/useClientProfile';
+import { formatearDui, formatearTelefono, LARGO_TELEFONO } from '../../utils/mascaras';
 
 /*
  * DetallesCuenta — el cliente ve y edita sus datos básicos (área "Mi Cuenta").
@@ -54,8 +55,10 @@ const DetallesCuenta = () => {
             >
               {initials}
             </div>
+            {/* Sin DUI no se muestra el renglón: el DUI es opcional y una
+                etiqueta vacía solo hace ruido. */}
             {profile?.dui && (
-              <p className="text-xs mt-3" style={{ color: c.textMuted }}>DUI: {profile.dui}</p>
+              <p className="text-xs mt-3" style={{ color: c.textMuted }}>DUI: {formatearDui(profile.dui)}</p>
             )}
           </div>
 
@@ -90,8 +93,12 @@ const DetallesCuenta = () => {
 
             <div className="space-y-1.5">
               <label className="block text-sm font-bold" style={labelStyle}>Teléfono</label>
+              {/* El guion lo pone la máscara y el campo topa en 8 dígitos: así
+                  el teléfono queda guardado igual para todos. */}
               <input
-                name="phoneNumber" value={form.phoneNumber} onChange={onChange}
+                name="phoneNumber" inputMode="numeric" maxLength={LARGO_TELEFONO}
+                value={formatearTelefono(form.phoneNumber)}
+                onChange={(e) => onChange({ target: { name: 'phoneNumber', value: formatearTelefono(e.target.value) } })}
                 className="w-full px-4 py-2.5 rounded-xl border outline-none transition-colors"
                 style={inputStyle}
               />

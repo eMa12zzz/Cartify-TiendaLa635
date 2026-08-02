@@ -1,53 +1,66 @@
-import { HelpCircle, Phone, Mail, MessageCircle } from 'lucide-react';
+import { HelpCircle, MapPin, MessageCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
+import { useCentroAyuda } from '../../hooks/useCentroAyuda';
 
 /*
- * CentroAyuda — página estática de ayuda del cliente (área "Mi Cuenta").
- * Preguntas frecuentes + canales de contacto de la tienda. Sin backend.
+ * CentroAyuda — preguntas frecuentes y los canales REALES de la tienda.
+ * Qué se puede ofrecer lo decide useCentroAyuda; aquí solo se pinta.
  */
-const faqs = [
-  {
-    q: '¿Cómo hago un pedido?',
-    a: 'Explora la tienda, agrega productos al carrito y presiona comprar. También puedes usar el asistente por voz para pedir hablando.',
-  },
-  {
-    q: '¿Cómo funcionan los puntos de fidelidad?',
-    a: 'Ganas puntos con cada compra según lo que gastes. Los ves en la sección "Puntos de fidelidad" y vencen pasado un tiempo.',
-  },
-  {
-    q: '¿Dónde veo mis pedidos?',
-    a: 'En "Mis pedidos" ves el estado de cada compra; cuando te la entregan, pasa a "Recibos".',
-  },
-];
+
+// El tipo de canal manda el icono: la lista viene del hook sin saber de dibujos.
+const ICONOS = { whatsapp: MessageCircle, direccion: MapPin };
 
 const CentroAyuda = () => {
   const { palette } = useTheme();
   const c = palette.colors;
+  const { faqs, canales } = useCentroAyuda();
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Centro de ayuda</h1>
 
-      {/* Canales de contacto */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-        {[
-          { icon: Phone, label: 'Llámanos', value: '2222-2222' },
-          { icon: Mail, label: 'Correo', value: 'ayuda@la635.com' },
-          { icon: MessageCircle, label: 'WhatsApp', value: '7777-7777' },
-        ].map((canal, i) => {
-          const Icon = canal.icon;
-          return (
-            <div key={i} className="p-4 rounded-xl flex items-center gap-3"
-                 style={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}` }}>
-              <Icon className="w-5 h-5 flex-none" style={{ color: c.primary }} />
-              <div>
-                <div className="text-xs" style={{ color: c.textMuted }}>{canal.label}</div>
-                <div className="text-sm font-semibold" style={{ color: c.textPrimary }}>{canal.value}</div>
+      {/*
+        Canales de contacto. Si no hay ninguno configurado no se pinta nada:
+        más vale un centro de ayuda sin bloque de contacto que uno con un
+        número que no contesta.
+      */}
+      {canales.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+          {canales.map((canal) => {
+            const Icon = ICONOS[canal.tipo] || HelpCircle;
+            const contenido = (
+              <>
+                <Icon className="w-5 h-5 flex-none" style={{ color: c.primary }} />
+                <div>
+                  <div className="text-xs" style={{ color: c.textMuted }}>{canal.etiqueta}</div>
+                  <div className="text-sm font-semibold" style={{ color: c.textPrimary }}>{canal.valor}</div>
+                </div>
+              </>
+            );
+            const estilo = { backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}` };
+            const clases = 'p-4 rounded-xl flex items-center gap-3';
+
+            // Solo lo que lleva a algún lado se comporta como enlace; la
+            // dirección se lee, no se toca.
+            return canal.enlace ? (
+              <a
+                key={canal.tipo}
+                href={canal.enlace}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${clases} transition-transform hover:-translate-y-0.5`}
+                style={estilo}
+              >
+                {contenido}
+              </a>
+            ) : (
+              <div key={canal.tipo} className={clases} style={estilo}>
+                {contenido}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Preguntas frecuentes */}
       <div className="flex items-center gap-2 mb-3">

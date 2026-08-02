@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
+import LimiteDeError from './components/UI/LimiteDeError';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
 import BurbujaPedido from './components/Store/BurbujaPedido';
 import VincularKiosco from './pages/VincularKiosco';
@@ -115,6 +116,15 @@ function App() {
         {/* Seguimiento del pedido en curso; va a la izquierda para no chocar
             con el de WhatsApp, que ocupa la esquina derecha. */}
         <BurbujaPedido />
+        {/*
+          La red debajo de TODAS las pantallas.
+
+          Si algo revienta mientras se dibuja una página, React desmonta el
+          árbol entero y queda una pantalla blanca absoluta, sin ninguna
+          salida. Envolviendo aquí, un error en una pantalla se queda en esa
+          pantalla: se explica y se ofrece cómo volver. Ver LimiteDeError.
+        */}
+        <LimiteDeError>
         <Routes>
 
           {/* ── Rutas Públicas (sin autenticación) ─────────────────── */}
@@ -150,7 +160,9 @@ function App() {
            * <ProtectedRoute> verifica si hay sesión. Si no hay, redirige a "/".
            * <AdminLayout> envuelve las páginas del panel con el sidebar y el topbar.
            */}
-          <Route element={<ProtectedRoute />}>
+          {/* soloPersonal: una sesión de cliente aquí ve la explicación, no el
+              panel. Ver ProtectedRoute. */}
+          <Route element={<ProtectedRoute soloPersonal />}>
             <Route element={<AdminLayout />}>
               <Route path="/dashboard"   element={<AdminDashboard />} />
               <Route path="/inventario"  element={<Inventory />} />
@@ -204,6 +216,7 @@ function App() {
           <Route path="*" element={<NoEncontrado />} />
 
         </Routes>
+        </LimiteDeError>
         </DireccionProvider>
         </FavoritosProvider>
       </BrowserRouter>

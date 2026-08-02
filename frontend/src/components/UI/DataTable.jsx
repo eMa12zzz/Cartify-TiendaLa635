@@ -62,7 +62,11 @@ const DataTable = ({ columns, data, renderRow }) => {
             className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3 transition-colors hover:border-gray-300"
           >
             <div className="flex items-start justify-between gap-3">
-              <div className={`text-base font-bold text-gray-800 leading-tight ${limpiarClases(titulo?.props?.className)}`}>
+              {/*
+                Un nombre largo sin espacios ("MERMELADA-FRESA-500G") no tiene
+                dónde cortarse y en un teléfono estiraba la tarjeta entera.
+              */}
+              <div className={`min-w-0 break-words text-base font-bold text-gray-800 leading-tight ${limpiarClases(titulo?.props?.className)}`}>
                 {titulo?.props?.children}
               </div>
               {acciones && <div className="flex-shrink-0">{acciones.props.children}</div>}
@@ -76,7 +80,7 @@ const DataTable = ({ columns, data, renderRow }) => {
             {datos.length > 0 && (
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {datos.map((celda, i) => (
-                  <div key={i} className="min-w-0">
+                  <div key={i} className="min-w-0 max-w-full">
                     <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
                       {columns[i + 1]}
                     </div>

@@ -1,9 +1,9 @@
 /*
 Campos:
     fullName: String,
-    dui: String,
+    dui: String,          // OPCIONAL
     phoneNumber: String,
-    ClientAddress: Array,
+    clientAddress: Array, // direcciones de entrega
     image: String,
     email: String,
     userName: String,
@@ -18,6 +18,15 @@ import{ Schema, model } from 'mongoose';
 
 const clientSchema = new Schema({
     fullName: { type:"String"},
+    /*
+     * DUI opcional, y a propósito SIN `unique`.
+     *
+     * Mucha gente del barrio no lo anda a mano y no vale la pena perder el
+     * registro por eso. Si algún día se quiere impedir DUI repetidos, el
+     * índice tiene que ser `unique` + `sparse`: sin sparse, el segundo cliente
+     * que se registre sin DUI choca contra el primero por duplicado. Por eso
+     * los controladores guardan undefined y nunca cadena vacía.
+     */
     dui: { type:"String"},
     phoneNumber: { type:"String"},
     /*

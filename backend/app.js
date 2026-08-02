@@ -23,6 +23,7 @@ import orderRoutes from "./src/routes/order.js";
 import loyaltyConfigRoutes from "./src/routes/loyaltyConfig.js";
 import loyaltyRoutes from "./src/routes/loyalty.js";
 import printServiceRoutes from "./src/routes/printService.js";
+import printMaterialRoutes from "./src/routes/printMaterial.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import aiRoutes from "./src/routes/ai.js";
 import kioscoRoutes from "./src/routes/kiosco.js";
@@ -70,6 +71,8 @@ app.use("/api/kiosco", kioscoRoutes);
 app.use("/api/loyaltyConfig", loyaltyConfigRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
 app.use("/api/printService", printServiceRoutes);
+// El papel y la tinta con que se imprime. Ver src/models/printMaterial.js.
+app.use("/api/printMaterial", printMaterialRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/giftCard", giftCardRoutes);

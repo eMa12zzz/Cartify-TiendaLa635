@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import EmployeeFormModal from '../components/Admin/EmployeeFormModal';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
 import TableActions from '../components/UI/TableActions';
+import { formatearDui, formatearTelefono } from '../utils/mascaras';
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -156,9 +157,11 @@ const Employees = () => {
                     {item.fullName || item.name}
                   </div>
                 </td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.phoneNumber}</td>
+                {/* Mismo criterio que en Clientes: lo que se guardó sin formato
+                    se muestra formateado, para que la columna se lea pareja. */}
+                <td className="py-4 px-4 text-sm text-gray-600">{formatearTelefono(item.phoneNumber)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.email}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.dui}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{formatearDui(item.dui)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.userName}</td>
                 <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>
                   {item.isActive ? 'Activo' : 'Inactivo'}
