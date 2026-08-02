@@ -319,7 +319,14 @@ const PromoBanners = ({ onSelectPromo }) => {
             style={flecha}
           >‹</button>
 
-          <div style={{ display: 'flex', gap: 7 }}>
+          {/*
+            El punto se ve de 8px pero se toca de 44.
+
+            El botón es alto y transparente, y adentro va la rayita: así el
+            indicador sigue siendo discreto —es un indicador, no un control
+            protagonista— sin obligar a acertarle a ocho píxeles con el pulgar.
+          */}
+          <div style={{ display: 'flex' }}>
             {promos.map((promo, i) => (
               <button
                 key={promo._id}
@@ -327,16 +334,27 @@ const PromoBanners = ({ onSelectPromo }) => {
                 aria-label={`Ir a la promoción ${i + 1}`}
                 aria-current={i === activa}
                 style={{
-                  width: i === activa ? 22 : 8,
-                  height: 8,
-                  padding: 0,
-                  borderRadius: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 44,
+                  padding: '0 5px',
+                  background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  background: i === activa ? '#9C6026' : '#D9C7B4',
-                  transition: 'width var(--dur-dropdown, 0.2s) var(--ease-out), background var(--dur-dropdown, 0.2s)',
                 }}
-              />
+              >
+                <span
+                  style={{
+                    display: 'block',
+                    width: i === activa ? 22 : 8,
+                    height: 8,
+                    borderRadius: 4,
+                    background: i === activa ? '#9C6026' : '#D9C7B4',
+                    transition: 'width var(--dur-popover) var(--ease-out), background var(--dur-popover) var(--ease-out)',
+                  }}
+                />
+              </button>
             ))}
           </div>
 
@@ -352,9 +370,17 @@ const PromoBanners = ({ onSelectPromo }) => {
   );
 };
 
+/*
+ * 44px y no 34: son los hermanos de los puntos de al lado, que ya se tocan de
+ * 44. Tenerlos de 34 dejaba los dos controles del mismo carrusel con distinta
+ * facilidad de acierto, y justamente el que hace algo —cambiar de promo— era
+ * el más difícil de atinar. Aquí no se usa el truco del área invisible porque
+ * el estilo es un objeto en línea, sin pseudo-elementos disponibles; y un
+ * círculo de 44 en ese lugar se ve igual de discreto.
+ */
 const flecha = {
-  width: 34,
-  height: 34,
+  width: 44,
+  height: 44,
   borderRadius: '50%',
   border: '1px solid #E4D5C3',
   background: '#fff',

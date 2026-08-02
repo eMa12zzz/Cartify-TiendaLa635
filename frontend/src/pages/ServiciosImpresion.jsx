@@ -4,14 +4,16 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/UI/DataTable';
 import TableActions from '../components/UI/TableActions';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
+import MaterialesImpresion from '../components/Admin/MaterialesImpresion';
 import { printServiceService } from '../api/printServiceService';
+import { useMaterialesImpresion } from '../hooks/useMaterialesImpresion';
 import { numeroEnRango, bloquearTeclasNumero } from '../utils/validaciones';
 
 /*
  * ServiciosImpresion (Admin) — catálogo de formatos de impresión con precio.
  * El cliente elige estos formatos en /impresiones.
  */
-const emptyForm = { name: '', widthCm: 21.6, heightCm: 27.9, pricePerCopy: '', allowsColor: true, colorSurcharge: '', isActive: true };
+const emptyForm = { name: '', widthCm: 21.6, heightCm: 27.9, pricePerCopy: '', allowsColor: true, colorSurcharge: '', isActive: true, materialId: '' };
 
 const ServiciosImpresion = () => {
   const [servicios, setServicios] = useState([]);
@@ -21,6 +23,9 @@ const ServiciosImpresion = () => {
   const [form, setForm] = useState(emptyForm);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState(null);
+
+  // Los papeles cargados, para poder decir en qué se imprime cada formato.
+  const { papeles } = useMaterialesImpresion();
 
   const cargar = async () => {
     setLoading(true);
@@ -37,6 +42,8 @@ const ServiciosImpresion = () => {
       name: s.name || '', widthCm: s.widthCm ?? 21.6, heightCm: s.heightCm ?? 27.9,
       pricePerCopy: s.pricePerCopy ?? '', allowsColor: s.allowsColor !== false,
       colorSurcharge: s.colorSurcharge ?? '', isActive: s.isActive !== false,
+      // Puede venir poblado (objeto) o como puro id, según cómo lo traiga la API.
+      materialId: (typeof s.materialId === 'object' ? s.materialId?._id : s.materialId) || '',
     });
     setModalOpen(true);
   };
@@ -108,6 +115,12 @@ const ServiciosImpresion = () => {
         )}
       </div>
 
+      {/* El papel y la tinta. Va DEBAJO de los formatos porque se consulta
+          menos seguido, pero en la misma pantalla: son la misma conversación
+          —qué puedo imprimir hoy— y separarlas obligaría a saltar de pantalla
+          para entender por qué un formato está apagado. */}
+      <MaterialesImpresion />
+
       {/* Modal crear/editar */}
       <AnimatePresence>
         {modalOpen && (
@@ -150,6 +163,31 @@ const ServiciosImpresion = () => {
                     <input type="number" min="0" step="0.01" onKeyDown={bloquearTeclasNumero} value={form.colorSurcharge} onChange={(e) => setForm({ ...form, colorSurcharge: e.target.value })} className={inputSm} placeholder="0.00" />
                   </div>
                 )}
+
+                {/*
+                  En qué papel se imprime. Es opcional a propósito: los formatos
+                  que ya estaban cargados no tienen material y tienen que seguir
+                  ofreciéndose igual. Solo al elegir uno, el formato empieza a
+                  apagarse solo cuando ese papel llega a cero.
+                */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Papel que usa</label>
+                  <select
+                    value={form.materialId}
+                    onChange={(e) => setForm({ ...form, materialId: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]"
+                  >
+                    <option value="">Sin control de material</option>
+                    {papeles.map((p) => (
+                      <option key={p._id} value={p._id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {papeles.length === 0
+                      ? 'Agregue papeles en "Materiales", más abajo, para poder elegir uno.'
+                      : 'Si el papel elegido llega a cero, este formato se apaga solo en la tienda.'}
+                  </p>
+                </div>
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Activo
                 </label>

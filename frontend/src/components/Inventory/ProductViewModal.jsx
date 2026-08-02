@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modalTransition } from '../../utils/motion';
+import { formatearFecha } from '../../utils/fechas';
 
 const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
 
@@ -103,8 +104,9 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Fecha de Expiración</p>
+                {/* Mismo criterio que la tarjeta: sin fecha válida no se pinta una. */}
                 <p className="text-sm text-gray-900 font-medium">
-                  {product.expirationDate ? new Date(product.expirationDate).toLocaleDateString() : 'No definida'}
+                  {formatearFecha(product.expirationDate) || 'Sin fecha de vencimiento'}
                 </p>
               </div>
               <div>

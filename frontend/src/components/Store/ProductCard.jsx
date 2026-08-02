@@ -18,10 +18,20 @@ const Card = styled.div`
   display: flex;
   flex-direction: column;
 
-  &:hover {
-    box-shadow: 0 12px 32px rgba(0,0,0,0.12);
-    transform: translateY(-4px);
+  /*
+   * El levantarse al pasar el cursor es solo del ratón: en pantalla táctil un
+   * toque deja el hover pegado, y la tarjeta se quedaba flotando y con sombra
+   * después de haberla soltado, como si siguiera seleccionada.
+   */
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+      transform: translateY(-4px);
+    }
   }
+
+  /* Lo que el dedo sí recibe a cambio: el hundido al apretar. */
+  &:active { transform: scale(0.98); }
 `;
 
 /*
@@ -61,8 +71,10 @@ const ProductImage = styled.img`
   object-fit: contain;
   transition: transform 0.3s ease;
 
-  ${Card}:hover & {
-    transform: scale(1.06);
+  @media (hover: hover) and (pointer: fine) {
+    ${Card}:hover & {
+      transform: scale(1.06);
+    }
   }
 `;
 
@@ -99,9 +111,44 @@ const WishlistButton = styled.button`
   z-index: 2;
   color: ${props => props.$liked ? '#ff4d6d' : '#ccc'};
 
-  &:hover {
-    transform: scale(1.15);
-    color: #ff4d6d;
+  /*
+   * El corazón mide 34px porque a 34px se ve bien: más grande le robaría
+   * protagonismo a la foto del producto. Pero un dedo necesita 44px, y entre
+   * los clientes hay personas mayores.
+   *
+   * La salida es separar lo que se VE de lo que se TOCA: el botón sigue
+   * midiendo 34, y un pseudo-elemento invisible le extiende el área hasta 44.
+   * Solo en pantallas de dedo (pointer: coarse) — con mouse no hace falta y
+   * un área invisible de más se comería el hover de lo que tiene al lado.
+   */
+  @media (pointer: coarse) {
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      transform: scale(1.15);
+      color: #ff4d6d;
+    }
+  }
+  &:active { transform: scale(0.92); }
+
+  /*
+   * El corazón mide 34px y con el dedo eso se falla — y fallarlo aquí no es
+   * inocente: el toque cae en la tarjeta y abre el producto. Se le agranda el
+   * área de toque con un rectángulo invisible, sin tocar lo que se ve: 34px es
+   * lo que el diseño pide, 46px es lo que el pulgar necesita.
+   */
+  @media (pointer: coarse), (max-width: 560px) {
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+    }
   }
 `;
 
@@ -201,14 +248,40 @@ const AddButton = styled.button`
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   flex-shrink: 0;
   line-height: 1;
+  position: relative;
 
-  &:hover {
-    background: #000;
-    transform: scale(1.08);
+  /*
+   * Agregar al carrito es LA acción de la tienda, y con el pulgar medía 38px.
+   * Mismo truco que el corazón: el cuadro negro se queda en 38 —que es lo que
+   * pide el diseño— y el área que responde al dedo llega a 44.
+   */
+  @media (pointer: coarse) {
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: #000;
+      transform: scale(1.08);
+    }
   }
 
   &:active {
     transform: scale(0.95);
+  }
+
+  /* Mismo criterio que el corazón: 38px se ven, 48px se tocan. Este botón es
+     el que mete el producto al carrito — errarle cuesta una venta. */
+  @media (pointer: coarse), (max-width: 560px) {
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+    }
   }
 `;
 

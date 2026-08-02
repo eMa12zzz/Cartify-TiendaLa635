@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,6 +16,19 @@ const POR_PAGINA = 4;
 const BROWN = '#B46C30';
 const BROWN_DARK = '#8A5222';
 const BROWN_LIGHT = '#F3E7D8';
+
+// Los tres campos de la dirección nueva se ven igual; el estilo vive aquí
+// para no repetirlo tres veces y que uno se quede distinto el día que cambie.
+const estiloCampoDireccion = {
+  width: '100%',
+  padding: '10px 13px',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  border: '1px solid #e0d3c4',
+  borderRadius: 10,
+  outline: 'none',
+  background: '#fff',
+};
 
 /*
  * El carrito entra con TRANSICIONES, no con @keyframes.
@@ -35,16 +48,33 @@ const Overlay = styled.div`
   transition: opacity var(--dur-popover) var(--ease-out);
 `;
 
+/*
+ * 100dvh y no 100vh, en los dos paneles.
+ *
+ * En el teléfono 100vh mide la pantalla SIN la barra de direcciones del
+ * navegador, así que el panel quedaba más alto que lo que de verdad se ve y su
+ * último tramo caía por debajo. En el carrito ese último tramo es justo el
+ * botón de pagar: la persona llenaba el carrito, abría el panel y el botón no
+ * estaba en ninguna parte. La unidad dvh sí mide lo visible.
+ *
+ * Se deja el 100vh arriba como respaldo para el navegador que no la conozca.
+ */
+const ALTO_PANTALLA = `
+  height: 100vh;
+  height: 100dvh;
+`;
+
 /* Full-width panel for checkout & confirmation */
 const FullPanel = styled.div`
   background: #f5f5f5;
   width: 100%;
-  height: 100vh;
+  ${ALTO_PANTALLA}
   display: flex;
   flex-direction: column;
   transform: translateX(${p => (p.$montado ? '0' : '100%')});
   transition: transform var(--dur-drawer) var(--ease-drawer);
   overflow-y: auto;
+  overscroll-behavior: contain;
 `;
 
 /* Slide-in cart panel */
@@ -52,7 +82,7 @@ const CartPanel = styled.div`
   background: white;
   width: 100%;
   max-width: 440px;
-  height: 100vh;
+  ${ALTO_PANTALLA}
   display: flex;
   flex-direction: column;
   box-shadow: -12px 0 40px rgba(0,0,0,0.12);
@@ -69,6 +99,9 @@ const PageTopBar = styled.div`
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  gap: 10px;
+
+  @media (max-width: 560px) { padding: 10px 14px; }
 `;
 
 const BrandTitle = styled.div`
@@ -88,7 +121,16 @@ const BackBtn = styled.button`
   padding: 4px;
   display: flex;
   align-items: center;
-  &:hover { color: ${BROWN}; }
+  justify-content: center;
+  flex-shrink: 0;
+  /* Volver del checkout al carrito con el pulgar: 28px no alcanzaban. */
+  min-width: 44px;
+  min-height: 44px;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: ${BROWN}; }
+  }
+  &:active { transform: scale(0.94); }
 `;
 
 const HelpBtn = styled.button`
@@ -102,7 +144,14 @@ const HelpBtn = styled.button`
   font-size: 12px;
   color: #444;
   cursor: pointer;
-  &:hover { border-color: ${BROWN}; color: ${BROWN}; }
+  flex-shrink: 0;
+  min-height: 40px;
+  white-space: nowrap;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { border-color: ${BROWN}; color: ${BROWN}; }
+  }
+  &:active { transform: scale(0.97); }
 `;
 
 /* ── CART PANEL elements ── */
@@ -113,6 +162,10 @@ const CartHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
+  gap: 10px;
+
+  /* 12px menos de margen a cada lado es un producto más ancho por renglón. */
+  @media (max-width: 480px) { padding: 14px 16px; }
 `;
 
 const CartTitle = styled.h2`
@@ -149,9 +202,12 @@ const CloseButton = styled.button`
 const CartItemsScroll = styled.div`
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 10px 22px;
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+  @media (max-width: 480px) { padding: 10px 16px; }
 `;
 
 const StoreName = styled.div`
@@ -252,6 +308,14 @@ const QtyControls = styled.div`
   gap: 6px;
 `;
 
+/*
+ * Los botones de cantidad crecen en el teléfono.
+ *
+ * A 26px son dos blancos de la mitad del pulgar, pegados uno al otro y con el
+ * bote de basura al lado: equivocarse aquí no es un tropiezo, es borrar un
+ * producto que se quería llevar. En pantalla táctil pasan a 34px de caja y
+ * 44px de área de toque; con el ratón se quedan como estaban.
+ */
 const QtyBtn = styled.button`
   width: 26px;
   height: 26px;
@@ -262,10 +326,22 @@ const QtyBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  flex-shrink: 0;
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   color: #444;
-  &:hover { background: ${BROWN_LIGHT}; border-color: ${BROWN}; color: ${BROWN}; }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${BROWN_LIGHT}; border-color: ${BROWN}; color: ${BROWN}; }
+  }
+  &:active:not(:disabled) { transform: scale(0.94); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  @media (pointer: coarse), (max-width: 560px) {
+    width: 34px;
+    height: 34px;
+    &::after { content: ''; position: absolute; inset: -5px; }
+  }
 `;
 
 const QtyNum = styled.span`
@@ -292,9 +368,25 @@ const RemoveBtn = styled.button`
   padding: 4px;
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: color 0.2s;
   flex-shrink: 0;
-  &:hover { color: #ef4444; }
+  position: relative;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: #ef4444; }
+  }
+
+  /*
+   * Separado del menos, no pegado: es el único botón de esta fila que no se
+   * puede deshacer, y estaba a 6px del que solo baja la cantidad.
+   */
+  @media (pointer: coarse), (max-width: 560px) {
+    width: 34px;
+    height: 34px;
+    margin-right: 6px;
+    &::after { content: ''; position: absolute; inset: -5px; }
+  }
 `;
 
 const EmptyCart = styled.div`
@@ -311,10 +403,20 @@ const CartFooter = styled.div`
   border-top: 1px solid #f0f0f0;
   flex-shrink: 0;
   background: white;
+
+  /*
+   * El área segura del iPhone. Sin esto la barra de gestos de abajo se come el
+   * borde del botón de pagar, y aunque se alcance a tocar, un botón mordido
+   * por el borde de la pantalla no invita a apretarlo con la plata de por
+   * medio.
+   */
+  padding-bottom: env(safe-area-inset-bottom);
 `;
 
 const OrderSummaryBox = styled.div`
   padding: 16px 22px 12px;
+
+  @media (max-width: 480px) { padding: 14px 16px 10px; }
 `;
 
 const SummaryTitle = styled.div`
@@ -352,10 +454,14 @@ const BtnRow = styled.div`
   padding: 0 22px 20px;
   display: flex;
   gap: 10px;
+
+  @media (max-width: 480px) { padding: 0 16px 16px; }
 `;
 
 const ClearBtn = styled.button`
   padding: 13px 16px;
+  min-height: 48px;
+  flex-shrink: 0;
   border: 1.5px solid #e5e7eb;
   border-radius: 14px;
   background: white;
@@ -371,6 +477,9 @@ const ClearBtn = styled.button`
 const CheckoutBtn = styled.button`
   flex: 1;
   padding: 13px;
+  /* El botón que cobra: nunca por debajo del pulgar. */
+  min-height: 48px;
+  min-width: 0;
   border: none;
   border-radius: 14px;
   background: ${BROWN};
@@ -378,12 +487,17 @@ const CheckoutBtn = styled.button`
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  &:hover { background: ${BROWN_DARK}; }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${BROWN_DARK}; }
+  }
+  &:active:not(:disabled) { transform: scale(0.98); }
   &:disabled { opacity: 0.7; cursor: not-allowed; }
 `;
 
@@ -399,6 +513,16 @@ const CheckoutLayout = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+  }
+
+  /*
+   * En el teléfono el margen baja a 14px y el de abajo sube, con el área
+   * segura incluida: el resumen con el botón de pagar es lo último de la
+   * página, y sin este colchón quedaba pegado al borde inferior.
+   */
+  @media (max-width: 560px) {
+    padding: 18px 14px calc(40px + env(safe-area-inset-bottom));
+    gap: 16px;
   }
 `;
 
@@ -456,6 +580,9 @@ const DeliveryBadge = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+
+  svg { flex-shrink: 0; }
 `;
 
 const OrderThumbsRow = styled.div`
@@ -463,6 +590,15 @@ const OrderThumbsRow = styled.div`
   align-items: center;
   gap: 8px;
   padding: 20px 24px;
+
+  /*
+   * Seis miniaturas de 48px no caben en 347px de tarjeta, y como la tarjeta
+   * recorta lo que se sale, las últimas desaparecían sin dejar rastro. Que
+   * bajen de renglón.
+   */
+  flex-wrap: wrap;
+
+  @media (max-width: 560px) { padding: 14px 16px; }
 `;
 
 const OrderThumb = styled.div`
@@ -499,6 +635,14 @@ const SummaryCard = styled.div`
   padding: 24px;
   position: sticky;
   top: 20px;
+
+  /*
+   * En una sola columna el sticky no tiene contra qué pegarse (es el último
+   * bloque del flujo) y encima lo dejaba flotando raro al rebotar el scroll.
+   * Abajo del formulario, quieto, que es donde se lee el total y se paga.
+   */
+  @media (max-width: 768px) { position: static; }
+  @media (max-width: 560px) { padding: 18px 16px; }
 `;
 
 const SummaryCardTitle = styled.div`
@@ -587,6 +731,7 @@ const CouponBtn = styled.button`
 const PlaceOrderBtn = styled.button`
   width: 100%;
   padding: 15px;
+  min-height: 52px;
   border: none;
   border-radius: 14px;
   background: ${BROWN};
@@ -595,8 +740,13 @@ const PlaceOrderBtn = styled.button`
   font-weight: 700;
   cursor: pointer;
   margin-top: 18px;
-  transition: background 0.2s;
-  &:hover { background: ${BROWN_DARK}; }
+  transition: background-color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${BROWN_DARK}; }
+  }
+  &:active:not(:disabled) { transform: scale(0.98); }
   &:disabled { opacity: 0.7; cursor: not-allowed; }
 `;
 
@@ -613,6 +763,11 @@ const ConfirmLayout = styled.div`
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
+
+  @media (max-width: 560px) {
+    padding: 18px 14px calc(40px + env(safe-area-inset-bottom));
+    gap: 16px;
+  }
 `;
 
 const ConfirmCard = styled.div`
@@ -620,6 +775,8 @@ const ConfirmCard = styled.div`
   border-radius: 16px;
   padding: 28px;
   margin-bottom: 16px;
+
+  @media (max-width: 560px) { padding: 20px 16px; }
 `;
 
 const StatusBadge = styled.div`
@@ -781,6 +938,9 @@ const ConfirmSummaryCard = styled.div`
   padding: 24px;
   position: sticky;
   top: 20px;
+
+  @media (max-width: 768px) { position: static; }
+  @media (max-width: 560px) { padding: 18px 16px; }
 `;
 
 const ConfirmSummaryTitle = styled.div`
@@ -825,7 +985,15 @@ const MastercardIcon = styled.div`
  * táctil el área de toque es toda la tarjeta y no un círculo de 12px.
  */
 const OpcionBtn = styled.button`
+  /*
+   * En el teléfono cada opción se lleva el renglón entero: dos de estas a la
+   * par miden 130px cada una, y "Envío a domicilio · +$4.78 de envío" en 130px
+   * se parte en cuatro líneas. Son cuatro decisiones en toda la compra
+   * (retiro/envío, efectivo/tarjeta/saldo): bien vale un renglón cada una.
+   */
   flex: 1 1 150px;
+  min-width: 0;
+  min-height: 52px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -842,8 +1010,13 @@ const OpcionBtn = styled.button`
               border-color var(--dur-press) var(--ease-out),
               color var(--dur-press) var(--ease-out);
 
-  &:hover:not(:disabled) { border-color: ${BROWN}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) { border-color: ${BROWN}; }
+  }
+  &:active:not(:disabled) { transform: scale(0.98); }
   &:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  @media (max-width: 560px) { flex: 1 1 100%; }
 `;
 
 const DeliveryAddress = styled.div`
@@ -868,6 +1041,15 @@ const ShoppingCart = ({
   onCheckout,
 }) => {
   const navigate = useNavigate();
+  /*
+   * A dónde hay que volver si por algo se sale de aquí. Antes estaba escrito
+   * "/store" a mano, pero la tienda también vive en "/" y en "/seccion/…":
+   * quien entraba desde la portada terminaba en otra pantalla que no era la
+   * suya. La ruta de verdad la sabe el router, no nosotros.
+   */
+  const location = useLocation();
+  const rutaActual = `${location.pathname}${location.search}`;
+
   const [view, setView] = useState('cart'); // 'cart' | 'checkout' | 'confirmation'
   const [procesando, setProcesando] = useState(false);
   const [imgErrors, setImgErrors] = useState({});
@@ -901,7 +1083,48 @@ const ShoppingCart = ({
     indice: indiceDireccion,
     activa: direccionElegida,
     elegir: setIndiceDireccion,
+    agregar: agregarDireccion,
+    guardando: guardandoDireccion,
   } = useDireccionCtx();
+
+  /*
+   * ── Agregar una dirección SIN salir del carrito ──
+   *
+   * Antes este botón mandaba a la pantalla del mapa, en medio del pago. Salir
+   * de la tienda para volver a entrar es el peor momento para pedirle un
+   * viaje a alguien que ya tenía la plata en la mano — y el carrito, que no
+   * se guardaba en ningún lado, se quedaba en el camino.
+   *
+   * Ahora se escribe aquí mismo. El mapa sigue estando para quien quiera
+   * marcar el punto exacto, pero como una opción, no como el único camino.
+   */
+  const [agregandoDireccion, setAgregandoDireccion] = useState(false);
+  const [nuevaDireccion, setNuevaDireccion] = useState({ nombre: '', direccion: '', referencia: '' });
+
+  const irAMarcarEnElMapa = () => navigate(`/bienvenida?volver=${encodeURIComponent(rutaActual)}`);
+
+  const guardarNuevaDireccion = (e) => {
+    e.preventDefault();
+    if (!nuevaDireccion.direccion.trim()) {
+      toast.error('Escriba la dirección para poder llevarle el pedido');
+      return;
+    }
+    // Las direcciones se guardan en la cuenta: sin sesión no hay dónde ponerlas.
+    if (!user?.id) {
+      toast('Inicie sesión para guardar su dirección');
+      navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
+      return;
+    }
+    /*
+     * Se deja elegida la que acaba de escribir: agregarla y que el pedido
+     * siguiera saliendo a la anterior es exactamente el error que se quiso
+     * evitar. Va por el índice que ocupará al final de la lista.
+     */
+    setIndiceDireccion(direcciones.length);
+    agregarDireccion(nuevaDireccion);
+    setNuevaDireccion({ nombre: '', direccion: '', referencia: '' });
+    setAgregandoDireccion(false);
+  };
 
   // Cuánto hemos tardado de verdad en llegar a esa zona (no un rango inventado).
   const zona = useTiempoPorZona(direccionElegida?.lat, direccionElegida?.lng);
@@ -966,7 +1189,9 @@ const ShoppingCart = ({
      */
     if (!user?.id) {
       toast('Inicie sesión para terminar su pedido');
-      navigate('/iniciar-sesion?volver=/');
+      // Vuelve a la pantalla en la que estaba, no a "/" a secas: la tienda
+      // también se abre desde "/store" y desde una sección.
+      navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
       return;
     }
     // Con envío a domicilio la dirección es obligatoria; el servidor también
@@ -1123,12 +1348,18 @@ const ShoppingCart = ({
             <CheckoutLeft>
               <CheckoutCard>
                 {/* Header row */}
-                <div style={{ padding: '20px 24px 14px', borderBottom: '1px solid #f5f5f5' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <CheckoutIconBox style={{ width: 42, height: 42 }}>
+                <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                  {/*
+                    Con flexWrap la franja de la fecha se baja de renglón en vez
+                    de empujar el título fuera de la tarjeta: la tarjeta recorta
+                    lo que se sale, así que antes en el teléfono no se cortaba
+                    la página pero sí se comía media leyenda.
+                  */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <CheckoutIconBox style={{ width: 42, height: 42, marginRight: 0 }}>
                       <ShoppingBag size={20} color={BROWN} />
                     </CheckoutIconBox>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: '1 1 auto', minWidth: 0 }}>
                       <div style={{ fontSize: 17, fontWeight: 700, color: '#111' }}>Checkout</div>
                     </div>
                     <DeliveryBadge>
@@ -1204,7 +1435,7 @@ const ShoppingCart = ({
                   */}
                   {entrega === 'delivery' && (
                     <div style={{ marginTop: 12 }}>
-                      {direcciones.length === 0 ? (
+                      {direcciones.length === 0 && !agregandoDireccion ? (
                         <div style={{
                           padding: '14px', border: '1px dashed #e0d3c4', borderRadius: 12,
                           background: '#FBF6F0', textAlign: 'center',
@@ -1212,16 +1443,32 @@ const ShoppingCart = ({
                           <p style={{ fontSize: 13, color: '#7a6a5c', margin: '0 0 10px' }}>
                             Todavía no tiene direcciones guardadas.
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => navigate('/bienvenida?volver=/store')}
-                            style={{
-                              padding: '9px 16px', borderRadius: 999, border: 'none',
-                              background: BROWN, color: '#fff', fontSize: 13, fontWeight: 700,
-                            }}
-                          >
-                            Marcar mi dirección en el mapa
-                          </button>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => setAgregandoDireccion(true)}
+                              style={{
+                                padding: '9px 16px', borderRadius: 999, border: 'none',
+                                background: BROWN, color: '#fff', fontSize: 13, fontWeight: 700,
+                                fontFamily: 'inherit', cursor: 'pointer',
+                              }}
+                            >
+                              Escribir mi dirección aquí
+                            </button>
+                            {/* El mapa queda como opción, no como peaje */}
+                            <button
+                              type="button"
+                              onClick={irAMarcarEnElMapa}
+                              style={{
+                                padding: '9px 16px', borderRadius: 999,
+                                border: `1.5px solid ${BROWN}`, background: '#fff',
+                                color: BROWN, fontSize: 13, fontWeight: 700,
+                                fontFamily: 'inherit', cursor: 'pointer',
+                              }}
+                            >
+                              Marcarla en el mapa
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <>
@@ -1260,16 +1507,95 @@ const ShoppingCart = ({
                               );
                             })}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => navigate('/bienvenida?volver=/store')}
-                            style={{
-                              marginTop: 8, background: 'none', border: 'none', padding: 0,
-                              color: BROWN, fontSize: 12, fontWeight: 700,
-                            }}
-                          >
-                            + Agregar otra dirección
-                          </button>
+                          {agregandoDireccion ? (
+                            /*
+                              Tres campos y nada más. La referencia es la que de
+                              verdad usa el repartidor ("portón verde, frente a
+                              la tienda"), así que se pide, pero no se obliga:
+                              nadie se queda sin pedir por no saber describir su
+                              cuadra.
+                            */
+                            <form
+                              onSubmit={guardarNuevaDireccion}
+                              style={{
+                                marginTop: 10, padding: 12, borderRadius: 12,
+                                border: '1px solid #e0d3c4', background: '#FBF6F0',
+                                display: 'flex', flexDirection: 'column', gap: 8,
+                              }}
+                            >
+                              <input
+                                value={nuevaDireccion.nombre}
+                                onChange={(e) => setNuevaDireccion((d) => ({ ...d, nombre: e.target.value }))}
+                                placeholder="Nombre (Casa, Trabajo…)"
+                                aria-label="Nombre de la dirección"
+                                style={estiloCampoDireccion}
+                              />
+                              <input
+                                value={nuevaDireccion.direccion}
+                                onChange={(e) => setNuevaDireccion((d) => ({ ...d, direccion: e.target.value }))}
+                                placeholder="Calle, número y colonia"
+                                aria-label="Dirección"
+                                autoFocus
+                                style={estiloCampoDireccion}
+                              />
+                              <input
+                                value={nuevaDireccion.referencia}
+                                onChange={(e) => setNuevaDireccion((d) => ({ ...d, referencia: e.target.value }))}
+                                placeholder="Referencia para encontrarla (opcional)"
+                                aria-label="Referencia"
+                                style={estiloCampoDireccion}
+                              />
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                  type="submit"
+                                  disabled={guardandoDireccion}
+                                  className="press"
+                                  style={{
+                                    padding: '9px 18px', borderRadius: 999, border: 'none',
+                                    background: BROWN, color: '#fff', fontSize: 13, fontWeight: 700,
+                                    fontFamily: 'inherit', cursor: 'pointer',
+                                    opacity: guardandoDireccion ? 0.6 : 1,
+                                  }}
+                                >
+                                  {guardandoDireccion ? 'Guardando…' : 'Guardar y usarla'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setAgregandoDireccion(false)}
+                                  style={{
+                                    background: 'none', border: 'none', padding: 0,
+                                    color: '#8a7a6c', fontSize: 12.5, fontWeight: 600,
+                                    fontFamily: 'inherit', cursor: 'pointer',
+                                  }}
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={irAMarcarEnElMapa}
+                                  style={{
+                                    marginLeft: 'auto', background: 'none', border: 'none', padding: 0,
+                                    color: BROWN, fontSize: 12, fontWeight: 700,
+                                    fontFamily: 'inherit', cursor: 'pointer',
+                                  }}
+                                >
+                                  Mejor marcarla en el mapa
+                                </button>
+                              </div>
+                            </form>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setAgregandoDireccion(true)}
+                              style={{
+                                marginTop: 8, background: 'none', border: 'none', padding: 0,
+                                color: BROWN, fontSize: 12, fontWeight: 700,
+                                fontFamily: 'inherit', cursor: 'pointer',
+                              }}
+                            >
+                              + Agregar otra dirección
+                            </button>
+                          )}
                         </>
                       )}
                     </div>

@@ -117,17 +117,22 @@ const Inventory = () => {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
-        <h1 className="text-4xl font-extrabold text-[#C28C5D]">Inventario</h1>
-        
-        <div className="flex gap-4">
-          <div className="relative">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Inventario</h1>
+
+        {/*
+          Buscador, orden y "Añadir producto" sumaban más de 600px en una fila
+          que no envolvía: en teléfono se salían de la pantalla. Ahora la barra
+          baja completa debajo del título y el buscador toma el ancho que haya.
+        */}
+        <div className="flex flex-wrap gap-3 sm:gap-4 w-full sm:w-auto">
+          <div className="relative flex-1 min-w-[12rem] sm:flex-none">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Buscar producto..." 
+            <input
+              type="text"
+              placeholder="Buscar producto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
+              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-full sm:w-64 shadow-sm"
             />
           </div>
           {/*
@@ -146,9 +151,9 @@ const Inventory = () => {
               { value: 'precio', label: 'Ordenar: Mayor precio' },
             ]}
           />
-          <button 
+          <button
             onClick={handleAddProduct}
-            className="flex items-center gap-2 px-6 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+            className="flex flex-none items-center gap-2 px-5 sm:px-6 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Añadir producto
@@ -224,7 +229,12 @@ const Inventory = () => {
             />
           ))}
           {filteredProducts.length === 0 && (
-            <div className="col-span-2 text-center py-14">
+            /*
+              col-span-full y no col-span-2: en teléfono la grilla tiene UNA
+              columna, y pedir dos le inventaba una segunda que ensanchaba la
+              página aunque estuviera vacía.
+            */
+            <div className="col-span-full text-center py-14">
               <p className="text-gray-800 font-semibold mb-1">No hay productos que coincidan</p>
               <p className="text-gray-500 text-sm">Prueba con otra búsqueda, categoría o filtro.</p>
             </div>

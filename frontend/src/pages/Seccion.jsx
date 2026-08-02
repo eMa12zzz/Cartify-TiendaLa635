@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { ArrowLeft, PackageOpen } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
+import { useVolver } from '../hooks/useVolver';
 import { useMyOrders } from '../hooks/useMyOrders';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import ProductCard from '../components/Store/ProductCard';
@@ -133,7 +134,6 @@ const Vacio = styled.div`
 
 const Seccion = () => {
   const { clave } = useParams();
-  const navigate = useNavigate();
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
   const { productos, productosDelPasillo, agregarAlCarrito, cargando } = useStore({});
@@ -147,7 +147,17 @@ const Seccion = () => {
   // `todos` trae la lista sin el corte de 12 que se le hace a la fila.
   const lista = seccion?.todos || seccion?.productos || [];
 
-  const volver = () => navigate('/');
+  /*
+   * Volver de verdad, no "ir a la portada".
+   *
+   * Quien llegó desde la tienda venía bajando por las filas: mandarlo a "/" lo
+   * deja arriba del todo y con la sección perdida de vista. Retroceder lo
+   * devuelve donde estaba, a la altura donde estaba.
+   *
+   * Y quien llegó por un enlace compartido no tiene a dónde retroceder, así
+   * que ahí sí va a la portada. El hook distingue los dos casos.
+   */
+  const { volver } = useVolver('/');
 
   return (
     <Contenedor>

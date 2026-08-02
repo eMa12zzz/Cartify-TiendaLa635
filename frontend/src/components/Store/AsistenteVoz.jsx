@@ -20,6 +20,21 @@ const AsistenteVoz = ({
 }) => {
   const reduce = useReducedMotion();
   const [minimizado, setMinimizado] = useState(false); // asistente en segundo plano
+
+  /*
+   * Hablar por referencia: cerrarCompra necesita hablar, pero se define ANTES
+   * de que exista el hook, porque el hook la recibe como parámetro. El ref
+   * rompe ese huevo y gallina sin tener que partir el componente en dos.
+   *
+   * Y va declarado ACÁ ARRIBA, antes del hook, no después. Estaba declarado
+   * más abajo y la línea que lo llena (`hablarRef.current = hablar`) quedaba
+   * por encima de su propio `const`: al abrir el asistente reventaba con
+   * "Cannot access 'hablarRef' before initialization" y no se abría nunca.
+   * Un `const` no se puede tocar antes de su declaración aunque estén en la
+   * misma función — eso es lo que atrapa a cualquiera aquí.
+   */
+  const hablarRef = useRef(null);
+
   const {
     activo, escuchando, muteado, transcripcion, historial, velLabel, pensando, hablando,
     iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado, interrumpir,
@@ -44,13 +59,6 @@ const AsistenteVoz = ({
 
   // La cuenta del cliente, si escaneó el QR con su teléfono.
   const kiosco = useKiosco();
-
-  /*
-   * Hablar por referencia: cerrarCompra se define antes de que el hook
-   * exista, porque el hook la recibe como parámetro. El ref rompe ese huevo
-   * y gallina sin tener que partir el componente en dos.
-   */
-  const hablarRef = useRef(null);
 
   /*
    * Cerrar la compra del kiosco.

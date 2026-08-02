@@ -49,10 +49,77 @@ export const reglaEntero = (etiqueta, minimo = 0) => ({
   },
 });
 
-// DUI salvadoreño: 8 dígitos, guion y 1 dígito (12345678-9).
+/*
+ * ── DUI: hasta dónde llega esta validación ──────────────────
+ *
+ * NO se puede comprobar que un DUI exista de verdad: ese registro vive en el
+ * RNPN y no hay una API pública y gratuita para consultarlo. Lo que SÍ se
+ * puede verificar es el DÍGITO VERIFICADOR, que se calcula a partir de los 8
+ * primeros dígitos. Eso descarta un número inventado al azar; NO confirma que
+ * la persona exista, ni que el documento sea suyo, ni que esté vigente.
+ *
+ * Queda escrito para que nadie lea más adelante "DUI válido" como "identidad
+ * verificada": son cosas distintas y la diferencia importa.
+ *
+ * El cálculo: los 8 dígitos se multiplican por 9, 8, 7, 6, 5, 4, 3 y 2; se
+ * suman; el verificador es (10 - suma % 10) % 10. Ese último % 10 no es
+ * adorno: cuando la suma cierra en 0 el verificador es 0, no 10, y ahí es
+ * donde se equivocan las implementaciones que rechazan todo DUI terminado
+ * en 0.
+ */
+const digitosDelDui = (valor) => String(valor || '').replace(/\D/g, '');
+
+export const duiEsValido = (valor) => {
+  const d = digitosDelDui(valor);
+  if (d.length !== 9) return false;
+
+  /*
+   * Los nueve dígitos iguales se rechazan de entrada.
+   *
+   * "00000000-0" y "11111111-1" CUADRAN con el verificador —son correctos en
+   * la aritmética— pero nadie tiene ese DUI. Son lo que sale cuando alguien
+   * llena el campo por salir del paso, y el algoritmo solo no los detiene.
+   * Aceptarlos ensucia la base con datos que parecen buenos y no lo son, que
+   * es peor que no tener el dato: nadie sospecha de un número bien formado.
+   */
+  if (/^(\d)\1{8}$/.test(d)) return false;
+
+  let suma = 0;
+  for (let i = 0; i < 8; i++) suma += Number(d[i]) * (9 - i);
+
+  return (10 - (suma % 10)) % 10 === Number(d[8]);
+};
+
+// Mensaje único: si el número no cuadra, la persona necesita saber que revise
+// lo que escribió, no enterarse de que existe un dígito verificador.
+export const MENSAJE_DUI_INVALIDO = 'Ese DUI no parece correcto, revise los números';
+
+/*
+ * DUI del personal: obligatorio y con formato 12345678-9.
+ *
+ * A propósito NO revisa el dígito verificador. En la base ya hay empleados
+ * cargados con DUI de prueba, y si la regla los rechazara, cambiarle el
+ * teléfono a uno de ellos se volvería imposible hasta corregir su DUI. La
+ * comprobación fuerte va donde la persona escribe su propio número (el
+ * registro de cliente), que es el caso que Mario pidió blindar.
+ */
 export const reglaDui = {
   required: 'El DUI es obligatorio',
   pattern: { value: /^\d{8}-\d$/, message: 'Formato de DUI: 12345678-9' },
+};
+
+/*
+ * DUI del cliente: OPCIONAL. Mucha gente del barrio no lo anda a mano y perder
+ * un registro por eso no vale la pena. Vacío pasa; si escribió algo, tiene que
+ * estar completo y cuadrar el verificador.
+ */
+export const reglaDuiOpcional = {
+  validate: (valor) => {
+    const d = digitosDelDui(valor);
+    if (!d.length) return true; // no lo puso: perfecto, seguimos
+    if (d.length < 9) return 'El DUI lleva 9 dígitos (12345678-9)';
+    return duiEsValido(valor) || MENSAJE_DUI_INVALIDO;
+  },
 };
 
 // Teléfono salvadoreño: 8 dígitos, normalmente 1234-5678.

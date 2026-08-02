@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from 'react';
 import toast from 'react-hot-toast';
 import { productService } from '../api/productService';
 import { promotionService } from '../api/promotionService';
 import { promoVigente } from '../utils/promos';
 import { familiasQueCoinciden } from '../utils/familias';
 import { familiaDeProducto } from '../utils/similitud';
+import { useAuth } from './useAuth';
 
 /*
  * useStore — estado de la tienda (catálogo real + carrito) con PROMOCIONES.
@@ -99,6 +100,78 @@ const mapearProducto = (p, mapaPromo = {}) => {
   };
 };
 
+/*
+ * ============================================================
+ * EL CARRITO, GUARDADO — que no se pierda al salir de la tienda
+ * ============================================================
+ * El carrito vivía en un useState y nada más. Bastaba con salir un momento
+ * —a marcar una dirección, a iniciar sesión, o darle sin querer a "atrás"—
+ * para que al volver estuviera vacío. Y no es que se borrara: es que nunca
+ * se había guardado en ningún lado.
+ *
+ * Ahora vive en el teléfono, con una llave POR PERSONA y otra para quien
+ * todavía no entró — igual que la dirección activa (ver useDireccionActiva).
+ * Así al cerrar sesión no queda a la vista el carrito de quien estaba antes:
+ * su llave sencillamente ya no se lee.
+ *
+ * Y se guarda SOLO el id y la cantidad. Nunca el precio.
+ *
+ * Eso último es lo importante: un precio guardado en el navegador es un
+ * precio de ayer, y el día que la tienda sube uno, quien tuviera el producto
+ * en el carrito lo pagaría al viejo. Al no guardarlo no hay nada que
+ * reconciliar — el precio, la promo y el stock salen siempre del catálogo
+ * que se acaba de cargar.
+ * ============================================================
+ */
+const llaveCarrito = (userId) => `kartify:carrito:${userId || 'invitado'}`;
+
+// Aviso propio: `storage` solo lo oyen las OTRAS pestañas, nunca la que
+// escribió. Sin esto, agregar desde la portada no movería el contador de arriba.
+const EVENTO_CARRITO = 'kartify:carrito-cambio';
+
+const suscribirCarrito = (avisar) => {
+  window.addEventListener('storage', avisar);
+  window.addEventListener(EVENTO_CARRITO, avisar);
+  return () => {
+    window.removeEventListener('storage', avisar);
+    window.removeEventListener(EVENTO_CARRITO, avisar);
+  };
+};
+
+// El navegador puede negarse a dar localStorage (modo privado, permisos). Que
+// eso deje la tienda sin memoria es aceptable; que la tumbe, no.
+const leerCrudo = (llave) => {
+  try { return localStorage.getItem(llave); } catch { return null; }
+};
+
+/*
+ * De lo guardado a algo confiable: [{ id, cantidad }] con cantidades enteras y
+ * positivas. Se desconfía a propósito de lo que hay en el navegador — puede
+ * venir de una versión vieja de la tienda o de alguien que lo editó a mano.
+ */
+const normalizarLineas = (crudo) => {
+  try {
+    const datos = JSON.parse(crudo || '[]');
+    if (!Array.isArray(datos)) return [];
+    return datos
+      .map((l) => ({ id: String(l?.id ?? ''), cantidad: Math.floor(Number(l?.cantidad) || 0) }))
+      .filter((l) => l.id && l.cantidad > 0);
+  } catch {
+    return [];
+  }
+};
+
+const escribirLineas = (llave, lista) => {
+  const lineas = (lista || [])
+    .map((i) => ({ id: String(i.id), cantidad: Math.floor(Number(i.cantidad) || 0) }))
+    .filter((l) => l.id && l.cantidad > 0);
+  try {
+    if (lineas.length) localStorage.setItem(llave, JSON.stringify(lineas));
+    else localStorage.removeItem(llave);
+  } catch { /* sin memoria, pero la tienda sigue funcionando */ }
+  window.dispatchEvent(new Event(EVENTO_CARRITO));
+};
+
 export const useStore = ({ moduloInicial = null } = {}) => {
   const [productos, setProductos] = useState([]);
   /*
@@ -108,7 +181,6 @@ export const useStore = ({ moduloInicial = null } = {}) => {
   const [moduloSeleccionado, setModuloSeleccionado] = useState(moduloInicial);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
-  const [carrito, setCarrito] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [filtroPrecio, setFiltroPrecio] = useState('todos');
   const [promoSeleccionada, setPromoSeleccionada] = useState(null);
@@ -241,35 +313,147 @@ export const useStore = ({ moduloInicial = null } = {}) => {
     setPromoDetalle(null);
   };
 
-  const agregarAlCarrito = (producto, cantidad = 1) => {
-    setCarrito((prev) => {
-      const existe = prev.find((item) => item.id === producto.id);
-      if (existe) {
-        const nuevaCantidad = existe.cantidad + cantidad;
-        if (nuevaCantidad > producto.stock) {
-          toast.error(`Solo hay ${producto.stock} unidades disponibles`);
-          return prev;
-        }
-        return prev.map((item) => (item.id === producto.id ? { ...item, cantidad: nuevaCantidad } : item));
-      }
-      return [...prev, { ...producto, cantidad }];
+  /* ══════════════ EL CARRITO ══════════════ */
+
+  const { user } = useAuth();
+  const llave = llaveCarrito(user?.id);
+
+  /*
+   * localStorage es estado que vive FUERA de React; leerlo con un efecto que
+   * llama a setState provoca un render de más y el linter lo rechaza con
+   * razón. useSyncExternalStore es la herramienta hecha para esto — y de
+   * regalo, dos pestañas abiertas ven el mismo carrito.
+   */
+  const guardado = useSyncExternalStore(
+    suscribirCarrito,
+    () => leerCrudo(llave),
+    () => null
+  );
+
+  const lineas = useMemo(() => normalizarLineas(guardado), [guardado]);
+
+  /*
+   * El carrito que se ve = lo guardado CASADO con el catálogo de hoy.
+   *
+   * Por eso un producto que la tienda dio de baja o que se quedó sin stock
+   * desaparece solo, y una cantidad guardada mayor a lo que hay se recorta a
+   * lo que hay. Mientras el catálogo no haya cargado no se muestra nada: es
+   * preferible un carrito que tarda un instante a uno que enseña precios que
+   * ya no son.
+   */
+  const carrito = useMemo(() => {
+    if (lineas.length === 0 || productos.length === 0) return [];
+    const porId = new Map(productos.map((p) => [String(p.id), p]));
+    return lineas.reduce((lista, linea) => {
+      const p = porId.get(linea.id);
+      if (!p || p.stock <= 0) return lista;
+      lista.push({ ...p, cantidad: Math.min(linea.cantidad, p.stock) });
+      return lista;
+    }, []);
+  }, [lineas, productos]);
+
+  const guardarCarrito = useCallback((lista) => escribirLineas(llave, lista), [llave]);
+
+  /*
+   * Cuando el catálogo termina de cargar, lo guardado se limpia de una vez:
+   * lo que ya no existe se borra del navegador y lo que se recortó se guarda
+   * recortado. Si no, la corrección se rehacía en cada visita y el aviso
+   * volvía a salir cada vez.
+   *
+   * Se avisa porque callarlo es peor: quien pidió tres y recibe dos merece
+   * enterarse ahora y no en la puerta de su casa.
+   */
+  const yaConciliado = useRef(false);
+  useEffect(() => {
+    if (cargando || yaConciliado.current) return;
+    // Catálogo vacío = la API no respondió. Ahí no se toca nada: borrarle el
+    // carrito a alguien porque se cayó el servidor sería el peor arreglo.
+    if (productos.length === 0 || lineas.length === 0) return;
+    yaConciliado.current = true;
+
+    const fuera = lineas.length - carrito.length;
+    const recortados = carrito.filter((i) => {
+      const guardada = lineas.find((l) => l.id === String(i.id));
+      return guardada && guardada.cantidad > i.cantidad;
+    }).length;
+
+    if (fuera === 0 && recortados === 0) return;
+
+    guardarCarrito(carrito);
+
+    const partes = [];
+    if (fuera > 0) {
+      partes.push(fuera === 1 ? 'un producto ya no está disponible' : `${fuera} productos ya no están disponibles`);
+    }
+    if (recortados > 0) {
+      partes.push(recortados === 1
+        ? 'de otro quedaban menos unidades de las que llevaba'
+        : `de ${recortados} quedaban menos unidades de las que llevaba`);
+    }
+    toast(`De su carrito guardado, ${partes.join(' y ')}. Ya está corregido.`, { duration: 6000 });
+  }, [cargando, productos, lineas, carrito, guardarCarrito]);
+
+  /*
+   * Al iniciar sesión, lo que llenó como invitado se pasa a su cuenta.
+   *
+   * Sin esto el arreglo quedaba a medias justo donde más duele: la tienda se
+   * recorre sin cuenta, el carrito se llena sin cuenta, y al pedir la sesión
+   * para pagar la llave cambiaba y el carrito aparecía vacío. Se toma la
+   * cantidad mayor de las dos, nunca la suma, para no duplicar sin querer.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    const deInvitado = normalizarLineas(leerCrudo(llaveCarrito(null)));
+    if (deInvitado.length === 0) return;
+
+    const suyo = llaveCarrito(user.id);
+    const fusion = [...normalizarLineas(leerCrudo(suyo))];
+    deInvitado.forEach((linea) => {
+      const i = fusion.findIndex((f) => f.id === linea.id);
+      if (i === -1) fusion.push(linea);
+      else fusion[i] = { ...fusion[i], cantidad: Math.max(fusion[i].cantidad, linea.cantidad) };
     });
+
+    try { localStorage.removeItem(llaveCarrito(null)); } catch { /* ya está */ }
+    escribirLineas(suyo, fusion);
+  }, [user?.id]);
+
+  const agregarAlCarrito = (producto, cantidad = 1) => {
+    if (!producto?.id) return;
+    const stock = Number(producto.stock) || 0;
+    if (stock <= 0) {
+      toast.error(`${producto.nombre} se quedó sin existencias`);
+      return;
+    }
+
+    const enCarrito = carrito.find((i) => i.id === producto.id)?.cantidad || 0;
+    const nuevaCantidad = enCarrito + cantidad;
+    if (nuevaCantidad > stock) {
+      toast.error(`Solo hay ${stock} unidades disponibles`);
+      return;
+    }
+
+    guardarCarrito(
+      enCarrito
+        ? carrito.map((item) => (item.id === producto.id ? { ...item, cantidad: nuevaCantidad } : item))
+        : [...carrito, { id: producto.id, cantidad }]
+    );
+
     /*
      * El aviso dice cuántos lleva, no solo que se agregó: al segundo click el
      * texto era idéntico y no había forma de saber si el toque contó.
      * El estilo sale del <Toaster> de App: aquí no se pisa nada.
      */
-    const enCarrito = (carrito.find((i) => i.id === producto.id)?.cantidad || 0) + cantidad;
     toast.success(
-      enCarrito > 1
-        ? `${producto.nombre} · ${enCarrito} en el carrito`
+      nuevaCantidad > 1
+        ? `${producto.nombre} · ${nuevaCantidad} en el carrito`
         : `${producto.nombre} agregado al carrito`
     );
   };
 
   const eliminarDelCarrito = (productoId) => {
     const fuera = carrito.find((i) => i.id === productoId);
-    setCarrito((prev) => prev.filter((item) => item.id !== productoId));
+    guardarCarrito(carrito.filter((item) => item.id !== productoId));
     toast(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
   };
 
@@ -278,12 +462,18 @@ export const useStore = ({ moduloInicial = null } = {}) => {
       eliminarDelCarrito(productoId);
       return;
     }
-    setCarrito((prev) => prev.map((item) => (item.id === productoId ? { ...item, cantidad: nuevaCantidad } : item)));
+    const item = carrito.find((i) => i.id === productoId);
+    if (!item) return;
+    // El tope se respeta también aquí, no solo en el botón: en el teléfono el
+    // "+" se pulsa más rápido de lo que el render alcanza a deshabilitarlo.
+    const cantidad = Math.min(nuevaCantidad, item.stock);
+    if (cantidad === item.cantidad) return;
+    guardarCarrito(carrito.map((i) => (i.id === productoId ? { ...i, cantidad } : i)));
   };
 
   const limpiarCarrito = () => {
     const cuantos = carrito.length;
-    setCarrito([]);
+    guardarCarrito([]);
     if (cuantos) toast(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
   };
 

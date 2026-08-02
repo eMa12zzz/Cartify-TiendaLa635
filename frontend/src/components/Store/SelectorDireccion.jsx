@@ -35,10 +35,39 @@ const Zona = styled.div`
   margin-left: 4px;
   border-left: 1px solid var(--linea, #ebebeb);
 
-  /* En pantalla chica el nombre de la tienda y el buscador mandan. */
+  /*
+   * En pantalla chica no cabe "Entregar en · Casa", pero tampoco se borra:
+   * queda el pin solo. Saber a dónde va el pedido —y poder cambiarlo— es de
+   * las pocas cosas que arruinan una entrega si se descubren tarde.
+   *
+   * El position static de abajo no es un descuido: suelta el panel de este
+   * botón para que se cuelgue del ENCABEZADO, y así puede abrirse de orilla a
+   * orilla en vez de salirse por la derecha de la pantalla.
+   */
   @media (max-width: 820px) {
-    display: none;
+    position: static;
+    padding-left: 0;
+    margin-left: 0;
+    border-left: none;
   }
+`;
+
+/* El pin, que solo aparece cuando el texto ya no cabe. */
+const Pin = styled.span`
+  display: none;
+  color: #555;
+
+  @media (max-width: 820px) { display: flex; }
+`;
+
+/* "Entregar en" + el nombre + la flechita: lo que se va cuando falta ancho. */
+const Detalle = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+
+  @media (max-width: 820px) { display: none; }
 `;
 
 const Boton = styled.button`
@@ -52,9 +81,20 @@ const Boton = styled.button`
   padding: 5px 10px 5px 8px;
   border-radius: 10px;
   max-width: 230px;
-  transition: background-color var(--dur-press, 120ms) var(--ease-out, ease);
+  transition: background-color var(--dur-press, 120ms) var(--ease-out, ease),
+              transform var(--dur-press, 120ms) var(--ease-out, ease);
 
-  &:hover { background: var(--marca-50, #FAF5F0); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: var(--marca-50, #FAF5F0); }
+  }
+  &:active { transform: scale(0.97); }
+
+  @media (max-width: 820px) {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
 `;
 
 const Textos = styled.span`
@@ -93,6 +133,25 @@ const Panel = styled.div`
   padding: 6px;
   z-index: 300;
   animation: cardIn 180ms var(--ease-out, ease);
+
+  /*
+   * De orilla a orilla y colgado del encabezado (ver la Zona de arriba).
+   * Anclado al botón se salía casi 50px por la derecha y arrastraba la página
+   * entera de lado.
+   *
+   * El alto también se limita: con cinco o seis direcciones guardadas el panel
+   * medía más que la pantalla y las últimas quedaban abajo, sin manera de
+   * alcanzarlas. Ahora se desplaza el panel, no la página.
+   */
+  @media (max-width: 820px) {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    top: calc(100% + 8px);
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 `;
 
 const Titulo = styled.p`
@@ -208,12 +267,22 @@ const SelectorDireccion = () => {
         ya dice "Entregar en", y en un encabezado cada elemento de más le
         quita aire al buscador.
       */}
-      <Boton onClick={toggle} aria-expanded={isOpen} aria-haspopup="listbox">
-        <Textos>
-          <Arriba>Entregar en</Arriba>
-          <Nombre>{etiqueta || 'Elegir dirección'}</Nombre>
-        </Textos>
-        <ChevronDown size={16} strokeWidth={2.4} color="#777" />
+      <Boton
+        onClick={toggle}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        /* Con el texto escondido el botón se quedaba sin nombre: en el teléfono
+           esto es lo único que dice qué hace ese pin. */
+        aria-label={`Entregar en ${etiqueta || 'elegir dirección'}`}
+      >
+        <Pin><MapPin size={19} strokeWidth={2.2} /></Pin>
+        <Detalle>
+          <Textos>
+            <Arriba>Entregar en</Arriba>
+            <Nombre>{etiqueta || 'Elegir dirección'}</Nombre>
+          </Textos>
+          <ChevronDown size={16} strokeWidth={2.4} color="#777" />
+        </Detalle>
       </Boton>
 
       {isOpen && (

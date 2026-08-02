@@ -198,20 +198,38 @@ dashboardController.getSummary = async (req, res) => {
         { $group: { _id: null, puntos: { $sum: "$pointsRedeemed" }, descuento: { $sum: "$discount" } } },
       ]),
 
-      // ── Productos más vendidos ──
+      /*
+       * ── Productos más vendidos ──
+       *
+       * Un producto que se borró del inventario deja su pedido huérfano: el
+       * $lookup no encuentra nada y antes la fila salía en blanco, con guiones,
+       * $0.00 y "Quedan 0". Esa venta ocurrió de verdad, así que nos apoyamos
+       * en la foto que el pedido guardó (items.name / items.price) para poder
+       * nombrarla, y solo la marcamos como eliminada.
+       */
       orderModel.aggregate([
         { $match: noCancelado },
         { $unwind: "$items" },
         { $match: { "items.productId": { $ne: null } } },
+        // Del más viejo al más nuevo, para que los $last de abajo se queden con
+        // la foto MÁS RECIENTE del nombre y del precio con que se vendió.
+        { $sort: { createdAt: 1 } },
         {
           $group: {
             _id: "$items.productId",
             vendidos: { $sum: "$items.amount" },
-            ingreso: { $sum: { $multiply: ["$items.price", "$items.amount"] } },
+            ingreso: { $sum: { $multiply: [numero("$items.price"), numero("$items.amount")] } },
+            nombreVendido: { $last: "$items.name" },
+            precioVendido: { $last: "$items.price" },
           },
         },
         { $sort: { vendidos: -1 } },
-        { $limit: 8 },
+        /*
+         * Pedimos de más y recortamos a 8 hasta el final. Si cortáramos aquí,
+         * cada fila que después resultara imposible de nombrar dejaría un hueco
+         * y la tabla se quedaría en 6 o 7 sin explicación visible.
+         */
+        { $limit: 24 },
         { $lookup: { from: "Products", localField: "_id", foreignField: "_id", as: "p" } },
         { $unwind: { path: "$p", preserveNullAndEmptyArrays: true } },
         { $lookup: { from: "ProductTypes", localField: "p.typeId", foreignField: "_id", as: "t" } },
@@ -219,10 +237,22 @@ dashboardController.getSummary = async (req, res) => {
         {
           $project: {
             vendidos: 1, ingreso: 1,
-            nombre: "$p.name", stock: "$p.stock", maxQuantity: "$p.maxQuantity",
-            precio: "$p.salePrice", categoria: "$t.type",
+            nombre: { $ifNull: ["$p.name", "$nombreVendido"] },
+            // Si el $lookup no trajo producto, es que ya no está en el catálogo.
+            eliminado: { $eq: [{ $type: "$p" }, "missing"] },
+            stock: "$p.stock", maxQuantity: "$p.maxQuantity",
+            // Del eliminado no hay precio de lista; queda el que se cobró.
+            precio: { $ifNull: ["$p.salePrice", "$precioVendido"] },
+            categoria: "$t.type",
           },
         },
+        /*
+         * Pedidos viejos que ni nombre guardaron no tienen cómo mostrarse. Una
+         * fila de guiones no informa nada y ensucia el único lugar donde el
+         * encargado mira qué se vende, así que no se pinta.
+         */
+        { $match: { nombre: { $nin: [null, ""] } } },
+        { $limit: 8 },
       ]),
 
       // ── Ventas por módulo (Tienda, Impresiones, y los que creen) ──
@@ -239,15 +269,19 @@ dashboardController.getSummary = async (req, res) => {
            * "Impresiones / otros", que mezclaba dos cosas muy distintas: las
            * impresiones (que legítimamente no tienen producto) y productos a
            * los que se les olvidó asignar módulo. Lo primero es normal; lo
-           * segundo es un dato que hay que corregir en el inventario, y
-           * escondido en ese cajón nadie lo iba a ver.
+           * segundo es un dato que hay que corregir en el inventario.
+           *
+           * Lo que no tiene módulo se agrupa bajo _id null a propósito: sale de
+           * la comparación entre áreas (donde solo estorbaba, aplastando las
+           * barras de las que sí están asignadas) pero viaja aparte, para poder
+           * decir en voz alta cuánta plata es.
            */
           $group: {
             _id: {
               $cond: [
                 { $eq: ["$channel", "impresion"] },
                 "Impresiones",
-                { $ifNull: ["$m.name", "Sin módulo asignado"] },
+                { $ifNull: ["$m.name", null] },
               ],
             },
             total: { $sum: { $multiply: [numero("$items.price"), numero("$items.amount")] } },
@@ -289,6 +323,15 @@ dashboardController.getSummary = async (req, res) => {
       : 0;
 
     const pedidosConMonto = dineroHoy[0]?.cantidad || 0;
+
+    /*
+     * Las ventas sin módulo salen de la gráfica pero NO del reporte: son ventas
+     * viejas, de productos que nunca tuvieron módulo, y esconderlas sin decir
+     * nada dejaría al encargado creyendo que la tienda vendió mucho menos de lo
+     * que vendió. Van aparte para que el front las anuncie en una línea.
+     */
+    const modulosConVentas = ventasPorModulo.filter((m) => m._id);
+    const ventasHuerfanas = ventasPorModulo.find((m) => !m._id)?.total || 0;
 
     return res.status(200).json({
       // Tarjetas principales
@@ -335,7 +378,8 @@ dashboardController.getSummary = async (req, res) => {
       // Tablas y gráficas
       masVendidos,
       sinMovimiento,
-      ventasPorModulo: ventasPorModulo.map((m) => ({ modulo: m._id, total: Number(m.total.toFixed(2)) })),
+      ventasPorModulo: modulosConVentas.map((m) => ({ modulo: m._id, total: Number(m.total.toFixed(2)) })),
+      ventasSinModulo: Number(ventasHuerfanas.toFixed(2)),
       grafica,
       periodo,
       umbrales: { ratioBajo: RATIO_BAJO, stockBajoAbs: STOCK_BAJO_ABS, diasCaduca: DIAS_CADUCA },

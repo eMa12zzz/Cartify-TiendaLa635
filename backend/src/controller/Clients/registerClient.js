@@ -8,15 +8,19 @@ import { config } from "../../../config.js";
 const registerClientController = {};
 
 registerClientController.register = async (req, res) => {
-  // 1. Extraer los datos de texto del body 
-  const { 
-    fullName, 
-    dui, 
-    phoneNumber, 
-    ClientAddress, 
-    email, 
-    userName, 
-    password 
+  // 1. Extraer los datos de texto del body
+  /*
+   * La dirección ya no se pide aquí. El formulario mandaba un texto suelto que
+   * se guardaba en un campo que después no leía nadie: las direcciones de
+   * entrega viven en clientAddress y se administran desde "Mi cuenta".
+   */
+  const {
+    fullName,
+    dui,
+    phoneNumber,
+    email,
+    userName,
+    password
   } = req.body;
 
   try {
@@ -33,14 +37,24 @@ registerClientController.register = async (req, res) => {
     const passwordHashed = await bcryptjs.hash(password, 10);
     const randomNumber = crypto.randomBytes(3).toString("hex");
 
+    /*
+     * El DUI es OPCIONAL: si no viene, se guarda como undefined y no como "".
+     *
+     * Hoy la colección Clients no tiene índice único sobre dui (revisado
+     * contra la base: solo existe el índice de _id), pero el día que alguien
+     * se lo ponga, veinte clientes compartiendo la cadena vacía harían que el
+     * segundo registro sin DUI reventara con error de duplicado. Con undefined
+     * el campo ni siquiera se crea y un índice único los deja pasar a todos.
+     */
+    const duiLimpio = dui?.trim() ? dui.trim() : undefined;
+
     // 3. Guardar TODO en el token (incluyendo la imagen y el public_id que vienen de req.file)
     const token = jsonwebtoken.sign(
       {
         randomNumber,
         fullName,
-        dui,
+        dui: duiLimpio,
         phoneNumber,
-        ClientAddress,
         image,      // <-- Guardamos la URL de la imagen
         public_id,  // <-- Guardamos el ID de la imagen
         email,
@@ -148,7 +162,6 @@ registerClientController.verifyCode = async (req, res) => {
       fullName,
       dui,
       phoneNumber,
-      ClientAddress,
       image,
       public_id,
       email,
@@ -163,16 +176,20 @@ registerClientController.verifyCode = async (req, res) => {
     // 6. Guardamos en la base de datos usando el mismo estilo que tu employeeController
     const newClient = new clientModel({
       fullName,
-      dui,
+      // Sin DUI el campo no se crea (ver el comentario en register): así una
+      // eventual restricción de unicidad no choca entre clientes sin DUI.
+      ...(dui ? { dui } : {}),
       phoneNumber,
-      ClientAddress,
+      // La lista de direcciones arranca vacía: la llena el cliente desde
+      // "Mi cuenta > Direcciones", que es de donde salen las entregas.
+      clientAddress: [],
       image,
       public_id,
       email,
       userName,
       password,
-      isVerified: true, 
-      isActive: true    
+      isVerified: true,
+      isActive: true
     });
 
     await newClient.save();

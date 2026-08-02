@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Settings } from 'lucide-react';
+import { ChevronDown, Settings, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
@@ -12,8 +12,13 @@ import { DUR, EASE_OUT } from '../../utils/motion';
  * Dos niveles: arriba lo del día a día (Dashboard, Pedidos, Inventario) y
  * debajo tres grupos que se despliegan. Toda la decisión de qué va dónde y
  * qué está abierto vive en useSidebarNav; aquí solo se pinta.
+ *
+ * De 1024px para arriba es la barra lateral de siempre. Por debajo es un cajón
+ * que entra desde la izquierda: mismo menú, misma marca, solo cambia dónde está
+ * parado. Quién lo abre y quién lo cierra lo decide useMenuPanel desde el
+ * layout — aquí solo se recibe ya resuelto.
  */
-const Sidebar = () => {
+const Sidebar = ({ abierto = false, oculto = false, onCerrar, onTocarNavegacion }) => {
   const { pathname } = useLocation();
   const { palette } = useTheme();
   const c = palette.colors;
@@ -29,13 +34,53 @@ const Sidebar = () => {
 
   return (
     <aside
-      className="w-64 h-screen flex flex-col fixed left-0 top-0 transition-colors duration-300"
-      style={{ backgroundColor: c.sidebarBg, borderRight: `1px solid ${c.sidebarBorder}` }}
+      id="menu-panel"
+      /*
+       * Cerrado, el cajón no solo está fuera de la vista: está fuera del
+       * alcance. Sin inert el tabulador se mete a recorrer trece enlaces que
+       * nadie puede ver, y el foco desaparece de la pantalla.
+       */
+      aria-hidden={oculto || undefined}
+      inert={oculto || undefined}
+      /*
+       * El cierre al tocar un enlace se escucha aquí arriba y no en el <nav>
+       * porque "Cuenta" vive en el pie, fuera de él. El handler distingue
+       * enlace de botón, así que desplegar un grupo no cierra el cajón.
+       */
+      onClick={onTocarNavegacion}
+      className={`w-64 h-screen flex flex-col fixed left-0 top-0 z-40 lg:translate-x-0 ${
+        abierto ? 'translate-x-0' : '-translate-x-full'
+      }`}
+      style={{
+        backgroundColor: c.sidebarBg,
+        borderRight: `1px solid ${c.sidebarBorder}`,
+        /*
+         * Solo se anima el transform —nada de width ni de left— y con la curva
+         * de cajón que ya usa el resto de la app. El color sigue con su propia
+         * duración porque cambia al elegir otra paleta, no al abrir el menú.
+         */
+        transition:
+          'transform var(--dur-drawer) var(--ease-drawer), background-color 300ms var(--ease-out), border-color 300ms var(--ease-out)',
+      }}
     >
-      <div className="p-6">
+      <div className="p-6 flex items-start justify-between gap-3">
         <h1 className="text-2xl font-bold leading-none tracking-tight" style={{ color: c.textPrimary }}>
           Tienda<br />la 635
         </h1>
+        {/*
+          El velo de atrás ya cierra el cajón, pero el pulgar viene subiendo
+          desde la hamburguesa y espera encontrar la salida arriba. En pantalla
+          ancha no hay nada que cerrar, así que el botón no existe.
+        */}
+        <button
+          type="button"
+          onClick={onCerrar}
+          aria-label="Cerrar el menú"
+          className="lg:hidden -mr-1 -mt-1 p-2 rounded-lg press"
+          style={{ color: c.textMuted }}
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">

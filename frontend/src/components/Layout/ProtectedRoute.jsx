@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import SinPermiso from '../../pages/SinPermiso';
 
 /*
  * ============================================================
@@ -24,8 +25,13 @@ import { useAuth } from '../../hooks/useAuth';
  *   </Route>
  * ============================================================
  */
-const ProtectedRoute = () => {
-  const { isAuthenticated } = useAuth();
+/*
+ * `soloPersonal` marca las rutas del panel. Es opcional a propósito: el área
+ * "Mi Cuenta" tiene que seguir abierta a los dos, porque /mi-cuenta/reparto es
+ * la pantalla que usa el repartidor desde su teléfono, en la calle.
+ */
+const ProtectedRoute = ({ soloPersonal = false }) => {
+  const { isAuthenticated, esCliente } = useAuth();
   const { pathname, search } = useLocation();
 
   /*
@@ -39,7 +45,21 @@ const ProtectedRoute = () => {
     return <Navigate to={`/iniciar-sesion?volver=${encodeURIComponent(pathname + search)}`} replace />;
   }
 
-  // 2- Si está autenticado, renderizamos la ruta hija (AdminLayout y sus páginas)
+  /*
+   * 2- Con sesión, pero de quien no es.
+   *
+   * Se muestra la explicación EN EL LUGAR, sin redirigir. Redirigir borraría
+   * la dirección que la persona escribió y la dejaría sin entender qué pasó;
+   * peor, mandarla al login sería mentirle, porque su sesión está perfecta.
+   *
+   * Pasa de verdad y seguido: la misma persona administra la tienda y es
+   * clienta de su propia tienda, con el mismo correo en las dos tablas.
+   */
+  if (soloPersonal && esCliente) {
+    return <SinPermiso />;
+  }
+
+  // 3- Todo en orden: renderizamos la ruta hija (AdminLayout y sus páginas)
   return <Outlet />;
 };
 
