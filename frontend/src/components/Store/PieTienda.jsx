@@ -72,6 +72,17 @@ const Nombre = styled.p`
   margin: 0 0 12px;
 `;
 
+// El logo en el pie va un poco más grande que en el encabezado: aquí hay aire
+// de sobra y es donde la marca se despide.
+const LogoPie = styled.img`
+  height: 46px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  display: block;
+  margin: 0 0 12px;
+`;
+
 const Frase = styled.p`
   font-size: 13.5px;
   line-height: 1.55;
@@ -168,18 +179,25 @@ const Cierre = styled.div`
 `;
 
 const PieTienda = () => {
-  const { pasillos, enlacesCuenta, ir, whatsapp, direccion, nombre, anio } = usePieTienda();
+  const {
+    pasillos, enlacesCuenta, ir, whatsapp, direccion, nombre, anio,
+    nombreLinea1, nombreLinea2, logoUrl, lema,
+  } = usePieTienda();
 
   return (
     <Banda>
       <Interior>
         <Columnas>
           <Marca>
-            <Nombre>Tienda<br />la 635</Nombre>
-            <Frase>
-              La tienda del barrio, ahora también en línea. Pida lo de la casa y
-              se lo llevamos.
-            </Frase>
+            {/* Con logo, el logo; sin logo, el nombre en dos líneas. Igual que
+                en el encabezado, para que la tienda se llame igual arriba y
+                abajo. */}
+            {logoUrl ? (
+              <LogoPie src={logoUrl} alt={nombre} />
+            ) : (
+              <Nombre>{nombreLinea1}<br />{nombreLinea2}</Nombre>
+            )}
+            <Frase>{lema}</Frase>
             <Dato>
               <MapPin size={15} strokeWidth={2} />
               {direccion}

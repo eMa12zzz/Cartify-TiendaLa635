@@ -11,9 +11,15 @@ const LoginAdmin = () => {
   const { login, logout } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // 1- Limpiar sesión previa al entrar al login de administrador
+  /*
+   * 1- Limpiar la sesión previa DEL PERSONAL al entrar a su login.
+   *
+   * El área va dicha a la letra y no se deduce de la ruta: así queda claro
+   * que entrar por esta puerta no roza la sesión de cliente que la misma
+   * persona tenga abierta en la tienda. Ver AuthContext.
+   */
   useEffect(() => {
-    logout();
+    logout('personal');
   }, [logout]);
 
   const {
@@ -39,7 +45,16 @@ const LoginAdmin = () => {
       toast.success('¡Bienvenido! Inicio de sesión exitoso', {
         style: { borderRadius: '10px', background: '#333', color: '#fff' },
       });
-      navigate('/dashboard');
+      /*
+       * De vuelta a donde iba, no siempre al Dashboard.
+       *
+       * ProtectedRoute manda aquí con ?volver=/inventario cuando alguien abre
+       * una pantalla del panel sin sesión de personal. Soltarlo en el
+       * Dashboard lo obliga a volver a buscar lo que estaba haciendo, que es
+       * justo lo que el `volver` existe para evitar.
+       */
+      const volver = new URLSearchParams(window.location.search).get('volver');
+      navigate(volver && volver.startsWith('/') ? volver : '/dashboard');
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas o cuenta bloqueada', {
         style: { borderRadius: '10px', background: '#ff4d4f', color: '#fff' },

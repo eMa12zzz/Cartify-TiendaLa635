@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useModulos } from '../hooks/useModulos';
+import { useAuth } from '../hooks/useAuth';
 import { iconoDeModulo, flujoDeModulo } from '../utils/modulos';
 
 const BROWN = '#8B5A2B';
@@ -145,15 +146,25 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { modulos, cargando } = useModulos();
 
+  /*
+   * La sesión ya no se lee a mano de localStorage: vive en dos cajones, uno
+   * por área, y quién manda depende de dónde está parada la persona. Leer la
+   * llave 'token' aquí dejaba esta pantalla mandando al login para siempre,
+   * porque esa llave ya no existe. Ver AuthContext.
+   */
+  const { isAuthenticated, logout } = useAuth();
+
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
+    if (!isAuthenticated) {
       navigate('/iniciar-sesion?volver=/tienda-dashboard');
     }
-  }, [navigate]);
+  }, [isAuthenticated, navigate]);
 
-  // Cerrar sesión deja en la tienda, que ahora es pública.
+  // Cerrar sesión deja en la tienda, que ahora es pública. Y cierra SOLO la
+  // de esta área: un localStorage.clear() se llevaba de paso el carrito, las
+  // direcciones guardadas y la sesión del panel.
   const handleLogout = () => {
-    localStorage.clear();
+    logout();
     navigate('/');
   };
 

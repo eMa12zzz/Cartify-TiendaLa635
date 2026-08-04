@@ -51,6 +51,8 @@ const entrarComoPersonal = async (res, { doc, tipo }, password) => {
     { expiresIn: "30d" }
   );
 
+  // Entró por la puerta de la tienda, pero es personal: su sesión va en la
+  // cookie del personal, no en la de cliente.
   res.cookie("authCookie", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
 
   return res.status(200).json({
@@ -172,8 +174,15 @@ loginClientController.login = async (req, res) => {
       }
     );
 
-    // Guardar cookie
-    res.cookie("authCookie", token, {
+    /*
+     * Cookie del ÁREA DE CLIENTE, aparte de la del personal.
+     *
+     * Con una sola cookie para las dos, entrar como cliente pisaba la sesión
+     * de administrador y al revés. Y aquí eso es lo normal, no la excepción:
+     * el dueño es cliente de su propia tienda, con el mismo correo en las dos
+     * tablas. Ver también los dos cajones de localStorage en AuthContext.
+     */
+    res.cookie("authCookieCliente", token, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
     });

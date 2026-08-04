@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BotonOjo } from '../components/UI/CampoContrasena';
+import { useAuth } from '../hooks/useAuth';
 
 const BROWN = '#B46C30';
 
@@ -134,6 +135,8 @@ const ForgotLink = styled.div`
 
 const LoginPassword = () => {
   const navigate = useNavigate();
+  // La sesión se guarda por el contexto, nunca escribiendo localStorage a mano.
+  const { login } = useAuth();
   const [password, setPassword] = useState('');
   const [verPass, setVerPass] = useState(false);
   const [error, setError] = useState('');
@@ -166,8 +169,15 @@ const LoginPassword = () => {
         return;
       }
 
-      // ✅ Guardar sesión y saludar con el mapa de bienvenida
-      localStorage.setItem('token', 'authenticated');
+      /*
+       * Guardar la sesión y saludar con el mapa de bienvenida.
+       *
+       * Va por el contexto y marcada como CLIENTE. Escribiendo la llave
+       * 'token' a mano —como estaba— la sesión caía en el cajón del personal
+       * al arrancar la app, así que quien entrara por aquí terminaba con
+       * permisos del panel sin haber pasado por su puerta. Ver AuthContext.
+       */
+      login('authenticated', 'client', user);
       localStorage.setItem('currentUser', JSON.stringify(user));
       navigate('/bienvenida');
     }, 600);

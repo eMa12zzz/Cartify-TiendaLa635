@@ -5,7 +5,7 @@ import {
   Shapes, Tag, Blocks, Printer,
   Megaphone, Award, Gift,
   UserSquare2, Users, Truck,
-  Library, Store, Contact,
+  Library, Store, Contact, Palette,
 } from 'lucide-react';
 
 /*
@@ -58,6 +58,10 @@ export const GRUPOS = [
       { name: 'Promociones', path: '/promociones', icon: Megaphone },
       { name: 'Fidelidad', path: '/fidelidad', icon: Award },
       { name: 'Tarjetas de regalo', path: '/tarjetas', icon: Gift },
+      // Cómo se ve la tienda: nombre, logo y orden de la portada. Vive en
+      // Ventas porque acomodar la portada es, en el fondo, decidir qué se le
+      // enseña primero a quien entra.
+      { name: 'Personalización', path: '/personalizacion', icon: Palette },
     ],
   },
   {

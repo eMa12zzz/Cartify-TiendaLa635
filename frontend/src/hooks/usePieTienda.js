@@ -2,8 +2,9 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './useAuth';
 import { useModulos } from './useModulos';
+import { useAjustesCtx } from '../context/AjustesContext';
 import { flujoDeModulo } from '../utils/modulos';
-import { enlaceWhatsApp, DIRECCION_EN_UNA_LINEA, NOMBRE_COMPLETO } from '../utils/tienda';
+import { enlaceWhatsApp } from '../utils/tienda';
 
 /*
  * usePieTienda — qué se puede ofrecer en el pie de página, y a dónde lleva cada
@@ -44,6 +45,13 @@ export const usePieTienda = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { modulos } = useModulos();
+  /*
+   * El nombre, el lema y la dirección salen de los ajustes de la tienda. Si el
+   * servidor no contestó, el hook de ajustes ya devuelve los mismos valores
+   * que antes estaban escritos en utils/tienda.js, así que el pie se pinta
+   * igual y nadie se entera.
+   */
+  const { ajustes } = useAjustesCtx();
 
   /*
    * Los pasillos que se recorren dentro de la tienda llevan a la portada con
@@ -84,8 +92,14 @@ export const usePieTienda = () => {
     enlacesCuenta,
     ir,
     whatsapp: enlaceWhatsApp(SALUDO_WHATSAPP),
-    direccion: DIRECCION_EN_UNA_LINEA,
-    nombre: NOMBRE_COMPLETO,
+    direccion: ajustes.direccion,
+    nombre: `${ajustes.nombreLinea1} ${ajustes.nombreLinea2}`.trim(),
+    // Las dos líneas por separado: en el pie se apilan igual que en el
+    // encabezado, con el mismo peso y color.
+    nombreLinea1: ajustes.nombreLinea1,
+    nombreLinea2: ajustes.nombreLinea2,
+    logoUrl: ajustes.logoUrl,
+    lema: ajustes.lema,
     // El año se calcula, no se escribe: un "© 2026" clavado en el código
     // envejece solo y delata que a la tienda nadie la cuida.
     anio: new Date().getFullYear(),
