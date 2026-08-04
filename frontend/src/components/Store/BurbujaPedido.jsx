@@ -29,7 +29,7 @@ const PASOS = [
   { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check },
 ];
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 // Los dos puntos del mapita: quien trae el pedido y la casa a donde va.
 const pinRepartidor = divIcon({

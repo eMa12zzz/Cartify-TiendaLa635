@@ -8,7 +8,7 @@ import { loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 /*
  * ============================================================

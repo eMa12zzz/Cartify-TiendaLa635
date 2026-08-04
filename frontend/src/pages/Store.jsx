@@ -21,9 +21,9 @@ import { useAjustesCtx } from '../context/AjustesContext';
 import { bloqueDeSeccion } from '../utils/portada';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
-const BROWN = '#B46C30';
-const BROWN_DARK = '#8A5222';
-const BROWN_LIGHT = '#F3E7D8';
+const BROWN = 'var(--marca-600)';
+const BROWN_DARK = 'var(--marca-700)';
+const BROWN_LIGHT = 'var(--marca-100)';
 
 /* ─── Layout ─── */
 const Container = styled.div`

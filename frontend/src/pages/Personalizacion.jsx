@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Palette, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Lock } from 'lucide-react';
+import { Palette, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Lock, Check } from 'lucide-react';
 import { useAjustesCtx } from '../context/AjustesContext';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
+import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo } from '../utils/temporadas';
 
 /*
  * ============================================================
@@ -64,6 +65,21 @@ const Personalizacion = () => {
   // Cuántas quedan encendidas: con una sola, su interruptor se bloquea para
   // que nadie deje la portada en blanco sin querer.
   const encendidas = portada.filter((b) => b.visible).length;
+
+  /*
+   * Temporada. Se guardan los dos campos por separado porque el backend los
+   * mezcla campo a campo: elegir un tema NO tiene por qué cambiar el modo, y
+   * al revés. Ver storeSettingsController.
+   */
+  const temporada = ajustes.temporada || { modo: 'automatico', tema: '' };
+  const porCalendario = temaDeLaFecha();
+  const pintandoAhora = temaActivo(temporada);
+
+  const MODOS = [
+    { clave: 'automatico', nombre: 'Automático', ayuda: 'Lo elige la fecha, sin que nadie entre a cambiarlo.' },
+    { clave: 'manual', nombre: 'Manual', ayuda: 'Manda el tema que usted elija, aunque el calendario diga otra cosa.' },
+    { clave: 'ninguno', nombre: 'Ninguno', ayuda: 'Los colores de siempre, todo el año.' },
+  ];
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8 max-w-3xl">
@@ -320,6 +336,130 @@ const Personalizacion = () => {
               El catálogo completo ("Todos los productos") siempre va al final y no se puede
               quitar: es la tienda en sí, no una fila de adorno.
             </p>
+          </div>
+
+          {/* ── Temporada ── */}
+          <div className="p-6 rounded-2xl shadow-sm border" style={tarjeta}>
+            <div className="mb-4">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                Temporada
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
+                La tienda se pinta de los colores de la fecha. Solo cambia lo que ve el
+                cliente: este panel conserva su paleta de accesibilidad.
+              </p>
+            </div>
+
+            {/* Qué se está pintando ahora mismo */}
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
+              style={{ backgroundColor: 'var(--theme-primary-light)' }}
+            >
+              <div className="flex gap-1 flex-none">
+                {(pintandoAhora?.muestras || ['#B46C30', '#D8A860', '#F3E7D8']).map((color) => (
+                  <span
+                    key={color}
+                    className="w-5 h-5 rounded-full border"
+                    style={{ backgroundColor: color, borderColor: 'rgba(0,0,0,0.08)' }}
+                  />
+                ))}
+              </div>
+              <div className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                {pintandoAhora
+                  ? <>Ahora la tienda se ve de <strong>{pintandoAhora.nombre}</strong>.</>
+                  : <>Ahora la tienda se ve con sus colores de siempre.</>}
+                {temporada.modo === 'automatico' && (
+                  porCalendario
+                    ? <> El calendario manda.</>
+                    : <> Hoy no cae ninguna temporada.</>
+                )}
+              </div>
+            </div>
+
+            {/* Modo */}
+            <div className="flex flex-wrap gap-2 mb-5">
+              {MODOS.map((m) => {
+                const elegido = temporada.modo === m.clave;
+                return (
+                  <button
+                    key={m.clave}
+                    type="button"
+                    onClick={() => guardar({ temporada: { modo: m.clave } })}
+                    disabled={guardando}
+                    title={m.ayuda}
+                    className="px-4 py-2 rounded-full text-sm font-semibold border transition-colors disabled:opacity-60"
+                    style={{
+                      backgroundColor: elegido ? 'var(--theme-primary)' : 'transparent',
+                      borderColor: elegido ? 'var(--theme-primary)' : 'var(--theme-card-border)',
+                      color: elegido ? 'var(--theme-button-text)' : 'var(--theme-text-secondary)',
+                    }}
+                  >
+                    {m.nombre}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-xs mb-3" style={{ color: 'var(--theme-text-secondary)' }}>
+              {MODOS.find((m) => m.clave === temporada.modo)?.ayuda}
+            </p>
+
+            {/*
+              Los temas se muestran SIEMPRE, no solo en modo manual: sirven para
+              ver de qué color se va a poner la tienda en diciembre sin esperar a
+              diciembre. En automático no se pueden tocar, pero se ven.
+            */}
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+              {TEMAS_DE_TEMPORADA.map((tema) => {
+                const elegido = temporada.modo === 'manual' && temporada.tema === tema.clave;
+                const esElDeHoy = porCalendario?.clave === tema.clave;
+                const seleccionable = temporada.modo === 'manual';
+
+                return (
+                  <button
+                    key={tema.clave}
+                    type="button"
+                    onClick={() => guardar({ temporada: { tema: tema.clave } })}
+                    disabled={!seleccionable || guardando}
+                    className="flex items-center gap-3 p-3 rounded-xl border text-left transition-colors disabled:cursor-default"
+                    style={{
+                      borderColor: elegido ? 'var(--theme-primary)' : 'var(--theme-card-border)',
+                      backgroundColor: elegido ? 'var(--theme-primary-light)' : 'transparent',
+                      opacity: seleccionable || esElDeHoy ? 1 : 0.6,
+                    }}
+                  >
+                    <div className="flex gap-1 flex-none">
+                      {tema.muestras.map((color) => (
+                        <span
+                          key={color}
+                          className="w-5 h-5 rounded-full border"
+                          style={{ backgroundColor: color, borderColor: 'rgba(0,0,0,0.08)' }}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-bold flex items-center gap-1.5"
+                           style={{ color: 'var(--theme-text-primary)' }}>
+                        {tema.nombre}
+                        {elegido && <Check className="w-3.5 h-3.5" style={{ color: 'var(--theme-primary)' }} />}
+                      </div>
+                      <div className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
+                        {tema.descripcion}
+                        {esElDeHoy && ' · es la de hoy'}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {temporada.modo !== 'manual' && (
+              <p className="text-xs mt-4" style={{ color: 'var(--theme-text-muted)' }}>
+                Para elegir un tema a mano —adelantar la Navidad porque ya llegó el producto
+                navideño, por ejemplo— cambie el modo a Manual.
+              </p>
+            )}
           </div>
         </>
       )}

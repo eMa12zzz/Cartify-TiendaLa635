@@ -13,9 +13,9 @@ import { orderService } from '../../api/orderService';
 // Productos por página en el resumen del pedido confirmado.
 const POR_PAGINA = 4;
 
-const BROWN = '#B46C30';
-const BROWN_DARK = '#8A5222';
-const BROWN_LIGHT = '#F3E7D8';
+const BROWN = 'var(--marca-600)';
+const BROWN_DARK = 'var(--marca-700)';
+const BROWN_LIGHT = 'var(--marca-100)';
 
 // Los tres campos de la dirección nueva se ven igual; el estilo vive aquí
 // para no repetirlo tres veces y que uno se quede distinto el día que cambie.

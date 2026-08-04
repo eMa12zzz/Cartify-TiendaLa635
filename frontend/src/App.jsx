@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
 import { AjustesProvider } from './context/AjustesContext';
+import { useTemporada } from './hooks/useTemporada';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import LimiteDeError from './components/UI/LimiteDeError';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
@@ -69,6 +70,18 @@ import CentroAyuda from './pages/cliente/CentroAyuda';
 
 
 /*
+ * Pinta la tienda del color de la temporada (Navidad, Halloween...). No dibuja
+ * nada: solo repinta las variables de marca sobre el documento. Vive como
+ * componente y no como una llamada suelta porque necesita estar DENTRO de los
+ * proveedores —lee los ajustes— y dentro del router —mira la ruta para no
+ * tocar el panel—. Ver useTemporada.
+ */
+const PinturaDeTemporada = () => {
+  useTemporada();
+  return null;
+};
+
+/*
  * El router va POR FUERA de la sesión, al revés que antes.
  * AuthProvider ahora necesita saber en qué área está parada la persona —el
  * panel o la tienda— para decidir cuál de los dos cajones de sesión manda, y
@@ -85,6 +98,7 @@ function App() {
           Ver AjustesContext.
         */}
         <AjustesProvider>
+        <PinturaDeTemporada />
         {/*
           Los favoritos se cargan una sola vez para toda la app: los mismos
           corazones aparecen en la tienda y en Mi Cuenta, que son ramas

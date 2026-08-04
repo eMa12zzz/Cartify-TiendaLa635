@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import { useAuth } from '../hooks/useAuth';
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
