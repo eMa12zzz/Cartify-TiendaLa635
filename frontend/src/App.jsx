@@ -5,6 +5,7 @@ import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
 import { AjustesProvider } from './context/AjustesContext';
 import { useTemporada } from './hooks/useTemporada';
+import DecoracionTemporada from './components/Store/DecoracionTemporada';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import LimiteDeError from './components/UI/LimiteDeError';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
@@ -77,8 +78,10 @@ import CentroAyuda from './pages/cliente/CentroAyuda';
  * tocar el panel—. Ver useTemporada.
  */
 const PinturaDeTemporada = () => {
-  useTemporada();
-  return null;
+  const { tema, activo, conDecoracion } = useTemporada();
+  // Las figuras cayendo van aquí arriba y no dentro de cada pantalla: es una
+  // capa fija sobre toda la ventana, así que montarla una vez basta.
+  return activo && conDecoracion ? <DecoracionTemporada tema={tema} /> : null;
 };
 
 /*

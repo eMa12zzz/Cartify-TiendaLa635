@@ -54,12 +54,30 @@ const temporadaSchema = new Schema(
       default: "automatico",
     },
     tema: { type: String, default: "" },
+    /*
+     * La cinta con el saludo y las figuras cayendo de fondo. Se puede apagar
+     * para quedarse solo con los colores — hay tiendas que quieren que se note
+     * la fecha y otras que prefieren no distraer.
+     */
+    decoracion: { type: Boolean, default: true },
   },
   { _id: false }
 );
 
+/*
+ * La llave que hace que el singleton sea singleton DE VERDAD.
+ *
+ * Con solo "buscar y si no hay, crear", dos peticiones que llegan a la vez
+ * encuentran las dos que no hay nada y crean las dos: quedan dos documentos de
+ * ajustes y la tienda se pinta con el que salga primero, que puede cambiar
+ * entre cargas. El índice único lo hace imposible en la base, que es el único
+ * lugar donde una carrera se puede ganar de verdad.
+ */
+export const CLAVE_UNICA = "tienda";
+
 const storeSettingsSchema = new Schema(
   {
+    clave: { type: String, default: CLAVE_UNICA, unique: true, index: true },
     /*
      * El nombre va en DOS líneas porque así se pinta: apiladas, con el mismo
      * peso y color. "Tienda" no es una etiqueta que acompaña a "la 635", es

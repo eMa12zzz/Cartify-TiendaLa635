@@ -1,4 +1,4 @@
-import storeSettingsModel from "../models/storeSettings.js";
+import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 
 /*
  * ============================================================
@@ -20,7 +20,16 @@ const storeSettingsController = {};
  * `{...req.body}` es lo que evita que alguien mande `_id`, `createdAt` o un
  * campo inventado y lo guardemos sin darnos cuenta.
  */
-const CAMPOS_DE_TEXTO = ["nombreLinea1", "nombreLinea2", "logoUrl", "lema", "direccion"];
+/*
+ * Ojo con lo que NO está en esta lista: `logoUrl`.
+ *
+ * Estaba, y eso dejaba apuntar el logo de la tienda a cualquier dirección de
+ * internet con un solo PUT, saltándose la puerta de subida. La URL del logo la
+ * escriben únicamente updateLogo (con lo que devuelve Cloudinary) y deleteLogo
+ * (con cadena vacía). Ninguna pantalla la manda en el PUT, así que sacarla no
+ * rompe nada.
+ */
+const CAMPOS_DE_TEXTO = ["nombreLinea1", "nombreLinea2", "lema", "direccion"];
 
 const MODOS_DE_TEMPORADA = ["automatico", "manual", "ninguno"];
 
@@ -28,10 +37,17 @@ const MODOS_DE_TEMPORADA = ["automatico", "manual", "ninguno"];
 // valores por defecto para que el frontend siempre reciba la misma forma.
 storeSettingsController.getSettings = async (req, res) => {
   try {
-    let ajustes = await storeSettingsModel.findOne();
-    if (!ajustes) {
-      ajustes = await storeSettingsModel.create({});
-    }
+    /*
+     * Un solo findOneAndUpdate con upsert en vez de "buscar y si no hay, crear":
+     * ese par de pasos deja una rendija entre los dos en la que otra petición
+     * puede crear su propio documento. Con el índice único de `clave` (ver el
+     * modelo), aquí solo puede existir uno.
+     */
+    const ajustes = await storeSettingsModel.findOneAndUpdate(
+      { clave: CLAVE_UNICA },
+      { $setOnInsert: { clave: CLAVE_UNICA } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
     return res.status(200).json(ajustes);
   } catch (error) {
     console.log("error ajustes de tienda: " + error);
@@ -89,7 +105,7 @@ storeSettingsController.updateSettings = async (req, res) => {
      * y deja en paz a la hermana, que es lo que prometen los guardas de abajo.
      */
     if (req.body.temporada && typeof req.body.temporada === "object") {
-      const { modo, tema } = req.body.temporada;
+      const { modo, tema, decoracion } = req.body.temporada;
 
       if (modo !== undefined) {
         if (!MODOS_DE_TEMPORADA.includes(modo)) {
@@ -98,16 +114,27 @@ storeSettingsController.updateSettings = async (req, res) => {
         cambios["temporada.modo"] = modo;
       }
       if (tema !== undefined) cambios["temporada.tema"] = String(tema).trim();
+      if (decoracion !== undefined) cambios["temporada.decoracion"] = !!decoracion;
     }
 
     const ajustes = await storeSettingsModel.findOneAndUpdate(
-      {},
+      { clave: CLAVE_UNICA },
       cambios,
       { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
     );
 
     return res.status(200).json({ message: "Ajustes guardados", ajustes });
   } catch (error) {
+    /*
+     * Un dato malo es culpa de quien lo mandó, no del servidor. Con el 500 de
+     * antes, escribir un nombre más largo del permitido salía como "Error
+     * interno del servidor": el aviso echaba la culpa al sitio y no decía qué
+     * campo corregir.
+     */
+    if (error?.name === "ValidationError" || error?.name === "CastError") {
+      const primero = Object.values(error.errors || {})[0]?.message;
+      return res.status(400).json({ message: primero || "Alguno de los datos no es válido" });
+    }
     console.log("error guardando ajustes de tienda: " + error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
@@ -128,7 +155,7 @@ storeSettingsController.updateLogo = async (req, res) => {
     }
 
     const ajustes = await storeSettingsModel.findOneAndUpdate(
-      {},
+      { clave: CLAVE_UNICA },
       { logoUrl: req.file.path },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
@@ -144,7 +171,7 @@ storeSettingsController.updateLogo = async (req, res) => {
 storeSettingsController.deleteLogo = async (req, res) => {
   try {
     const ajustes = await storeSettingsModel.findOneAndUpdate(
-      {},
+      { clave: CLAVE_UNICA },
       { logoUrl: "" },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );

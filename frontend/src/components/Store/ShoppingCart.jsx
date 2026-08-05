@@ -9,6 +9,10 @@ import { useSaldo } from '../../hooks/useSaldo';
 import { useDireccionCtx } from '../../context/DireccionContext';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { orderService } from '../../api/orderService';
+import { esPorLibra, pasoDe, ajustarCantidad, cantidadConUnidad } from '../../utils/unidades';
+// El nombre de la tienda sale de los ajustes; el carrito y el recibo se habían
+// quedado con el escrito a mano. Ver AjustesContext.
+import { useAjustesCtx } from '../../context/AjustesContext';
 
 // Productos por página en el resumen del pedido confirmado.
 const POR_PAGINA = 4;
@@ -300,6 +304,13 @@ const ItemPrice = styled.span`
   font-size: 13px;
   font-weight: 700;
   color: ${BROWN};
+`;
+
+// El "/lb" acompaña al precio sin competir con él.
+const UnidadChica = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tinta-tenue);
 `;
 
 const QtyControls = styled.div`
@@ -1137,7 +1148,10 @@ const ShoppingCart = ({
   const totalFinal = subtotal + ENVIO + SERVICIO;
 
   // ── Canje de puntos ──
-  const { user } = useAuth();
+  // `esCliente` distingue "hay sesión" de "hay sesión DE CLIENTE": en la tienda
+  // la activa puede ser la del personal. Ver useAuth.
+  const { user, esCliente } = useAuth();
+  const { ajustes } = useAjustesCtx();
   const { saldo, canjeando, canjear, recargar: recargarSaldo } = useSaldo();
   const [codigoTarjeta, setCodigoTarjeta] = useState('');
 
@@ -1187,7 +1201,16 @@ const ShoppingCart = ({
      * dejar el aviso y que la persona busque dónde entrar, se la lleva al
      * login y se la devuelve al carrito con todo lo que ya había puesto.
      */
-    if (!user?.id) {
+    /*
+     * `esCliente`, no `user?.id`.
+     *
+     * Fuera del panel la sesión activa puede ser la del PERSONAL —un admin
+     * mirando su propia tienda, que es lo normal aquí—. Con `user?.id` a secas
+     * esa sesión pasaba el guarda y el pedido se guardaba con el _id del admin
+     * como clientId: un pedido a nombre de alguien que no existe en la tabla de
+     * clientes, con su stock descontado y su lote de puntos escrito.
+     */
+    if (!esCliente) {
       toast('Inicie sesión para terminar su pedido');
       // Vuelve a la pantalla en la que estaba, no a "/" a secas: la tienda
       // también se abre desde "/store" y desde una sección.
@@ -1270,7 +1293,7 @@ const ShoppingCart = ({
                 <StoreName>
                   <StoreIcon><StoreFront size={19} strokeWidth={1.8} /></StoreIcon>
                   <StoreInfo>
-                    <div className="name">Tienda la 635</div>
+                    <div className="name">{`${ajustes.nombreLinea1} ${ajustes.nombreLinea2}`.trim()}</div>
                     <div className="sub">Mejicanos, San Salvador</div>
                   </StoreInfo>
                 </StoreName>
@@ -1289,13 +1312,29 @@ const ShoppingCart = ({
                       <ItemName>{item.nombre}</ItemName>
                       <ItemPriceLine>
                         {item.precioAnterior && <ItemOldPrice>${Number(item.precioAnterior).toFixed(2)}</ItemOldPrice>}
-                        <ItemPrice>${Number(item.precio).toFixed(2)}</ItemPrice>
+                        <ItemPrice>
+                          ${Number(item.precio).toFixed(2)}
+                          {esPorLibra(item) && <UnidadChica>/lb</UnidadChica>}
+                        </ItemPrice>
                       </ItemPriceLine>
+                      {/*
+                        El "+" y el "−" se mueven al paso de SU unidad: de uno
+                        en uno las piezas, de media en media las libras. Pedir
+                        media libra de queso es lo normal en el mostrador, y
+                        obligar a llevar una libra entera es cobrar de más.
+                        Ver utils/unidades.js.
+                      */}
                       <QtyControls>
                         <RemoveBtn onClick={() => onEliminarItem(item.id)}><Trash2 size={14} /></RemoveBtn>
-                        <QtyBtn onClick={() => onActualizarCantidad(item.id, item.cantidad - 1)} disabled={item.cantidad <= 1}><Minus size={12} /></QtyBtn>
-                        <QtyNum>{item.cantidad}</QtyNum>
-                        <QtyBtn onClick={() => onActualizarCantidad(item.id, item.cantidad + 1)} disabled={item.cantidad >= item.stock}><Plus size={12} /></QtyBtn>
+                        <QtyBtn
+                          onClick={() => onActualizarCantidad(item.id, ajustarCantidad(item, item.cantidad - pasoDe(item)))}
+                          disabled={item.cantidad <= pasoDe(item)}
+                        ><Minus size={12} /></QtyBtn>
+                        <QtyNum>{cantidadConUnidad(item, item.cantidad)}</QtyNum>
+                        <QtyBtn
+                          onClick={() => onActualizarCantidad(item.id, ajustarCantidad(item, item.cantidad + pasoDe(item)))}
+                          disabled={item.cantidad >= item.stock}
+                        ><Plus size={12} /></QtyBtn>
                       </QtyControls>
                     </ItemInfo>
                     <ItemTotal>${(item.precio * item.cantidad).toFixed(2)}</ItemTotal>
@@ -1338,8 +1377,8 @@ const ShoppingCart = ({
           <PageTopBar>
             <BackBtn onClick={() => setView('cart')}><ChevronLeft size={20} /></BackBtn>
             <BrandTitle>
-              <BrandSub>Tienda</BrandSub>
-              <BrandMain>la 635</BrandMain>
+              <BrandSub>{ajustes.nombreLinea1}</BrandSub>
+              <BrandMain>{ajustes.nombreLinea2}</BrandMain>
             </BrandTitle>
             <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
@@ -1810,8 +1849,8 @@ const ShoppingCart = ({
           <PageTopBar>
             <BackBtn onClick={handleConfirmClose}><ChevronLeft size={20} /></BackBtn>
             <BrandTitle>
-              <BrandSub>Tienda</BrandSub>
-              <BrandMain>la 635</BrandMain>
+              <BrandSub>{ajustes.nombreLinea1}</BrandSub>
+              <BrandMain>{ajustes.nombreLinea2}</BrandMain>
             </BrandTitle>
             <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
@@ -1866,7 +1905,7 @@ const ShoppingCart = ({
                           <PPrice>${Number(item.precio).toFixed(2)}</PPrice>
                         </div>
                       </PName>
-                      <PQty>{item.cantidad}x</PQty>
+                      <PQty>{cantidadConUnidad(item, item.cantidad)}</PQty>
                     </PTableRow>
                   ))}
                 </ProductsTable>

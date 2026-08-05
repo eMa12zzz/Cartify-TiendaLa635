@@ -59,15 +59,33 @@ const PALETAS = {
   },
 };
 
+/*
+ * Con `crecer`, el subidor deja de medir un alto fijo y se estira para ocupar
+ * lo que le sobre a su contenedor. Lo pide el formulario de producto: su panel
+ * izquierdo se estira para igualar el alto del formulario de la derecha, y con
+ * la imagen a 192px clavados quedaba media columna de fondo vacío debajo del
+ * precio. La foto es lo único de ese panel que gana algo con más espacio.
+ *
+ * Va por prop y apagado por defecto: las otras cinco pantallas que usan esta
+ * pieza siguen con su alto fijo, sin enterarse.
+ */
 const Envoltorio = styled.div`
   width: 100%;
   min-width: 0;
+  ${(p) => p.$crecer && `
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  `}
 `;
 
 const Zona = styled.div`
   position: relative;
   width: 100%;
-  height: ${(p) => p.$alto}px;
+  ${(p) => (p.$crecer
+    ? `flex: 1; min-height: ${p.$alto}px;`
+    : `height: ${p.$alto}px;`)}
   border-radius: ${(p) => p.$radio}px;
   border: 2px dashed ${(p) => (p.$arrastrando ? p.$c.bordeVivo : p.$c.borde)};
   background: ${(p) => (p.$arrastrando ? p.$c.fondoVivo : p.$c.fondo)};
@@ -256,6 +274,7 @@ const SubidorArchivo = ({
   variante = 'claro',        // 'oscuro' para el panel café de los modales
   alto = 180,                // alto de la zona vacía
   altoPreview,               // alto cuando ya hay algo (por defecto, el mismo)
+  crecer = false,            // ocupar el alto que sobre en vez de medir fijo
   radio = 14,
   titulo = 'Arrastra el archivo o haz clic para elegirlo',
   ayuda = '',
@@ -272,9 +291,10 @@ const SubidorArchivo = ({
   const IconoGenerico = ICONOS[extension] || Archivo;
 
   return (
-    <Envoltorio className={className}>
+    <Envoltorio className={className} $crecer={crecer}>
       <Zona
         $c={c}
+        $crecer={crecer}
         $alto={hayAlgo ? (altoPreview ?? alto) : alto}
         $radio={radio}
         $arrastrando={arrastrando}

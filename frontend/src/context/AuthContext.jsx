@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import api from '../api/api';
 
 /*
  * ============================================================
@@ -167,6 +168,29 @@ export const AuthProvider = ({ children }) => {
   const areaRef = useRef(area);
   useEffect(() => { areaRef.current = area; }, [area]);
 
+  /*
+   * Las otras pestañas también cuentan.
+   *
+   * Los cajones se leían una sola vez al montar, así que cerrar sesión en una
+   * pestaña dejaba a las demás creyendo que seguía abierta —mostrando el
+   * nombre, el carrito y el panel— hasta que alguien recargara. En un mostrador
+   * donde se dejan tres pestañas abiertas, eso es una sesión que se cerró solo
+   * de mentira.
+   *
+   * `storage` solo lo oyen las OTRAS pestañas, nunca la que escribió: por eso
+   * no hace falta protegerse de un bucle. Mismo patrón que useStore y
+   * useDireccionActiva, que ya sincronizan el carrito y la dirección.
+   */
+  useEffect(() => {
+    const alCambiarOtraPestana = (e) => {
+      // e.key es null cuando alguien hizo localStorage.clear().
+      if (e.key !== null && e.key !== CAJON.personal && e.key !== CAJON.cliente) return;
+      setSesiones({ personal: leerCajon('personal'), cliente: leerCajon('cliente') });
+    };
+    window.addEventListener('storage', alCambiarOtraPestana);
+    return () => window.removeEventListener('storage', alCambiarOtraPestana);
+  }, []);
+
   // 3- Guardar una sesión. El cajón lo elige el tipo de cuenta, no la pantalla:
   //    el personal también entra por la puerta de la tienda (desde el teléfono)
   //    y su sesión tiene que caer igual en el cajón del personal.
@@ -187,6 +211,18 @@ export const AuthProvider = ({ children }) => {
    */
   const logout = useCallback((areaAcerrar) => {
     const cajon = areaAcerrar || areaRef.current;
+
+    /*
+     * Avisarle al servidor para que borre SU cookie.
+     *
+     * El logout solo limpiaba el navegador, así que la cookie httpOnly seguía
+     * puesta 30 días: cerrar sesión dejaba media sesión abierta. Va sin await
+     * y tragándose el error a propósito — si el servidor no contesta, la
+     * sesión se cierra igual de este lado; lo que no puede pasar es que
+     * alguien se quede dentro porque falló una petición de limpieza.
+     */
+    api.post(cajon === 'personal' ? '/logoutAdmin' : '/logoutClient').catch(() => {});
+
     localStorage.removeItem(CAJON[cajon]);
     setSesiones((previas) => ({ ...previas, [cajon]: null }));
   }, []);

@@ -52,5 +52,16 @@ export const useTemporada = () => {
     return () => aplicarTema(null);
   }, [tema, enPanel]);
 
-  return { tema, activo: !enPanel && !!tema };
+  /*
+   * La decoración (la cinta y las figuras cayendo) se puede apagar dejando
+   * solo los colores. Va encendida por defecto: quien elige poner Navidad
+   * espera que se note, no tener que ir a buscar un segundo interruptor.
+   */
+  const conDecoracion = ajustes.temporada?.decoracion !== false;
+
+  return {
+    tema,
+    activo: !enPanel && !!tema,
+    conDecoracion,
+  };
 };

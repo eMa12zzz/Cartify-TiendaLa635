@@ -5,6 +5,7 @@ import { promotionService } from '../api/promotionService';
 import { promoVigente } from '../utils/promos';
 import { familiasQueCoinciden } from '../utils/familias';
 import { familiaDeProducto } from '../utils/similitud';
+import { cantidadConUnidad } from '../utils/unidades';
 import { useAuth } from './useAuth';
 
 /*
@@ -89,6 +90,15 @@ const mapearProducto = (p, mapaPromo = {}) => {
     precioAnterior,
     promo: promoInfo,
     descripcion: p.description || '',
+    /*
+     * Cómo se vende. Va tal cual en el producto de la tienda porque lo
+     * necesitan la tarjeta (para el "/lb"), el detalle y el carrito (para
+     * moverse de media en media libra). Ver utils/unidades.js.
+     */
+    unidadVenta: p.unidadVenta === 'libra' ? 'libra' : 'unidad',
+    // En cuántas piezas están esas libras, y si la venta es solo para mayores.
+    piezas: p.piezas ?? null,
+    soloAdultos: !!p.soloAdultos,
     stock: Number(p.stock) || 0,
     // Tope de stock del producto: sirve para saber si "se está acabando"
     // en relación a lo que normalmente tiene, no contra un número fijo.
@@ -430,7 +440,9 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '' } = {}) =>
     const enCarrito = carrito.find((i) => i.id === producto.id)?.cantidad || 0;
     const nuevaCantidad = enCarrito + cantidad;
     if (nuevaCantidad > stock) {
-      toast.error(`Solo hay ${stock} unidades disponibles`);
+      // "Solo hay 3 unidades" de un queso que se vende por peso confunde:
+      // se dice en la unidad en que se vende. Ver utils/unidades.js.
+      toast.error(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`);
       return;
     }
 
@@ -447,7 +459,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '' } = {}) =>
      */
     toast.success(
       nuevaCantidad > 1
-        ? `${producto.nombre} · ${nuevaCantidad} en el carrito`
+        ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
         : `${producto.nombre} agregado al carrito`
     );
   };

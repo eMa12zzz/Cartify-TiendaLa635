@@ -460,6 +460,46 @@ const Personalizacion = () => {
                 navideño, por ejemplo— cambie el modo a Manual.
               </p>
             )}
+
+            {/* Decoración: cinta + figuras cayendo, o solo los colores. */}
+            <div
+              className="flex items-center justify-between gap-4 mt-5 pt-5 border-t"
+              style={{ borderColor: 'var(--theme-card-border)' }}
+            >
+              <div className="min-w-0">
+                <div className="text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                  Decoración
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
+                  La cinta con el saludo y las figuras cayendo de fondo. Apagada, la temporada
+                  se nota solo en los colores. Las figuras van siempre detrás del contenido y
+                  no se muestran a quien pidió menos movimiento en su sistema.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={temporada.decoracion !== false}
+                disabled={guardando}
+                onClick={() => guardar({ temporada: { decoracion: temporada.decoracion === false } })}
+                className="relative w-11 h-6 rounded-full transition-colors flex-none disabled:opacity-60"
+                style={{
+                  backgroundColor: temporada.decoracion !== false
+                    ? 'var(--theme-primary)'
+                    : 'var(--theme-card-border)',
+                }}
+              >
+                {/* transform en vez de `left`: se mueve en la GPU, sin recalcular layout */}
+                <span
+                  className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white"
+                  style={{
+                    transform: temporada.decoracion !== false ? 'translateX(20px)' : 'translateX(0)',
+                    transition: 'transform var(--dur-press) var(--ease-out)',
+                  }}
+                />
+              </button>
+            </div>
           </div>
         </>
       )}

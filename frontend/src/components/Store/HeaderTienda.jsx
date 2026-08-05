@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Search, Mic, ShoppingBag, User } from 'lucide-react';
 import MenuTienda from './MenuTienda';
 import SelectorDireccion from './SelectorDireccion';
+import CintaTemporada from './CintaTemporada';
 import { useAuth } from '../../hooks/useAuth';
 
 /*
@@ -249,6 +250,7 @@ const HeaderTienda = ({
   };
 
   return (
+    <>
     <Barra>
       {/* El nombre de la tienda abre sus pasillos en vez de mandar a otra
           pantalla: se elige el módulo sin perder de vista lo que se compraba. */}
@@ -306,6 +308,12 @@ const HeaderTienda = ({
         )}
       </Derecha>
     </Barra>
+
+    {/* El saludo de la fecha. Va FUERA de la barra a propósito: la barra es
+        pegajosa, y la cinta metida adentro se llevaría alto en todas las
+        pantallas todo el año. Ver CintaTemporada. */}
+    <CintaTemporada />
+    </>
   );
 };
 

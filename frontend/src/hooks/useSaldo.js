@@ -11,13 +11,19 @@ import { useAuth } from './useAuth';
  * y se regala dinero.
  */
 export const useSaldo = () => {
-  const { user } = useAuth();
+  /*
+   * `esCliente` y no `user?.id`: en la tienda la sesión activa puede ser la del
+   * personal, y pedir el saldo con el id de un administrador devuelve 404
+   * "Cliente no encontrado" — que el interceptor pinta como un toast rojo en la
+   * cara de alguien que solo abrió su carrito. Ver useAuth.
+   */
+  const { user, esCliente } = useAuth();
   const [saldo, setSaldo] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [canjeando, setCanjeando] = useState(false);
 
   const cargar = useCallback(async () => {
-    if (!user?.id) { setCargando(false); return; }
+    if (!esCliente) { setCargando(false); return; }
     try {
       const d = await giftCardService.getBalance(user.id);
       setSaldo(Number(d.balance) || 0);
@@ -26,14 +32,14 @@ export const useSaldo = () => {
     } finally {
       setCargando(false);
     }
-  }, [user?.id]);
+  }, [user?.id, esCliente]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   const canjear = async (codigo) => {
     const limpio = String(codigo || '').trim().toUpperCase();
     if (!limpio) { toast.error('Escriba el código de su tarjeta'); return false; }
-    if (!user?.id) { toast.error('Inicie sesión para canjear'); return false; }
+    if (!esCliente) { toast.error('Inicie sesión con su cuenta de cliente para canjear'); return false; }
 
     setCanjeando(true);
     try {

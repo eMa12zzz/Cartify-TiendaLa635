@@ -11,11 +11,19 @@
  * repintan cinco variables y el encabezado, las pastillas, los botones y las
  * filas cambian de color juntos, porque todos leen de ahí. Ver index.css.
  *
- * LO QUE NO HACE, a propósito: no cambia tipografías, ni mete copos de nieve
- * cayendo, ni toca las fotos de los productos. Una tienda de barrio en
- * diciembre sigue siendo la misma tienda; lo que se busca es que se sienta la
- * fecha, no disfrazarla. Y las fotos y los precios tienen que leerse igual de
- * bien el 24 de diciembre que el 3 de marzo.
+ * ADEMÁS DEL COLOR, cada tema trae DECORACIÓN: una cinta con su saludo debajo
+ * del encabezado y unas figuras cayendo despacio de fondo (copos, corazones,
+ * confeti...). Una paleta sola se siente como si la tienda hubiera cambiado de
+ * marca, no como si fuera diciembre.
+ *
+ * DÓNDE ESTÁ EL LÍMITE: la decoración va SIEMPRE detrás del contenido y nunca
+ * responde al clic. Las fotos y los precios tienen que leerse igual de bien el
+ * 24 de diciembre que el 3 de marzo; si un copo de nieve tapa un precio, la
+ * decoración dejó de ser decoración y pasó a estorbar. Por eso son pocas
+ * figuras, muy tenues, y se apagan solas para quien pidió menos movimiento en
+ * su sistema. Tampoco se tocan las tipografías ni las fotos de producto.
+ *
+ * Y se puede apagar desde el panel dejando solo los colores.
  *
  * LAS FECHAS SON DE EL SALVADOR. La Independencia es el 15 de septiembre, no
  * el 4 de julio: la tienda está en San Salvador y sus clientes son de ahí.
@@ -49,6 +57,15 @@ export const TEMAS_DE_TEMPORADA = [
       '--acento': '#C1121F',
     },
     muestras: ['#166534', '#C1121F', '#DCEEE1'],
+    decoracion: {
+      saludo: 'Felices fiestas — pida con tiempo, que diciembre se llena',
+      figura: 'copo',
+      // Cuántas figuras caen a la vez. Pocas a propósito: veinte copos ya no
+      // son "está nevando", son un protector de pantalla encima de la tienda.
+      cantidad: 14,
+      // Cae recto y despacio, como la nieve de verdad.
+      caida: 'lenta',
+    },
   },
   {
     clave: 'halloween',
@@ -68,6 +85,14 @@ export const TEMAS_DE_TEMPORADA = [
       '--acento': '#6D28D9',
     },
     muestras: ['#EA580C', '#6D28D9', '#FFEAD5'],
+    decoracion: {
+      saludo: 'Noche de brujas — dulces y disfraces en la tienda',
+      figura: 'murcielago',
+      cantidad: 10,
+      // Se mece de lado mientras baja: un murciélago que cae recto parece
+      // una piedra.
+      caida: 'meciendo',
+    },
   },
   {
     clave: 'independencia',
@@ -86,6 +111,12 @@ export const TEMAS_DE_TEMPORADA = [
       '--acento': '#0F47AF',
     },
     muestras: ['#0F47AF', '#003893', '#DEE9FB'],
+    decoracion: {
+      saludo: 'Fiestas patrias — ¡viva El Salvador!',
+      figura: 'confeti',
+      cantidad: 16,
+      caida: 'meciendo',
+    },
   },
   {
     clave: 'san-valentin',
@@ -104,6 +135,12 @@ export const TEMAS_DE_TEMPORADA = [
       '--acento': '#BE185D',
     },
     muestras: ['#BE185D', '#EC7FB0', '#FCE7F1'],
+    decoracion: {
+      saludo: 'Día del cariño — llévele algo a quien quiere',
+      figura: 'corazon',
+      cantidad: 12,
+      caida: 'meciendo',
+    },
   },
 ];
 

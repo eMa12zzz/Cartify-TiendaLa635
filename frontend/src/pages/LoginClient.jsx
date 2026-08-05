@@ -342,7 +342,7 @@ const FooterLink = styled(Link)`
 const LoginClient = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [verPass, setVerPass] = useState(false);
 
@@ -373,6 +373,18 @@ const LoginClient = () => {
       login(res.token, res.userType || 'client', res.client);
 
       const esPersonal = res.userType && res.userType !== 'client';
+
+      /*
+       * Si entró personal, se cierra la sesión de CLIENTE que hubiera abierta.
+       *
+       * Su sesión cae en el cajón del personal (la decide el tipo de cuenta),
+       * pero fuera del panel manda el cajón de cliente si existe. En el
+       * teléfono del mostrador —donde alguien dejó su sesión abierta— el
+       * repartidor acababa de entrar con su usuario, veía el nombre del cliente
+       * anterior y Reparto le decía "esta pantalla es para el personal". Un
+       * login que aparentaba funcionar y dejaba muerto justo su flujo.
+       */
+      if (esPersonal) logout('cliente');
 
       /*
        * Primero manda a dónde iba; si llegó aquí por su cuenta, al personal

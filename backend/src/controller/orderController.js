@@ -27,6 +27,29 @@ orderController.createOrder = async (req, res) => {
     }
 
     /*
+     * ── Y que ese cliente EXISTA ──
+     *
+     * Con solo comprobar que el campo venga, cualquier id con forma válida
+     * pasaba: el del propio administrador mirando su tienda, por ejemplo. El
+     * pedido se guardaba, se descontaba el stock y se le escribía un lote de
+     * puntos a un cliente que no está en la tabla — un pedido que después nadie
+     * puede consultar ni entregar, y existencias que bajaron por él.
+     *
+     * Mismo criterio que el del stock: el carrito ya lo revisa, pero la
+     * comprobación que vale es esta.
+     */
+    // isValidObjectId primero: findById con una cadena cualquiera lanza
+    // CastError y saldría como un 500, culpando al servidor de un dato malo.
+    const cliente = isValidObjectId(clientId)
+      ? await clientModel.findById(clientId).select("_id")
+      : null;
+    if (!cliente) {
+      return res.status(400).json({
+        message: "El pedido tiene que ir a nombre de un cliente registrado"
+      });
+    }
+
+    /*
      * ── STOCK: validar ANTES de cobrar ──
      * Sin esto se podían pedir 100 unidades de algo que tiene 5. El carrito ya
      * lo revisa, pero el navegador no es de fiar: la comprobación que vale es

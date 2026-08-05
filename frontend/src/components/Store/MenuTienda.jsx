@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Menu, Store as StoreIcon, Check } from 'lucide-react';
@@ -153,6 +154,9 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
   const { modulos } = useModulos();
   // El nombre y el logo salen de la base, no del código. Ver AjustesContext.
   const { ajustes } = useAjustesCtx();
+  // Se reinicia si cambian el logo: el nuevo merece su oportunidad de cargar.
+  const [logoFallo, setLogoFallo] = useState(false);
+  useEffect(() => { setLogoFallo(false); }, [ajustes.logoUrl]);
 
   /*
    * A dónde lleva cada módulo. Los pasillos normales NO navegan: cambian el
@@ -182,10 +186,14 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
           como estuvo siempre. El `alt` lleva el nombre escrito para que quien
           usa lector de pantalla oiga la tienda y no "imagen".
         */}
-        {ajustes.logoUrl ? (
+        {ajustes.logoUrl && !logoFallo ? (
           <Logo
             src={ajustes.logoUrl}
             alt={`${ajustes.nombreLinea1} ${ajustes.nombreLinea2}`.trim()}
+            /* Si la imagen no carga —Cloudinary caído, el archivo borrado— se
+               cae al nombre escrito. Sin esto la tienda se quedaba sin nombre
+               en ningún lado: ni logo ni texto, solo la hamburguesa. */
+            onError={() => setLogoFallo(true)}
           />
         ) : (
           <Nombre>

@@ -46,7 +46,12 @@ productController.insertProduct = async (req, res) => {
       barCode,
       stock,
       moduleId,
-      supplierId
+      supplierId,
+      // 'unidad' o 'libra'. Cambia qué significan salePrice y stock; ver el
+      // modelo y frontend/src/utils/unidades.js.
+      unidadVenta,
+      piezas,
+      soloAdultos
     } = req.body;
 
     // Validación
@@ -88,6 +93,16 @@ productController.insertProduct = async (req, res) => {
       barCode,
       stock,
       maxQuantity: stock,
+      // Solo se acepta lo que el modelo conoce; cualquier otra cosa cae en
+      // 'unidad', que es como se comportaba la tienda antes de que esto
+      // existiera.
+      unidadVenta: unidadVenta === "libra" ? "libra" : "unidad",
+      // Vacío queda como no declarado, no como cero: "0 piezas" diría algo
+      // falso sobre lo que hay en la vitrina.
+      piezas: piezas === "" || piezas === undefined ? undefined : Number(piezas),
+      // Llega como texto desde el FormData: "false" es una cadena con valor
+      // verdadero, así que se compara contra "true" en vez de castear.
+      soloAdultos: String(soloAdultos) === "true",
       moduleId,
       supplierId
     });
@@ -124,7 +139,12 @@ productController.updateProduct = async (req, res) => {
       barCode,
       stock,
       moduleId,
-      supplierId
+      supplierId,
+      // 'unidad' o 'libra'. Cambia qué significan salePrice y stock; ver el
+      // modelo y frontend/src/utils/unidades.js.
+      unidadVenta,
+      piezas,
+      soloAdultos
     } = req.body;
 
     // Validación
@@ -174,6 +194,18 @@ productController.updateProduct = async (req, res) => {
       moduleId,
       supplierId
     };
+
+    // Solo se toca si viene: editar el precio no tiene por qué cambiar la
+    // forma en que se vende el producto.
+    if (unidadVenta !== undefined) {
+      updatedData.unidadVenta = unidadVenta === "libra" ? "libra" : "unidad";
+    }
+    if (piezas !== undefined) {
+      updatedData.piezas = piezas === "" ? null : Number(piezas);
+    }
+    if (soloAdultos !== undefined) {
+      updatedData.soloAdultos = String(soloAdultos) === "true";
+    }
 
     // Si viene nueva imagen
     if (req.file) {
