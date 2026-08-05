@@ -30,6 +30,7 @@ import kioscoRoutes from "./src/routes/kiosco.js";
 import giftCardRoutes from "./src/routes/giftCard.js";
 import supplierCreditRoutes from "./src/routes/supplierCredit.js";
 import wompiRoutes from "./src/routes/wompi.js"
+import storeSettingsRoutes from "./src/routes/storeSettings.js";
 import loginAdminRoutes from "./src/routes/loginAdmin.js";
 import logoutAdminRoutes from "./src/routes/logoutAdmin.js";
 
@@ -77,6 +78,8 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/giftCard", giftCardRoutes);
 app.use("/api/credito", supplierCreditRoutes);
+// Cómo se ve la tienda: nombre, logo, orden de la portada y temporada.
+app.use("/api/storeSettings", storeSettingsRoutes);
 app.use("/api/wompi", wompiRoutes);
 app.use("/api/loginAdmin", loginAdminRoutes);
 app.use("/api/logoutAdmin", logoutAdminRoutes);

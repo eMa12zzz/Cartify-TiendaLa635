@@ -13,8 +13,8 @@ import PieTienda from '../components/Store/PieTienda';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import { calcularPrecioImpresion } from '../utils/precioImpresion';
 
-const BROWN = '#B46C30';
-const BROWN_DARK = '#8A5222';
+const BROWN = 'var(--marca-600)';
+const BROWN_DARK = 'var(--marca-700)';
 
 /* Columna flex por lo mismo que la tienda: con poco contenido, el pie tiene
    que aterrizar abajo y no quedar flotando a media pantalla. */

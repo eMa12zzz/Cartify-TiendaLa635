@@ -98,8 +98,15 @@ const Boton = styled.button`
 `;
 
 const SinPermiso = () => {
-  const { esCliente } = useAuth();
+  const { esCliente, haySesionDeCliente } = useAuth();
   const { volver, hayAtras, casa } = useVolver();
+
+  /*
+   * "Viene con cuenta de cliente" es la misma situación de las dos maneras de
+   * llegar aquí: con la sesión de cliente puesta en esta pantalla, o sin
+   * sesión de personal pero con una de cliente abierta en la tienda.
+   */
+  const conCuentaDeCliente = esCliente || haySesionDeCliente;
 
   return (
     <Fondo>
@@ -108,17 +115,29 @@ const SinPermiso = () => {
 
         <Titulo>Esta pantalla no es para su cuenta</Titulo>
         <Texto>
-          {esCliente
+          {conCuentaDeCliente
             ? 'Está entrando con su cuenta de cliente, y esta parte es del personal de la tienda. Su sesión está bien: solo que esta puerta no es la suya.'
             : 'Su cuenta no tiene permiso para abrir esta pantalla. Si cree que debería tenerlo, pídaselo a quien administra la tienda.'}
         </Texto>
 
         <Botones>
           <Boton $principal onClick={() => { window.location.href = casa; }}>
-            {esCliente
+            {conCuentaDeCliente
               ? <><Store size={16} strokeWidth={2.2} /> Ir a la tienda</>
               : <><LayoutDashboard size={16} strokeWidth={2.2} /> Ir al panel</>}
           </Boton>
+
+          {/*
+            La salida que de verdad sirve cuando quien mira ES del personal:
+            entrar por su puerta. Las dos sesiones conviven, así que hacerlo
+            no le cierra la de cliente que tiene abierta en la tienda.
+          */}
+          {conCuentaDeCliente && (
+            <Boton onClick={() => { window.location.href = '/admin'; }}>
+              <LayoutDashboard size={16} strokeWidth={2.2} /> Entrar como personal
+            </Boton>
+          )}
+
           {hayAtras && (
             <Boton onClick={volver}>
               <ArrowLeft size={16} strokeWidth={2.2} /> Volver atrás

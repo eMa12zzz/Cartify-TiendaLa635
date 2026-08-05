@@ -3,6 +3,9 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
+import { AjustesProvider } from './context/AjustesContext';
+import { useTemporada } from './hooks/useTemporada';
+import DecoracionTemporada from './components/Store/DecoracionTemporada';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import LimiteDeError from './components/UI/LimiteDeError';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
@@ -49,6 +52,7 @@ import Fidelidad from './pages/Fidelidad';
 import Promociones from './pages/Promociones';
 import GiftCards from './pages/GiftCards';
 import ServiciosImpresion from './pages/ServiciosImpresion';
+import Personalizacion from './pages/Personalizacion';
 import AccountSettings from './pages/AccountSettings';
 
 // --- Área "Mi Cuenta" del cliente ---
@@ -66,10 +70,38 @@ import Notificaciones from './pages/cliente/Notificaciones';
 import CentroAyuda from './pages/cliente/CentroAyuda';
 
 
+/*
+ * Pinta la tienda del color de la temporada (Navidad, Halloween...). No dibuja
+ * nada: solo repinta las variables de marca sobre el documento. Vive como
+ * componente y no como una llamada suelta porque necesita estar DENTRO de los
+ * proveedores —lee los ajustes— y dentro del router —mira la ruta para no
+ * tocar el panel—. Ver useTemporada.
+ */
+const PinturaDeTemporada = () => {
+  const { tema, activo, conDecoracion } = useTemporada();
+  // Las figuras cayendo van aquí arriba y no dentro de cada pantalla: es una
+  // capa fija sobre toda la ventana, así que montarla una vez basta.
+  return activo && conDecoracion ? <DecoracionTemporada tema={tema} /> : null;
+};
+
+/*
+ * El router va POR FUERA de la sesión, al revés que antes.
+ * AuthProvider ahora necesita saber en qué área está parada la persona —el
+ * panel o la tienda— para decidir cuál de los dos cajones de sesión manda, y
+ * eso solo lo sabe estando dentro del router. Ver AuthContext.
+ */
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        {/*
+          Cómo se ve la tienda —nombre, logo, orden de la portada, temporada—
+          se pide una sola vez y lo lee quien lo necesite. Va bien arriba
+          porque lo usan el encabezado, el pie y la portada por igual.
+          Ver AjustesContext.
+        */}
+        <AjustesProvider>
+        <PinturaDeTemporada />
         {/*
           Los favoritos se cargan una sola vez para toda la app: los mismos
           corazones aparecen en la tienda y en Mi Cuenta, que son ramas
@@ -177,6 +209,8 @@ function App() {
               <Route path="/promociones" element={<Promociones />} />
               <Route path="/servicios-impresion" element={<ServiciosImpresion />} />
               <Route path="/tarjetas"    element={<GiftCards />} />
+              {/* Nombre, logo y orden de la portada de la tienda */}
+              <Route path="/personalizacion" element={<Personalizacion />} />
               <Route path="/cuenta"      element={<AccountSettings />} />
             </Route>
           </Route>
@@ -219,8 +253,9 @@ function App() {
         </LimiteDeError>
         </DireccionProvider>
         </FavoritosProvider>
-      </BrowserRouter>
-    </AuthProvider>
+        </AjustesProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

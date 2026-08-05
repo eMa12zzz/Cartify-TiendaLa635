@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Menu, Store as StoreIcon, Check } from 'lucide-react';
 import { useDropdown } from '../../hooks/useDropdown';
 import { useModulos } from '../../hooks/useModulos';
+import { useAjustesCtx } from '../../context/AjustesContext';
 import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
 
 /*
@@ -21,7 +23,7 @@ import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
  * ============================================================
  */
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 const Zona = styled.div`
   position: relative;
@@ -73,6 +75,21 @@ const Linea = styled.span`
   letter-spacing: -0.5px;
 
   @media (max-width: 700px) { font-size: 15.5px; }
+`;
+
+/*
+ * El logo, cuando la tienda subió uno. Se limita por ALTURA y no por ancho:
+ * un logo puede ser cuadrado o una banda larga, y lo único que no puede es
+ * crecerle al encabezado, que mide 64px y ya está lleno.
+ */
+const Logo = styled.img`
+  height: 38px;
+  width: auto;
+  max-width: 168px;
+  object-fit: contain;
+  display: block;
+
+  @media (max-width: 700px) { height: 31px; max-width: 124px; }
 `;
 
 const Panel = styled.div`
@@ -135,6 +152,11 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
   const navigate = useNavigate();
   const { isOpen, toggle, close, ref } = useDropdown();
   const { modulos } = useModulos();
+  // El nombre y el logo salen de la base, no del código. Ver AjustesContext.
+  const { ajustes } = useAjustesCtx();
+  // Se reinicia si cambian el logo: el nuevo merece su oportunidad de cargar.
+  const [logoFallo, setLogoFallo] = useState(false);
+  useEffect(() => { setLogoFallo(false); }, [ajustes.logoUrl]);
 
   /*
    * A dónde lleva cada módulo. Los pasillos normales NO navegan: cambian el
@@ -159,10 +181,26 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
     <Zona ref={ref}>
       <Boton onClick={toggle} aria-expanded={isOpen} aria-haspopup="menu" aria-label="Pasillos de la tienda">
         <Hamburguesa><Menu size={20} strokeWidth={2.2} /></Hamburguesa>
-        <Nombre>
-          <Linea>Tienda</Linea>
-          <Linea>la 635</Linea>
-        </Nombre>
+        {/*
+          Con logo se pinta el logo; sin logo, el nombre en dos líneas, que es
+          como estuvo siempre. El `alt` lleva el nombre escrito para que quien
+          usa lector de pantalla oiga la tienda y no "imagen".
+        */}
+        {ajustes.logoUrl && !logoFallo ? (
+          <Logo
+            src={ajustes.logoUrl}
+            alt={`${ajustes.nombreLinea1} ${ajustes.nombreLinea2}`.trim()}
+            /* Si la imagen no carga —Cloudinary caído, el archivo borrado— se
+               cae al nombre escrito. Sin esto la tienda se quedaba sin nombre
+               en ningún lado: ni logo ni texto, solo la hamburguesa. */
+            onError={() => setLogoFallo(true)}
+          />
+        ) : (
+          <Nombre>
+            <Linea>{ajustes.nombreLinea1}</Linea>
+            {ajustes.nombreLinea2 && <Linea>{ajustes.nombreLinea2}</Linea>}
+          </Nombre>
+        )}
       </Boton>
 
       {isOpen && (

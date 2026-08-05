@@ -7,6 +7,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { puedeRepartir } from '../../hooks/useReparto';
+import { useAjustesCtx } from '../../context/AjustesContext';
 
 /*
  * ClienteLayout — el "marco" compartido del área "Mi Cuenta" del cliente.
@@ -43,6 +44,7 @@ const ClienteLayout = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { user, logout } = useAuth();
+  const { ajustes } = useAjustesCtx();
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
@@ -65,7 +67,17 @@ const ClienteLayout = () => {
    * precios un rato más.
    */
   const handleLogout = () => {
-    logout();
+    /*
+     * Se cierra el cajón de QUIEN está dentro, no el que adivine la ruta.
+     *
+     * Sin esto, un repartidor —que entra con cuenta de empleado y trabaja
+     * desde /mi-cuenta/reparto— tocaba "Cerrar sesión", leía que tendría que
+     * volver a ingresar su contraseña… y no se cerraba nada: el área de
+     * /mi-cuenta es la de CLIENTE, así que se borraba un cajón vacío mientras
+     * su token de personal seguía vivo. En un teléfono que se usa en la calle
+     * eso deja abierto el panel entero. Ver AuthContext.
+     */
+    logout(user?.type === 'client' ? 'cliente' : 'personal');
     navigate('/');
   };
 
@@ -83,7 +95,9 @@ const ClienteLayout = () => {
         style={{ backgroundColor: c.topbarBg, borderBottom: `1px solid ${c.sidebarBorder}` }}
       >
         <Link to="/store" className="font-bold leading-none text-sm" style={{ color: c.textPrimary }}>
-          Tienda<br />la 635
+          {/* El nombre sale de los ajustes, no del código: la Fase 4 lo hizo
+              editable y esta pantalla se había quedado con el de siempre. */}
+          {ajustes.nombreLinea1}<br />{ajustes.nombreLinea2}
         </Link>
 
         {/* Quién está dentro. Se mudó del menú lateral a aquí: ahora que la

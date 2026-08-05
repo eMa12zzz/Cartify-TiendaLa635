@@ -16,8 +16,8 @@ import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promo
  * dura y los productos que entran. Desde aquí se va a la tienda ya filtrada.
  */
 
-const BROWN = '#B46C30';
-const BROWN_DARK = '#8A5222';
+const BROWN = 'var(--marca-600)';
+const BROWN_DARK = 'var(--marca-700)';
 
 const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
 const slideUp = keyframes`from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; }`;

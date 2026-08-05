@@ -31,29 +31,44 @@ import SinPermiso from '../../pages/SinPermiso';
  * la pantalla que usa el repartidor desde su teléfono, en la calle.
  */
 const ProtectedRoute = ({ soloPersonal = false }) => {
-  const { isAuthenticated, esCliente } = useAuth();
+  const { isAuthenticated, esCliente, haySesionDeCliente } = useAuth();
   const { pathname, search } = useLocation();
 
   /*
-   * 1- Sin sesión, al login — pero avisándole a dónde iba.
+   * 1- Sin sesión de esta área.
    *
-   * Mandarlo al login y después soltarlo en la portada obliga a volver a
-   * buscar lo que estaba haciendo. Con `volver` la sesión lo devuelve al
-   * mismo lugar, que es lo único que la persona quería.
+   * Hay dos maneras muy distintas de llegar aquí y merecen respuestas
+   * distintas:
+   *
+   *   a) No ha entrado por ningún lado → al login, avisándole a dónde iba.
+   *      Sin el `volver`, la sesión lo suelta en la portada y le toca buscar
+   *      otra vez lo que estaba haciendo.
+   *
+   *   b) Entró, pero por la puerta de la tienda → NO es que le falte iniciar
+   *      sesión, es que esta puerta no es la suya. Mandarlo al login sería
+   *      mentirle: su sesión está perfecta. Se le explica en el lugar.
+   *
+   * El caso (b) pasa de verdad y seguido: la misma persona administra la
+   * tienda y es clienta de su propia tienda, con el mismo correo en las dos
+   * tablas y una sesión abierta de cada una. Ver AuthContext.
    */
   if (!isAuthenticated) {
-    return <Navigate to={`/iniciar-sesion?volver=${encodeURIComponent(pathname + search)}`} replace />;
+    if (soloPersonal && haySesionDeCliente) {
+      return <SinPermiso />;
+    }
+    /*
+     * Al login que corresponde. Mandar al personal a la puerta de los
+     * clientes lo deja probando una contraseña que ahí no sirve.
+     */
+    const puerta = soloPersonal ? '/admin' : '/iniciar-sesion';
+    return <Navigate to={`${puerta}?volver=${encodeURIComponent(pathname + search)}`} replace />;
   }
 
   /*
-   * 2- Con sesión, pero de quien no es.
-   *
-   * Se muestra la explicación EN EL LUGAR, sin redirigir. Redirigir borraría
-   * la dirección que la persona escribió y la dejaría sin entender qué pasó;
-   * peor, mandarla al login sería mentirle, porque su sesión está perfecta.
-   *
-   * Pasa de verdad y seguido: la misma persona administra la tienda y es
-   * clienta de su propia tienda, con el mismo correo en las dos tablas.
+   * 2- Con sesión de esta área, pero de quien no es. Red de seguridad: con
+   *    los cajones separados no debería entrar aquí, pero si alguna vez una
+   *    sesión de cliente termina en el cajón del personal, mejor explicarlo
+   *    que dejarla ver el panel a medias.
    */
   if (soloPersonal && esCliente) {
     return <SinPermiso />;

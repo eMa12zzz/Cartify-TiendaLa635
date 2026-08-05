@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import TableActions from '../UI/TableActions';
 import { formatearFecha } from '../../utils/fechas';
+import { unidadDe, esPorLibra, cantidadConUnidad, piezasEnTexto, esSoloAdultos } from '../../utils/unidades';
 
 const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
   // Calcular porcentaje para la barra de cantidades (asumimos maximo de 100 si no existe)
@@ -16,6 +17,11 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
    * disfrazado de vencimiento. Si no hay fecha se dice, no se inventa una.
    */
   const vence = formatearFecha(product.expirationDate);
+
+  // Por unidad o por libra: cambia cómo se lee el precio y la existencia.
+  const unidad = unidadDe(product);
+  const porLibra = esPorLibra(product);
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -27,6 +33,13 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
         <div className="w-full text-left">
           <p className="text-[10px] uppercase tracking-wider opacity-80">{product.brandId?.name}</p>
           <h3 className="text-xl font-bold leading-tight">{product.name}</h3>
+          {/* +18 junto al nombre: quien revisa el inventario tiene que verlo
+              sin abrir la ficha. */}
+          {esSoloAdultos(product) && (
+            <span className="inline-block mt-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/25">
+              +18
+            </span>
+          )}
         </div>
         
         <div className="flex-1 flex items-center justify-center py-4 w-full">
@@ -39,8 +52,10 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
           )}
         </div>
         
+        {/* El "/lb" no es adorno: sin él, "$1.25" en un tomate se lee como el
+            precio del tomate y no el de la libra. */}
         <div className="text-xs text-center border-t border-white/20 pt-2 w-full">
-          Costo: ${product.priceCost?.toFixed(2)} | Precio: ${product.salePrice?.toFixed(2)}
+          Costo: ${product.priceCost?.toFixed(2)} | Precio: ${product.salePrice?.toFixed(2)}{porLibra && '/lb'}
         </div>
       </div>
 
@@ -52,18 +67,27 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
           </div>
           
           <div className="text-right">
-            <p className="text-xs font-medium text-gray-700 mb-1">Cantidades</p>
+            <p className="text-xs font-medium text-gray-700 mb-1">{unidad.existencia}</p>
             <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-[#E07A2B]" 
                 style={{ width: `${quantityPercentage}%` }}
               ></div>
             </div>
-            <p className="text-[10px] text-gray-500 mt-1">{currentStock}/{maxStock}</p>
+            <p className="text-[10px] text-gray-500 mt-1">
+              {cantidadConUnidad(product, currentStock)} de {maxStock}
+            </p>
+            {/* Las piezas van debajo y más chicas: son un apunte de bodega,
+                no el número por el que se cobra. */}
+            {piezasEnTexto(product) && (
+              <p className="text-[10px] text-gray-400">en {piezasEnTexto(product)}</p>
+            )}
           </div>
         </div>
 
-        <p className="text-xs text-gray-600 line-clamp-3 mb-4 leading-relaxed">
+        {/* Aquí el pre-line convive con line-clamp: se respetan los enter, y
+            si la descripción es larga se corta a los tres renglones igual. */}
+        <p className="text-xs text-gray-600 line-clamp-3 mb-4 leading-relaxed whitespace-pre-line">
           {product.description}
         </p>
 

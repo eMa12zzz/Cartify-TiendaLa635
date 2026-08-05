@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Search, Mic, ShoppingBag, User } from 'lucide-react';
 import MenuTienda from './MenuTienda';
 import SelectorDireccion from './SelectorDireccion';
+import CintaTemporada from './CintaTemporada';
 import { useAuth } from '../../hooks/useAuth';
 
 /*
@@ -31,7 +32,7 @@ import { useAuth } from '../../hooks/useAuth';
  * ============================================================
  */
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 const Barra = styled.header`
   background: white;
@@ -85,7 +86,10 @@ const SearchBox = styled.div`
 
   &:focus-within {
     border-color: ${BROWN};
-    box-shadow: 0 0 0 3px ${BROWN}1F;
+    /* El aro del foco es el mismo café pero al 12%. Va con color-mix y no
+       pegándole "1F" al hex: ahora BROWN es una variable, y "var(--marca-600)1F"
+       no es un color, es basura que el navegador descarta en silencio. */
+    box-shadow: 0 0 0 3px color-mix(in srgb, ${BROWN} 12%, transparent);
   }
 
   /*
@@ -246,6 +250,7 @@ const HeaderTienda = ({
   };
 
   return (
+    <>
     <Barra>
       {/* El nombre de la tienda abre sus pasillos en vez de mandar a otra
           pantalla: se elige el módulo sin perder de vista lo que se compraba. */}
@@ -303,6 +308,12 @@ const HeaderTienda = ({
         )}
       </Derecha>
     </Barra>
+
+    {/* El saludo de la fecha. Va FUERA de la barra a propósito: la barra es
+        pegajosa, y la cinta metida adentro se llevaría alto en todas las
+        pantallas todo el año. Ver CintaTemporada. */}
+    <CintaTemporada />
+    </>
   );
 };
 

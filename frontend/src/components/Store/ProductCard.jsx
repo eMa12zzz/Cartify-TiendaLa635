@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Package } from 'lucide-react';
 import styled from 'styled-components';
 import { useFavoritosCtx } from '../../context/FavoritosContext';
+import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 
 // Paleta del diseño (WEB.pdf), medida sobre el mockup.
-const BROWN = '#B46C30';
-const BROWN_DARK = '#8A5222';
+const BROWN = 'var(--marca-600)';
+const BROWN_DARK = 'var(--marca-700)';
 
 const Card = styled.div`
   background: white;
@@ -229,6 +230,42 @@ const NewPrice = styled.span`
 `;
 
 /*
+ * El "/lb" va más chico y más tenue que el número: acompaña al precio, no
+ * compite con él. Del mismo tamaño se leería como parte de la cifra.
+ */
+const PorUnidad = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tinta-tenue);
+  margin-left: 1px;
+`;
+
+/* Cuántas trae el paquete. Va debajo del precio, chiquito: acompaña, no compite. */
+const Contenido = styled.span`
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tinta-tenue);
+  margin-top: 1px;
+`;
+
+/*
+ * El +18. Va en el rojo de los avisos y no en el café de la marca: no es una
+ * característica que se presume, es una condición para poder comprarlo.
+ */
+const Marca18 = styled.span`
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radio-pill);
+  background: var(--alerta);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  vertical-align: middle;
+`;
+
+/*
  * En el diseño este botón es NEGRO, no café. Es a propósito: el acento de la
  * marca es el café, y el negro hace que la acción de agregar resalte sobre él
  * en vez de competirle.
@@ -348,7 +385,12 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
 
       <CardBody>
         <ProductBrand>{producto.marca}</ProductBrand>
-        <ProductName>{producto.nombre}</ProductName>
+        <ProductName>
+          {producto.nombre}
+          {/* +18 pegado al nombre: es una condición para comprarlo, no un
+              adorno. Mejor enterarse aquí que en la puerta de la casa. */}
+          {esSoloAdultos(producto) && <Marca18>+18</Marca18>}
+        </ProductName>
         {/*
           Solo se avisa cuando se está acabando o cuando ya no hay. Poner
           "100 disponibles" en cada tarjeta le enseña el inventario al cliente
@@ -366,7 +408,24 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
             {producto.precioAnterior && (
               <OldPrice>${Number(producto.precioAnterior).toFixed(2)}</OldPrice>
             )}
-            <NewPrice>${Number(producto.precio).toFixed(2)}</NewPrice>
+            {/*
+              El "/lb" pegado al precio y no en un renglón aparte: es parte del
+              precio, no un dato adicional. Sin él, "$1.25" en un tomate se lee
+              como lo que cuesta ese tomate — y eso es cobrar una cosa
+              aparentando otra. Ver utils/unidades.js.
+            */}
+            <NewPrice>
+              ${Number(producto.precio).toFixed(2)}
+              {esPorLibra(producto) && <PorUnidad>/lb</PorUnidad>}
+            </NewPrice>
+            {/*
+              "Trae 6 unidades" debajo del precio: sin eso, $3.00 se lee igual
+              para un six-pack que para una lata suelta, y el cliente no tiene
+              cómo comparar. Solo sale si la tienda lo declaró.
+            */}
+            {!esPorLibra(producto) && piezasEnTexto(producto) && (
+              <Contenido>{piezasEnTexto(producto)}</Contenido>
+            )}
           </PriceBlock>
           <AddButton className="add-button" onClick={handleAgregar}>+</AddButton>
         </PriceRow>

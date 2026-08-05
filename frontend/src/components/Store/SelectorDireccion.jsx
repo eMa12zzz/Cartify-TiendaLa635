@@ -22,7 +22,7 @@ import { useAuth } from '../../hooks/useAuth';
  * ============================================================
  */
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 const Zona = styled.div`
   position: relative;

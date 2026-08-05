@@ -3,10 +3,26 @@ import styled, { keyframes } from 'styled-components';
 import { X, ShoppingBag, Star, ChevronRight, ChevronLeft, Package, MessageCircle } from 'lucide-react';
 import { useReviews } from '../../hooks/useReviews';
 import ProductCard from './ProductCard';
+import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 
-const BROWN = '#B46C30';
-const BROWN_LIGHT = '#F3E7D8';
-const BROWN_DARK = '#8A5222';
+const BROWN = 'var(--marca-600)';
+const BROWN_LIGHT = 'var(--marca-100)';
+const BROWN_DARK = 'var(--marca-700)';
+
+/*
+ * El aviso de venta restringida. Rojo tenue y con borde: tiene que leerse como
+ * una condición, no como una promoción más.
+ */
+const AvisoAdultos = styled.div`
+  background: #FDF0EC;
+  border: 1px solid #F3C7BA;
+  color: #8A2B12;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+`;
 
 const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
 const slideUp = keyframes`from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; }`;
@@ -454,6 +470,10 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProduc
   const [imgError, setImgError] = useState(false);
   const [activeThumb, setActiveThumb] = useState(0);
 
+  // Los que se venden por peso muestran el precio de la libra y se agregan de
+  // libra en libra. Ver utils/unidades.js.
+  const porLibra = esPorLibra(producto);
+
   /*
    * Valoraciones REALES. Antes esto era un 4.3 clavado con "5,961 reseñas" y
    * dos comentarios firmados por gente inventada, iguales en todos los
@@ -707,21 +727,41 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProduc
 
             {/*
               El cliente ve si hay o no hay, no cuántas quedan: el inventario
-              es asunto de la tienda. Antes había además un "$2.71/lb" fijo,
-              igual para el queso que para las Pringles, y un "75 Left" a
-              medio traducir.
+              es asunto de la tienda.
+
+              Ojo con el "/lb": aquí hubo una vez un "$2.71/lb" CLAVADO, igual
+              para el queso que para las Pringles, y se quitó por mentiroso.
+              El de ahora es lo contrario: sale del propio producto, solo
+              aparece en los que de verdad se venden por peso, y el número es
+              el que se cobra. Ver utils/unidades.js.
             */}
             <PriceLine>
               {producto.precioAnterior && <OldPrice>${Number(producto.precioAnterior).toFixed(2)}</OldPrice>}
-              <NewPrice>${Number(producto.precio).toFixed(2)}</NewPrice>
+              <NewPrice>
+                ${Number(producto.precio).toFixed(2)}
+                {porLibra && <span style={{ fontSize: 14, fontWeight: 600, color: '#9C9691' }}>/lb</span>}
+              </NewPrice>
               <StockBadge $low={producto.stock === 0}>
                 {producto.stock === 0 ? 'Agotado' : '✓ En stock'}
               </StockBadge>
             </PriceLine>
 
+            {/*
+              El aviso de +18 va ANTES del botón, no después: enterarse de que
+              le van a pedir documento cuando el repartidor ya está en la puerta
+              es la peor manera de saberlo. Y se dice completo —qué se pide y
+              qué pasa si no lo tiene— porque media advertencia no advierte.
+            */}
+            {esSoloAdultos(producto) && (
+              <AvisoAdultos>
+                <strong>Solo para mayores de 18 años.</strong> Se le pedirá su documento de
+                identidad al entregar el pedido. Sin él, este producto no se puede entregar.
+              </AvisoAdultos>
+            )}
+
             <AddBtn onClick={handleAgregar} disabled={producto.stock === 0}>
               <ShoppingBag size={18} />
-              Añadir al carrito
+              {porLibra ? 'Añadir una libra al carrito' : 'Añadir al carrito'}
             </AddBtn>
 
             {/* About section */}
@@ -740,7 +780,15 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProduc
                 que la tienda no hizo y que en varios casos es falsa.
               */}
               {producto.descripcion && (
-                <p style={{ fontSize: 13, color: '#666', lineHeight: 1.65, marginTop: 12 }}>
+                /*
+                  pre-line respeta los enter que escribió quien cargó el
+                  producto. HTML colapsa los saltos de línea por defecto, así
+                  que una descripción escrita en renglones —"Peso: 500g" en uno,
+                  "Origen: nacional" en otro— salía toda pegada en un párrafo.
+                  Es "pre-line" y no "pre" a propósito: respeta los enter pero
+                  sigue acomodando el texto al ancho de la tarjeta.
+                */
+                <p style={{ fontSize: 13, color: '#666', lineHeight: 1.65, marginTop: 12, whiteSpace: 'pre-line' }}>
                   {producto.descripcion}
                 </p>
               )}

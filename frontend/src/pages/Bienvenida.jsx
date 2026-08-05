@@ -24,8 +24,8 @@ import { clientService } from '../api/clientService';
  * ============================================================
  */
 
-const BROWN = '#B46C30';
-const BROWN_DARK = '#8A5222';
+const BROWN = 'var(--marca-600)';
+const BROWN_DARK = 'var(--marca-700)';
 
 const Pantalla = styled.div`
   position: relative;

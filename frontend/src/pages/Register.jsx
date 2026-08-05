@@ -10,8 +10,8 @@ import { reglaDuiOpcional, reglaTelefono, bloquearNoDigitos } from '../utils/val
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 import api from '../api/api';
 
-const BROWN = '#B46C30';
-const BROWN_HOVER = '#8A5222';
+const BROWN = 'var(--marca-600)';
+const BROWN_HOVER = 'var(--marca-700)';
 
 const Container = styled.div`
   min-height: 100vh;

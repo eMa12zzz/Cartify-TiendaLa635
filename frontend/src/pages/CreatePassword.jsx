@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import api from '../api/api';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;

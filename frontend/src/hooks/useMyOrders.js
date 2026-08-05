@@ -8,13 +8,16 @@ import { useAuth } from './useAuth';
  * Opcionalmente filtra por estado (ej. 'entregado' para la vista de Recibos).
  */
 export const useMyOrders = (statusFilter = null) => {
-  const { user } = useAuth();
+  // Los pedidos son de un CLIENTE. Con la sesión del personal —que en la
+  // tienda puede ser la activa— se preguntaba por los pedidos de un id que no
+  // es de nadie. Ver useAuth.
+  const { user, esCliente } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const cargar = async () => {
-      if (!user?.id) {
+      if (!esCliente) {
         setLoading(false);
         return;
       }
@@ -31,7 +34,7 @@ export const useMyOrders = (statusFilter = null) => {
       }
     };
     cargar();
-  }, [user?.id, statusFilter]);
+  }, [user?.id, esCliente, statusFilter]);
 
   return { orders, loading };
 };

@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import toast from 'react-hot-toast';
 import api from '../api/api';
 
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;

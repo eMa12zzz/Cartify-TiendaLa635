@@ -9,7 +9,7 @@ import { ImagePlus, ZoomIn, ZoomOut, RotateCcw, RotateCw, Copy, Trash2, ArrowUp,
  * así lo que el cliente ve es lo que se imprime. Botones grandes y toolbar
  * al seleccionar (nada de manijitas diminutas) para que sirva con el dedo.
  */
-const BROWN = '#B46C30';
+const BROWN = 'var(--marca-600)';
 
 const PrintComposer = ({ composer }) => {
   const {

@@ -119,7 +119,10 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
 
             <div>
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Descripción</p>
-              <div className="bg-white p-3 rounded-lg border border-gray-200 text-sm text-gray-700 min-h-[60px]">
+              {/* whitespace-pre-line: los enter que escribió el empleado se
+                  ven como enter. Sin esto, una ficha escrita en renglones
+                  salía toda en un párrafo pegado. */}
+              <div className="bg-white p-3 rounded-lg border border-gray-200 text-sm text-gray-700 min-h-[60px] whitespace-pre-line">
                 {product.description || 'Sin descripción...'}
               </div>
             </div>

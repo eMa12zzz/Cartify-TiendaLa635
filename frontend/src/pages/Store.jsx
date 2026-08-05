@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
@@ -17,11 +17,13 @@ import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
 import { useModulos } from '../hooks/useModulos';
+import { useAjustesCtx } from '../context/AjustesContext';
+import { bloqueDeSeccion } from '../utils/portada';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
-const BROWN = '#B46C30';
-const BROWN_DARK = '#8A5222';
-const BROWN_LIGHT = '#F3E7D8';
+const BROWN = 'var(--marca-600)';
+const BROWN_DARK = 'var(--marca-700)';
+const BROWN_LIGHT = 'var(--marca-100)';
 
 /* ─── Layout ─── */
 const Container = styled.div`
@@ -133,6 +135,30 @@ const Content = styled.div`
   /* Mismo margen lateral que el pie y que la pantalla de sección, para que al
      pasar de una a otra los productos no se corran de lugar. */
   @media (max-width: 560px) { padding: 20px 16px 32px; }
+`;
+
+/*
+ * El carril de una fila de la portada.
+ *
+ * Mismo ancho y mismo margen lateral que <Content>, pero por bloque en vez de
+ * envolverlos a todos: las promociones van de orilla a orilla —su carrusel
+ * asoma las tarjetas de los lados— y ahora pueden ir en cualquier posición
+ * del orden, así que ya no se puede meter todo en un solo contenedor con
+ * relleno y dejar las promos fuera.
+ */
+const Franja = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 28px;
+
+  @media (max-width: 560px) { padding: 0 16px; }
+`;
+
+/* El aire de arriba que antes ponía <Content>, ahora para el grupo entero. */
+const Portada = styled.div`
+  padding-top: 24px;
+
+  @media (max-width: 560px) { padding-top: 20px; }
 `;
 
 const SectionHeader = styled.div`
@@ -475,6 +501,28 @@ const Store = () => {
    */
   const secciones = useSeccionesTienda({ productos: productosDelPasillo, pedidos: orders });
 
+  /*
+   * El orden y la visibilidad de las filas los decide el panel. Ver
+   * utils/portada.js y la pantalla de Personalización.
+   */
+  const { portadaVisible } = useAjustesCtx();
+
+  /*
+   * Las filas automáticas, agrupadas bajo el bloque que las gobierna. Los
+   * estantes de familia ("Quesos", "Bebidas energizantes") caen todos bajo
+   * 'familias': cuáles aparecen depende del inventario, así que se encienden
+   * y se apagan juntos.
+   */
+  const seccionesPorBloque = useMemo(() => {
+    const mapa = new Map();
+    secciones.forEach((seccion) => {
+      const bloque = bloqueDeSeccion(seccion.clave);
+      if (!mapa.has(bloque)) mapa.set(bloque, []);
+      mapa.get(bloque).push(seccion);
+    });
+    return mapa;
+  }, [secciones]);
+
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
   const [mostrarAsistente, setMostrarAsistente] = useState(false);
@@ -606,68 +654,100 @@ const Store = () => {
       )}
 
       {/*
-        Promociones reales de la tienda, en el lugar que ocupaban los tres
-        banners de adorno. Aquellos apuntaban a categorías inventadas (Frutas,
-        Lácteos, Snacks) que no existen en la base, así que no llevaban a
-        ningún lado; estas sí filtran a sus productos.
+        ── La portada, en el orden que decidió el panel ──
+
+        Antes esto era una secuencia fija escrita aquí: promociones, más
+        vendidos, y después las filas automáticas. Ahora el orden y qué se
+        muestra salen de los ajustes de la tienda, porque no todas las tiendas
+        se ven igual: una que vende casi solo abarrotes quiere "Volver a
+        comprar" de primero, y una que estrena catálogo quiere "Nuevos".
+
+        Lo que NO cambió: el contenido de cada fila lo sigue armando el
+        sistema con el inventario. Aquí se acomodan bloques, no se eligen
+        productos a mano. Ver utils/portada.js.
       */}
-      {showTrending && <PromoBanners onSelectPromo={abrirPromo} />}
+      {showTrending && (
+        <Portada>
+          {portadaVisible.map((bloque) => {
+            if (bloque.clave === 'promos') {
+              // De orilla a orilla y sin carril: su carrusel asoma las
+              // tarjetas de los lados y con relleno se le cortarían.
+              return <PromoBanners key={bloque.clave} onSelectPromo={abrirPromo} />;
+            }
+
+            if (bloque.clave === 'mas-vendidos') {
+              if (productosDestacados.length === 0) return null;
+              return (
+                <Franja key={bloque.clave}>
+                  <TrendingSection>
+                    <TrendingHeader>
+                      <TrendingBadge>
+                        <LiveDot />
+                        <SectionTitle>Más vendidos</SectionTitle>
+                      </TrendingBadge>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <SectionCount>{productosDestacados.length} productos</SectionCount>
+                        <SectionNav>
+                          <NavCircle onClick={destacados.izquierda} disabled={!destacados.puedeIzq} aria-label="Ver anteriores">
+                            <ChevronLeft size={19} strokeWidth={2.2} />
+                          </NavCircle>
+                          <NavCircle onClick={destacados.derecha} disabled={!destacados.puedeDer} aria-label="Ver siguientes">
+                            <ChevronRight size={19} strokeWidth={2.2} />
+                          </NavCircle>
+                        </SectionNav>
+                      </div>
+                    </TrendingHeader>
+                    <TrendingGrid ref={destacados.fila}>
+                      {productosDestacados.map(producto => (
+                        <ProductCard
+                          key={producto.id}
+                          producto={producto}
+                          onVerDetalle={handleAbrirDetalle}
+                          onAgregarAlCarrito={agregarAlCarrito}
+                        />
+                      ))}
+                    </TrendingGrid>
+                  </TrendingSection>
+                </Franja>
+              );
+            }
+
+            /*
+              El resto son filas que se arman solas con el inventario:
+              "Volver a comprar", "Se están acabando", "Nuevos" y los estantes
+              de familia (Quesos, Leches...). Si en este momento no hay datos
+              para armarla —un cliente nuevo no tiene qué volver a comprar—,
+              simplemente no se pinta.
+            */
+            const delBloque = seccionesPorBloque.get(bloque.clave) || [];
+            if (delBloque.length === 0) return null;
+
+            return (
+              <Franja key={bloque.clave}>
+                {delBloque.map((seccion) => (
+                  <FilaProductos
+                    key={seccion.clave}
+                    titulo={seccion.titulo}
+                    subtitulo={seccion.subtitulo}
+                    productos={seccion.productos}
+                    total={seccion.todos?.length}
+                    // El nombre de la sección y "Ver todos" abren la misma
+                    // pantalla: son dos puertas a lo mismo.
+                    onVerTodos={() => navigate(`/seccion/${seccion.clave}`)}
+                    onVerDetalle={handleAbrirDetalle}
+                    onAgregarAlCarrito={agregarAlCarrito}
+                  />
+                ))}
+              </Franja>
+            );
+          })}
+        </Portada>
+      )}
 
       <Content>
-        {/* ── Trending ── */}
-        {showTrending && productosDestacados.length > 0 && (
-          <TrendingSection>
-            <TrendingHeader>
-              <TrendingBadge>
-                <LiveDot />
-                <SectionTitle>Más vendidos</SectionTitle>
-              </TrendingBadge>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <SectionCount>{productosDestacados.length} productos</SectionCount>
-                <SectionNav>
-                  <NavCircle onClick={destacados.izquierda} disabled={!destacados.puedeIzq} aria-label="Ver anteriores">
-                    <ChevronLeft size={19} strokeWidth={2.2} />
-                  </NavCircle>
-                  <NavCircle onClick={destacados.derecha} disabled={!destacados.puedeDer} aria-label="Ver siguientes">
-                    <ChevronRight size={19} strokeWidth={2.2} />
-                  </NavCircle>
-                </SectionNav>
-              </div>
-            </TrendingHeader>
-            <TrendingGrid ref={destacados.fila}>
-              {productosDestacados.map(producto => (
-                <ProductCard
-                  key={producto.id}
-                  producto={producto}
-                  onVerDetalle={handleAbrirDetalle}
-                  onAgregarAlCarrito={agregarAlCarrito}
-                />
-              ))}
-            </TrendingGrid>
-          </TrendingSection>
-        )}
-
-        {/*
-          Secciones que se arman solas con lo que hay en el inventario:
-          "Volver a comprar", "Se están acabando", "Nuevos" y las familias que
-          se detectan por el nombre (Quesos, Leches...). Nadie las configura.
-        */}
-        {showTrending && secciones.map((seccion) => (
-          <FilaProductos
-            key={seccion.clave}
-            titulo={seccion.titulo}
-            subtitulo={seccion.subtitulo}
-            productos={seccion.productos}
-            total={seccion.todos?.length}
-            // El nombre de la sección y "Ver todos" abren la misma pantalla:
-            // son dos puertas a lo mismo, no dos cosas distintas.
-            onVerTodos={() => navigate(`/seccion/${seccion.clave}`)}
-            onVerDetalle={handleAbrirDetalle}
-            onAgregarAlCarrito={agregarAlCarrito}
-          />
-        ))}
-
-        {/* ── All / Filtered Products ── */}
+        {/* ── All / Filtered Products ──
+            El catálogo completo NO es un bloque configurable: es la tienda en
+            sí. Siempre va al final y siempre está. */}
         <div>
           {/*
             Título, cantidad y Filtros en UNA sola línea. Antes la cantidad se

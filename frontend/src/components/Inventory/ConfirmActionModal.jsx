@@ -93,7 +93,7 @@ const ConfirmActionModal = ({ isOpen, onClose, onConfirm, product, actionType, b
             </div>
 
             <div className="flex-1 border border-gray-200 rounded-xl p-4 bg-white mb-6">
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                 {displayData?.description || 'Sin descripción'}
               </p>
             </div>
