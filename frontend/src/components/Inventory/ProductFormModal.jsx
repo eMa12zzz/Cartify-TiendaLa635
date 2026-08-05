@@ -9,6 +9,23 @@ import { flujoDeModulo, iconoDeModulo, modulosVisibles } from '../../utils/modul
 import { UNIDADES, etiquetaPiezas } from '../../utils/unidades';
 import toast from 'react-hot-toast';
 
+/*
+ * Lo que el producto YA tiene nunca se cae de su desplegable.
+ *
+ * Las listas van en cascada (proveedores de la categoría, marcas del
+ * proveedor), y un producto viejo puede haber quedado fuera de esa
+ * combinación: si su opción no está entre los <option>, el navegador deja el
+ * campo vacío —un <select> no puede quedarse en un valor que no existe— y el
+ * formulario termina diciendo que falta llenar algo que en realidad ya estaba.
+ * Se agrega al final para que se vea que es la de antes, no una del filtro.
+ */
+const conElActual = (lista, completa, valorActual) => {
+  const id = valorActual?._id || valorActual;
+  if (!id || lista.some((x) => x._id === id)) return lista;
+  const actual = completa.find((x) => x._id === id) || (typeof valorActual === 'object' ? valorActual : null);
+  return actual ? [...lista, actual] : lista;
+};
+
 const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands = [], suppliers = [], categories = [], modules = [] }) => {
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
   const [selectedImage, setSelectedImage] = useState(null);
@@ -43,6 +60,28 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
   // El campo "piezas" cambia de nombre y de sentido según la unidad.
   const textoPiezas = etiquetaPiezas(unidad.clave);
 
+  const isEditing = !!product;
+
+  /*
+   * El pasillo del que cuelga todo lo demás, sin esperar al watch.
+   *
+   * Al editar, el reset() llena el formulario desde un efecto, pero el primer
+   * render pasa ANTES: ahí el watch todavía viene vacío y el desplegable de
+   * categorías se pintaba sin la opción del producto. Cuando react-hook-form
+   * le escribe el valor al <select>, esa opción todavía no existe, el
+   * navegador lo deja en "Seleccionar..." —y no lo vuelve a intentar—, así que
+   * al guardar se leía el campo vacío y saltaba el aviso de campos
+   * obligatorios sobre una categoría que el producto SÍ tenía.
+   *
+   * Arrancando del producto, la opción ya está puesta cuando le toca el valor.
+   */
+  const idGuardado = (valor) => valor?._id || valor || '';
+  const moduleOriginal = idGuardado(product?.moduleId);
+  const typeOriginal = idGuardado(product?.typeId);
+  const supplierOriginal = idGuardado(product?.supplierId);
+
+  const moduleIdActivo = watchModuleId || moduleOriginal;
+
   /*
    * Las reglas dependen del FLUJO del módulo, no de cómo se llame.
    *
@@ -51,34 +90,44 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
    * nadie lo hubiera decidido, y nadie se iba a enterar hasta encontrar panes
    * sin proveedor en el inventario.
    */
-  const selectedModuleObj = modules.find(m => m._id === watchModuleId);
+  const selectedModuleObj = modules.find(m => m._id === moduleIdActivo);
   const isPrintModule = selectedModuleObj ? flujoDeModulo(selectedModuleObj) === 'impresiones' : false;
   const isStoreModule = selectedModuleObj ? !isPrintModule : false;
 
   // Solo los pasillos que la tienda tiene encendidos.
   const modulosActivos = modulosVisibles(modules);
 
-  const filteredCategories = categories.filter(c => {
+  const categoriasDelModulo = categories.filter(c => {
     const catModuleId = typeof c.moduleId === 'object' ? c.moduleId?._id : c.moduleId;
-    return catModuleId === watchModuleId;
+    return catModuleId === moduleIdActivo;
   });
+  /*
+   * Lo que ya tenía se conserva SOLO mientras no cambie el de arriba: si el
+   * empleado mueve el producto a otro pasillo, la categoría vieja no tiene
+   * por qué seguir en la lista.
+   */
+  const filteredCategories = isEditing && moduleIdActivo === moduleOriginal
+    ? conElActual(categoriasDelModulo, categories, product.typeId)
+    : categoriasDelModulo;
 
   // Filtrar Proveedores por la Categoría seleccionada
   const selectedCategoryObj = categories.find(c => c._id === watchTypeId);
-  const filteredSuppliers = (selectedCategoryObj?.supplierIds && selectedCategoryObj.supplierIds.length > 0)
+  const proveedoresDeLaCategoria = (selectedCategoryObj?.supplierIds && selectedCategoryObj.supplierIds.length > 0)
     ? suppliers.filter(s => selectedCategoryObj.supplierIds.includes(s._id))
     : suppliers;
-  
-  
+  const filteredSuppliers = isEditing && watchTypeId === typeOriginal
+    ? conElActual(proveedoresDeLaCategoria, suppliers, product.supplierId)
+    : proveedoresDeLaCategoria;
+
+
   // 2- Marca (Brand) filtrada por Proveedor (Supplier)
   const selectedSupplierObj = suppliers.find(s => s._id === watchSupplierId);
-  const filteredBrands = (selectedSupplierObj?.brandIds && selectedSupplierObj.brandIds.length > 0)
+  const marcasDelProveedor = (selectedSupplierObj?.brandIds && selectedSupplierObj.brandIds.length > 0)
     ? brands.filter(b => selectedSupplierObj.brandIds.includes(b._id))
     : brands;
-  
-  
-  
-  const isEditing = !!product;
+  const filteredBrands = isEditing && watchSupplierId === supplierOriginal
+    ? conElActual(marcasDelProveedor, brands, product.brandId)
+    : marcasDelProveedor;
 
   /*
    * La imagen que ya tiene el producto, para que al editar se vea la actual.
@@ -419,7 +468,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
 
                   <div className="flex flex-wrap gap-2">
                     {modulosActivos.map((m) => {
-                      const activo = watchModuleId === m._id;
+                      const activo = moduleIdActivo === m._id;
                       const Icono = iconoDeModulo(m);
                       return (
                         <button
@@ -456,7 +505,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                   <label className="block text-xs text-gray-500 mb-1">Categoría (Tipo)</label>
                   <select 
                     {...register('typeId', { required: true })}
-                    disabled={!watchModuleId}
+                    disabled={!moduleIdActivo}
                     className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026] disabled:opacity-50 disabled:bg-gray-100"
                   >
                     <option value="">Seleccionar...</option>
@@ -469,7 +518,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                     desplegable sale vacío y el producto no se puede guardar.
                     Sin este aviso parecía que el formulario estaba fallando.
                   */}
-                  {watchModuleId && filteredCategories.length === 0 && (
+                  {moduleIdActivo && filteredCategories.length === 0 && (
                     <span className="text-xs text-gray-500 mt-1 block">
                       Este pasillo todavía no tiene categorías: creá una en <b>Catálogo → Categorías</b> antes de cargarle productos.
                     </span>
@@ -483,7 +532,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                   </label>
                   <select 
                     {...register('supplierId', { required: isStoreModule })}
-                    disabled={!watchModuleId}
+                    disabled={!moduleIdActivo}
                     className={`w-full border rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026] disabled:opacity-50 disabled:bg-gray-100 ${
                       errors.supplierId ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     }`}
