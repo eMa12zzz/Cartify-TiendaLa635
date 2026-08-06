@@ -36,6 +36,7 @@ import Store from './pages/Store';
 import Seccion from './pages/Seccion';       // Una sección de la portada, completa
 import NoEncontrado from './pages/NoEncontrado'; // 404: cualquier dirección que no exista
 import Impresiones from './pages/impresiones';
+import Terminos from './pages/Terminos';         // Términos de uso y aviso de privacidad
 
 // --- Panel Administrativo ---
 import AdminLayout from './components/Layout/AdminLayout'; // Layout compartido del admin (sidebar + topbar)
@@ -186,6 +187,12 @@ function App() {
           {/* "Ver todos" de una fila de la portada: /seccion/familia-quesos */}
           <Route path="/seccion/:clave"  element={<Seccion />} />
           <Route path="/impresiones"     element={<Impresiones />} />
+          {/*
+           * Términos y privacidad. Es PÚBLICA a propósito: hay que poder leerla
+           * ANTES de registrarse —que es justo cuando se decide si uno entrega
+           * sus datos— y desde el enlace del pie sin tener cuenta.
+           */}
+          <Route path="/terminos"        element={<Terminos />} />
 
           {/*
            * ── Rutas Protegidas (requieren autenticación) ──────────────
