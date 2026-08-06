@@ -4,6 +4,7 @@ import jsonwebtoken from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import clientModel from "../../models/client.js";
 import { config } from "../../../config.js";
+import { VERSION_TERMINOS, esVerdadero } from "../../utils/terminos.js";
 
 const registerClientController = {};
 
@@ -20,10 +21,28 @@ registerClientController.register = async (req, res) => {
     phoneNumber,
     email,
     userName,
-    password
+    password,
+    // El consentimiento. Llegan como texto: esto entra por multipart.
+    aceptaTerminos,
+    promociones
   } = req.body;
 
   try {
+    /*
+     * Sin aceptación no hay cuenta, y esto se revisa AQUÍ aunque el formulario
+     * ya lo revise.
+     *
+     * La casilla del navegador es una cortesía para la persona, no una
+     * garantía para la tienda: cualquiera puede mandar el registro sin pasar
+     * por el formulario. Si el único control estuviera allá, la tienda tendría
+     * clientes sin consentimiento y ninguna forma de saber cuáles.
+     */
+    if (!esVerdadero(aceptaTerminos)) {
+      return res.status(400).json({
+        message: "Hay que aceptar los términos y el aviso de privacidad"
+      });
+    }
+
     const existsClient = await clientModel.findOne({ email });
     if (existsClient) {
       return res.status(400).json({ message: "Ya existe una cuenta con ese correo" });
@@ -59,7 +78,22 @@ registerClientController.register = async (req, res) => {
         public_id,  // <-- Guardamos el ID de la imagen
         email,
         userName,
-        password: passwordHashed
+        password: passwordHashed,
+        /*
+         * El consentimiento viaja dentro del token junto con lo demás, porque
+         * hasta que no se verifica el código no existe ningún documento donde
+         * guardarlo.
+         *
+         * La versión que se guarda es la del SERVIDOR, no la que mandó el
+         * navegador: si se aceptara la del cliente, bastaría con inventarse un
+         * número para dejar registrado un consentimiento de un texto que nunca
+         * existió. Y la fecha es la de AHORA —cuando de verdad marcó la
+         * casilla— y no la de la verificación, que puede ser quince minutos
+         * después.
+         */
+        terminosVersion: VERSION_TERMINOS,
+        aceptadoEn: new Date().toISOString(),
+        promociones: esVerdadero(promociones)
       },
       config.JWT.secret,
       { expiresIn: "15m" }
@@ -166,7 +200,10 @@ registerClientController.verifyCode = async (req, res) => {
       public_id,
       email,
       userName,
-      password
+      password,
+      terminosVersion,
+      aceptadoEn,
+      promociones
     } = decoded;
 
     if (verificationCodeRequest !== storedCode) {
@@ -188,6 +225,37 @@ registerClientController.verifyCode = async (req, res) => {
       email,
       userName,
       password,
+      /*
+       * Lo que aceptó, tal cual venía en el token.
+       *
+       * Si el token es de ANTES de que existiera el consentimiento —alguien
+       * que empezó el registro justo cuando se actualizó el servidor— el
+       * bloque no se escribe. Es preferible una cuenta sin registro de
+       * consentimiento, que se ve y se puede arreglar, a una con un "aceptó
+       * la versión 1.0" inventado por el código.
+       */
+      ...(terminosVersion
+        ? {
+            consentimiento: {
+              terminosVersion,
+              aceptadoEn: aceptadoEn || new Date(),
+              promociones: !!promociones,
+            },
+          }
+        : {}),
+      /*
+       * La elección de publicidad se copia a las preferencias de notificación,
+       * que es de donde las lee la pantalla de "Mi cuenta > Notificaciones".
+       * Sin esta línea, alguien que dijo que NO en el registro abriría su
+       * cuenta y encontraría las promociones encendidas por el default del
+       * modelo — o sea, la tienda haciendo caso omiso de lo que acababa de
+       * elegir.
+       */
+      notificationPrefs: {
+        promociones: !!promociones,
+        nuevosProductos: true,
+        pedidoCerca: false,
+      },
       isVerified: true,
       isActive: true
     });

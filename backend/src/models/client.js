@@ -57,10 +57,35 @@ const clientSchema = new Schema({
      */
     balance: { type: Number, default: 0, min: 0 },
     // Preferencias de notificación del cliente (área "Mi Cuenta").
+    /*
+     * Ojo con `promociones`: el default es true por los clientes que ya
+     * existían antes de que hubiera dónde elegir. Los que se registran DESDE
+     * el consentimiento traen el valor explícito de su casilla —que llega
+     * desmarcada—, así que ese default ya no los toca. Ver `consentimiento`.
+     */
     notificationPrefs: {
       promociones:     { type: Boolean, default: true },
       nuevosProductos: { type: Boolean, default: true },
       pedidoCerca:     { type: Boolean, default: false },
+    },
+    /*
+     * El consentimiento, tal como se dio: qué versión de los términos aceptó y
+     * cuándo.
+     *
+     * Guardar solo "aceptó: sí" no sirve de nada. El día que cambie el texto,
+     * sin la versión no hay forma de saber a quién hay que volver a
+     * preguntarle, y sin la fecha no hay forma de demostrar que aceptó — que es
+     * justo lo que le van a pedir a la tienda si alguien reclama.
+     *
+     * `promociones` se guarda aparte de notificationPrefs a propósito: aquello
+     * es una preferencia que la persona cambia diez veces desde su cuenta, y
+     * esto es el registro de lo que eligió al entrar. Uno se sobreescribe, el
+     * otro es historia.
+     */
+    consentimiento: {
+      terminosVersion:  { type: String },
+      aceptadoEn:       { type: Date },
+      promociones:      { type: Boolean, default: false },
     },
     // Métodos de pago guardados. SOLO datos NO sensibles: tipo, alias y los
     // últimos 4 dígitos. NUNCA el número completo ni el CVV — el cobro real

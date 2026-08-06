@@ -178,9 +178,29 @@ const Cierre = styled.div`
   color: var(--tinta-tenue);
 `;
 
+/*
+ * El enlace de lo legal. Va del tamaño del copyright que tiene al lado, porque
+ * eso es lo que es: la letra pequeña del final. Pero subrayable y con color al
+ * pasarle encima, para que se note que es un enlace y no un adorno.
+ */
+const EnlaceCierre = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--tinta-tenue);
+  cursor: pointer;
+  transition: color var(--dur-press) var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: var(--marca-700); text-decoration: underline; }
+  }
+`;
+
 const PieTienda = () => {
   const {
-    pasillos, enlacesCuenta, ir, whatsapp, direccion, nombre, anio,
+    pasillos, enlacesCuenta, enlacesLegales, ir, whatsapp, direccion, nombre, anio,
     nombreLinea1, nombreLinea2, logoUrl, lema,
   } = usePieTienda();
 
@@ -241,6 +261,9 @@ const PieTienda = () => {
 
         <Cierre>
           <span>© {anio} {nombre}</span>
+          {enlacesLegales.map((e) => (
+            <EnlaceCierre key={e.ruta} onClick={() => ir(e.ruta)}>{e.texto}</EnlaceCierre>
+          ))}
           <span>Hecho en El Salvador</span>
         </Cierre>
       </Interior>

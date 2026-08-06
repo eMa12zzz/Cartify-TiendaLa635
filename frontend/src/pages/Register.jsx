@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
 import { Mail, Phone, User, Hash, Lock, Loader2 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
+import ModalTerminos from '../components/Store/ModalTerminos';
 import { reglaDuiOpcional, reglaTelefono, bloquearNoDigitos } from '../utils/validaciones';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
-import api from '../api/api';
+import { useRegistro } from '../hooks/useRegistro';
+import { useModalTerminos } from '../hooks/useModalTerminos';
 
 const BROWN = 'var(--marca-600)';
 const BROWN_HOVER = 'var(--marca-700)';
@@ -168,65 +169,118 @@ const FooterLink = styled.span`
   &:hover { text-decoration: underline; }
 `;
 
+/*
+ * El bloque del consentimiento.
+ *
+ * Va justo antes del botón y no perdido entre los campos: es lo último que se
+ * lee antes de decidir, que es donde tiene que estar. Y son DOS casillas
+ * separadas a propósito — aceptar las condiciones y querer publicidad son dos
+ * decisiones distintas, y meterlas en una sola casilla es cobrarle una con la
+ * otra.
+ */
+const BloqueConsentimiento = styled.div`
+  margin: 24px 0 4px;
+  padding: 16px 18px;
+  background: #fbfaf9;
+  border: 1px solid #eeeae5;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`;
+
+const Casilla = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    flex-shrink: 0;
+    accent-color: ${BROWN};
+    cursor: pointer;
+  }
+
+  label {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #444;
+    cursor: pointer;
+  }
+`;
+
+/*
+ * El enlace a los términos, que es un BOTÓN y no un <a>.
+ *
+ * No navega: abre el documento encima (ver useModalTerminos). Se pinta como
+ * enlace porque eso es lo que la persona espera tocar ahí, pero por dentro no
+ * puede ser un enlace de verdad — el formulario lleno no se puede arriesgar.
+ *
+ * Va FUERA de la <label> a propósito: una etiqueta le reenvía al control todos
+ * los clics que caen adentro, así que un botón anidado ahí abriría el
+ * documento Y desmarcaría la casilla que la persona acaba de marcar.
+ */
+const EnlaceTerminos = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: ${BROWN};
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover { color: ${BROWN_HOVER}; }
+`;
+
+// El renglón de la casilla de términos. Existe porque ahí el texto y el enlace
+// son dos elementos separados y tienen que fluir como una sola frase.
+const TextoCasilla = styled.div`
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #444;
+`;
+
+// La segunda línea de la casilla de promociones: qué significa decir que sí,
+// en letra chica pero presente. "Puede cambiarlo cuando quiera" no es un
+// adorno, es la mitad de la razón por la que alguien se anima a marcarla.
+const Aclaracion = styled.span`
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: #999;
+`;
+
+// El error de la casilla no puede ser el ErrorMsg de los campos: aquel va
+// posicionado en absoluto dentro del InputWrapper y aquí no hay ninguno.
+const ErrorCasilla = styled.span`
+  display: block;
+  margin: -6px 0 0 29px;
+  color: #ff4d4f;
+  font-size: 12px;
+`;
+
 const Register = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [verPass, setVerPass] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+
+  // Armar el envío, subir la foto y llevar a la verificación: todo eso vive en
+  // el hook. Aquí solo se pinta el formulario. Ver useRegistro.
+  const { cargando, elegirArchivo, registrar } = useRegistro();
+
+  /*
+   * Los términos se leen ENCIMA del formulario, sin navegar. Se probó con un
+   * enlace a pestaña nueva y no basta: hay navegadores —el de adentro de
+   * WhatsApp, por donde entra media tienda— que abren encima y se llevan todo
+   * lo escrito. Ver useModalTerminos.
+   */
+  const { abierto: terminosAbiertos, abrir: abrirTerminos, cerrar: cerrarTerminos } =
+    useModalTerminos();
 
   const { register, handleSubmit, formState: { errors } } = useForm();
-
-  // 1- Manejar la selección de archivo de imagen
-  // La preview y las validaciones las hace SubidorArchivo; aquí solo guardamos
-  // el archivo tal cual, que es lo que se adjunta al FormData más abajo.
-  const handleFileChange = (file) => setSelectedFile(file);
-
-  // 2- Enviar datos al backend
-  const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      
-      const formData = new FormData();
-      formData.append('fullName', data.fullName); // El backend espera 'fullName'
-      /*
-       * El DUI solo viaja si la persona lo escribió. Mandar la cadena vacía
-       * dejaría a todos los que no lo pusieron guardados con el mismo valor
-       * "", y el día que alguien busque por DUI o le ponga un índice único al
-       * campo, eso se convierte en un problema.
-       */
-      if (data.dui?.trim()) formData.append('dui', data.dui.trim());
-      formData.append('phoneNumber', data.phoneNumber);
-      formData.append('email', data.email);
-      formData.append('userName', data.userName);
-      formData.append('password', data.password);
-      
-      if (selectedFile) {
-        formData.append('image', selectedFile);
-      }
-
-      // 3- Llamada a la API de registro
-      const response = await api.post('/registerClient', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      toast.success(`¡Código enviado a ${data.email}! Revisa tu bandeja de entrada.`, {
-        duration: 5000,
-      });
-      
-      // Guardar el flujo y el correo para que Verification sepa qué mostrar y qué endpoint llamar
-      localStorage.setItem('verificationFlow', 'register');
-      localStorage.setItem('tempIdentifier', data.email);
-      navigate('/verification');
-
-    } catch (error) {
-      console.error(error);
-      // El toast de error lo maneja el interceptor en api.js
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Container>
@@ -239,7 +293,7 @@ const Register = () => {
         <Card>
           <SectionTitle>Regístrate</SectionTitle>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(registrar)}>
             
             <InputContainer>
               <Label>Nombre Completo</Label>
@@ -358,7 +412,7 @@ const Register = () => {
               <SubidorArchivo
                 accept="image/*"
                 maxMB={8}
-                onArchivo={handleFileChange}
+                onArchivo={elegirArchivo}
                 ajuste="cover"
                 alto={140}
                 altoPreview={180}
@@ -369,8 +423,52 @@ const Register = () => {
               />
             </BloqueFoto>
 
-            <Button type="submit" disabled={loading}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Continuar'}
+            <BloqueConsentimiento>
+              <Casilla>
+                <input
+                  type="checkbox"
+                  id="aceptaTerminos"
+                  /*
+                    El nombre completo para quien no ve la pantalla. La etiqueta
+                    visible se corta en "los" porque la frase sigue en el botón,
+                    y un lector de pantalla anunciaría "acepto los" a secas —
+                    una casilla que no dice qué se está aceptando.
+                  */
+                  aria-label="He leído y acepto los términos y el aviso de privacidad"
+                  {...register('aceptaTerminos', {
+                    required: 'Hay que aceptar los términos para crear la cuenta',
+                  })}
+                />
+                <TextoCasilla>
+                  <label htmlFor="aceptaTerminos">He leído y acepto los </label>
+                  <EnlaceTerminos type="button" onClick={abrirTerminos}>
+                    términos y el aviso de privacidad
+                  </EnlaceTerminos>
+                  .
+                </TextoCasilla>
+              </Casilla>
+              {errors.aceptaTerminos && (
+                <ErrorCasilla>{errors.aceptaTerminos.message}</ErrorCasilla>
+              )}
+
+              {/*
+                Desmarcada por defecto y sin `required`. Es opcional de verdad:
+                se puede crear la cuenta sin tocarla, y no se pierde nada de la
+                tienda por no querer publicidad.
+              */}
+              <Casilla>
+                <input type="checkbox" id="promociones" {...register('promociones')} />
+                <label htmlFor="promociones">
+                  Quiero recibir promociones y novedades por correo.
+                  <Aclaracion>
+                    Opcional. Puede desactivarlo cuando quiera desde Mi cuenta.
+                  </Aclaracion>
+                </label>
+              </Casilla>
+            </BloqueConsentimiento>
+
+            <Button type="submit" disabled={cargando}>
+              {cargando ? <Loader2 size={18} className="animate-spin" /> : 'Continuar'}
             </Button>
 
           </form>
@@ -381,6 +479,8 @@ const Register = () => {
           </FooterText>
         </Card>
       </Body>
+
+      <ModalTerminos abierto={terminosAbiertos} onCerrar={cerrarTerminos} />
     </Container>
   );
 };

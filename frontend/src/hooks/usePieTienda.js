@@ -38,6 +38,17 @@ const ENLACES_SIN_SESION = [
   { texto: 'Crear una cuenta', ruta: '/register' },
 ];
 
+/*
+ * Lo legal va en el renglón de cierre, junto al copyright, y no como una
+ * columna propia: una columna entera titulada "Legal" con un solo enlace pesa
+ * en la página lo mismo que los pasillos, y no es ni de lejos igual de
+ * importante para quien vino a comprar. Abajo del todo es donde la gente lo
+ * busca cuando lo busca.
+ */
+const ENLACES_LEGALES = [
+  { texto: 'Términos y privacidad', ruta: '/terminos' },
+];
+
 const SALUDO_WHATSAPP =
   'Hola, vengo de la tienda en linea y quisiera hacer una consulta.';
 
@@ -90,6 +101,7 @@ export const usePieTienda = () => {
   return {
     pasillos,
     enlacesCuenta,
+    enlacesLegales: ENLACES_LEGALES,
     ir,
     whatsapp: enlaceWhatsApp(SALUDO_WHATSAPP),
     direccion: ajustes.direccion,
