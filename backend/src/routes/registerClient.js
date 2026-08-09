@@ -4,6 +4,7 @@ import express from "express";
 import upload from "../utils/cloudinaryConfig.js"; 
 
 import registerclients from "../controller/Clients/registerClient.js";
+import { soloPersonal } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
 
@@ -14,6 +15,13 @@ router.route("/").post(
 );
 
 router.route("/verifyCodeEmail").post(registerclients.verifyCode);
-router.route("/all").get(registerclients.getAll);
+
+/*
+ * La lista completa de clientes. Es la que consume la pantalla de Clientes del
+ * panel, así que es de PERSONAL y de nadie más: aquí van nombres, teléfonos,
+ * DUI, saldos y direcciones con coordenadas de toda la clientela de la tienda.
+ * Estaba abierta a internet. Ver middlewares/validarSesion.js.
+ */
+router.route("/all").get(soloPersonal, registerclients.getAll);
 
 export default router;

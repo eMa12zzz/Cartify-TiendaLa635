@@ -8,7 +8,16 @@ const clientController = {};
 // GET ALL CLIENTS
 clientController.getClients = async (req, res) => {
   try {
-    const clients = await clientModel.find();
+    /*
+     * El `-password` no es un adorno: sin él, esta ruta devolvía el HASH de la
+     * contraseña de todos los clientes de la tienda, y devolvía la lista
+     * entera a quien preguntara, porque hoy ninguna ruta de la API valida a
+     * nadie. Un hash no es una contraseña, pero es material para atacarla sin
+     * apuro y contra nuestro propio servidor nunca más.
+     *
+     * getClientById ya lo hacía bien (más abajo); esta se había quedado atrás.
+     */
+    const clients = await clientModel.find().select("-password");
 
     return res.status(200).json(clients);
 
