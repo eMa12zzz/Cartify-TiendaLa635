@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../api/api';
+import { CAJON, areaDeRuta } from '../utils/sesion';
 
 /*
  * ============================================================
@@ -34,43 +35,12 @@ import api from '../api/api';
  */
 export const AuthContext = createContext();
 
-/* Dónde vive cada cajón. */
-const CAJON = {
-  personal: 'sesion:personal',
-  cliente: 'sesion:cliente',
-};
-
 /*
- * Las rutas del panel. Todo lo demás —la tienda, Mi Cuenta, los logins de
- * cliente— es área de cliente.
- *
- * '/admin' entra en la lista aunque sea la pantalla de entrada: es la puerta
- * del personal, así que lo que se haga ahí (entrar, salir) tiene que caer en
- * el cajón del personal y no rozar la sesión de la tienda.
+ * Dónde vive cada cajón y qué área manda en cada ruta: bajó a utils/sesion.js
+ * porque el interceptor de axios también lo necesita para saber a quién echar
+ * cuando el servidor contesta 401, y no puede importar este archivo sin armar
+ * un círculo.
  */
-const RUTAS_DEL_PANEL = [
-  '/admin',
-  '/dashboard',
-  '/inventario',
-  '/pedidos',
-  '/modulos',
-  '/marcas',
-  '/empleados',
-  '/clientes',
-  '/proveedores',
-  '/categorias',
-  '/fidelidad',
-  '/promociones',
-  '/servicios-impresion',
-  '/tarjetas',
-  '/personalizacion',
-  '/cuenta',
-];
-
-export const areaDeRuta = (pathname = '') =>
-  RUTAS_DEL_PANEL.some((r) => pathname === r || pathname.startsWith(`${r}/`))
-    ? 'personal'
-    : 'cliente';
 
 /*
  * En qué cajón va una sesión según a quién pertenece. El backend responde

@@ -86,3 +86,31 @@ export const validarSesion =
 export const soloPersonal = validarSesion(PERSONAL);
 export const soloCliente = validarSesion(CLIENTE);
 export const conSesion = validarSesion();
+
+/*
+ * "Tiene que ser SUYO."
+ *
+ * Tener sesión no alcanza cuando el id va en la URL: sin esta comprobación,
+ * cualquier cliente con cuenta lee o edita lo de otro con solo cambiar el
+ * número de la dirección — sus direcciones, sus métodos de pago, su saldo.
+ *
+ * Va como middleware y no dentro de cada controlador a propósito: son ocho
+ * rutas repartidas en cuatro archivos, y ocho copias de la misma comprobación
+ * son ocho lugares donde algún día se va a olvidar una.
+ *
+ * El personal pasa siempre: atender a un cliente es su trabajo.
+ *
+ * Se usa así, con el nombre del parámetro que lleva el id:
+ *   router.route("/:id/addresses").patch(duenoOPersonal("id"), ...)
+ */
+export const duenoOPersonal = (nombreParam = "id") => [
+  conSesion,
+  (req, res, next) => {
+    if (req.usuario.tipo !== "Client") return next();
+
+    if (req.usuario.id !== req.params[nombreParam]) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+    return next();
+  },
+];

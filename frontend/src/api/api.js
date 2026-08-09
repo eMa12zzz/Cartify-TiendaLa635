@@ -1,6 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { mensajeEnEspanol } from '../utils/mensajesBackend';
+import { CAJON, areaDeRuta } from '../utils/sesion';
 
 /*
  * ============================================================
@@ -50,6 +51,54 @@ const api = axios.create({
  *    de error del servidor, sin que el componente tenga que hacerlo.
  * ============================================================
  */
+/*
+ * ============================================================
+ * CUANDO EL SERVIDOR DICE QUE YA NO NOS CONOCE
+ * ============================================================
+ * Desde que la API pide sesión de verdad, un 401 significa una cosa concreta:
+ * la cookie venció o nunca existió. Y ahí aparecía un estado feo — la app
+ * seguía mostrando a la persona "conectada", porque el localStorage decía que
+ * sí, mientras el servidor le contestaba 401 a todo. Se veía como pantallas
+ * vacías con un aviso suelto, o sea como si la tienda estuviera rota.
+ *
+ * Aquí se cierra ese cajón y se manda a la puerta que corresponde.
+ *
+ * NO HACE FALTA EXCLUIR LOS LOGIN: todos van por `fetch` pelado en authApi.js,
+ * así que un login con la contraseña equivocada NUNCA pasa por este
+ * interceptor. Si algún día se pasan a axios, hay que excluirlos aquí o se
+ * echará a quien solo se equivocó de clave.
+ */
+let echandoSesion = false;
+
+const cerrarSesionVencida = () => {
+  // Varias peticiones fallan a la vez al vencer la sesión; una sola salida.
+  if (echandoSesion) return;
+
+  const area = areaDeRuta(window.location.pathname);
+
+  /*
+   * Si nunca hubo sesión en este cajón, el 401 es lo esperado —alguien
+   * mirando la tienda sin cuenta— y no hay a quién echar. Sin esta guarda, un
+   * visitante anónimo terminaría en el login por curiosear.
+   */
+  if (!localStorage.getItem(CAJON[area])) {
+    toast.error('Inicie sesión para ver esto.');
+    return;
+  }
+
+  const puerta = area === 'personal' ? '/admin' : '/iniciar-sesion';
+  if (window.location.pathname === puerta) return;
+
+  echandoSesion = true;
+  try { localStorage.removeItem(CAJON[area]); } catch { /* si falla, igual salimos */ }
+
+  toast.error('Su sesión venció. Vuelva a iniciar sesión.');
+
+  // Se lleva a dónde estaba para devolverlo ahí después de entrar.
+  const volver = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.assign(`${puerta}?volver=${volver}`);
+};
+
 api.interceptors.response.use(
     // 2- Respuesta exitosa (status 200-299): se deja pasar tal cual
     (response) => {
@@ -88,8 +137,9 @@ api.interceptors.response.use(
                 toast.error(mensaje);
                 break;
             case 401:
-                // No autorizado: el token expiró o no existe
-                toast.error('Sesión expirada o inválida. Debes iniciar sesión.');
+                // La sesión venció o nunca existió: se cierra el cajón y se
+                // manda a la puerta. Ver cerrarSesionVencida, arriba.
+                cerrarSesionVencida();
                 break;
             case 403:
                 // Prohibido: el usuario existe pero no tiene permiso para esa acción

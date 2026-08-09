@@ -1,9 +1,18 @@
 import express from "express";
 import clientController from "../controller/Clients/clientController.js";
 import upload from "../utils/cloudinaryConfig.js";
-import { soloPersonal } from "../middlewares/validarSesion.js";
+import { soloPersonal, duenoOPersonal } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
+
+/*
+ * Todo este router estaba abierto. Con el id en la URL —que se adivina o se
+ * copia— cualquiera leía y EDITABA la cuenta de otro: sus direcciones con
+ * coordenadas, sus métodos de pago, sus favoritos.
+ *
+ * `duenoOPersonal("id")` es la regla general aquí: el cliente solo con lo
+ * suyo, el personal con lo de todos porque atender es su trabajo.
+ */
 
 /*
  * La lista de todos los clientes: cosa del personal. Misma razón que
@@ -14,46 +23,39 @@ router
   .get(soloPersonal, clientController.getClients);
 
 /*
- * Borrar una cuenta es irreversible y hasta hoy estaba abierto: con un curl y
- * un _id cualquiera podía borrar a un cliente de la tienda. Queda para el
- * personal.
- *
- * Las otras dos siguen sin candado por ahora, y es a conciencia: el área "Mi
- * Cuenta" las usa a cada rato y ponerles el portero equivocado deja al cliente
- * fuera de su propia cuenta. Van en la segunda pasada, con el backend
- * encendido para probarlas — igual que los seis PATCH de más abajo, que
- * también deberían exigir que el id de la URL sea el de quien pregunta.
+ * Borrar una cuenta es irreversible y hasta hace poco estaba abierto: con un
+ * curl y un _id cualquiera podía borrar a un cliente de la tienda.
  */
 router
   .route("/:id")
-  .get(clientController.getClientById)
-  .put(upload.single("image"), clientController.updateClient)
+  .get(duenoOPersonal("id"), clientController.getClientById)
+  .put(duenoOPersonal("id"), upload.single("image"), clientController.updateClient)
   .delete(soloPersonal, clientController.deleteClient);
 
 // El cliente edita su propio perfil (datos básicos, JSON).
 router
   .route("/:id/profile")
-  .patch(clientController.updateClientProfile);
+  .patch(duenoOPersonal("id"), clientController.updateClientProfile);
 
 // Los productos que el cliente marcó con el corazón.
 router
   .route("/:id/favorites")
-  .get(clientController.getFavorites)
-  .patch(clientController.toggleFavorite);
+  .get(duenoOPersonal("id"), clientController.getFavorites)
+  .patch(duenoOPersonal("id"), clientController.toggleFavorite);
 
 // El cliente gestiona su lista de direcciones de entrega.
 router
   .route("/:id/addresses")
-  .patch(clientController.updateAddresses);
+  .patch(duenoOPersonal("id"), clientController.updateAddresses);
 
 // El cliente actualiza sus preferencias de notificación.
 router
   .route("/:id/notifications")
-  .patch(clientController.updateNotifications);
+  .patch(duenoOPersonal("id"), clientController.updateNotifications);
 
 // El cliente gestiona sus métodos de pago (datos no sensibles).
 router
   .route("/:id/payment-methods")
-  .patch(clientController.updatePaymentMethods);
+  .patch(duenoOPersonal("id"), clientController.updatePaymentMethods);
 
 export default router;
