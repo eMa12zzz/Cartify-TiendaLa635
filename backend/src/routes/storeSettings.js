@@ -2,12 +2,21 @@ import express from "express";
 import storeSettingsController from "../controller/storeSettingsController.js";
 import upload from "../utils/cloudinaryConfig.js";
 
+import { soloPersonal } from "../middlewares/validarSesion.js";
+
 const router = express.Router();
 
+/*
+ * Leer los ajustes es público y tiene que serlo: de aquí salen el nombre, el
+ * logo y el orden de la portada que ve cualquiera que entre a la tienda.
+ *
+ * Escribirlos, no. Con el PUT abierto, un desconocido podía renombrarle la
+ * tienda, cambiarle el lema o apagarle la portada entera.
+ */
 router
   .route("/")
-  .get(storeSettingsController.getSettings)      // GET  /api/storeSettings -> ajustes actuales
-  .put(storeSettingsController.updateSettings);  // PUT  /api/storeSettings -> nombre, lema, portada, temporada
+  .get(storeSettingsController.getSettings)                   // GET  /api/storeSettings -> ajustes actuales
+  .put(soloPersonal, storeSettingsController.updateSettings); // PUT  /api/storeSettings -> nombre, lema, portada, temporada
 
 /*
  * El logo va por su propia puerta: cambiarlo es una acción sola y no tiene por
@@ -16,7 +25,7 @@ router
  */
 router
   .route("/logo")
-  .put(upload.single("logo"), storeSettingsController.updateLogo)
-  .delete(storeSettingsController.deleteLogo);
+  .put(soloPersonal, upload.single("logo"), storeSettingsController.updateLogo)
+  .delete(soloPersonal, storeSettingsController.deleteLogo);
 
 export default router;

@@ -82,7 +82,19 @@ const AsistenteVoz = ({
 
     try {
       await orderService.createOrder({
-        clientId: cliente.id,
+        /*
+         * El código es lo que le PRUEBA al servidor de quién es este pedido.
+         *
+         * El kiosco no tiene sesión —ni debe tenerla: esa es toda la gracia de
+         * que el cliente escanee con su teléfono y la contraseña nunca pase
+         * por la pantalla pública—. Antes bastaba con mandar un clientId y el
+         * servidor le creía, así que se le podía cargar una compra a
+         * cualquiera. Ahora el servidor busca el código, mira que siga
+         * vinculada y sin usar, y saca el cliente de ahí.
+         *
+         * Va antes de `kiosco.cerrar()`, que quema el código en el `finally`.
+         */
+        codigoKiosco: kiosco.codigo,
         items: carrito.map((i) => ({
           productId: i.id,
           name: i.nombre,

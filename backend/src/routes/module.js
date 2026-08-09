@@ -1,15 +1,20 @@
 import express from 'express';
 import moduleController from '../controller/module.js';
 
+import { soloPersonal } from '../middlewares/validarSesion.js';
+
 const router = express.Router();
+
+// Los módulos son los pasillos de la tienda: se ven sin cuenta, se crean desde
+// el panel.
 
 router.route("/")
     .get(moduleController.getModule)
-    .post(moduleController.insertModule);
+    .post(soloPersonal, moduleController.insertModule);
 
 router.route("/:id")
-    .put(moduleController.updateModule)
+    .put(soloPersonal, moduleController.updateModule)
     .get(moduleController.getModule)
-    .delete(moduleController.deleteModule);
+    .delete(soloPersonal, moduleController.deleteModule);
 
 export default router;

@@ -8,7 +8,9 @@ const employeeController = {};
 //Select
 employeeController.getEmployees = async (req, res) => {
     try {
-        const employee = await employeeModel.find();
+        // Mismo arreglo que en clientes: sin el `-password` esta ruta devolvía
+        // el hash de la contraseña de todo el personal de la tienda.
+        const employee = await employeeModel.find().select("-password");
         res.status(200).json(employee);
     } catch (error) {
         // El nombre de la función se queda en el log, que es donde sirve.
