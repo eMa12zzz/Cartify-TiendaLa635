@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { BotonOjo } from '../components/UI/CampoContrasena';
+import { consumirRecienRegistrado } from '../utils/primerIngreso';
 
 const BROWN = 'var(--marca-600)';
 
@@ -387,12 +388,33 @@ const LoginClient = () => {
       if (esPersonal) logout('cliente');
 
       /*
-       * Primero manda a dónde iba; si llegó aquí por su cuenta, al personal
-       * lo espera el reparto y al cliente el saludo con el mapa (que es donde
-       * deja su dirección de entrega).
+       * El saludo con el mapa es SOLO para quien acaba de crear su cuenta.
+       *
+       * Antes lo veía todo el mundo, en cada inicio de sesión: quien lleva
+       * meses comprando y ya tiene su casa y su trabajo guardados entraba a
+       * marcar un punto en un mapa que no necesitaba. La marca la deja el
+       * registro al verificar el código; ver utils/primerIngreso.js.
+       *
+       * Se consume acá aunque después mande a otro lado, para que no quede
+       * dando vueltas y aparezca días más tarde sin venir a cuento.
        */
-      if (volver) navigate(volver);
-      else navigate(esPersonal ? '/mi-cuenta/reparto' : '/bienvenida');
+      const recienRegistrado = !esPersonal && consumirRecienRegistrado();
+
+      /*
+       * Primero manda a dónde iba; si llegó aquí por su cuenta, al personal lo
+       * espera el reparto, al recién llegado el mapa donde deja su dirección, y
+       * a todos los demás la tienda.
+       *
+       * El `volver` se revisa antes de seguirlo: tiene que ser una ruta de la
+       * casa. Sin esa comprobación, un enlace con ?volver=https://otro-sitio
+       * usaría nuestro login como trampolín — LoginAdmin ya lo validaba y esta
+       * pantalla no.
+       */
+      const destino = volver?.startsWith('/') ? volver : null;
+
+      if (destino) navigate(destino);
+      else if (esPersonal) navigate('/mi-cuenta/reparto');
+      else navigate(recienRegistrado ? '/bienvenida' : '/');
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas');
     } finally {

@@ -273,7 +273,17 @@ registerClientController.verifyCode = async (req, res) => {
 };
 registerClientController.getAll = async (req, res) => {
   try {
-    const clients = await clientModel.find();
+    /*
+     * ESTA es la ruta que de verdad usa la pantalla de Clientes del panel
+     * (customerService.js pega aquí, no a /api/client), así que es la que
+     * estaba filtrando de verdad: devolvía el hash de la contraseña de cada
+     * cliente junto con su saldo, su DUI, su teléfono y sus direcciones con
+     * coordenadas. Sin autenticación, o sea a quien preguntara.
+     *
+     * El panel nunca usó la contraseña para nada; sacarla no le quita nada a
+     * la pantalla. Ver el mismo arreglo en clientController.getClients.
+     */
+    const clients = await clientModel.find().select("-password");
     return res.status(200).json(clients);
   } catch (error) {
     console.error(error);
