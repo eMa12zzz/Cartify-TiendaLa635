@@ -15,9 +15,19 @@ const orderController = {};
 orderController.createOrder = async (req, res) => {
   try {
     const {
-      clientId, items, paymentMethod, channel, pointsToRedeem,
+      items, paymentMethod, channel, pointsToRedeem,
       deliveryType, deliveryAddress, deliveryReference, deliveryLat, deliveryLng,
     } = req.body;
+
+    /*
+     * A nombre de quién va el pedido lo decide el SERVIDOR, no el navegador.
+     *
+     * Antes se leía `clientId` del cuerpo de la petición, así que cualquiera
+     * podía cargarle una compra —con su stock y sus puntos— a la cuenta de
+     * otra persona. Ahora sale de la cookie del cliente, del código del kiosco
+     * o de la sesión del empleado que cobra. Ver middlewares/identificarComprador.js.
+     */
+    const clientId = req.compradorId;
 
     // Validación básica: sin cliente o sin productos no hay pedido.
     if (!clientId || !items || items.length === 0) {
@@ -231,6 +241,18 @@ orderController.createOrder = async (req, res) => {
 // SELECT — Pedidos de UN cliente (su historial). Alimenta MisPedidos/Recibidos.
 orderController.getOrdersByClient = async (req, res) => {
   try {
+    /*
+     * Tener sesión no basta: hay que ser ESE cliente.
+     *
+     * Sin esta comprobación, cualquiera con una cuenta leía el historial de
+     * cualquier otro cambiando el id de la URL — qué compró, a qué dirección
+     * se lo llevaron y las coordenadas de su casa. El personal sí puede ver
+     * los de todos: es la tienda atendiendo a su gente.
+     */
+    if (req.usuario?.tipo === "Client" && req.usuario.id !== req.params.clientId) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+
     const orders = await orderModel
       .find({ clientId: req.params.clientId })
       .sort({ createdAt: -1 })          // los más recientes primero
@@ -329,7 +351,11 @@ orderController.updateOrderStatus = async (req, res) => {
 // INSERT — Crear un pedido de IMPRESIÓN (sube archivo + opciones).
 orderController.createPrintOrder = async (req, res) => {
   try {
-    const { clientId, serviceId, color, copies, pages, doubleSided, paper } = req.body;
+    const { serviceId, color, copies, pages, doubleSided, paper } = req.body;
+
+    // Igual que en createOrder: de quién es el pedido lo dice el servidor.
+    // Ver middlewares/identificarComprador.js.
+    const clientId = req.compradorId;
 
     if (!clientId || !serviceId) {
       return res.status(400).json({ message: "clientId y serviceId son requeridos" });
@@ -507,10 +533,21 @@ orderController.getCourierPosition = async (req, res) => {
 
     const pedido = await orderModel
       .findById(req.params.id)
-      .select("courier status deliveryType deliveryLat deliveryLng");
+      .select("courier status deliveryType deliveryLat deliveryLng clientId");
 
     if (!pedido) {
       return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    /*
+     * Solo el dueño del pedido —o el personal— puede ver por dónde viene.
+     *
+     * Esta ruta devuelve el punto del repartidor Y las coordenadas del
+     * destino, o sea la casa de alguien. `clientId` entra en el select de
+     * arriba solo para poder comprobarlo; no se devuelve al navegador.
+     */
+    if (req.usuario?.tipo === "Client" && String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
     }
 
     return res.status(200).json({
