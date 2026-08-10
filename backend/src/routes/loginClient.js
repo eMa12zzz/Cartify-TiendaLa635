@@ -3,6 +3,60 @@ import loginClientController from "../controller/Clients/loginClient.js";
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Client Auth
+ *   description: Autenticación de clientes.
+ */
+
+/**
+ * @swagger
+ * /loginClient/login:
+ *   post:
+ *     summary: Inicia sesión como cliente
+ *     tags: [Client Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ClientLoginInput'
+ *     responses:
+ *       200:
+ *         description: Login exitoso. Se establece la cookie httpOnly authCookie con el JWT (30 días).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Login successful
+ *                 token:
+ *                   type: string
+ *                 client:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     fullName:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     userName:
+ *                       type: string
+ *                     image:
+ *                       type: string
+ *       400:
+ *         description: Email inválido o contraseña no enviada.
+ *       401:
+ *         description: Correo no encontrado o contraseña incorrecta.
+ *       403:
+ *         description: Cuenta deshabilitada, no verificada, o bloqueada temporalmente por 5 minutos (5 intentos fallidos).
+ *       500:
+ *         description: Error interno del servidor.
+ */
 router.post("/login", loginClientController.login);
 
 export default router;

@@ -1,3 +1,59 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     PrintService:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: 68932f1a2b3c4d5e6f7a8bc0
+ *         name:
+ *           type: string
+ *           example: Carta
+ *         widthCm:
+ *           type: number
+ *           default: 21.6
+ *         heightCm:
+ *           type: number
+ *           default: 27.9
+ *         pricePerCopy:
+ *           type: number
+ *           example: 0.15
+ *         allowsColor:
+ *           type: boolean
+ *           default: true
+ *         colorSurcharge:
+ *           type: number
+ *           default: 0
+ *         isActive:
+ *           type: boolean
+ *           default: true
+ *       required:
+ *         - name
+ *         - pricePerCopy
+ *     PrintServiceInput:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *         widthCm:
+ *           type: number
+ *         heightCm:
+ *           type: number
+ *         pricePerCopy:
+ *           type: number
+ *         allowsColor:
+ *           type: boolean
+ *         colorSurcharge:
+ *           type: number
+ *         isActive:
+ *           type: boolean
+ *       required:
+ *         - name
+ *         - pricePerCopy
+ */
+
 import { Schema, model } from 'mongoose';
 
 /*
