@@ -672,7 +672,7 @@ const Store = () => {
             if (bloque.clave === 'promos') {
               // De orilla a orilla y sin carril: su carrusel asoma las
               // tarjetas de los lados y con relleno se le cortarían.
-              return <PromoBanners key={bloque.clave} onSelectPromo={abrirPromo} />;
+              return <PromoBanners key={bloque.clave} moduloId={moduloSeleccionado} onSelectPromo={abrirPromo} />;
             }
 
             if (bloque.clave === 'mas-vendidos') {

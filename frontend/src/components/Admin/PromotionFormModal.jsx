@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Sparkles, Palette, Layers, X } from 'lucide-react';
+import { Sparkles, Palette, Layers, X, MapPin } from 'lucide-react';
 import { productService } from '../../api/productService';
 import { validarPromocion, avisoVentaBajoCosto, bloquearTeclasNumero } from '../../utils/validaciones';
 import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promos';
@@ -301,6 +301,22 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     });
     return [...mapa.values()];
   }, [items]);
+
+  /*
+   * Los pasillos donde va a salir la promo, sacados de los productos elegidos.
+   * La tienda muestra cada promo en el pasillo de sus productos (la del pan en
+   * Panadería), así que aquí se le adelanta al encargado dónde aparecerá. El
+   * nombre del módulo viene poblado en cada producto (ver product.js).
+   */
+  const pasillosPromo = useMemo(() => {
+    const nombres = new Set();
+    items.forEach((it) => {
+      const p = productos.find((x) => x._id === it.productId);
+      const nombre = p?.moduleId?.name;
+      if (nombre) nombres.add(nombre);
+    });
+    return [...nombres].sort();
+  }, [items, productos]);
 
   /*
    * La IA solo escribe el TEXTO. El banner se diseña acá con los colores, así
@@ -849,6 +865,24 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     )}
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Al hacer click en el banner, la tienda mostrará estos productos con su promo.</p>
+
+                  {/*
+                    Dónde va a salir: la tienda muestra cada promo en el pasillo
+                    de sus productos. Se le adelanta al encargado para que no se
+                    sorprenda de no verla en "toda la tienda" únicamente.
+                  */}
+                  {pasillosPromo.length > 0 && (
+                    <div className="mt-2 flex items-start gap-2 rounded-xl border border-gray-200 bg-[#FAF9F6] p-3">
+                      <MapPin size={15} className="mt-0.5 flex-none" style={{ color: 'var(--theme-primary)' }} />
+                      <p className="text-xs text-gray-600">
+                        Aparecerá en {pasillosPromo.length === 1 ? 'el pasillo' : 'los pasillos'}:{' '}
+                        <b className="text-gray-800">{pasillosPromo.join(' · ')}</b>
+                        <span className="block text-gray-400 mt-0.5">
+                          Y también en la vista de toda la tienda. Si mezclás productos de varios pasillos, saldrá en cada uno.
+                        </span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-1 space-y-2">
