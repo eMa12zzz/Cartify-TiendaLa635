@@ -13,14 +13,14 @@
  * ============================================================
  */
 
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import { useAuth } from '../hooks/useAuth';
 import { COLORES } from '../theme/colores';
 
-const Bienvenida = () => {
+const Bienvenida = ({ alVolver }) => {
   const { user, logout } = useAuth();
 
   // Al personal se le saluda distinto: entra por la misma puerta que el
@@ -41,7 +41,7 @@ const Bienvenida = () => {
         <Text style={estilos.bajada}>
           {esPersonal
             ? 'Entró como personal de la tienda. El área de reparto todavía no está en la app.'
-            : 'Su sesión está abierta. La tienda, el carrito y sus pedidos llegan en las siguientes pantallas.'}
+            : 'Su sesión está abierta. Puede comprar en la tienda; sus pedidos llegan en las siguientes pantallas.'}
         </Text>
 
         <View style={estilos.datos}>
@@ -50,7 +50,23 @@ const Bienvenida = () => {
           <Fila etiqueta="Entró como" valor={esPersonal ? 'Personal' : 'Cliente'} />
         </View>
 
-        <Boton texto="Cerrar sesión" alPresionar={logout} estilo={estilos.boton} />
+        {/*
+          Volver primero y cerrar sesión después, en ese orden y con esos pesos:
+          a esta pantalla se entra a mirar quién está adentro, no a salirse. Con
+          "Cerrar sesión" de primero y en café, el botón grande y llamativo era
+          el que borra la sesión.
+        */}
+        {alVolver && (
+          <Boton texto="Volver a la tienda" alPresionar={alVolver} estilo={estilos.boton} />
+        )}
+
+        <Pressable
+          onPress={logout}
+          accessibilityRole="button"
+          style={({ pressed }) => [estilos.salir, pressed && estilos.salirPresionado]}
+        >
+          <Text style={estilos.salirTexto}>Cerrar sesión</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -128,6 +144,24 @@ const estilos = StyleSheet.create({
   },
   boton: {
     alignSelf: 'stretch',
+  },
+  // Cerrar sesión no es un botón café: es la salida, y la salida se ofrece sin
+  // insistir. Igual mide 48 de alto, que es lo que un dedo necesita.
+  salir: {
+    alignSelf: 'stretch',
+    height: 48,
+    marginTop: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  salirPresionado: {
+    backgroundColor: '#FDECEC',
+  },
+  salirTexto: {
+    fontSize: 14.5,
+    fontWeight: '600',
+    color: COLORES.textoSuave,
   },
 });
 
