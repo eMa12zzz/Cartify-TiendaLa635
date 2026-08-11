@@ -1,0 +1,400 @@
+/*
+ * ============================================================
+ * DETALLE DE PRODUCTO
+ * ============================================================
+ * La foto en grande, el precio y de ahí al carrito. Es la versión corta de
+ * `ProductDetailModal.jsx`: se dejaron fuera las reseñas y las
+ * recomendaciones, que son dos apartados enteros (uno pega contra
+ * /api/review y el otro arma similitudes entre productos) y no entran en esta
+ * pantalla.
+ *
+ * ── Una diferencia con la web, a propósito ──
+ *
+ * La web agrega de uno en uno: su botón llama a `onAgregarAlCarrito(producto, 1)`
+ * y punto. Aquí hay un selector de cantidad, y se mueve al PASO de la unidad
+ * del producto: de uno en uno las piezas, de media en media las libras.
+ *
+ * No es un capricho. En la web, quien quiere media libra de queso abre el
+ * carrito y la corrige ahí; en un teléfono ese viaje son dos pantallas de ida
+ * y dos de vuelta. Y agregar "1" a un producto que se vende por peso, cuando
+ * el propio sistema sabe que su paso es 0.5, es hacer que el cliente pida más
+ * de lo que quería. Ver utils/unidades.js.
+ * ============================================================
+ */
+
+import { useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { COLORES } from '../../theme/colores';
+import { useTema } from '../../context/TemaContext';
+import Boton from '../UI/Boton';
+import { Equis, Mas, Menos, Paquete } from '../UI/Iconos';
+import { useBotonAtras } from '../../hooks/useBotonAtras';
+import { cantidadConUnidad, esPorLibra, esSoloAdultos, pasoDe, piezasEnTexto, ajustarCantidad } from '../../utils/unidades';
+
+const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
+  const [fallóImagen, setFallóImagen] = useState(false);
+  const { colores } = useTema();
+  const paso = pasoDe(producto);
+  const [cantidad, setCantidad] = useState(paso);
+
+  // El botón de atrás de Android cierra la hoja, no la app. Ver el hook.
+  useBotonAtras(alCerrar);
+
+  if (!producto) return null;
+
+  const agotado = producto.stock === 0;
+  const contenido = piezasEnTexto(producto);
+  const topeAlcanzado = cantidad >= producto.stock;
+
+  const mover = (delta) => {
+    const siguiente = ajustarCantidad(producto, cantidad + delta);
+    // Nunca por debajo de un paso ni por encima de lo que hay.
+    setCantidad(Math.max(paso, Math.min(siguiente, producto.stock)));
+  };
+
+  return (
+    /*
+     * Una vista sobre la pantalla, no un <Modal>. El Modal de React Native se
+     * dibuja en una capa nativa por encima de TODO, y ahí el aviso de
+     * "agregado al carrito" quedaba tapado. Ver hooks/useBotonAtras.js.
+     */
+    <View style={estilos.capa}>
+      <View style={estilos.fondo}>
+        {/*
+          Tocar fuera cierra. Es un Pressable del tamaño del fondo DEBAJO del
+          panel, no un envoltorio: envolviéndolo, cada toque dentro del panel
+          burbujearía hasta aquí y cerraría el detalle al intentar tocar "+".
+        */}
+        <Pressable style={estilos.zonaCierre} onPress={alCerrar} accessibilityLabel="Cerrar" />
+
+        <View style={estilos.panel}>
+          <View style={estilos.encabezado}>
+            <View style={estilos.asa} />
+            <Pressable
+              onPress={alCerrar}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar el detalle"
+              style={estilos.cerrar}
+            >
+              <Equis size={16} color={COLORES.textoSuave} />
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={estilos.contenido} bounces={false}>
+            <View style={estilos.marcoImagen}>
+              {producto.imagen && !fallóImagen ? (
+                <Image
+                  source={{ uri: producto.imagen }}
+                  resizeMode="contain"
+                  style={estilos.imagen}
+                  onError={() => setFallóImagen(true)}
+                />
+              ) : (
+                <Paquete size={64} />
+              )}
+            </View>
+
+            {!!producto.marca && <Text style={estilos.marca}>{producto.marca.toUpperCase()}</Text>}
+
+            <View style={estilos.filaNombre}>
+              <Text style={estilos.nombre}>{producto.nombre}</Text>
+              {esSoloAdultos(producto) && (
+                <View style={estilos.marca18}>
+                  <Text style={estilos.marca18Texto}>+18</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={estilos.filaPrecio}>
+              {!!producto.precioAnterior && (
+                <Text style={estilos.precioViejo}>${Number(producto.precioAnterior).toFixed(2)}</Text>
+              )}
+              <Text style={estilos.precio}>
+                ${Number(producto.precio).toFixed(2)}
+                {esPorLibra(producto) && <Text style={estilos.porUnidad}>/lb</Text>}
+              </Text>
+            </View>
+
+            {!!contenido && <Text style={estilos.contenidoTexto}>{contenido}</Text>}
+
+            <View
+              style={[
+                estilos.estadoStock,
+                { backgroundColor: colores.marcaSuave },
+                agotado && estilos.estadoAgotado,
+              ]}
+            >
+              <Text
+                style={[
+                  estilos.estadoTexto,
+                  { color: colores.marcaOscuro },
+                  agotado && estilos.estadoTextoAgotado,
+                ]}
+              >
+                {agotado
+                  ? 'Agotado'
+                  : `En existencia · ${cantidadConUnidad(producto, producto.stock)}`}
+              </Text>
+            </View>
+
+            {!!producto.descripcion && (
+              <>
+                <Text style={estilos.tituloSeccion}>Descripción</Text>
+                <Text style={estilos.descripcion}>{producto.descripcion}</Text>
+              </>
+            )}
+
+            {!agotado && (
+              <>
+                <Text style={estilos.tituloSeccion}>Cantidad</Text>
+                <View style={estilos.selector}>
+                  <Pressable
+                    onPress={() => mover(-paso)}
+                    disabled={cantidad <= paso}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Quitar uno"
+                    style={({ pressed }) => [
+                      estilos.botonPaso,
+                      pressed && { backgroundColor: colores.marcaSuave },
+                      cantidad <= paso && estilos.botonPasoApagado,
+                    ]}
+                  >
+                    <Menos size={13} color={cantidad <= paso ? COLORES.marcador : COLORES.texto} />
+                  </Pressable>
+
+                  <Text style={estilos.cantidad}>{cantidadConUnidad(producto, cantidad)}</Text>
+
+                  <Pressable
+                    onPress={() => mover(paso)}
+                    disabled={topeAlcanzado}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Agregar uno"
+                    style={({ pressed }) => [
+                      estilos.botonPaso,
+                      pressed && { backgroundColor: colores.marcaSuave },
+                      topeAlcanzado && estilos.botonPasoApagado,
+                    ]}
+                  >
+                    <Mas size={13} color={topeAlcanzado ? COLORES.marcador : COLORES.texto} />
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </ScrollView>
+
+          {/*
+            El botón vive FUERA del scroll: es a lo que se vino, y en un
+            producto con descripción larga quedaba al final de todo, a dos
+            deslizadas de distancia.
+          */}
+          <View style={estilos.pie}>
+            <Boton
+              texto={agotado ? 'Agotado' : `Agregar · $${(producto.precio * cantidad).toFixed(2)}`}
+              deshabilitado={agotado}
+              color={colores.marca}
+              colorPresionado={colores.marcaOscuro}
+              alPresionar={() => {
+                alAgregar(producto, cantidad);
+                alCerrar();
+              }}
+            />
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const estilos = StyleSheet.create({
+  capa: {
+    ...StyleSheet.absoluteFillObject,
+    // Por encima de la tienda, por debajo del aviso (que se dibuja después,
+    // ya fuera de esta pantalla).
+    zIndex: 10,
+    elevation: 10,
+  },
+  fondo: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  zonaCierre: {
+    flex: 1,
+  },
+  panel: {
+    backgroundColor: COLORES.fondo,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    // Tope de alto: el detalle es una hoja que sube, no una pantalla entera.
+    maxHeight: '88%',
+  },
+  encabezado: {
+    paddingTop: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  // El asa de la hoja: dice "esto se puede bajar" sin escribirlo.
+  asa: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORES.borde,
+  },
+  cerrar: {
+    position: 'absolute',
+    right: 14,
+    top: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contenido: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 18,
+  },
+  marcoImagen: {
+    backgroundColor: '#F4F4F5',
+    height: 210,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    marginBottom: 16,
+  },
+  imagen: {
+    width: '100%',
+    height: '100%',
+  },
+  marca: {
+    fontSize: 11,
+    color: '#AAAAAA',
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    marginBottom: 4,
+  },
+  filaNombre: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  nombre: {
+    fontSize: 21,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+    letterSpacing: -0.3,
+    flexShrink: 1,
+  },
+  marca18: {
+    backgroundColor: COLORES.error,
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  marca18Texto: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  filaPrecio: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 9,
+    marginTop: 10,
+  },
+  precioViejo: {
+    fontSize: 14,
+    color: '#BBBBBB',
+    textDecorationLine: 'line-through',
+  },
+  precio: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: COLORES.tituloFuerte,
+  },
+  porUnidad: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORES.textoTenue,
+  },
+  contenidoTexto: {
+    fontSize: 12.5,
+    color: COLORES.textoTenue,
+    marginTop: 3,
+    fontWeight: '500',
+  },
+  // El fondo y el color de letra los pone la temporada en línea; aquí solo la
+  // forma. Dejarlos escritos además sería tener dos verdades sobre lo mismo.
+  estadoStock: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 13,
+    marginTop: 14,
+  },
+  estadoAgotado: {
+    backgroundColor: '#FDECEC',
+  },
+  estadoTexto: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  estadoTextoAgotado: {
+    color: '#C0392B',
+  },
+  tituloSeccion: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORES.tituloVentaja,
+    marginTop: 20,
+    marginBottom: 7,
+  },
+  descripcion: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: COLORES.textoVentaja,
+  },
+  selector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: COLORES.borde,
+    borderRadius: 12,
+    padding: 4,
+  },
+  botonPaso: {
+    width: 38,
+    height: 38,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F6F5F4',
+  },
+  botonPasoApagado: {
+    backgroundColor: '#FAFAFA',
+  },
+  cantidad: {
+    minWidth: 66,
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORES.texto,
+  },
+  pie: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 26,
+    borderTopWidth: 1,
+    borderTopColor: COLORES.linea,
+  },
+});
+
+export default ModalProducto;

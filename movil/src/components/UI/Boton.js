@@ -5,12 +5,30 @@
  * café que se oscurece al presionar. Cuando está cargando no se apaga sin más:
  * muestra la rueda, porque un botón que deja de responder sin decir nada se
  * vuelve a tocar tres veces.
+ *
+ * ── El color se recibe, no se lee del tema ──
+ *
+ * Este botón lo usan las dos mitades de la app: las pantallas de tienda, que
+ * se repintan con la temporada, y las de sesión, que NO —una pantalla de login
+ * que cambia de color según el mes no se lee como decoración, se lee como que
+ * uno se equivocó de aplicación—. Si leyera `useTema()` por su cuenta no
+ * habría forma de distinguirlas, así que la tienda le pasa su color y el resto
+ * se queda con el café de siempre.
  */
 
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORES } from '../../theme/colores';
 
-const Boton = ({ texto, alPresionar, cargando = false, deshabilitado = false, icono = null, estilo }) => {
+const Boton = ({
+  texto,
+  alPresionar,
+  cargando = false,
+  deshabilitado = false,
+  icono = null,
+  estilo,
+  color,
+  colorPresionado,
+}) => {
   const inactivo = cargando || deshabilitado;
 
   return (
@@ -20,7 +38,9 @@ const Boton = ({ texto, alPresionar, cargando = false, deshabilitado = false, ic
       accessibilityRole="button"
       style={({ pressed }) => [
         estilos.boton,
+        !!color && { backgroundColor: color },
         pressed && !inactivo && estilos.presionado,
+        pressed && !inactivo && !!colorPresionado && { backgroundColor: colorPresionado },
         inactivo && estilos.inactivo,
         estilo,
       ]}

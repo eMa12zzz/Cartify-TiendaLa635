@@ -449,3 +449,284 @@ export const Check = ({ size = 12, color = '#FFFFFF' }) => (
     />
   </View>
 );
+
+// ── Los de la tienda y el carrito ───────────────────────────
+
+export const Lupa = ({ size = 18, color = GRIS, grosor = 1.7 }) => {
+  const lente = size * 0.66;
+  return (
+    <View style={{ width: size, height: size }}>
+      <View
+        style={{
+          width: lente,
+          height: lente,
+          borderRadius: lente / 2,
+          borderWidth: grosor,
+          borderColor: color,
+        }}
+      />
+      {/* El mango sale de la esquina de abajo a la derecha del lente. */}
+      <Trazo
+        largo={size * 0.34}
+        grosor={grosor}
+        color={color}
+        estilo={{
+          position: 'absolute',
+          right: 0,
+          bottom: size * 0.13,
+          transform: [{ rotate: '45deg' }],
+        }}
+      />
+    </View>
+  );
+};
+
+/*
+ * La bolsa de la compra. Es el icono del carrito en toda la tienda —la web usa
+ * ShoppingBag, no un carrito de supermercado— y se arma con el cuerpo
+ * rectangular y el asa como medio círculo asomando por arriba.
+ */
+export const Bolsa = ({ size = 20, color = GRIS, grosor = 1.7 }) => {
+  const cuerpo = size * 0.74;
+  const asa = size * 0.36;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
+      {/* El asa: un círculo al que la caja de arriba le corta la mitad de abajo. */}
+      <Arco ancho={asa} alto={asa / 2} grosor={grosor} color={color} estilo={{ marginBottom: -1 }} />
+      <View
+        style={{
+          width: cuerpo,
+          height: size * 0.62,
+          borderWidth: grosor,
+          borderColor: color,
+          borderRadius: 3,
+        }}
+      />
+    </View>
+  );
+};
+
+export const Mas = ({ size = 14, color = '#FFFFFF', grosor = 2 }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <Trazo largo={size * 0.82} grosor={grosor} color={color} estilo={{ position: 'absolute' }} />
+    <View
+      style={{
+        position: 'absolute',
+        width: grosor,
+        height: size * 0.82,
+        borderRadius: grosor,
+        backgroundColor: color,
+      }}
+    />
+  </View>
+);
+
+export const Menos = ({ size = 14, color = '#FFFFFF', grosor = 2 }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <Trazo largo={size * 0.82} grosor={grosor} color={color} />
+  </View>
+);
+
+export const Equis = ({ size = 16, color = GRIS, grosor = 1.8 }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <Trazo
+      largo={size * 0.82}
+      grosor={grosor}
+      color={color}
+      estilo={{ position: 'absolute', transform: [{ rotate: '45deg' }] }}
+    />
+    <Trazo
+      largo={size * 0.82}
+      grosor={grosor}
+      color={color}
+      estilo={{ position: 'absolute', transform: [{ rotate: '-45deg' }] }}
+    />
+  </View>
+);
+
+export const Basura = ({ size = 15, color = GRIS, grosor = 1.5 }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
+    {/* La agarradera de la tapa, y la tapa. */}
+    <Trazo largo={size * 0.3} grosor={grosor} color={color} />
+    <Trazo largo={size * 0.86} grosor={grosor} color={color} estilo={{ marginTop: 1.5 }} />
+    <View
+      style={{
+        width: size * 0.66,
+        height: size * 0.6,
+        borderWidth: grosor,
+        borderColor: color,
+        borderRadius: 2,
+        marginTop: 1.5,
+      }}
+    />
+  </View>
+);
+
+/*
+ * El marcador de "este producto no tiene foto". La caja con la raya del centro
+ * es lo que la hace leerse como un paquete y no como un cuadrado a secas.
+ */
+export const Paquete = ({ size = 30, color = '#C4BDB6', grosor = 1.5 }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{
+        width: size * 0.84,
+        height: size * 0.72,
+        borderWidth: grosor,
+        borderColor: color,
+        borderRadius: 3,
+        alignItems: 'center',
+      }}
+    >
+      {/* La cinta: la raya de arriba y el tirito que baja. */}
+      <View
+        style={{
+          position: 'absolute',
+          top: size * 0.2,
+          width: '100%',
+          height: grosor,
+          backgroundColor: color,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          width: grosor,
+          height: size * 0.2,
+          backgroundColor: color,
+        }}
+      />
+    </View>
+  </View>
+);
+
+/* El reloj del vencimiento de una promoción: "Quedan 3 días". */
+export const Reloj = ({ size = 12, color = GRIS, grosor = 1.4 }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: grosor,
+        borderColor: color,
+      }}
+    />
+    {/* Las agujas salen del centro: por eso se anclan al 50% y crecen hacia
+        un lado con transformOrigin fingido — un margen negativo del largo. */}
+    <View
+      style={{
+        position: 'absolute',
+        width: grosor,
+        height: size * 0.26,
+        backgroundColor: color,
+        borderRadius: grosor,
+        top: size * 0.24,
+      }}
+    />
+    <View
+      style={{
+        position: 'absolute',
+        width: size * 0.24,
+        height: grosor,
+        backgroundColor: color,
+        borderRadius: grosor,
+        left: size * 0.5,
+        top: size * 0.5 - grosor / 2,
+      }}
+    />
+  </View>
+);
+
+// ── Las figuras que caen en temporada ──────────────────────
+/*
+ * Van muy tenues y de fondo (ver DecoracionTemporada), así que aquí importa la
+ * silueta y no el detalle: a 14 píxeles y al 30% de opacidad, un copo con seis
+ * brazos y un copo con tres se ven igual. Lo que sí tiene que leerse es QUÉ
+ * cosa es, de un vistazo y de reojo.
+ */
+
+export const Copo = ({ size = 14, color = '#FFFFFF' }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    {[0, 60, 120].map((grados) => (
+      <Trazo
+        key={grados}
+        largo={size}
+        grosor={1.4}
+        color={color}
+        estilo={{ position: 'absolute', transform: [{ rotate: `${grados}deg` }] }}
+      />
+    ))}
+  </View>
+);
+
+/*
+ * El murciélago: el cuerpo al centro y las alas como dos triángulos que salen
+ * hacia arriba y afuera. Con los triángulos apuntando hacia abajo parecía un
+ * moño, que era lo que salía al primer intento.
+ */
+export const Murcielago = ({ size = 16, color = '#FFFFFF' }) => {
+  const ala = size * 0.42;
+  return (
+    <View style={{ width: size, height: size * 0.6, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          width: size * 0.22,
+          height: size * 0.34,
+          borderRadius: size * 0.11,
+          backgroundColor: color,
+        }}
+      />
+      {[-1, 1].map((lado) => (
+        <View
+          key={lado}
+          style={{
+            position: 'absolute',
+            [lado === -1 ? 'left' : 'right']: 0,
+            top: size * 0.06,
+            width: 0,
+            height: 0,
+            borderTopWidth: ala * 0.62,
+            borderBottomWidth: ala * 0.28,
+            [lado === -1 ? 'borderRightWidth' : 'borderLeftWidth']: ala,
+            borderTopColor: 'transparent',
+            borderBottomColor: 'transparent',
+            [lado === -1 ? 'borderRightColor' : 'borderLeftColor']: color,
+          }}
+        />
+      ))}
+    </View>
+  );
+};
+
+/* Un papelito de confeti: un rectángulo torcido. No necesita ser más. */
+export const Confeti = ({ size = 10, color = '#FFFFFF' }) => (
+  <View
+    style={{
+      width: size * 0.5,
+      height: size,
+      borderRadius: 1.5,
+      backgroundColor: color,
+      transform: [{ rotate: '24deg' }],
+    }}
+  />
+);
+
+/* La flecha de "atrás" de la barra del carrito. */
+export const ChevronIzquierda = ({ size = 18, color = COLORES.texto, grosor = 1.9 }) => (
+  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <Trazo
+      largo={size * 0.46}
+      grosor={grosor}
+      color={color}
+      estilo={{ position: 'absolute', top: size * 0.32, transform: [{ rotate: '-45deg' }] }}
+    />
+    <Trazo
+      largo={size * 0.46}
+      grosor={grosor}
+      color={color}
+      estilo={{ position: 'absolute', bottom: size * 0.32, transform: [{ rotate: '45deg' }] }}
+    />
+  </View>
+);
