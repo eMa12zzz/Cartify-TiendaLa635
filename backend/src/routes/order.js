@@ -60,6 +60,15 @@ router
   .put(soloPersonal, orderController.updateOrderStatus);
 
 /*
+ * El cliente valora el servicio de entrega de SU pedido. conSesion deja pasar a
+ * quien tenga sesión; el controlador comprueba además que el pedido sea suyo y
+ * que ya esté entregado.
+ */
+router
+  .route("/:id/rating")
+  .patch(conSesion, orderController.rateService);
+
+/*
  * Seguimiento en vivo: el repartidor escribe su punto, el cliente lo lee.
  * Escribir es del personal; leer lo necesita el cliente que está esperando su
  * pedido, y el controlador comprueba que el pedido sea suyo.

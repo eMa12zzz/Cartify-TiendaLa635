@@ -48,6 +48,8 @@ export const useRegistro = () => {
        * campo, eso se convierte en un problema.
        */
       if (datos.dui?.trim()) cuerpo.append('dui', datos.dui.trim());
+      // Fecha de nacimiento: para la edad de los productos +18. Solo si la dio.
+      if (datos.fechaNacimiento) cuerpo.append('fechaNacimiento', datos.fechaNacimiento);
       cuerpo.append('phoneNumber', datos.phoneNumber);
       cuerpo.append('email', datos.email);
       cuerpo.append('userName', datos.userName);

@@ -79,6 +79,19 @@ const orderSchema = new Schema({
     deliveredBy: { type: String },
 
     /*
+     * Valoración del SERVICIO de entrega (no del producto).
+     *
+     * La deja el cliente cuando su pedido a DOMICILIO ya fue entregado: qué tal
+     * llegó, a tiempo, el trato del repartidor. Va embebida porque es 1:1 con el
+     * pedido —una entrega, una valoración— y así no hace falta otra colección.
+     */
+    serviceRating: {
+        rating:  { type: Number, min: 1, max: 5 },
+        comment: { type: String, maxlength: 500, default: '' },
+        ratedAt: { type: Date },
+    },
+
+    /*
      * Dónde va el repartidor, en vivo.
      *
      * Solo se llena mientras alguien está llevando ESTE pedido, y se borra al

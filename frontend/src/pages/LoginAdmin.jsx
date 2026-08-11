@@ -54,7 +54,12 @@ const LoginAdmin = () => {
        * justo lo que el `volver` existe para evitar.
        */
       const volver = new URLSearchParams(window.location.search).get('volver');
-      navigate(volver && volver.startsWith('/') ? volver : '/dashboard');
+      /*
+       * `replace`: el login no debe quedar en el historial. Sin esto, el
+       * "atrás" del navegador tras entrar al panel devolvía a esta pantalla de
+       * inicio de sesión en vez de a donde venía el administrador.
+       */
+      navigate(volver && volver.startsWith('/') ? volver : '/dashboard', { replace: true });
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas o cuenta bloqueada', {
         style: { borderRadius: '10px', background: '#ff4d4f', color: '#fff' },

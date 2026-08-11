@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Package } from 'lucide-react';
+import { Package, Lock } from 'lucide-react';
 import styled from 'styled-components';
 import { useFavoritosCtx } from '../../context/FavoritosContext';
+import { useEdad } from '../../context/EdadContext';
 import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 
 // Paleta del diseño (WEB.pdf), medida sobre el mockup.
@@ -77,6 +78,28 @@ const ProductImage = styled.img`
       transform: scale(1.06);
     }
   }
+`;
+
+/*
+ * Cobertura de los productos +18: tapa la foto con desenfoque hasta que la
+ * persona confirme su edad. Va sobre el recuadro de la imagen, no sobre toda
+ * la tarjeta, para que el nombre y el precio se sigan leyendo (el cliente tiene
+ * que saber qué es y cuánto cuesta antes de decidir confirmar su edad).
+ */
+const CoberturaEdad = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 22, 20, 0.72);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-align: center;
+  padding: 10px;
+  z-index: 3;
 `;
 
 /* Marcador de producto sin foto: icono de línea, no un emoji de sistema. */
@@ -332,16 +355,23 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
   const liked = esFavorito(producto.id);
   const [imgError, setImgError] = useState(false);
 
+  // Candado +18: si el producto es restringido y aún no confirmó su edad, se
+  // tapa y cada intento (ver o agregar) pasa antes por la confirmación.
+  const { mayorConfirmado, pedirConfirmacion } = useEdad();
+  const tapado = esSoloAdultos(producto) && !mayorConfirmado;
+
   const bajoStock = producto.stock < 10;
 
   const handleClickCard = (e) => {
     if (e.target.closest('.add-button')) return;
     if (e.target.closest('.wishlist-button')) return;
+    if (tapado) { pedirConfirmacion(() => onVerDetalle(producto)); return; }
     onVerDetalle(producto);
   };
 
   const handleAgregar = (e) => {
     e.stopPropagation();
+    if (tapado) { pedirConfirmacion(() => onAgregarAlCarrito(producto)); return; }
     onAgregarAlCarrito(producto);
   };
 
@@ -380,6 +410,14 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
           />
         ) : (
           <ImageFallback><Package size={38} strokeWidth={1.4} /></ImageFallback>
+        )}
+
+        {tapado && (
+          <CoberturaEdad>
+            <Lock size={20} />
+            <span style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.2 }}>Mayores de 18</span>
+            <span style={{ fontSize: 10.5, opacity: 0.85, lineHeight: 1.25 }}>Tocá para confirmar tu edad</span>
+          </CoberturaEdad>
         )}
       </ImageWrapper>
 

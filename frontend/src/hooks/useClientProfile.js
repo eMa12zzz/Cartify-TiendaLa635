@@ -9,10 +9,11 @@ import { useAuth } from './useAuth';
  * pinta el formulario y llama a guardar().
  */
 export const useClientProfile = () => {
-  const { user, esCliente } = useAuth();
+  const { user, esCliente, actualizarUsuario } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   const cargar = useCallback(async () => {
     // Solo los clientes tienen perfil de cliente: con sesión de personal esto
@@ -48,5 +49,44 @@ export const useClientProfile = () => {
     }
   };
 
-  return { profile, loading, saving, guardar };
+  /*
+   * Subir/reemplazar la foto de perfil. El endpoint multipart exige también los
+   * datos básicos, así que se mandan los que ya están guardados en `profile`
+   * (no los del formulario sin guardar): la foto no debe arrastrar cambios de
+   * texto a medio escribir.
+   */
+  const subirFoto = async (archivo) => {
+    if (!esCliente || !profile || !archivo) return;
+
+    if (!archivo.type?.startsWith('image/')) {
+      toast.error('Ese archivo no es una imagen. Use JPG, PNG o WEBP.');
+      return;
+    }
+    if (archivo.size > 8 * 1024 * 1024) {
+      toast.error('La imagen pesa demasiado. Use una de menos de 8 MB.');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('fullName', profile.fullName || '');
+    fd.append('phoneNumber', profile.phoneNumber || '');
+    fd.append('email', profile.email || '');
+    fd.append('userName', profile.userName || '');
+    fd.append('image', archivo);
+
+    try {
+      setSubiendoFoto(true);
+      const res = await clientService.actualizarConFoto(user.id, fd);
+      if (res.client) setProfile(res.client);
+      // El avatar del encabezado del cliente lee de la sesión: se refresca aquí.
+      actualizarUsuario({ image: res.client?.image });
+      toast.success('Foto de perfil actualizada');
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'No se pudo subir la foto');
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
+
+  return { profile, loading, saving, subiendoFoto, guardar, subirFoto };
 };

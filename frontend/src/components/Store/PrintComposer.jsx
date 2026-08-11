@@ -75,7 +75,7 @@ const PrintComposer = ({ composer }) => {
             <button type="button" onClick={() => { setPaginaActiva(i); setSeleccionado(null); }}
               style={{
                 ...btn, padding: '6px 12px', fontSize: 12,
-                background: i === paginaActiva ? '#F3E7D8' : '#fff',
+                background: i === paginaActiva ? 'var(--marca-100)' : '#fff',
                 borderColor: i === paginaActiva ? BROWN : '#e0e0e0',
                 color: i === paginaActiva ? BROWN : '#555',
               }}>

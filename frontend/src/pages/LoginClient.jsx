@@ -412,9 +412,15 @@ const LoginClient = () => {
        */
       const destino = volver?.startsWith('/') ? volver : null;
 
-      if (destino) navigate(destino);
-      else if (esPersonal) navigate('/mi-cuenta/reparto');
-      else navigate(recienRegistrado ? '/bienvenida' : '/');
+      /*
+       * `replace` a propósito: el login se reemplaza en el historial en vez de
+       * apilarse. Sin esto, tras entrar el historial quedaba [tienda, login,
+       * destino] y el "atrás" del navegador caía de vuelta en el login —una
+       * pantalla que ya cumplió y a la que nadie quiere volver.
+       */
+      if (destino) navigate(destino, { replace: true });
+      else if (esPersonal) navigate('/mi-cuenta/reparto', { replace: true });
+      else navigate(recienRegistrado ? '/bienvenida' : '/', { replace: true });
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas');
     } finally {

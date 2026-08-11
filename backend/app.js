@@ -33,6 +33,7 @@ import wompiRoutes from "./src/routes/wompi.js"
 import storeSettingsRoutes from "./src/routes/storeSettings.js";
 import loginAdminRoutes from "./src/routes/loginAdmin.js";
 import logoutAdminRoutes from "./src/routes/logoutAdmin.js";
+import perfilRoutes from "./src/routes/perfil.js";
 
 //cosas
 const app = express();
@@ -83,6 +84,8 @@ app.use("/api/storeSettings", storeSettingsRoutes);
 app.use("/api/wompi", wompiRoutes);
 app.use("/api/loginAdmin", loginAdminRoutes);
 app.use("/api/logoutAdmin", logoutAdminRoutes);
+// Foto de perfil del personal conectado (admin o empleado).
+app.use("/api/perfil", perfilRoutes);
 
 //enpoint
 

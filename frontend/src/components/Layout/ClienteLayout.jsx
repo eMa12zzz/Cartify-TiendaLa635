@@ -106,10 +106,15 @@ const ClienteLayout = () => {
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
+              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm overflow-hidden"
               style={{ backgroundColor: c.primary, color: c.buttonText }}
             >
-              {initials}
+              {/* Su foto si la tiene; si no, la inicial de siempre. */}
+              {user?.image ? (
+                <img src={user.image} alt="Foto de perfil" className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             <span className="text-sm font-semibold truncate max-w-[160px]" style={{ color: c.textPrimary }}>
               {displayName}

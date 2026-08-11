@@ -28,6 +28,12 @@ const clientSchema = new Schema({
      * los controladores guardan undefined y nunca cadena vacía.
      */
     dui: { type:"String"},
+    /*
+     * Fecha de nacimiento (opcional). Con ella se calcula la edad para destapar
+     * los productos +18 en la tienda. Es una barrera blanda —se puede mentir—,
+     * así que la verificación de verdad sigue siendo el DUI físico en la entrega.
+     */
+    fechaNacimiento: { type: Date },
     phoneNumber: { type:"String"},
     /*
      * Direcciones de entrega: { nombre, direccion, referencia, lat, lng }.

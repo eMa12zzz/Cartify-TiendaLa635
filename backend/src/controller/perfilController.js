@@ -1,0 +1,92 @@
+import adminModel from "../models/admin.js";
+import employeeModel from "../models/employee.js";
+import { v2 as cloudinary } from "cloudinary";
+
+/*
+ * ============================================================
+ * MI PERFIL — perfilController.js
+ * ============================================================
+ * La foto de perfil de quien está conectado en el panel, sea administrador o
+ * empleado.
+ *
+ * Por qué un controlador aparte y no reusar updateAdmin / updateEmployee:
+ *   - updateEmployee exige TODOS los campos (nombre, DUI, teléfono, contraseña);
+ *     para cambiar solo la foto habría que reenviarlos todos, incluida la
+ *     contraseña, que la pantalla de Cuenta no tiene.
+ *   - updateAdmin no maneja imágenes.
+ *   - Y sobre todo: aquí NO se recibe el id por la URL. Se saca de la sesión
+ *     (req.usuario, que pone validarSesion), así nadie puede cambiarle la foto
+ *     a otra cuenta pasando otro id.
+ * ============================================================
+ */
+const perfilController = {};
+
+// A qué colección pertenece quien pregunta, según su sesión.
+const modeloDe = (tipo) =>
+  tipo === "Admin" ? adminModel : tipo === "Employee" ? employeeModel : null;
+
+// Subir o reemplazar la foto de perfil del usuario en sesión.
+perfilController.actualizarFoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No llegó ninguna imagen" });
+    }
+
+    const Modelo = modeloDe(req.usuario?.tipo);
+    if (!Modelo) {
+      return res.status(403).json({ message: "Esta cuenta no tiene foto de perfil" });
+    }
+
+    const encontrado = await Modelo.findById(req.usuario.id);
+    if (!encontrado) {
+      return res.status(404).json({ message: "No se encontró la cuenta" });
+    }
+
+    // Si ya tenía una foto, se borra de Cloudinary para no dejar basura.
+    if (encontrado.public_id) {
+      try { await cloudinary.uploader.destroy(encontrado.public_id); } catch (e) { /* ignore */ }
+    }
+
+    encontrado.image = req.file.path;
+    encontrado.public_id = req.file.filename;
+    await encontrado.save();
+
+    return res.status(200).json({
+      message: "Foto de perfil actualizada",
+      image: encontrado.image,
+    });
+  } catch (error) {
+    console.log("error actualizarFoto: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+// Quitar la foto y volver a las iniciales.
+perfilController.quitarFoto = async (req, res) => {
+  try {
+    const Modelo = modeloDe(req.usuario?.tipo);
+    if (!Modelo) {
+      return res.status(403).json({ message: "Esta cuenta no tiene foto de perfil" });
+    }
+
+    const encontrado = await Modelo.findById(req.usuario.id);
+    if (!encontrado) {
+      return res.status(404).json({ message: "No se encontró la cuenta" });
+    }
+
+    if (encontrado.public_id) {
+      try { await cloudinary.uploader.destroy(encontrado.public_id); } catch (e) { /* ignore */ }
+    }
+
+    encontrado.image = undefined;
+    encontrado.public_id = undefined;
+    await encontrado.save();
+
+    return res.status(200).json({ message: "Foto de perfil quitada", image: null });
+  } catch (error) {
+    console.log("error quitarFoto: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+export default perfilController;

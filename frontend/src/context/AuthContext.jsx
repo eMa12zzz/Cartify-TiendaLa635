@@ -173,6 +173,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /*
+   * 3.5- Actualizar datos de la sesión que está abierta, sin volver a entrar.
+   *
+   * Lo pide la foto de perfil: al subirla, el nombre y el token siguen igual
+   * pero el `image` cambió, y hay que reflejarlo de una en el avatar (el TopBar
+   * y la pantalla de Cuenta) y dejarlo guardado para el próximo arranque. El
+   * cajón es el de la sesión activa, que lo dice su propio `type`.
+   */
+  const actualizarUsuario = useCallback((cambios = {}) => {
+    if (!activa) return;
+    const cajon = cajonDeTipo(activa.type);
+    setSesiones((previas) => {
+      const actual = previas[cajon];
+      if (!actual) return previas;
+      const fusionada = { ...actual, ...cambios };
+      localStorage.setItem(CAJON[cajon], JSON.stringify(fusionada));
+      return { ...previas, [cajon]: fusionada };
+    });
+  }, [activa]);
+
+  /*
    * 4- Cerrar sesión cierra la de ESTA área, no las dos.
    *
    * Salir del panel no tiene por qué sacar a la persona de la tienda: son dos
@@ -203,6 +223,7 @@ export const AuthProvider = ({ children }) => {
       token: activa?.token || null,
       login,
       logout,
+      actualizarUsuario,
       loading,
       isAuthenticated: !!activa?.token,
       /*
@@ -213,7 +234,7 @@ export const AuthProvider = ({ children }) => {
       haySesionDePersonal: !!sesiones.personal,
       haySesionDeCliente: !!sesiones.cliente,
     }),
-    [activa, login, logout, loading, sesiones.personal, sesiones.cliente]
+    [activa, login, logout, actualizarUsuario, loading, sesiones.personal, sesiones.cliente]
   );
 
   // 5- No se pintan los hijos hasta saber si hay sesión, para evitar el

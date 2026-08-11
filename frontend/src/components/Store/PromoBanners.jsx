@@ -350,7 +350,7 @@ const PromoBanners = ({ onSelectPromo }) => {
                     width: i === activa ? 22 : 8,
                     height: 8,
                     borderRadius: 4,
-                    background: i === activa ? '#9C6026' : '#D9C7B4',
+                    background: i === activa ? 'var(--marca-700)' : '#D9C7B4',
                     transition: 'width var(--dur-popover) var(--ease-out), background var(--dur-popover) var(--ease-out)',
                   }}
                 />
@@ -384,7 +384,7 @@ const flecha = {
   borderRadius: '50%',
   border: '1px solid #E4D5C3',
   background: '#fff',
-  color: '#9C6026',
+  color: 'var(--marca-700)',
   fontSize: 20,
   lineHeight: 1,
   cursor: 'pointer',

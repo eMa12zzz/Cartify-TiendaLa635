@@ -1,12 +1,96 @@
+import { useState } from 'react';
 import { Package, Star } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useMyOrders } from '../../hooks/useMyOrders';
+import { orderService } from '../../api/orderService';
 
 /*
  * MisPedidos — historial de pedidos del cliente (área "Mi Cuenta").
  * Migrada de mockup a datos reales (modelo Order). La lógica de carga vive en
  * useMyOrders; aquí solo pintamos la lista de tarjetas de pedido.
  */
+
+/*
+ * Valoración del SERVICIO de entrega (no del producto). Sale solo en los
+ * pedidos a domicilio ya entregados: es cuando de verdad hubo un reparto que
+ * juzgar. Una vez enviada, se muestra de solo lectura.
+ */
+const ValoracionServicio = ({ order, c }) => {
+  const [sel, setSel] = useState(order.serviceRating?.rating || 0);
+  const [hover, setHover] = useState(0);
+  const [comentario, setComentario] = useState(order.serviceRating?.comment || '');
+  const [enviando, setEnviando] = useState(false);
+  const [guardado, setGuardado] = useState(!!order.serviceRating?.rating);
+
+  const mostradas = guardado ? sel : (hover || sel);
+
+  const enviar = async () => {
+    if (!sel) { toast('Elegí de 1 a 5 estrellas'); return; }
+    setEnviando(true);
+    try {
+      await orderService.rateService(order._id, { rating: sel, comment: comentario });
+      setGuardado(true);
+      toast.success('¡Gracias por valorar el servicio!');
+    } catch {
+      // El aviso de error ya lo pinta el interceptor de axios.
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div style={{ borderTop: `1px solid ${c.cardBorder}`, paddingTop: 12, marginTop: 12 }}>
+      <div className="text-xs font-bold mb-1.5" style={{ color: c.textPrimary }}>
+        {guardado ? 'Valoraste el servicio de entrega' : '¿Qué tal estuvo la entrega?'}
+      </div>
+
+      <div className="flex items-center gap-1 mb-2">
+        {[1, 2, 3, 4, 5].map((n) => {
+          const activa = mostradas >= n;
+          return (
+            <button
+              key={n}
+              type="button"
+              disabled={guardado || enviando}
+              onMouseEnter={() => { if (!guardado) setHover(n); }}
+              onMouseLeave={() => setHover(0)}
+              onClick={() => setSel(n)}
+              aria-label={`${n} de 5`}
+              style={{ background: 'none', border: 'none', padding: 2, cursor: guardado ? 'default' : 'pointer' }}
+            >
+              <Star className="w-5 h-5" style={{ color: activa ? '#f5a623' : c.textMuted, fill: activa ? '#f5a623' : 'none' }} />
+            </button>
+          );
+        })}
+      </div>
+
+      {!guardado ? (
+        <>
+          <textarea
+            rows={2}
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+            placeholder="¿Algo que contar del reparto? (opcional)"
+            className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none mb-2"
+            style={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }}
+          />
+          <button
+            type="button"
+            onClick={enviar}
+            disabled={enviando}
+            className="px-5 py-2 rounded-full text-sm font-bold transition-colors disabled:opacity-60"
+            style={{ backgroundColor: c.primary, color: c.buttonText }}
+          >
+            {enviando ? 'Enviando…' : 'Enviar valoración'}
+          </button>
+        </>
+      ) : (
+        comentario && <p className="text-sm" style={{ color: c.textSecondary }}>“{comentario}”</p>
+      )}
+    </div>
+  );
+};
 
 // Colores de estado (semánticos, fijos — no cambian con la paleta para que el
 // estado siempre se lea igual). Coinciden con los estados del modelo Order.
@@ -94,6 +178,11 @@ const MisPedidos = () => {
                     Total: ${Number(order.total).toFixed(2)}
                   </span>
                 </div>
+
+                {/* Valorar el servicio: solo en domicilios ya entregados. */}
+                {order.deliveryType === 'delivery' && order.status === 'entregado' && (
+                  <ValoracionServicio order={order} c={c} />
+                )}
               </div>
             );
           })}

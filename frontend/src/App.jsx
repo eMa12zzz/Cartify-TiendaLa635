@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { EdadProvider } from './context/EdadContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
 import { AjustesProvider } from './context/AjustesContext';
@@ -103,6 +104,12 @@ function App() {
         */}
         <AjustesProvider>
         <PinturaDeTemporada />
+        {/*
+          El candado de los productos +18: vive alto para que la tarjeta, el
+          detalle y el carrito compartan una sola confirmación de edad, y el
+          modal se pinte sobre cualquier pantalla. Ver EdadContext.
+        */}
+        <EdadProvider>
         {/*
           Los favoritos se cargan una sola vez para toda la app: los mismos
           corazones aparecen en la tienda y en Mi Cuenta, que son ramas
@@ -260,6 +267,7 @@ function App() {
         </LimiteDeError>
         </DireccionProvider>
         </FavoritosProvider>
+        </EdadProvider>
         </AjustesProvider>
       </AuthProvider>
     </BrowserRouter>

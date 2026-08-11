@@ -179,7 +179,9 @@ const LoginPassword = () => {
        */
       login('authenticated', 'client', user);
       localStorage.setItem('currentUser', JSON.stringify(user));
-      navigate('/bienvenida');
+      // `replace`: el login queda fuera del historial, para que el "atrás" del
+      // navegador no regrese a pedir la contraseña otra vez.
+      navigate('/bienvenida', { replace: true });
     }, 600);
   };
 

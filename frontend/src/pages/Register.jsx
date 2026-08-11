@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Phone, User, Hash, Lock, Loader2 } from 'lucide-react';
+import { Mail, Phone, User, Hash, Lock, Loader2, Calendar } from 'lucide-react';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ModalTerminos from '../components/Store/ModalTerminos';
 import { reglaDuiOpcional, reglaTelefono, bloquearNoDigitos } from '../utils/validaciones';
+import { calcularEdad, esMayorDeEdad } from '../utils/edad';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 import { useRegistro } from '../hooks/useRegistro';
 import { useModalTerminos } from '../hooks/useModalTerminos';
@@ -280,7 +281,11 @@ const Register = () => {
   const { abierto: terminosAbiertos, abrir: abrirTerminos, cerrar: cerrarTerminos } =
     useModalTerminos();
 
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+
+  // El DUI solo se pide cuando la fecha de nacimiento ya dice que es mayor: en
+  // El Salvador el DUI se emite a los 18, así que antes no hay ninguno que dar.
+  const puedeDui = esMayorDeEdad(watch('fechaNacimiento'));
 
   return (
     <Container>
@@ -322,27 +327,57 @@ const Register = () => {
             </InputContainer>
 
             {/*
-              El DUI es opcional: quien no lo anda a mano igual se registra hoy.
-              Solo se revisa si escribió algo (ver reglaDuiOpcional).
+              Fecha de nacimiento: para calcular la edad de los productos +18.
+              Es obligatoria, pero NO bloquea a los menores de tener cuenta —
+              pueden comprar lo demás; solo no verán los productos restringidos.
+              Va ANTES que el DUI porque es la que decide si el DUI se pide.
             */}
             <InputContainer>
-              <Label>DUI (opcional)</Label>
+              <Label>Fecha de nacimiento</Label>
               <InputWrapper>
-                <IconWrapper><Hash size={18} /></IconWrapper>
+                <IconWrapper><Calendar size={18} /></IconWrapper>
                 <Input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={LARGO_DUI}
-                  placeholder="00000000-0"
-                  {...register("dui", reglaDuiOpcional)}
-                  onKeyDown={bloquearNoDigitos}
-                  // El guion se pone solo: si cada quien lo escribe a su manera,
-                  // el mismo DUI termina guardado de tres formas distintas.
-                  onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  {...register("fechaNacimiento", {
+                    required: "La fecha de nacimiento es obligatoria",
+                    validate: (v) => {
+                      const edad = calcularEdad(v);
+                      if (edad == null) return "Esa fecha no es válida";
+                      if (edad < 0 || edad > 120) return "Revisá la fecha";
+                      return true;
+                    },
+                  })}
                 />
-                {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
+                {errors.fechaNacimiento && <ErrorMsg>{errors.fechaNacimiento.message}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
+
+            {/*
+              El DUI solo aparece cuando la fecha ya dice que es mayor de edad:
+              es opcional, y a un menor no tendría por qué pedírsele. Se revisa
+              solo si escribió algo (ver reglaDuiOpcional).
+            */}
+            {puedeDui && (
+              <InputContainer>
+                <Label>DUI (opcional)</Label>
+                <InputWrapper>
+                  <IconWrapper><Hash size={18} /></IconWrapper>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={LARGO_DUI}
+                    placeholder="00000000-0"
+                    {...register("dui", reglaDuiOpcional)}
+                    onKeyDown={bloquearNoDigitos}
+                    // El guion se pone solo: si cada quien lo escribe a su manera,
+                    // el mismo DUI termina guardado de tres formas distintas.
+                    onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
+                  />
+                  {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
+                </InputWrapper>
+              </InputContainer>
+            )}
 
             <InputContainer>
               <Label>Teléfono</Label>

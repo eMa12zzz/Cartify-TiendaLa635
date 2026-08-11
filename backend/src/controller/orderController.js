@@ -266,6 +266,55 @@ orderController.getOrdersByClient = async (req, res) => {
   }
 };
 
+/*
+ * El cliente valora el SERVICIO de entrega de un pedido suyo YA entregado.
+ * No es una reseña del producto: es qué tal estuvo el reparto.
+ */
+orderController.rateService = async (req, res) => {
+  try {
+    const n = Number(req.body.rating);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      return res.status(400).json({ message: "La valoración va de 1 a 5 estrellas" });
+    }
+
+    const pedido = await orderModel
+      .findById(req.params.id)
+      .select("clientId status deliveryType serviceRating");
+
+    if (!pedido) {
+      return res.status(404).json({ message: "No se encontró el pedido" });
+    }
+
+    // Solo el cliente dueño del pedido lo valora (el personal no opina por él).
+    if (req.usuario?.tipo !== "Client" || String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+
+    // Y solo tiene sentido para un pedido a domicilio que ya se entregó.
+    if (pedido.deliveryType !== "delivery") {
+      return res.status(400).json({ message: "Solo se valora el servicio de los pedidos a domicilio" });
+    }
+    if (pedido.status !== "entregado") {
+      return res.status(400).json({ message: "Puede valorar el servicio cuando el pedido esté entregado" });
+    }
+
+    pedido.serviceRating = {
+      rating: n,
+      comment: String(req.body.comment || "").trim().slice(0, 500),
+      ratedAt: new Date(),
+    };
+    await pedido.save();
+
+    return res.status(200).json({
+      message: "¡Gracias por valorar el servicio!",
+      serviceRating: pedido.serviceRating,
+    });
+  } catch (error) {
+    console.log("error rateService: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 // SELECT — TODOS los pedidos (pantalla del empleado). Filtro opcional ?status=
 orderController.getOrders = async (req, res) => {
   try {

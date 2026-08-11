@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme, palettes } from '../context/ThemeContext';
-import { Check, Palette, User, CheckCircle2, LogOut } from 'lucide-react';
+import { Check, Palette, User, CheckCircle2, LogOut, Camera, Loader2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import { perfilService } from '../api/perfilService';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 
@@ -10,8 +12,56 @@ const AccountSettings = () => {
   const { paletteId, setPaletteId, palette } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [verPass, setVerPass] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, actualizarUsuario } = useAuth();
   const navigate = useNavigate();
+
+  // Foto de perfil: el input real vive escondido y lo dispara el avatar.
+  const fotoInputRef = useRef(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+
+  const subirFoto = async (e) => {
+    const archivo = e.target.files?.[0];
+    // Se limpia el input para poder volver a elegir la MISMA foto si hace falta.
+    e.target.value = '';
+    if (!archivo) return;
+
+    if (!archivo.type.startsWith('image/')) {
+      toast.error('Ese archivo no es una imagen. Use JPG, PNG o WEBP.');
+      return;
+    }
+    if (archivo.size > 8 * 1024 * 1024) {
+      toast.error('La imagen pesa demasiado. Use una de menos de 8 MB.');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('image', archivo);
+
+    setSubiendoFoto(true);
+    try {
+      const res = await perfilService.actualizarFoto(fd);
+      // Se refleja de una en el avatar y queda guardado en la sesión.
+      actualizarUsuario({ image: res.image });
+      toast.success('Foto de perfil actualizada');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'No se pudo subir la foto');
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
+
+  const quitarFoto = async () => {
+    setSubiendoFoto(true);
+    try {
+      await perfilService.quitarFoto();
+      actualizarUsuario({ image: null });
+      toast.success('Foto de perfil quitada');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'No se pudo quitar la foto');
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
 
   const userType = user?.type || 'employee';
 
@@ -163,17 +213,58 @@ const AccountSettings = () => {
             </form>
           </div>
 
-          {/* Profile Image Column */}
+          {/* Foto de perfil: se toca el avatar y se elige la imagen. */}
           <div className="flex-none pt-8">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center shadow-md mx-auto"
-                 style={{ backgroundColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }}>
-              <span className="text-3xl font-bold uppercase opacity-50">
-                {formData.userName ? formData.userName.substring(0, 2) : 'U'}
+            {/* El input real, escondido: lo abre el avatar de abajo. */}
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={subirFoto}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              onClick={() => !subiendoFoto && fotoInputRef.current?.click()}
+              disabled={subiendoFoto}
+              aria-label={user?.image ? 'Cambiar la foto de perfil' : 'Subir una foto de perfil'}
+              className="group relative w-32 h-32 md:w-40 md:h-40 rounded-full shadow-md mx-auto overflow-hidden flex items-center justify-center transition-transform hover:scale-[1.02]"
+              style={{ backgroundColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }}
+            >
+              {user?.image ? (
+                <img src={user.image} alt="Foto de perfil" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-3xl font-bold uppercase opacity-50">
+                  {formData.userName ? formData.userName.substring(0, 2) : 'U'}
+                </span>
+              )}
+
+              {/* Velo con la cámara: aparece al pasar el mouse, o fijo mientras sube. */}
+              <span
+                className={`absolute inset-0 flex items-center justify-center bg-black/45 text-white transition-opacity ${
+                  subiendoFoto ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+              >
+                {subiendoFoto ? <Loader2 className="w-7 h-7 animate-spin" /> : <Camera className="w-7 h-7" />}
               </span>
-            </div>
-            <p className="text-center text-xs mt-4 cursor-pointer hover:underline" style={{ color: 'var(--theme-text-secondary)' }}>
-              Cambiar avatar
+            </button>
+
+            <p className="text-center text-xs mt-4" style={{ color: 'var(--theme-text-secondary)' }}>
+              {user?.image ? 'Toca la foto para cambiarla' : 'Toca para subir tu foto'}
             </p>
+
+            {user?.image && (
+              <button
+                type="button"
+                onClick={quitarFoto}
+                disabled={subiendoFoto}
+                className="mx-auto mt-2 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors disabled:opacity-60"
+                style={{ borderColor: 'var(--theme-card-border)', color: 'var(--theme-text-secondary)' }}
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Quitar foto
+              </button>
+            )}
           </div>
         </div>
       )}

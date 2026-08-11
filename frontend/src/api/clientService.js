@@ -22,6 +22,18 @@ export const clientService = {
     return response.data;
   },
 
+  /*
+   * El cliente sube/reemplaza su foto de perfil. Va por el endpoint con
+   * multipart (PUT /client/:id), que exige también nombre, teléfono, correo y
+   * usuario: por eso el formData debe traerlos junto con 'image'.
+   */
+  actualizarConFoto: async (id, formData) => {
+    const response = await api.put(`/client/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   // El cliente reemplaza su lista de direcciones (arreglo de strings).
   // Favoritos del cliente (el corazón de las tarjetas de producto).
   getFavorites: async (id) => {
