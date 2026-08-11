@@ -1477,7 +1477,7 @@ const ShoppingCart = ({
                       {direcciones.length === 0 && !agregandoDireccion ? (
                         <div style={{
                           padding: '14px', border: '1px dashed #e0d3c4', borderRadius: 12,
-                          background: '#FBF6F0', textAlign: 'center',
+                          background: 'var(--marca-50)', textAlign: 'center',
                         }}>
                           <p style={{ fontSize: 13, color: '#7a6a5c', margin: '0 0 10px' }}>
                             Todavía no tiene direcciones guardadas.
@@ -1523,7 +1523,7 @@ const ShoppingCart = ({
                                     display: 'flex', alignItems: 'flex-start', gap: 10,
                                     padding: '11px 13px', borderRadius: 12, textAlign: 'left',
                                     border: `1px solid ${elegida ? BROWN : '#e5e5e5'}`,
-                                    background: elegida ? '#FBF6F0' : '#fff',
+                                    background: elegida ? 'var(--marca-50)' : '#fff',
                                   }}
                                 >
                                   <MapPin size={15} color={elegida ? BROWN : '#bbb'} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -1558,7 +1558,7 @@ const ShoppingCart = ({
                               onSubmit={guardarNuevaDireccion}
                               style={{
                                 marginTop: 10, padding: 12, borderRadius: 12,
-                                border: '1px solid #e0d3c4', background: '#FBF6F0',
+                                border: '1px solid #e0d3c4', background: 'var(--marca-50)',
                                 display: 'flex', flexDirection: 'column', gap: 8,
                               }}
                             >

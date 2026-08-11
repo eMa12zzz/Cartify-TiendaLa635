@@ -197,6 +197,10 @@ loginClientController.login = async (req, res) => {
         email: clientFound.email,
         userName: clientFound.userName,
         image: clientFound.image,
+        // Para el candado de los +18: con un DUI ya guardado no se le vuelve a
+        // preguntar. La fecha viaja para habilitar el campo DUI en Mi Cuenta.
+        dui: clientFound.dui,
+        fechaNacimiento: clientFound.fechaNacimiento,
       },
     });
 

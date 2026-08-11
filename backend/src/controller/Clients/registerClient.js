@@ -22,6 +22,8 @@ registerClientController.register = async (req, res) => {
     email,
     userName,
     password,
+    // Fecha de nacimiento (opcional): "YYYY-MM-DD". Para la edad de los +18.
+    fechaNacimiento,
     // El consentimiento. Llegan como texto: esto entra por multipart.
     aceptaTerminos,
     promociones
@@ -74,6 +76,8 @@ registerClientController.register = async (req, res) => {
         fullName,
         dui: duiLimpio,
         phoneNumber,
+        // Solo se lleva si vino algo: vacío queda undefined, no cadena.
+        fechaNacimiento: fechaNacimiento?.trim() ? fechaNacimiento.trim() : undefined,
         image,      // <-- Guardamos la URL de la imagen
         public_id,  // <-- Guardamos el ID de la imagen
         email,
@@ -196,6 +200,7 @@ registerClientController.verifyCode = async (req, res) => {
       fullName,
       dui,
       phoneNumber,
+      fechaNacimiento,
       image,
       public_id,
       email,
@@ -216,6 +221,8 @@ registerClientController.verifyCode = async (req, res) => {
       // Sin DUI el campo no se crea (ver el comentario en register): así una
       // eventual restricción de unicidad no choca entre clientes sin DUI.
       ...(dui ? { dui } : {}),
+      // La fecha de nacimiento solo se guarda si el cliente la dio.
+      ...(fechaNacimiento ? { fechaNacimiento } : {}),
       phoneNumber,
       // La lista de direcciones arranca vacía: la llena el cliente desde
       // "Mi cuenta > Direcciones", que es de donde salen las entregas.

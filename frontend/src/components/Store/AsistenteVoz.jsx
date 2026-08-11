@@ -155,7 +155,7 @@ const AsistenteVoz = ({
     : hablando ? '#a7f3d0'
     : !activo ? '#e5e7eb'
     : escuchando ? '#fca5a5' : '#fcd34d';
-  const micColor = escuchando ? '#dc2626' : activo ? '#d97706' : '#B47C4D';
+  const micColor = escuchando ? '#dc2626' : activo ? '#d97706' : 'var(--marca-600)';
 
   const pill = { backgroundColor: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)' };
 
@@ -166,7 +166,7 @@ const AsistenteVoz = ({
         onClick={() => setMinimizado(false)}
         aria-label="Volver a la pantalla del asistente"
         className="fixed bottom-6 right-6 flex items-center gap-3 pl-4 pr-5 py-3 rounded-full shadow-2xl text-white"
-        style={{ backgroundColor: '#B47C4D', zIndex: 9998 }}
+        style={{ backgroundColor: 'var(--marca-600)', zIndex: 9998 }}
         initial={{ opacity: 0, y: reduce ? 0 : 12, scale: reduce ? 1 : 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2, ease: EASE_OUT }}
@@ -181,7 +181,7 @@ const AsistenteVoz = ({
           Asistente {escuchando ? 'escuchando…' : 'activo'}
         </span>
         {items > 0 && (
-          <span className="min-w-[24px] h-6 px-1.5 rounded-full bg-white text-[#B47C4D] text-xs font-bold flex items-center justify-center">
+          <span className="min-w-[24px] h-6 px-1.5 rounded-full bg-white text-xs font-bold flex items-center justify-center" style={{ color: 'var(--marca-600)' }}>
             {items}
           </span>
         )}
@@ -234,7 +234,7 @@ const AsistenteVoz = ({
             </p>
             {/* El código escrito es el plan B: si la cámara no agarra, se
                 puede teclear en el teléfono. */}
-            <p className="text-[13px] font-black tracking-[3px]" style={{ color: '#B46C30' }}>
+            <p className="text-[13px] font-black tracking-[3px]" style={{ color: 'var(--marca-600)' }}>
               {kiosco.codigo}
             </p>
           </div>
@@ -380,7 +380,7 @@ const AsistenteVoz = ({
                   <div
                     className="max-w-[80%] px-3.5 py-2 rounded-2xl text-sm text-left text-white"
                     style={m.tipo === 'user'
-                      ? { backgroundColor: '#B47C4D' }
+                      ? { backgroundColor: 'var(--marca-600)' }
                       : { backgroundColor: 'rgba(255,255,255,0.10)' }}
                   >
                     {m.texto}

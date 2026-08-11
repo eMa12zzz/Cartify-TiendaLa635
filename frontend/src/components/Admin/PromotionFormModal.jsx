@@ -385,6 +385,13 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     // Diseño del banner (solo se usa si no hay imagen propia).
     fd.append('tema', tema);
     fd.append('icono', icono);
+    /*
+     * Quitó la imagen que ya tenía y no puso otra en su lugar. Sin avisarlo, el
+     * backend no tiene forma de saberlo —un FormData sin 'image' se lee igual
+     * que "no la tocó"— y la foto seguía viva en Cloudinary y en el banner.
+     */
+    const quitoImagen = isEditing && !!promoData?.image && !preview && !imagen;
+    fd.append('removeImage', quitoImagen ? 'true' : 'false');
     if (tema === 'personalizado') {
       fd.append('colorFondo', colorFondo);
       fd.append('colorFondo2', colorFondo2);

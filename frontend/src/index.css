@@ -79,6 +79,21 @@ h1, h2, h3, h4 {
 }
 
 /*
+  ==========================================
+  UN SOLO OJO EN LOS CAMPOS DE CONTRASEÑA
+  ==========================================
+  Edge y otros navegadores de Windows dibujan SU PROPIO control de "revelar
+  contraseña" (::-ms-reveal) y una "X" para borrar (::-ms-clear) dentro de los
+  input. Como toda la app ya pone su propio ojo (BotonOjo / CampoContrasena),
+  en esos navegadores aparecían DOS ojos, uno pegado al otro. Se ocultan los
+  nativos para que quede solo el nuestro, igual en todas las máquinas.
+*/
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/*
   Hover con movimiento SOLO donde hay mouse de verdad. En pantallas táctiles
   (el kiosco), un toque dispara un "hover" falso que deja la tarjeta pegada.
 */

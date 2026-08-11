@@ -182,13 +182,28 @@ clientController.deleteClient = async (req, res) => {
 // obligatorios), este acepta JSON y solo toca los campos que vengan.
 clientController.updateClientProfile = async (req, res) => {
   try {
-    const { fullName, userName, email, phoneNumber } = req.body;
+    const { fullName, userName, email, phoneNumber, fechaNacimiento, dui } = req.body;
 
     const updates = {};
     if (fullName !== undefined) updates.fullName = fullName;
     if (userName !== undefined) updates.userName = userName;
     if (email !== undefined) updates.email = email?.trim();
     if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
+
+    // Fecha de nacimiento: vacío la borra, con valor la guarda (para la edad +18).
+    if (fechaNacimiento !== undefined) {
+      if (fechaNacimiento) updates.fechaNacimiento = fechaNacimiento;
+      else updates.$unset = { ...(updates.$unset || {}), fechaNacimiento: 1 };
+    }
+
+    /*
+     * DUI opcional, mismo criterio que en el registro: vacío BORRA el campo con
+     * $unset en vez de dejar "", para no chocar contra un eventual índice único.
+     */
+    if (dui !== undefined) {
+      if (dui?.trim()) updates.dui = dui.trim();
+      else updates.$unset = { ...(updates.$unset || {}), dui: 1 };
+    }
 
     const updated = await clientModel
       .findByIdAndUpdate(req.params.id, updates, { new: true })

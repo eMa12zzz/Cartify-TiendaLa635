@@ -37,6 +37,12 @@ export const orderService = {
     return response.data;
   },
 
+  // El cliente valora el SERVICIO de entrega de su pedido entregado (1-5 estrellas).
+  rateService: async (id, { rating, comment }) => {
+    const response = await api.patch(`/order/${id}/rating`, { rating, comment });
+    return response.data;
+  },
+
   /*
    * Seguimiento en vivo. El repartidor escribe su punto mientras maneja;
    * `activo: false` apaga el compartir y borra la última posición.
