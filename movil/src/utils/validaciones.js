@@ -29,11 +29,42 @@ export const validarContrasena = (valor) => {
   return null;
 };
 
-// DUI salvadoreño: 8 dígitos, guion y 1 dígito (12345678-9).
+// Los dígitos del DUI, sin el guion.
+const digitosDelDui = (valor) => String(valor || '').replace(/\D/g, '');
+
+/*
+ * ¿Cuadra el dígito verificador? Es la MISMA cuenta que la web
+ * (frontend/src/utils/validaciones.js `duiEsValido`): los 8 primeros dígitos se
+ * multiplican por 9, 8, 7...2, se suman, y el verificador tiene que ser
+ * (10 - suma % 10) % 10. Ese último % 10 no es adorno: cuando la suma cierra en
+ * 0 el verificador es 0, no 10, y sin él se rechazaría todo DUI terminado en 0.
+ *
+ * Esto solo descarta un número inventado al azar; NO confirma que la persona
+ * exista ni que el documento sea suyo — ese registro vive en el RNPN y no tiene
+ * una API pública para consultarlo.
+ */
+export const duiEsValido = (valor) => {
+  const d = digitosDelDui(valor);
+  if (d.length !== 9) return false;
+  // "00000000-0" y "11111111-1" cuadran con la aritmética pero no son de nadie:
+  // es lo que sale cuando alguien llena el campo por salir del paso.
+  if (/^(\d)\1{8}$/.test(d)) return false;
+  let suma = 0;
+  for (let i = 0; i < 8; i++) suma += Number(d[i]) * (9 - i);
+  return (10 - (suma % 10)) % 10 === Number(d[8]);
+};
+
+/*
+ * DUI del cliente: OPCIONAL, igual que en la web (`reglaDuiOpcional`). Mucha
+ * gente del barrio no lo anda a mano y perder un registro por eso no vale la
+ * pena. Vacío pasa; si escribió algo, tiene que estar completo (9 dígitos) y
+ * cuadrar el verificador.
+ */
 export const validarDui = (valor) => {
-  if (vacio(valor)) return 'El DUI es obligatorio';
-  if (!/^\d{8}-\d$/.test(valor)) return 'Formato de DUI: 12345678-9';
-  return null;
+  const d = digitosDelDui(valor);
+  if (!d.length) return null; // no lo puso: perfecto, seguimos
+  if (d.length < 9) return 'El DUI lleva 9 dígitos (12345678-9)';
+  return duiEsValido(valor) ? null : 'Ese DUI no parece correcto, revise los números';
 };
 
 // Teléfono salvadoreño: 8 dígitos, normalmente 1234-5678.

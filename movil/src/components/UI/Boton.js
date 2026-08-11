@@ -8,12 +8,11 @@
  *
  * ── El color se recibe, no se lee del tema ──
  *
- * Este botón lo usan las dos mitades de la app: las pantallas de tienda, que
- * se repintan con la temporada, y las de sesión, que NO —una pantalla de login
- * que cambia de color según el mes no se lee como decoración, se lee como que
- * uno se equivocó de aplicación—. Si leyera `useTema()` por su cuenta no
- * habría forma de distinguirlas, así que la tienda le pasa su color y el resto
- * se queda con el café de siempre.
+ * Tanto la tienda como las pantallas de sesión le pasan el color de la
+ * temporada (`color={colores.marca}`). El botón NO lee `useTema()` por su
+ * cuenta a propósito: recibirlo deja que quien lo use decida —un botón sobre un
+ * fondo de color, o un caso que deba quedarse con el café fijo, solo no le pasa
+ * color y cae al `backgroundColor` por defecto del estilo.
  */
 
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';

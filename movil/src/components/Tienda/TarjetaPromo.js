@@ -19,18 +19,26 @@
  * completo está `imagenCompleta`, que devuelve el comportamiento de imagen a
  * sangre. Es una decisión, no un accidente.
  *
- * ── Lo único que sigue distinto de la web ──
+ * ── El difuminado de la foto que acompaña ──
  *
- * La foto que acompaña no se difumina hacia el fondo. Esa difuminación es una
- * máscara de degradado sobre la imagen (`maskImage`), y eso no es lo mismo que
- * un degradado de fondo: pediría react-native-masked-view, otro paquete. Aquí
- * la imagen ocupa su mitad derecha con un borde limpio.
+ * Igual que la web, la foto se funde hacia la izquierda con el fondo. La web lo
+ * hace con `maskImage`; aquí con MaskedView, que pinta la imagen SOLO donde su
+ * máscara es opaca. La máscara es un degradado horizontal de transparente
+ * (izquierda) a opaco (46%), así que por los huecos transparentes asoma el
+ * degradado del fondo que ya está pintado detrás — y se funde con cualquier
+ * tema, sea cual sea su color.
  * ============================================================
  */
 
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+// El Image de expo-image y no el de react-native: el nativo no decodifica
+// WebP/AVIF de forma fiable, y los banners que sube la tienda pueden venir en
+// .webp desde Cloudinary.
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+// Para difuminar la foto que acompaña hacia el fondo, como la web con maskImage.
+import MaskedView from '@react-native-masked-view/masked-view';
 import { coloresDePromo } from '../../utils/temasPromo';
 import { glifoDePromo, MaterialCommunityIcons } from '../../utils/iconosPromo';
 import { Flecha, Reloj } from '../UI/Iconos';
@@ -107,20 +115,43 @@ const TarjetaPromo = ({ promo, etiqueta, vencimiento, ancho }) => {
         </View>
       )}
 
+      {/*
+        La foto se pinta a través de una máscara de degradado: opaca a la
+        derecha y desvaneciéndose hacia la izquierda, así se funde con el fondo
+        en vez de cortarse con un borde duro. Es el equivalente del `maskImage`
+        de la web. Por los huecos transparentes de la máscara se ve el degradado
+        del fondo, que ya está pintado detrás.
+      */}
       {acompaña && (
-        <Image
-          source={{ uri: promo.image }}
-          resizeMode="cover"
+        <MaskedView
           style={estilos.imagenAcompana}
-          onError={() => setFallóImagen(true)}
-          accessible={false}
-        />
+          pointerEvents="none"
+          maskElement={
+            <LinearGradient
+              // Transparente al 0% y opaco al 46%, igual que la web
+              // (`linear-gradient(to right, transparent 0%, #000 46%)`).
+              colors={['transparent', '#000']}
+              locations={[0, 0.46]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          }
+        >
+          <Image
+            source={{ uri: promo.image }}
+            contentFit="cover"
+            style={StyleSheet.absoluteFill}
+            onError={() => setFallóImagen(true)}
+            accessible={false}
+          />
+        </MaskedView>
       )}
 
       {aSangre ? (
         <Image
           source={{ uri: promo.image }}
-          resizeMode="cover"
+          contentFit="cover"
           style={estilos.imagenCompleta}
           onError={() => setFallóImagen(true)}
           accessibilityLabel={promo.title || promo.promoDescription || 'Promoción'}

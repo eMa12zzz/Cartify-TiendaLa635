@@ -39,14 +39,19 @@ import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
-import { Candado, Sobre } from '../components/UI/Iconos';
+// Los mismos iconos que la web (lucide): correo `Mail`, contraseña `Lock`.
+import { Lock, Mail } from 'lucide-react-native';
 import { loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
+import { useTema } from '../context/TemaContext';
 import { COLORES } from '../theme/colores';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 
 const LoginClient = ({ irARegistro, irATienda }) => {
   const { login } = useAuth();
+  // La paleta de la temporada: el botón y los enlaces se pintan con ella, igual
+  // que la tienda. Fuera de temporada es el café de la marca de siempre.
+  const { colores } = useTema();
   const [valores, setValores] = useState({ email: '', password: '' });
   const [errores, setErrores] = useState({});
   const [avisoServidor, setAvisoServidor] = useState('');
@@ -119,7 +124,7 @@ const LoginClient = ({ irARegistro, irATienda }) => {
 
             <CampoTexto
               etiqueta="Correo Electrónico"
-              icono={Sobre}
+              icono={Mail}
               marcador="juan@ejemplo.com"
               valor={valores.email}
               alCambiar={cambiar('email')}
@@ -131,7 +136,7 @@ const LoginClient = ({ irARegistro, irATienda }) => {
 
             <CampoTexto
               etiqueta="Contraseña"
-              icono={Candado}
+              icono={Lock}
               marcador="••••••••"
               valor={valores.password}
               alCambiar={cambiar('password')}
@@ -145,7 +150,7 @@ const LoginClient = ({ irARegistro, irATienda }) => {
               <Casilla marcada={recordarme} alCambiar={setRecordarme} etiqueta="Recordarme 30 días" />
               {/* Pendiente: la pantalla de recuperar contraseña todavía no existe en móvil. */}
               <Pressable hitSlop={8}>
-                <Text style={estilos.enlace}>¿Olvidaste tu contraseña?</Text>
+                <Text style={[estilos.enlace, { color: colores.marca }]}>¿Olvidaste tu contraseña?</Text>
               </Pressable>
             </View>
 
@@ -155,7 +160,13 @@ const LoginClient = ({ irARegistro, irATienda }) => {
               </View>
             ) : null}
 
-            <Boton texto="Iniciar sesión" alPresionar={enviar} cargando={cargando} />
+            <Boton
+              texto="Iniciar sesión"
+              alPresionar={enviar}
+              cargando={cargando}
+              color={colores.marca}
+              colorPresionado={colores.marcaOscuro}
+            />
 
             {/*
               La única puerta al registro que queda, y va aquí porque es donde
@@ -164,7 +175,7 @@ const LoginClient = ({ irARegistro, irATienda }) => {
             */}
             <Text style={estilos.pie}>
               ¿No tiene una cuenta?{' '}
-              <Text style={estilos.pieEnlace} onPress={irARegistro}>
+              <Text style={[estilos.pieEnlace, { color: colores.marca }]} onPress={irARegistro}>
                 Regístrese
               </Text>
             </Text>

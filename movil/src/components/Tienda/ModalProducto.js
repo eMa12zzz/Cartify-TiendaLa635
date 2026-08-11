@@ -23,7 +23,10 @@
  */
 
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+// El Image de expo-image y no el de react-native: el nativo no decodifica
+// WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
+import { Image } from 'expo-image';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import Boton from '../UI/Boton';
@@ -86,7 +89,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
               {producto.imagen && !fallóImagen ? (
                 <Image
                   source={{ uri: producto.imagen }}
-                  resizeMode="contain"
+                  contentFit="contain"
                   style={estilos.imagen}
                   onError={() => setFallóImagen(true)}
                 />

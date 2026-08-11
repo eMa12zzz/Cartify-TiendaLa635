@@ -14,8 +14,9 @@
 
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
-import { Ojo } from './Iconos';
+import { useTema } from '../../context/TemaContext';
 
 const CampoTexto = ({
   etiqueta,
@@ -30,8 +31,13 @@ const CampoTexto = ({
   const [enfocado, setEnfocado] = useState(false);
   const [verTexto, setVerTexto] = useState(false);
 
-  // El rojo gana sobre el café: si el campo está mal, eso es lo que hay que ver.
-  const colorBorde = error ? COLORES.error : enfocado ? COLORES.marca : COLORES.borde;
+  // El borde de foco se pinta con el color de la temporada, igual que la
+  // tienda: en Navidad se enfoca en verde, en Independencia en azul. Fuera de
+  // temporada `colores.marca` es el café de siempre.
+  const { colores } = useTema();
+
+  // El rojo gana sobre la marca: si el campo está mal, eso es lo que hay que ver.
+  const colorBorde = error ? COLORES.error : enfocado ? colores.marca : COLORES.borde;
 
   return (
     <View style={estilos.contenedor}>
@@ -40,7 +46,9 @@ const CampoTexto = ({
       <View style={estilos.envoltorio}>
         {Icono && (
           <View style={estilos.icono} pointerEvents="none">
-            <Icono size={18} />
+            {/* El color se pasa aquí para que los iconos de lucide (que por
+                defecto van negros) tomen el mismo gris que la web (#aaa). */}
+            <Icono size={18} color={COLORES.iconoCampo} />
           </View>
         )}
 
@@ -48,7 +56,7 @@ const CampoTexto = ({
           style={[
             estilos.campo,
             { borderColor: colorBorde },
-            enfocado && !error && estilos.campoEnfocado,
+            enfocado && !error && [estilos.campoEnfocado, { shadowColor: colores.marca }],
             esContrasena && estilos.campoConOjo,
           ]}
           value={valor}
@@ -66,6 +74,11 @@ const CampoTexto = ({
          * ciegas una clave con mayúsculas y símbolos es la razón número uno de
          * "no me deja entrar"; poder mirarla un segundo resuelve más que
          * cualquier mensaje de error.
+         *
+         * Se usan `Eye`/`EyeOff` de lucide-react-native —los MISMOS iconos que
+         * la web (`Eye`/`EyeOff` de lucide-react)— para que el ojo quede
+         * idéntico. Cuando la contraseña está a la vista, el icono es el ojo
+         * tachado (para ocultarla).
          */}
         {esContrasena && (
           <Pressable
@@ -75,7 +88,7 @@ const CampoTexto = ({
             accessibilityRole="button"
             accessibilityLabel={verTexto ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
-            <Ojo size={17} tachado={verTexto} />
+            {verTexto ? <EyeOff size={17} color="#9CA3AF" /> : <Eye size={17} color="#9CA3AF" />}
           </Pressable>
         )}
       </View>

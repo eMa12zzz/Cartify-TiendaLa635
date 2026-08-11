@@ -10,10 +10,11 @@
  * Dos cosas se hacen distinto que en la web, y por buenas razones:
  *
  *   1. El DUI y el teléfono se formatean solos mientras se escriben, con las
- *      máscaras del proyecto. En la web esos dos campos solo son obligatorios;
- *      en un teclado de celular, donde el guion está en otra pantalla del
- *      teclado, dejarlo a mano garantiza que la base termine con "12345678-9"
- *      y "123456789" conviviendo.
+ *      máscaras del proyecto: en un teclado de celular, donde el guion está en
+ *      otra pantalla del teclado, dejarlo a mano garantiza que la base termine
+ *      con "12345678-9" y "123456789" conviviendo. El DUI es OPCIONAL, igual
+ *      que en la web; si se escribe, se valida el dígito verificador (ver
+ *      utils/validaciones.js `validarDui`).
  *
  *   2. La foto de perfil todavía no abre la galería: eso pide
  *      `expo-image-picker`, que no está instalado. El recuadro está puesto,
@@ -49,8 +50,11 @@ import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
 import HojaTerminos from '../components/UI/HojaTerminos';
-import { Camara, Candado, Numeral, Persona, Sobre, Telefono } from '../components/UI/Iconos';
+// Los mismos iconos que la web (lucide): nombre/usuario `User`, DUI `Hash`,
+// teléfono `Phone`, correo `Mail`, contraseña `Lock`, foto `Camera`.
+import { Camera, Hash, Lock, Mail, Phone, User } from 'lucide-react-native';
 import { registrarCliente } from '../api/authApi';
+import { useTema } from '../context/TemaContext';
 import { COLORES } from '../theme/colores';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 import {
@@ -82,6 +86,9 @@ const REGLAS = {
 };
 
 const Register = ({ irALogin, alPedirCodigo }) => {
+  // La paleta de la temporada: el botón, los enlaces y la zona de foto se
+  // pintan con ella, como la tienda. Fuera de temporada es el café de siempre.
+  const { colores } = useTema();
   const [valores, setValores] = useState(VALORES_INICIALES);
   const [errores, setErrores] = useState({});
   const [avisoServidor, setAvisoServidor] = useState('');
@@ -163,7 +170,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <CampoTexto
             etiqueta="Nombre Completo"
-            icono={Persona}
+            icono={User}
             marcador="Juan Pérez"
             valor={valores.fullName}
             alCambiar={cambiar('fullName')}
@@ -173,7 +180,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <CampoTexto
             etiqueta="Nombre de Usuario"
-            icono={Persona}
+            icono={User}
             marcador="juanperez99"
             valor={valores.userName}
             alCambiar={cambiar('userName')}
@@ -182,8 +189,8 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           />
 
           <CampoTexto
-            etiqueta="DUI"
-            icono={Numeral}
+            etiqueta="DUI (opcional)"
+            icono={Hash}
             marcador="00000000-0"
             valor={valores.dui}
             alCambiar={cambiar('dui', formatearDui)}
@@ -194,7 +201,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <CampoTexto
             etiqueta="Teléfono"
-            icono={Telefono}
+            icono={Phone}
             marcador="7000-0000"
             valor={valores.phoneNumber}
             alCambiar={cambiar('phoneNumber', formatearTelefono)}
@@ -205,7 +212,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <CampoTexto
             etiqueta="Correo Electrónico"
-            icono={Sobre}
+            icono={Mail}
             marcador="juan@ejemplo.com"
             valor={valores.email}
             alCambiar={cambiar('email')}
@@ -217,7 +224,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <CampoTexto
             etiqueta="Contraseña"
-            icono={Candado}
+            icono={Lock}
             marcador="********"
             valor={valores.password}
             alCambiar={cambiar('password')}
@@ -228,11 +235,14 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <Text style={estilos.etiquetaFoto}>Foto de Perfil (Opcional)</Text>
           <Pressable
-            style={({ pressed }) => [estilos.zonaFoto, pressed && estilos.zonaFotoPresionada]}
+            style={({ pressed }) => [
+              estilos.zonaFoto,
+              pressed && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Subir foto de perfil"
           >
-            <Camara size={28} />
+            <Camera size={28} color={COLORES.iconoCampo} />
             <Text style={estilos.textoFoto}>Toque para elegir su foto</Text>
             <Text style={estilos.ayudaFoto}>JPG o PNG, hasta 8 MB</Text>
           </Pressable>
@@ -254,7 +264,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
                 }}
                 etiqueta="He leído y acepto"
               />
-              <Text style={estilos.enlace} onPress={() => setVerTerminos(true)}>
+              <Text style={[estilos.enlace, { color: colores.marca }]} onPress={() => setVerTerminos(true)}>
                 los términos y el aviso de privacidad
               </Text>
             </View>
@@ -279,11 +289,18 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             </View>
           ) : null}
 
-          <Boton texto="Continuar" alPresionar={enviar} cargando={cargando} estilo={estilos.boton} />
+          <Boton
+            texto="Continuar"
+            alPresionar={enviar}
+            cargando={cargando}
+            estilo={estilos.boton}
+            color={colores.marca}
+            colorPresionado={colores.marcaOscuro}
+          />
 
           <Text style={estilos.pie}>
             ¿Ya tienes una cuenta?{' '}
-            <Text style={estilos.pieEnlace} onPress={irALogin}>
+            <Text style={[estilos.pieEnlace, { color: colores.marca }]} onPress={irALogin}>
               Iniciar Sesión
             </Text>
           </Text>
@@ -331,10 +348,6 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     marginBottom: 16,
-  },
-  zonaFotoPresionada: {
-    borderColor: COLORES.marca,
-    backgroundColor: COLORES.marcaSuave,
   },
   textoFoto: {
     fontSize: 13.5,

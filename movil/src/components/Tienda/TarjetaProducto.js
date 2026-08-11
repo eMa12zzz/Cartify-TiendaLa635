@@ -21,7 +21,11 @@
  */
 
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+// El Image de expo-image y no el de react-native: el nativo no decodifica
+// WebP/AVIF de forma fiable (sobre todo en Android), y las fotos de producto
+// se sirven desde Cloudinary en .webp. Ver AGENTS.md y los docs de SDK 54.
+import { Image } from 'expo-image';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import { useFavoritos } from '../../context/FavoritosContext';
@@ -69,7 +73,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar }) => {
              * vienen de mil tamaños distintos (unas del proveedor, otras del
              * celular), así que ninguna caja fija les queda bien a todas.
              */
-            resizeMode="contain"
+            contentFit="contain"
             style={estilos.imagen}
             onError={() => setFallóImagen(true)}
           />

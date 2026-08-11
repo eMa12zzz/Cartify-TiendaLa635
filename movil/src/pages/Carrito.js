@@ -28,7 +28,10 @@
  */
 
 import { useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+// El Image de expo-image y no el de react-native: el nativo no decodifica
+// WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
+import { Image } from 'expo-image';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTienda } from '../context/TiendaContext';
@@ -48,7 +51,7 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
         {item.imagen && !fallóImagen ? (
           <Image
             source={{ uri: item.imagen }}
-            resizeMode="contain"
+            contentFit="contain"
             style={estilos.miniaturaImagen}
             onError={() => setFallóImagen(true)}
           />

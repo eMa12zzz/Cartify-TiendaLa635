@@ -19,14 +19,15 @@
  * objeto en cada render y tira a la basura la única optimización que
  * StyleSheet ofrece.
  *
- * ── Solo la tienda, no la sesión ──
+ * ── También la sesión ──
  *
- * La web repinta el área del cliente y NO el panel, porque el panel tiene sus
- * paletas de accesibilidad y repintárselo en diciembre le arruinaría eso a
- * quien menos se lo puede permitir. Aquí la frontera equivalente son las
- * pantallas de sesión —entrar, registrarse, verificar—: se quedan con el café
- * de la marca. Una pantalla de login que cambia de color según el mes no se
- * lee como decoración, se lee como que uno se equivocó de aplicación.
+ * Las pantallas de entrar, registrarse y verificar TAMBIÉN siguen la temporada
+ * (el botón, los enlaces y el borde de foco), para que la app se vea de una
+ * sola pieza: quien abre en diciembre y encuentra la tienda de verde no espera
+ * que el login siga café. Consumen la paleta con `useTema()` igual que la
+ * tienda. Lo único que se queda con el café de la marca es el panel de
+ * administración —que no existe en móvil—, porque ahí el color es accesibilidad
+ * y no decoración.
  * ============================================================
  */
 
