@@ -19,6 +19,15 @@
  *      `expo-image-picker`, que no está instalado. El recuadro está puesto,
  *      con su sitio y su medida, para que al conectarlo no se mueva nada.
  *
+ * ── Ya no se pide la dirección ──
+ *
+ * La tenía, y no servía para nada. El backend dejó de leerla (ver el comentario
+ * al inicio de `backend/src/controller/Clients/registerClient.js`): mandaba un
+ * texto suelto a un campo que después no leía nadie, porque las direcciones de
+ * entrega viven en su propio apartado y se administran desde "Mi cuenta". Aquí
+ * seguía siendo obligatoria, así que la app obligaba a escribir una dirección
+ * para tirarla.
+ *
  * Enviar NO crea la cuenta: el backend guarda los datos 15 minutos y manda un
  * código de 6 caracteres al correo. Por eso de aquí se sale a Verificación y
  * no a la tienda.
@@ -38,7 +47,9 @@ import {
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
-import { Camara, Candado, Numeral, Persona, Pin, Sobre, Telefono } from '../components/UI/Iconos';
+import Casilla from '../components/UI/Casilla';
+import HojaTerminos from '../components/UI/HojaTerminos';
+import { Camara, Candado, Numeral, Persona, Sobre, Telefono } from '../components/UI/Iconos';
 import { registrarCliente } from '../api/authApi';
 import { COLORES } from '../theme/colores';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
@@ -57,7 +68,6 @@ const VALORES_INICIALES = {
   userName: '',
   dui: '',
   phoneNumber: '',
-  clientAddress: '',
   email: '',
   password: '',
 };
@@ -67,7 +77,6 @@ const REGLAS = {
   userName: (v) => requerido(v, 'El nombre de usuario es obligatorio'),
   dui: validarDui,
   phoneNumber: validarTelefono,
-  clientAddress: (v) => requerido(v, 'La dirección es obligatoria'),
   email: validarCorreo,
   password: validarContrasena,
 };
@@ -77,6 +86,20 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   const [errores, setErrores] = useState({});
   const [avisoServidor, setAvisoServidor] = useState('');
   const [cargando, setCargando] = useState(false);
+
+  /*
+   * El consentimiento va aparte de `valores` porque no son campos de texto y
+   * no pasan por `validarFormulario`.
+   *
+   * Son DOS casillas separadas a propósito, igual que en la web: aceptar las
+   * condiciones y querer publicidad son dos cosas distintas, y meterlas en una
+   * sola es cobrarle a alguien el permiso de mandarle promociones a cambio de
+   * poder tener cuenta.
+   */
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [promociones, setPromociones] = useState(false);
+  const [errorTerminos, setErrorTerminos] = useState('');
+  const [verTerminos, setVerTerminos] = useState(false);
 
   /*
    * `formateador` es opcional: los campos normales guardan lo que se teclea y
@@ -92,13 +115,27 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   const enviar = async () => {
     const encontrados = validarFormulario(valores, REGLAS);
     setErrores(encontrados);
-    if (!sinErrores(encontrados)) return;
+
+    /*
+     * Los términos se revisan junto con lo demás y no antes: así quien no
+     * llenó nada ve TODO lo que le falta de una vez, en vez de que el
+     * formulario le vaya sacando un problema por intento.
+     */
+    const faltaAceptar = !aceptaTerminos;
+    setErrorTerminos(faltaAceptar ? 'Hay que aceptar los términos para crear la cuenta' : '');
+
+    if (!sinErrores(encontrados) || faltaAceptar) return;
 
     try {
       setCargando(true);
       setAvisoServidor('');
 
-      await registrarCliente({ ...valores, email: valores.email.trim() });
+      await registrarCliente({
+        ...valores,
+        email: valores.email.trim(),
+        aceptaTerminos,
+        promociones,
+      });
 
       // La cuenta todavía no existe: nace cuando vuelva el código del correo.
       alPedirCodigo(valores.email.trim());
@@ -167,15 +204,6 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           />
 
           <CampoTexto
-            etiqueta="Dirección"
-            icono={Pin}
-            marcador="San Salvador, El Salvador"
-            valor={valores.clientAddress}
-            alCambiar={cambiar('clientAddress')}
-            error={errores.clientAddress}
-          />
-
-          <CampoTexto
             etiqueta="Correo Electrónico"
             icono={Sobre}
             marcador="juan@ejemplo.com"
@@ -209,6 +237,42 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             <Text style={estilos.ayudaFoto}>JPG o PNG, hasta 8 MB</Text>
           </Pressable>
 
+          {/*
+            El consentimiento. La casilla y el enlace van en la MISMA fila
+            porque una casilla que no dice qué se está aceptando no es un
+            consentimiento: es un trámite. Tocar "los términos" abre el
+            documento encima, sin salir del formulario — ir a otra pantalla
+            haría perder todo lo escrito.
+          */}
+          <View style={estilos.consentimiento}>
+            <View style={estilos.filaTerminos}>
+              <Casilla
+                marcada={aceptaTerminos}
+                alCambiar={(v) => {
+                  setAceptaTerminos(v);
+                  if (v) setErrorTerminos('');
+                }}
+                etiqueta="He leído y acepto"
+              />
+              <Text style={estilos.enlace} onPress={() => setVerTerminos(true)}>
+                los términos y el aviso de privacidad
+              </Text>
+            </View>
+
+            {errorTerminos ? <Text style={estilos.errorTerminos}>{errorTerminos}</Text> : null}
+
+            {/*
+              Opcional de verdad: se puede tener cuenta sin marcarla, y se
+              apaga después desde "Mi cuenta > Notificaciones". Los avisos de
+              sus pedidos no dependen de esto, porque esos no son publicidad.
+            */}
+            <Casilla
+              marcada={promociones}
+              alCambiar={setPromociones}
+              etiqueta="Quiero recibir ofertas y novedades por correo (opcional)"
+            />
+          </View>
+
           {avisoServidor ? (
             <View style={estilos.aviso}>
               <Text style={estilos.avisoTexto}>{avisoServidor}</Text>
@@ -225,6 +289,9 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Encima de todo el formulario, que sigue montado detrás con lo escrito. */}
+      {verTerminos && <HojaTerminos alCerrar={() => setVerTerminos(false)} />}
     </View>
   );
 };
@@ -277,6 +344,32 @@ const estilos = StyleSheet.create({
   ayudaFoto: {
     fontSize: 12,
     color: COLORES.marcador,
+  },
+  consentimiento: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  /*
+   * La casilla y el enlace en la misma línea, con `flexWrap`: en un teléfono
+   * angosto "los términos y el aviso de privacidad" no cabe al lado de "He
+   * leído y acepto", y sin el wrap el enlace se cortaba a la mitad.
+   */
+  filaTerminos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  enlace: {
+    fontSize: 13,
+    color: COLORES.marca,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  errorTerminos: {
+    color: COLORES.error,
+    fontSize: 12,
+    marginTop: -4,
   },
   aviso: {
     backgroundColor: '#FEF2F2',

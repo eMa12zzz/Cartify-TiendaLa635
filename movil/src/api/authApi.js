@@ -31,22 +31,36 @@ export const loginClientDB = ({ email, password }) =>
  * token de 15 minutos, lo deja en la cookie `registrationCookie` y manda un
  * código de 6 caracteres al correo. La cuenta nace en verificarCodigoCorreo.
  *
- * Ojo con el nombre de los campos: el backend espera `ClientAddress` con C
- * mayúscula, y `fullName` en vez del "nombre completo" de la pantalla.
- *
  * Se manda como JSON y no como FormData porque todavía no hay foto que subir.
  * El multer de la ruta deja pasar de largo las peticiones que no son
  * multipart, así que funciona igual; cuando se conecte la galería, esto
  * cambia a FormData y el resto se queda como está.
+ *
+ * ── El consentimiento ──
+ *
+ * `aceptaTerminos` NO es opcional: sin él el backend contesta 400 con "Hay que
+ * aceptar los términos y el aviso de privacidad" y no hay cuenta. Lo revisa el
+ * servidor aunque el formulario ya lo revise, porque cualquiera puede mandar
+ * el registro sin pasar por la pantalla. Ver
+ * `backend/src/controller/Clients/registerClient.js`.
+ *
+ * La VERSIÓN de los términos no se manda: la pone el servidor con la suya. Si
+ * se aceptara la que dice el cliente, bastaría con inventarse un número para
+ * dejar registrado el consentimiento de un texto que nunca existió.
+ *
+ * Van como booleanos de verdad y no como "true": el backend los lee con
+ * `esVerdadero`, que acepta ambos, pero esto es JSON y no multipart — no hay
+ * razón para mandar texto.
  */
 export const registrarCliente = ({
   fullName,
   dui,
   phoneNumber,
-  clientAddress,
   email,
   userName,
   password,
+  aceptaTerminos,
+  promociones,
 }) =>
   peticion('/registerClient', {
     metodo: 'POST',
@@ -54,10 +68,11 @@ export const registrarCliente = ({
       fullName,
       dui,
       phoneNumber,
-      ClientAddress: clientAddress,
       email,
       userName,
       password,
+      aceptaTerminos: !!aceptaTerminos,
+      promociones: !!promociones,
     },
   });
 
