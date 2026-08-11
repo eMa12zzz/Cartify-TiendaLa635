@@ -11,11 +11,10 @@
  * la tienda queda debajo de la hora y la señal.
  */
 
-import { Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORES } from '../../theme/colores';
+import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { Tienda } from './Iconos';
-
-const ALTURA_ESTADO = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 44;
 
 const BarraMarca = ({ centrado = false, alTocarMarca, textoAccion, alPresionarAccion }) => (
   <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 12 }, centrado && estilos.barraCentrada]}>
