@@ -2,12 +2,21 @@
  * ============================================================
  * INICIAR SESIÓN — la puerta, ya no el portón
  * ============================================================
- * La versión móvil de `frontend/src/pages/LoginClient.jsx`. Allá la pantalla
- * son dos mitades: a la izquierda quién es la tienda y por qué vale la pena
- * tener cuenta, a la derecha el formulario. En pantalla angosta la web ya
- * resuelve eso poniendo el formulario primero (`order: 1`) y el saludo abajo
- * — que es exactamente el orden que se usa aquí, porque un celular es esa
- * pantalla angosta todo el tiempo.
+ * La versión móvil de `frontend/src/pages/LoginClient.jsx`.
+ *
+ * ── Aquí solo va el formulario ──
+ *
+ * En la web la pantalla son dos mitades: a la izquierda quién es la tienda y
+ * por qué vale la pena tener cuenta —el titular, las tres ventajas y un botón
+ * grande de registro— y a la derecha el formulario. Eso se llegó a portar
+ * poniendo el argumento debajo, que es lo que la propia web hace en pantalla
+ * angosta.
+ *
+ * Se quitó. En un teléfono ese bloque no acompaña al formulario: lo entierra.
+ * Son tres pantallazos de desplazamiento vendiendo la cuenta a alguien que ya
+ * está escribiendo su correo para entrar, y con dos caminos distintos para
+ * registrarse a distinta altura de la misma pantalla. Queda el enlace del pie
+ * de la tarjeta, que es donde uno lo busca.
  *
  * Quien llega aquí ya venía haciendo algo (pagar, ver Mi Cuenta, guardar un
  * favorito), así que la pantalla tiene que verse como parte de la misma tienda
@@ -30,31 +39,11 @@ import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
-import { Bici, Candado, Corazon, Estrella, Flecha, Sobre } from '../components/UI/Iconos';
+import { Candado, Sobre } from '../components/UI/Iconos';
 import { loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { COLORES } from '../theme/colores';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
-
-// Lo que se gana teniendo cuenta. Está en datos y no repetido en el JSX porque
-// son tres bloques con la misma forma y así se agrega un cuarto sin copiar y pegar.
-const VENTAJAS = [
-  {
-    Icono: Bici,
-    titulo: 'Siga su pedido en el mapa.',
-    detalle: 'Vea al repartidor acercarse y sepa cuándo salir a la puerta.',
-  },
-  {
-    Icono: Estrella,
-    titulo: 'Junte puntos con cada compra.',
-    detalle: 'Se convierten en descuento la próxima vez.',
-  },
-  {
-    Icono: Corazon,
-    titulo: 'Guarde sus favoritos.',
-    detalle: 'Lo de siempre, sin volver a buscarlo.',
-  },
-];
 
 const LoginClient = ({ irARegistro, irATienda }) => {
   const { login } = useAuth();
@@ -168,48 +157,17 @@ const LoginClient = ({ irARegistro, irATienda }) => {
 
             <Boton texto="Iniciar sesión" alPresionar={enviar} cargando={cargando} />
 
+            {/*
+              La única puerta al registro que queda, y va aquí porque es donde
+              se busca: al final del formulario, después de comprobar que no se
+              tiene con qué entrar.
+            */}
             <Text style={estilos.pie}>
               ¿No tiene una cuenta?{' '}
               <Text style={estilos.pieEnlace} onPress={irARegistro}>
                 Regístrese
               </Text>
             </Text>
-          </View>
-
-          {/* ── Y debajo, quiénes somos ── */}
-          <View style={estilos.saludo}>
-            <Text style={estilos.titular}>
-              El súper de la esquina, <Text style={estilos.titularFuerte}>a un toque</Text>
-            </Text>
-            <Text style={estilos.bajada}>
-              Con su cuenta guardamos su dirección, sus puntos y lo que suele llevar, para que pedir
-              la próxima vez le tome menos que hacer la lista.
-            </Text>
-
-            <View style={estilos.ventajas}>
-              {VENTAJAS.map(({ Icono, titulo, detalle }) => (
-                <View key={titulo} style={estilos.ventaja}>
-                  <View style={estilos.cuadroIcono}>
-                    <Icono size={16} />
-                  </View>
-                  <Text style={estilos.textoVentaja}>
-                    <Text style={estilos.tituloVentaja}>{titulo}</Text> {detalle}
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={estilos.sinCuenta}>
-              <Text style={estilos.sinCuentaTexto}>¿No tiene cuenta?</Text>
-              <Pressable
-                onPress={irARegistro}
-                style={({ pressed }) => [estilos.botonRegistro, pressed && estilos.botonRegistroPresionado]}
-                accessibilityRole="button"
-              >
-                <Text style={estilos.botonRegistroTexto}>Regístrese aquí</Text>
-                <Flecha size={16} />
-              </Pressable>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -293,90 +251,6 @@ const estilos = StyleSheet.create({
   pieEnlace: {
     color: COLORES.marca,
     fontWeight: '600',
-  },
-
-  // ── Saludo ──
-  saludo: {
-    marginTop: 34,
-    alignItems: 'center',
-  },
-  titular: {
-    fontSize: 30,
-    fontWeight: '800',
-    lineHeight: 34,
-    letterSpacing: -0.8,
-    color: COLORES.tituloFuerte,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  titularFuerte: {
-    color: COLORES.marca,
-  },
-  bajada: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: COLORES.textoSuave,
-    textAlign: 'center',
-    marginBottom: 26,
-  },
-  ventajas: {
-    gap: 12,
-    marginBottom: 30,
-    alignSelf: 'stretch',
-  },
-  ventaja: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 11,
-  },
-  cuadroIcono: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    backgroundColor: COLORES.marcaSuave,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textoVentaja: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORES.textoVentaja,
-  },
-  tituloVentaja: {
-    color: COLORES.tituloVentaja,
-    fontWeight: '700',
-  },
-  sinCuenta: {
-    alignItems: 'center',
-    gap: 14,
-  },
-  sinCuentaTexto: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORES.tituloVentaja,
-  },
-  botonRegistro: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    backgroundColor: COLORES.marca,
-    paddingVertical: 12,
-    paddingHorizontal: 22,
-    borderRadius: 999,
-    elevation: 4,
-    shadowColor: COLORES.marca,
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  botonRegistroPresionado: {
-    backgroundColor: COLORES.marcaOscuro,
-  },
-  botonRegistroTexto: {
-    color: '#FFFFFF',
-    fontSize: 14.5,
-    fontWeight: '700',
   },
 });
 

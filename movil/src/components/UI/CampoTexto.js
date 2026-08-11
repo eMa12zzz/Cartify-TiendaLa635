@@ -99,10 +99,23 @@ const estilos = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
   },
+  /*
+   * ── Por qué estos dos llevan `elevation` ──
+   *
+   * En Android `elevation` decide qué se dibuja encima, y le GANA a `zIndex`.
+   * El campo enfocado lleva `elevation: 1` (ver `campoEnfocado`, que es el halo
+   * del :focus de la web), así que al empezar a escribir el input se ponía por
+   * encima del icono; y como el input tiene fondo blanco opaco, se lo tragaba.
+   * El icono desaparecía justo al tocarlo y volvía al salir del campo.
+   *
+   * `zIndex` solo no alcanza: hay que subirlos por encima del 1 del campo.
+   * En iOS `elevation` se ignora y ordena el zIndex, así que no molesta.
+   */
   icono: {
     position: 'absolute',
     left: 14,
-    zIndex: 1,
+    zIndex: 2,
+    elevation: 2,
   },
   campo: {
     width: '100%',
@@ -126,10 +139,13 @@ const estilos = StyleSheet.create({
   campoConOjo: {
     paddingRight: 44,
   },
+  // El ojo tenía el mismo problema y se notaba más: desaparecía justo al
+  // escribir la contraseña, que es cuando se necesita.
   ojo: {
     position: 'absolute',
     right: 14,
-    zIndex: 2,
+    zIndex: 3,
+    elevation: 3,
   },
   error: {
     color: COLORES.error,
