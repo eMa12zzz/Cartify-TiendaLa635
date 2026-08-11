@@ -1,0 +1,501 @@
+/*
+ * ============================================================
+ * CARRITO
+ * ============================================================
+ * Lo que lleva, cuánto lleva de cada cosa y cuánto suma. Es la "CART VIEW" de
+ * `ShoppingCart.jsx` — la primera de sus tres vistas.
+ *
+ * ── Lo que NO está, y por qué ──
+ *
+ * Las otras dos vistas de ese archivo son el checkout y la confirmación, y son
+ * un apartado entero: retiro contra envío a domicilio, elegir dirección o
+ * marcarla en el mapa, método de pago (efectivo, tarjeta, saldo), canje de
+ * puntos de fidelidad, tarjetas de regalo y la creación del pedido contra
+ * /api/order. Nada de eso entra en "la página del carrito", y traerlo a medias
+ * —un botón de pagar que no cobra— sería peor que no traerlo.
+ *
+ * Por eso tampoco aparece el "Costo de envío" en el resumen: en la web ese
+ * renglón sale de haber elegido domicilio, y aquí no hay dónde elegirlo.
+ * Mostrar "$0.00" fijo diría que el envío es gratis.
+ *
+ * ── Una corrección respecto de la web ──
+ *
+ * Allá el total de cada línea se pinta como `precio × cantidad`, pero el total
+ * de abajo sí aplica el NxM. En un 2x1 eso deja las líneas sumando más que el
+ * total, y quien revisa su carrito encuentra una resta que no cuadra. Aquí las
+ * dos cuentas salen de `totalDeLinea` (ver utils/catalogo.js), así que suman.
+ * ============================================================
+ */
+
+import { useState } from 'react';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { COLORES } from '../theme/colores';
+import { ALTURA_ESTADO } from '../theme/pantalla';
+import { useTienda } from '../context/TiendaContext';
+import { useTema } from '../context/TemaContext';
+import Boton from '../components/UI/Boton';
+import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete, Tienda } from '../components/UI/Iconos';
+import { totalDeLinea } from '../utils/catalogo';
+import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
+
+const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
+  const [fallóImagen, setFallóImagen] = useState(false);
+  const paso = pasoDe(item);
+
+  return (
+    <View style={estilos.linea}>
+      <View style={estilos.miniatura}>
+        {item.imagen && !fallóImagen ? (
+          <Image
+            source={{ uri: item.imagen }}
+            resizeMode="contain"
+            style={estilos.miniaturaImagen}
+            onError={() => setFallóImagen(true)}
+          />
+        ) : (
+          <Paquete size={26} />
+        )}
+      </View>
+
+      <View style={estilos.datos}>
+        <Text style={estilos.nombre} numberOfLines={2}>{item.nombre}</Text>
+
+        <View style={estilos.filaPrecio}>
+          {!!item.precioAnterior && (
+            <Text style={estilos.precioViejo}>${Number(item.precioAnterior).toFixed(2)}</Text>
+          )}
+          <Text style={estilos.precioUnitario}>
+            ${Number(item.precio).toFixed(2)}
+            {esPorLibra(item) && <Text style={estilos.porUnidad}>/lb</Text>}
+          </Text>
+        </View>
+
+        {/*
+          El "+" y el "−" se mueven al paso de SU unidad: de uno en uno las
+          piezas, de media en media las libras. Pedir media libra de queso es
+          lo normal en el mostrador, y obligar a llevar una libra entera es
+          cobrar de más. Ver utils/unidades.js.
+        */}
+        <View style={estilos.controles}>
+          <Pressable
+            onPress={() => alEliminar(item.id)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Quitar ${item.nombre} del carrito`}
+            style={({ pressed }) => [estilos.botonQuitar, pressed && estilos.botonQuitarPresionado]}
+          >
+            <Basura size={14} color={COLORES.textoSuave} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => alActualizar(item.id, ajustarCantidad(item, item.cantidad - paso))}
+            disabled={item.cantidad <= paso}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Quitar uno"
+            style={({ pressed }) => [
+              estilos.botonPaso,
+              pressed && { backgroundColor: colores.marcaSuave, borderColor: colores.marca },
+              item.cantidad <= paso && estilos.botonPasoApagado,
+            ]}
+          >
+            <Menos size={12} color={item.cantidad <= paso ? COLORES.marcador : COLORES.texto} />
+          </Pressable>
+
+          <Text style={estilos.cantidad}>{cantidadConUnidad(item, item.cantidad)}</Text>
+
+          <Pressable
+            onPress={() => alActualizar(item.id, ajustarCantidad(item, item.cantidad + paso))}
+            disabled={item.cantidad >= item.stock}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Agregar uno"
+            style={({ pressed }) => [
+              estilos.botonPaso,
+              pressed && { backgroundColor: colores.marcaSuave, borderColor: colores.marca },
+              item.cantidad >= item.stock && estilos.botonPasoApagado,
+            ]}
+          >
+            <Mas size={12} color={item.cantidad >= item.stock ? COLORES.marcador : COLORES.texto} />
+          </Pressable>
+        </View>
+      </View>
+
+      <Text style={estilos.totalLinea}>${totalDeLinea(item).toFixed(2)}</Text>
+    </View>
+  );
+};
+
+const Carrito = ({ irAInicio }) => {
+  const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito } =
+    useTienda();
+  const { colores } = useTema();
+
+  const vacio = carrito.length === 0;
+
+  return (
+    <View style={estilos.pantalla}>
+      <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
+        <Pressable
+          onPress={irAInicio}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Volver a la tienda"
+          style={({ pressed }) => [
+            estilos.botonVolver,
+            pressed && { backgroundColor: colores.marcaSuave },
+          ]}
+        >
+          <ChevronIzquierda size={18} />
+        </Pressable>
+
+        <View style={estilos.tituloBarra}>
+          <Bolsa size={18} color={COLORES.texto} />
+          <Text style={estilos.tituloTexto}>Carrito</Text>
+          {!vacio && (
+            <Text style={estilos.conteo}>
+              ({carrito.length} {carrito.length === 1 ? 'artículo' : 'artículos'})
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {vacio ? (
+        <View style={estilos.centro}>
+          <Bolsa size={48} color={COLORES.marcador} grosor={1.4} />
+          <Text style={estilos.vacioTitulo}>Su carrito está vacío</Text>
+          <Text style={estilos.vacioTexto}>¡Agregue productos para comenzar!</Text>
+          <View style={estilos.botonVacio}>
+            <Boton
+              texto="Ver la tienda"
+              alPresionar={irAInicio}
+              color={colores.marca}
+              colorPresionado={colores.marcaOscuro}
+            />
+          </View>
+        </View>
+      ) : (
+        <>
+          <FlatList
+            data={carrito}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={estilos.lista}
+            ListHeaderComponent={
+              <>
+                <View style={estilos.tienda}>
+                  <View style={[estilos.iconoTienda, { backgroundColor: colores.marcaSuave }]}>
+                    <Tienda size={17} color={colores.marca} />
+                  </View>
+                  <View>
+                    <Text style={estilos.tiendaNombre}>Tienda la 635</Text>
+                    <Text style={estilos.tiendaLugar}>Mejicanos, San Salvador</Text>
+                  </View>
+                </View>
+                <Text style={estilos.etiquetaProductos}>Productos</Text>
+              </>
+            }
+            renderItem={({ item }) => (
+              <LineaCarrito
+                item={item}
+                alActualizar={actualizarCantidad}
+                alEliminar={eliminarDelCarrito}
+                colores={colores}
+              />
+            )}
+          />
+
+          {/*
+            El resumen vive FUERA de la lista: es el número por el que se abrió
+            esta pantalla, y al final de una lista de quince productos habría
+            que desplazarse hasta abajo para verlo.
+          */}
+          <View style={estilos.pie}>
+            <View style={estilos.resumen}>
+              <Text style={estilos.resumenTitulo}>Resumen de orden</Text>
+              <View style={estilos.resumenFila}>
+                <Text style={estilos.resumenEtiqueta}>
+                  {cantidadItems === 1 ? '1 artículo' : `${cantidadItems} artículos`}
+                </Text>
+                <Text style={estilos.resumenValor}>${totalCarrito.toFixed(2)}</Text>
+              </View>
+              <View style={estilos.separador} />
+              <View style={estilos.resumenFila}>
+                <Text style={estilos.totalEtiqueta}>Subtotal</Text>
+                <Text style={estilos.totalValor}>${totalCarrito.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <View style={estilos.botones}>
+              <Pressable
+                onPress={limpiarCarrito}
+                accessibilityRole="button"
+                style={({ pressed }) => [estilos.botonVaciar, pressed && estilos.botonVaciarPresionado]}
+              >
+                <Text style={estilos.botonVaciarTexto}>Vaciar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </>
+      )}
+    </View>
+  );
+};
+
+const estilos = StyleSheet.create({
+  pantalla: {
+    flex: 1,
+    backgroundColor: COLORES.fondo,
+  },
+  barra: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORES.linea,
+  },
+  botonVolver: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tituloBarra: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tituloTexto: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+  },
+  conteo: {
+    fontSize: 13,
+    color: COLORES.subtitulo,
+    fontWeight: '500',
+  },
+  centro: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    gap: 6,
+  },
+  vacioTitulo: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+    marginTop: 10,
+  },
+  vacioTexto: {
+    fontSize: 14,
+    color: COLORES.textoSuave,
+  },
+  botonVacio: {
+    marginTop: 20,
+    alignSelf: 'stretch',
+  },
+  lista: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  tienda: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    paddingVertical: 16,
+  },
+  iconoTienda: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tiendaNombre: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+  },
+  tiendaLugar: {
+    fontSize: 12,
+    color: COLORES.subtitulo,
+    marginTop: 1,
+  },
+  etiquetaProductos: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORES.subtitulo,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  linea: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORES.linea,
+  },
+  miniatura: {
+    width: 62,
+    height: 62,
+    borderRadius: 12,
+    backgroundColor: '#F4F4F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 7,
+  },
+  miniaturaImagen: {
+    width: '100%',
+    height: '100%',
+  },
+  datos: {
+    flex: 1,
+    gap: 3,
+  },
+  nombre: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORES.texto,
+    lineHeight: 18,
+  },
+  filaPrecio: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  precioViejo: {
+    fontSize: 11,
+    color: '#BBBBBB',
+    textDecorationLine: 'line-through',
+  },
+  precioUnitario: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORES.textoVentaja,
+  },
+  porUnidad: {
+    fontSize: 11,
+    color: COLORES.textoTenue,
+  },
+  controles: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 5,
+  },
+  botonQuitar: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Separado de los pasos: es la acción destructiva y no debe quedar pegada
+    // al "−", que es a lo que se le apunta para bajar de a poco.
+    marginRight: 4,
+  },
+  botonQuitarPresionado: {
+    backgroundColor: '#FDECEC',
+  },
+  botonPaso: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORES.borde,
+  },
+  botonPasoApagado: {
+    borderColor: COLORES.linea,
+    backgroundColor: '#FAFAFA',
+  },
+  cantidad: {
+    minWidth: 52,
+    textAlign: 'center',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: COLORES.texto,
+  },
+  totalLinea: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+    minWidth: 62,
+    textAlign: 'right',
+  },
+  pie: {
+    borderTopWidth: 1,
+    borderTopColor: COLORES.linea,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 26,
+    backgroundColor: COLORES.fondo,
+  },
+  resumen: {
+    backgroundColor: '#FAFAF9',
+    borderRadius: 14,
+    padding: 14,
+  },
+  resumenTitulo: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORES.tituloVentaja,
+    marginBottom: 10,
+  },
+  resumenFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  resumenEtiqueta: {
+    fontSize: 13.5,
+    color: COLORES.textoVentaja,
+  },
+  resumenValor: {
+    fontSize: 13.5,
+    color: COLORES.textoVentaja,
+    fontWeight: '600',
+  },
+  separador: {
+    height: 1,
+    backgroundColor: COLORES.borde,
+    marginVertical: 11,
+  },
+  totalEtiqueta: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+  },
+  totalValor: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: COLORES.tituloFuerte,
+  },
+  botones: {
+    marginTop: 12,
+  },
+  botonVaciar: {
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORES.borde,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botonVaciarPresionado: {
+    borderColor: COLORES.error,
+    backgroundColor: '#FDECEC',
+  },
+  botonVaciarTexto: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORES.textoVentaja,
+  },
+});
+
+export default Carrito;
