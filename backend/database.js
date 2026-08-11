@@ -4,8 +4,6 @@ import mongoose from "mongoose";
 
 console.log("DB_URI:", process.env.DB_URI);
 
-console.log("ATENCIÓN: Conectando a la base:", process.env.DB_URI.split('/')[3].split('?')[0]);
-
 mongoose.connect(process.env.DB_URI, {
     family: 4
 });
