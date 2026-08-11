@@ -76,7 +76,9 @@ const FullPanel = styled.div`
   display: flex;
   flex-direction: column;
   transform: translateX(${p => (p.$montado ? '0' : '100%')});
-  transition: transform var(--dur-drawer) var(--ease-drawer);
+  /* Más ágil: la curva de "drawer" tenía una cola muy lenta que se sentía
+     pesada al abrir. Con dur-modal + ease-out entra rápido y limpio. */
+  transition: transform var(--dur-modal) var(--ease-out);
   overflow-y: auto;
   overscroll-behavior: contain;
 `;
@@ -91,7 +93,9 @@ const CartPanel = styled.div`
   flex-direction: column;
   box-shadow: -12px 0 40px rgba(0,0,0,0.12);
   transform: translateX(${p => (p.$montado ? '0' : '100%')});
-  transition: transform var(--dur-drawer) var(--ease-drawer);
+  /* Más ágil: la curva de "drawer" tenía una cola muy lenta que se sentía
+     pesada al abrir. Con dur-modal + ease-out entra rápido y limpio. */
+  transition: transform var(--dur-modal) var(--ease-out);
 `;
 
 /* ── SHARED TOP BAR ── */
@@ -401,10 +405,20 @@ const RemoveBtn = styled.button`
 `;
 
 const EmptyCart = styled.div`
+  /*
+   * Columna centrada, no solo text-align. Tailwind pone svg { display:block },
+   * así que el icono es un bloque y text-align no lo centra: quedaba pegado a
+   * la izquierda mientras el texto sí se centraba. Con flex se centran los tres.
+   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 60px 20px;
+  min-height: 60vh;      /* lo deja a media altura del panel, no pegado arriba */
+  padding: 40px 20px;
   color: #aaa;
-  .emoji { font-size: 52px; margin-bottom: 14px; }
+  .emoji { margin-bottom: 14px; color: #c9c2ba; }
   .title { font-size: 16px; font-weight: 600; color: #555; margin-bottom: 6px; }
   .sub { font-size: 13px; }
 `;

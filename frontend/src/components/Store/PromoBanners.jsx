@@ -119,17 +119,24 @@ const FILA = {
 const DEGRADADO_ORILLAS =
   'linear-gradient(to right, transparent 0%, #000 7%, #000 93%, transparent 100%)';
 
-const PromoBanners = ({ onSelectPromo }) => {
+const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
   const reducirMovimiento = useReducedMotion();
   const cabenTres = useCabenTres();
+  // moduloId: si el cliente está parado en un pasillo, solo salen sus promos.
   const { promos, activa, total, irA, siguiente, anterior, distancia, pausar, reanudar } =
-    usePromoCarousel({ autoplay: !reducirMovimiento });
+    usePromoCarousel({ autoplay: !reducirMovimiento, moduloId });
 
   if (total === 0) return null;
 
   const unaSola = total === 1;
-  // La fila solo tiene sentido si de verdad hay más de una que poner al lado.
-  const enFila = cabenTres && total > 1;
+  /*
+   * La fila (el MISMO formato que el carrusel de toda la tienda) se usa siempre
+   * que quepa en pantalla, aunque en el pasillo haya una sola promo. Antes se
+   * exigía más de una, así que una promo suelta de un pasillo salía como un
+   * banner ancho aparte; ahora se ve igual que las de la portada: una tarjeta
+   * del mismo tamaño, centrada. En pantalla angosta se sigue usando el anillo.
+   */
+  const enFila = cabenTres;
   const L = enFila ? FILA : ANILLO;
 
   return (

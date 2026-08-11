@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { promotionService } from '../api/promotionService';
-import { promosVisibles } from '../utils/promos';
+import { promosVisibles, promoEnModulo } from '../utils/promos';
 
 /*
  * usePromoCarousel — el cerebro del carrusel 3D de promociones.
@@ -51,8 +51,9 @@ export const useCabenTres = () =>
     () => false
   );
 
-export const usePromoCarousel = ({ autoplay = true } = {}) => {
-  const [promos, setPromos] = useState([]);
+export const usePromoCarousel = ({ autoplay = true, moduloId = null } = {}) => {
+  // Todas las anunciables; el filtro por pasillo se aplica después.
+  const [todas, setTodas] = useState([]);
   const [activa, setActiva] = useState(0);
   const [pausada, setPausada] = useState(false);
   const temporizador = useRef(null);
@@ -67,11 +68,24 @@ export const usePromoCarousel = ({ autoplay = true } = {}) => {
         const visibles = promosVisibles(d)
           .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
           .slice(0, MAXIMO);
-        setPromos(visibles);
+        setTodas(visibles);
       })
       .catch(() => {});
     return () => { vivo = false; };
   }, []);
+
+  /*
+   * Filtro por pasillo: en la Panadería salen solo las promos de panadería.
+   * Sin pasillo elegido (toda la tienda) se ven todas. Ver promoEnModulo.
+   */
+  const promos = useMemo(
+    () => todas.filter((p) => promoEnModulo(p, moduloId)),
+    [todas, moduloId]
+  );
+
+  // Al cambiar de pasillo se vuelve al principio del carrusel, para no quedar
+  // apuntando a una tarjeta que en el pasillo nuevo ya no está.
+  useEffect(() => { setActiva(0); }, [moduloId]);
 
   const total = promos.length;
 
