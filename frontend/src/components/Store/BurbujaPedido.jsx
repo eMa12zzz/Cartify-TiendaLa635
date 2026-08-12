@@ -345,7 +345,7 @@ const BurbujaPedido = () => {
 
             <button
               type="button"
-              onClick={() => navigate('/mi-cuenta/pedidos')}
+              onClick={() => navigate(`/mi-cuenta/pedido/${enCurso._id}`)}
               style={{
                 marginTop: 12, width: '100%', padding: '9px 0', borderRadius: 999,
                 border: '1px solid #eee', background: '#fff', color: BROWN,

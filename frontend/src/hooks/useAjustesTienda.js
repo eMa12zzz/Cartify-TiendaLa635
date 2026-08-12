@@ -33,6 +33,7 @@ const DE_RESPALDO = {
   logoUrl: '',
   lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
+  costoEnvio: 4.78,
   secciones: [],
   temporada: { modo: 'automatico', tema: '' },
 };

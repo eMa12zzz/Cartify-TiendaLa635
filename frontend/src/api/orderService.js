@@ -16,6 +16,13 @@ export const orderService = {
     return response.data;
   },
 
+  // UN pedido completo (pantalla de estado del pedido). El backend comprueba
+  // que sea del cliente que pregunta.
+  getOrderById: async (id) => {
+    const response = await api.get(`/order/${id}`);
+    return response.data;
+  },
+
   // TODOS los pedidos (pantalla del empleado). status opcional: 'pagado', etc.
   getAllOrders: async (status) => {
     const response = await api.get('/order', {

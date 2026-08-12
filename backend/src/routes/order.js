@@ -55,6 +55,16 @@ router
   .route("/client/:clientId")
   .get(conSesion, orderController.getOrdersByClient);
 
+/*
+ * UN pedido completo (pantalla de estado del pedido). conSesion deja pasar a
+ * quien tenga sesión; el controlador comprueba además que el pedido sea suyo.
+ * Va con el sufijo pelado "/:id" pero después de /client y /tiempo-zona: como
+ * las demás rutas de :id llevan sufijo (/status, /rating, /courier), no choca.
+ */
+router
+  .route("/:id")
+  .get(conSesion, orderController.getOrderById);
+
 router
   .route("/:id/status")
   .put(soloPersonal, orderController.updateOrderStatus);

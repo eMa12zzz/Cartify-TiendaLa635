@@ -34,7 +34,7 @@ const Personalizacion = () => {
   } = useAjustesCtx();
 
   const [form, setForm] = useState({
-    nombreLinea1: '', nombreLinea2: '', lema: '', direccion: '',
+    nombreLinea1: '', nombreLinea2: '', lema: '', direccion: '', costoEnvio: '',
   });
 
   useEffect(() => {
@@ -43,12 +43,18 @@ const Personalizacion = () => {
       nombreLinea2: ajustes.nombreLinea2 || '',
       lema: ajustes.lema || '',
       direccion: ajustes.direccion || '',
+      // Se guarda como texto en el formulario para poder escribir con comodidad;
+      // se convierte a número al enviar.
+      costoEnvio: ajustes.costoEnvio != null ? String(ajustes.costoEnvio) : '',
     });
-  }, [ajustes.nombreLinea1, ajustes.nombreLinea2, ajustes.lema, ajustes.direccion]);
+  }, [ajustes.nombreLinea1, ajustes.nombreLinea2, ajustes.lema, ajustes.direccion, ajustes.costoEnvio]);
 
   const onSubmit = (e) => {
     e.preventDefault();
-    guardar(form);
+    // El costo de envío viaja como número; si quedó vacío o inválido, se
+    // manda 0 en vez de NaN (que el backend rechazaría).
+    const costoEnvio = Number(form.costoEnvio);
+    guardar({ ...form, costoEnvio: Number.isFinite(costoEnvio) && costoEnvio >= 0 ? costoEnvio : 0 });
   };
 
   const inputStyle = {
@@ -224,6 +230,28 @@ const Personalizacion = () => {
                 className="w-full px-4 py-2.5 rounded-xl border outline-none"
                 style={inputStyle}
               />
+            </div>
+
+            {/* Costo de envío */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                Costo de envío a domicilio
+              </label>
+              <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                Lo que se le cobra al cliente por llevarle el pedido. Se suma al total solo
+                cuando elige envío a domicilio; el retiro en el local no paga envío.
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold" style={{ color: 'var(--theme-text-secondary)' }}>$</span>
+                <input
+                  type="number" min="0" step="0.01" inputMode="decimal"
+                  value={form.costoEnvio}
+                  onChange={(e) => setForm({ ...form, costoEnvio: e.target.value })}
+                  placeholder="4.78"
+                  className="w-40 px-4 py-2.5 rounded-xl border outline-none"
+                  style={inputStyle}
+                />
+              </div>
             </div>
 
             <button

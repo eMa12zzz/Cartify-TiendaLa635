@@ -41,6 +41,7 @@ const SIN_PROVEEDOR = {
     logoUrl: '',
     lema: '',
     direccion: DIRECCION_EN_UNA_LINEA,
+    costoEnvio: 4.78,
     secciones: [],
     temporada: { modo: 'automatico', tema: '' },
   },
