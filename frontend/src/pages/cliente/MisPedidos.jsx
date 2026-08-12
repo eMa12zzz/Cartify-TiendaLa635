@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Package, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Package, Star, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useMyOrders } from '../../hooks/useMyOrders';
@@ -107,6 +108,7 @@ const formatFecha = (iso) => {
 };
 
 const MisPedidos = () => {
+  const navigate = useNavigate();
   const { palette } = useTheme();
   const c = palette.colors;
   const { orders, loading } = useMyOrders();
@@ -178,6 +180,17 @@ const MisPedidos = () => {
                     Total: ${Number(order.total).toFixed(2)}
                   </span>
                 </div>
+
+                {/* Ver el estado del pedido en su propia pantalla (línea de
+                    tiempo, envío, y el mapa en vivo si va en camino). */}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/mi-cuenta/pedido/${order._id}`)}
+                  className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-full text-sm font-semibold transition-colors"
+                  style={{ border: `1px solid ${c.cardBorder}`, color: c.primary, background: 'transparent' }}
+                >
+                  Ver estado del pedido <ChevronRight className="w-4 h-4" />
+                </button>
 
                 {/* Valorar el servicio: solo en domicilios ya entregados. */}
                 {order.deliveryType === 'delivery' && order.status === 'entregado' && (

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
 import { Mail, Phone, User, Hash, Lock, Loader2, Calendar } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import toast from 'react-hot-toast';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ModalTerminos from '../components/Store/ModalTerminos';
@@ -11,6 +13,8 @@ import { calcularEdad, esMayorDeEdad } from '../utils/edad';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 import { useRegistro } from '../hooks/useRegistro';
 import { useModalTerminos } from '../hooks/useModalTerminos';
+import { googleLoginDB } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 
 const BROWN = 'var(--marca-600)';
 const BROWN_HOVER = 'var(--marca-700)';
@@ -156,6 +160,28 @@ const Button = styled.button`
   }
 `;
 
+const Divisor = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: #b7b0a8;
+  font-size: 12.5px;
+  font-weight: 600;
+
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #eee;
+  }
+`;
+
+const GoogleFila = styled.div`
+  display: flex;
+  justify-content: center;
+`;
+
 const FooterText = styled.div`
   text-align: center;
   margin-top: 18px;
@@ -282,6 +308,33 @@ const Register = () => {
     useModalTerminos();
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
+
+  const { login } = useAuth();
+  const [entrandoGoogle, setEntrandoGoogle] = useState(false);
+
+  /*
+   * Registrarse con Google. No pasa por el flujo de verificación por código: el
+   * correo ya viene confirmado por Google, así que la cuenta queda lista y se
+   * entra directo a la tienda. Si el correo ya existía, simplemente inicia esa
+   * sesión (el backend lo enlaza).
+   */
+  const onGoogle = async (credentialResponse) => {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      toast.error('No se recibió la respuesta de Google');
+      return;
+    }
+    try {
+      setEntrandoGoogle(true);
+      const res = await googleLoginDB(credential);
+      login(res.token, res.userType || 'client', res.client);
+      navigate('/', { replace: true });
+    } catch (err) {
+      toast.error(err.message || 'No se pudo registrar con Google');
+    } finally {
+      setEntrandoGoogle(false);
+    }
+  };
 
   // El DUI solo se pide cuando la fecha de nacimiento ya dice que es mayor: en
   // El Salvador el DUI se emite a los 18, así que antes no hay ninguno que dar.
@@ -507,6 +560,23 @@ const Register = () => {
             </Button>
 
           </form>
+
+          <Divisor>o</Divisor>
+
+          <GoogleFila>
+            {entrandoGoogle ? (
+              <Loader2 size={22} className="animate-spin" style={{ color: BROWN }} />
+            ) : (
+              <GoogleLogin
+                onSuccess={onGoogle}
+                onError={() => toast.error('No se pudo registrar con Google')}
+                text="signup_with"
+                shape="pill"
+                locale="es"
+                width="320"
+              />
+            )}
+          </GoogleFila>
 
           <FooterText>
             ¿Ya tienes una cuenta?{' '}

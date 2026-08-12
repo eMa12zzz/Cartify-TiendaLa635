@@ -996,13 +996,6 @@ const PayMethod = styled.div`
   border-top: 1px solid #f5f5f5;
 `;
 
-const MastercardIcon = styled.div`
-  width: 32px;
-  height: 20px;
-  background: linear-gradient(135deg, #eb001b 50%, #f79e1b 50%);
-  border-radius: 4px;
-  flex-shrink: 0;
-`;
 
 /*
  * Opción del checkout (retiro/delivery, efectivo/tarjeta/saldo).
@@ -1077,6 +1070,9 @@ const ShoppingCart = ({
 
   const [view, setView] = useState('cart'); // 'cart' | 'checkout' | 'confirmation'
   const [procesando, setProcesando] = useState(false);
+  // El pedido que devolvió el backend al crearlo: de aquí salen el número real,
+  // el total real y el envío real que se muestran en la confirmación.
+  const [ordenCreada, setOrdenCreada] = useState(null);
   const [imgErrors, setImgErrors] = useState({});
   const [orderPage, setOrderPage] = useState(1);
   // Páginas reales del resumen de productos del pedido.
@@ -1155,17 +1151,19 @@ const ShoppingCart = ({
   const zona = useTiempoPorZona(direccionElegida?.lat, direccionElegida?.lng);
   const [metodoPago, setMetodoPago] = useState('efectivo'); // 'efectivo' | 'tarjeta' | 'saldo'
 
-  const COSTO_ENVIO = 4.78;
-  const ENVIO = items.length > 0 && entrega === 'delivery' ? COSTO_ENVIO : 0;
-  const SERVICIO = 0;
-  const subtotal = total;
-  const totalFinal = subtotal + ENVIO + SERVICIO;
-
   // ── Canje de puntos ──
   // `esCliente` distingue "hay sesión" de "hay sesión DE CLIENTE": en la tienda
   // la activa puede ser la del personal. Ver useAuth.
   const { user, esCliente } = useAuth();
   const { ajustes } = useAjustesCtx();
+
+  // El costo del envío lo fija el panel (Personalización). El respaldo 4.78 es
+  // el mismo valor de siempre, por si los ajustes aún no cargaron.
+  const COSTO_ENVIO = Number(ajustes.costoEnvio ?? 4.78);
+  const ENVIO = items.length > 0 && entrega === 'delivery' ? COSTO_ENVIO : 0;
+  const SERVICIO = 0;
+  const subtotal = total;
+  const totalFinal = subtotal + ENVIO + SERVICIO;
   const { saldo, canjeando, canjear, recargar: recargarSaldo } = useSaldo();
   const [codigoTarjeta, setCodigoTarjeta] = useState('');
 
@@ -1246,7 +1244,7 @@ const ShoppingCart = ({
 
     setProcesando(true);
     try {
-      await orderService.createOrder({
+      const res = await orderService.createOrder({
         clientId: user.id,
         items: items.map((i) => ({
           productId: i.id,
@@ -1265,6 +1263,9 @@ const ShoppingCart = ({
         channel: 'web',
         pointsToRedeem: puntosAUsar,
       });
+      // El pedido creado, con su número y sus totales reales (el backend calcula
+      // el total, no el navegador). La confirmación se pinta con esto.
+      setOrdenCreada(res?.order || null);
       // Si pagó con saldo, el del servidor ya bajó: lo volvemos a leer para
       // que no se quede mostrando el de antes.
       if (metodoPago === 'saldo') recargarSaldo();
@@ -1279,6 +1280,23 @@ const ShoppingCart = ({
   const handleConfirmClose = () => {
     onCheckout?.();
     onCerrar();
+  };
+
+  /*
+   * Ir al checkout exige sesión de cliente.
+   *
+   * El servidor ya rechaza el pedido sin sesión, y "Realizar pedido" también lo
+   * revisa; pero dejar entrar al checkout, llenar la dirección y el pago para
+   * recién ahí rebotar al login es hacer trabajar en balde. Se corta antes: al
+   * tocar "Checkout" sin sesión, directo al login y de vuelta al carrito.
+   */
+  const irAlCheckout = () => {
+    if (!esCliente) {
+      toast('Inicie sesión para continuar con su pedido');
+      navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
+      return;
+    }
+    setView('checkout');
   };
 
   // ── CART VIEW ──
@@ -1372,7 +1390,7 @@ const ShoppingCart = ({
               </OrderSummaryBox>
               <BtnRow>
                 <ClearBtn onClick={onLimpiarCarrito}>Vaciar</ClearBtn>
-                <CheckoutBtn onClick={() => setView('checkout')}>
+                <CheckoutBtn onClick={irAlCheckout}>
                   Checkout · ${totalFinal.toFixed(2)}
                 </CheckoutBtn>
               </BtnRow>
@@ -1855,7 +1873,25 @@ const ShoppingCart = ({
 
   // ── CONFIRMATION VIEW ──
   if (view === 'confirmation') {
-    const orderDate = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    // Todo sale del pedido que devolvió el backend; si por algo no llegó, se cae
+    // a lo que se eligió en pantalla. Nada de esto es inventado.
+    const fechaPedido = ordenCreada?.createdAt ? new Date(ordenCreada.createdAt) : new Date();
+    const orderDate = fechaPedido.toLocaleString('es-SV', {
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+    const numeroPedido = ordenCreada?._id ? String(ordenCreada._id).slice(-6).toUpperCase() : '——————';
+    const envioReal = Number(ordenCreada?.shippingCost ?? ENVIO);
+    const subtotalReal = Number(ordenCreada?.subtotal ?? subtotal);
+    const totalReal = Number(ordenCreada?.total ?? totalAPagar);
+    const metodoReal = ordenCreada?.paymentMethod || metodoPago;
+    const esDomicilioReal = (ordenCreada?.deliveryType || entrega) === 'delivery';
+    const direccionReal = ordenCreada?.deliveryAddress
+      || (entrega === 'delivery' ? direccionElegida?.direccion : null);
+    // Nombre de la forma de pago tal como se muestra al cliente.
+    const nombrePago = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', saldo: 'Saldo / Gift card' }[metodoReal] || 'Efectivo';
+    // Los tres pasos reales del pedido (mismos que en la burbuja y la pantalla
+    // de estado). El pedido recién creado está en el primero.
+    const PASOS_CONFIRM = ['Recibido', 'Preparando', 'Entregado'];
 
     return (
       <Overlay $montado={montado} onClick={() => {}}>
@@ -1874,24 +1910,23 @@ const ShoppingCart = ({
               <ConfirmCard>
                 <StatusBadge><span style={{ width: 6, height: 6, background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} /> En proceso</StatusBadge>
                 <ConfirmTitle>Orden en curso</ConfirmTitle>
-                <ConfirmDate>Pedido recibido el {orderDate} a. m.</ConfirmDate>
+                <ConfirmDate>Pedido recibido el {orderDate}</ConfirmDate>
 
                 <CheckCircle>
                   <Check size={30} color="white" strokeWidth={3} />
                 </CheckCircle>
                 <AcceptedMsg>Tu orden ha sido aceptada</AcceptedMsg>
 
-                {/* Timeline */}
+                {/* Timeline: los tres pasos reales, con el primero activo (el
+                    pedido acaba de entrar). El avance se sigue en "Ver el pedido". */}
                 <Timeline>
-                  {['Recibida', 'En camino', 'Entregada'].map((step, i) => (
+                  {PASOS_CONFIRM.map((step, i) => (
                     <TimelineStep key={i}>
                       <div style={{ position: 'relative' }}>
                         <TimelineDot $active={i === 0} />
                         {i < 2 && <TimelineLine $active={i === 0} />}
                       </div>
-                      <TimelineLabel $active={i === 0}>
-                        {orderDate.split(' ').slice(0, 2).join(' ')}
-                      </TimelineLabel>
+                      <TimelineLabel $active={i === 0}>{step}</TimelineLabel>
                     </TimelineStep>
                   ))}
                 </Timeline>
@@ -1913,9 +1948,11 @@ const ShoppingCart = ({
                         }
                       </PImgBox>
                       <PName>
-                        {item.nombre} 1.5–2 lb
+                        {item.nombre}
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <POldPrice>${item.precioAnterior ? Number(item.precioAnterior).toFixed(2) : Number(item.precio).toFixed(2)}</POldPrice>
+                          {item.precioAnterior && (
+                            <POldPrice>${Number(item.precioAnterior).toFixed(2)}</POldPrice>
+                          )}
                           <PPrice>${Number(item.precio).toFixed(2)}</PPrice>
                         </div>
                       </PName>
@@ -1954,33 +1991,64 @@ const ShoppingCart = ({
               </ConfirmCard>
             </div>
 
-            {/* Right: summary */}
+            {/* Right: summary — todo con datos reales del pedido creado */}
             <ConfirmSummaryCard>
               <ConfirmSummaryTitle>Resumen del pedido</ConfirmSummaryTitle>
-              <OrderNumber><Hash size={14} strokeWidth={2.2} /> 123-321</OrderNumber>
+              <OrderNumber><Hash size={14} strokeWidth={2.2} /> {numeroPedido}</OrderNumber>
 
-              <SummaryCardRow><span>Gastos de envío</span><span>$144</span></SummaryCardRow>
-              <SummaryCardRow><span>Gastos de envío</span><span>$144</span></SummaryCardRow>
+              <SummaryCardRow><span>Total de artículos</span><span>${subtotalReal.toFixed(2)}</span></SummaryCardRow>
+              <SummaryCardRow>
+                <span>Gastos de envío</span>
+                <span>{envioReal > 0 ? `$${envioReal.toFixed(2)}` : 'Gratis'}</span>
+              </SummaryCardRow>
+              {Number(ordenCreada?.discount || descuento) > 0 && (
+                <SummaryCardRow style={{ color: '#16a34a', fontWeight: 600 }}>
+                  <span>Descuento por puntos</span>
+                  <span>−${Number(ordenCreada?.discount || descuento).toFixed(2)}</span>
+                </SummaryCardRow>
+              )}
               <Divider />
               <TotalBig>
                 <span>Total</span>
-                <span>${totalFinal.toFixed(2)}</span>
+                <span>${totalReal.toFixed(2)}</span>
               </TotalBig>
 
+              {/* La forma de pago que de verdad se eligió, no una tarjeta fija */}
               <PayMethod>
-                <MastercardIcon />
-                <span>MasterCard 02132</span>
+                {metodoReal === 'tarjeta'
+                  ? <CreditCard size={18} color={BROWN} />
+                  : metodoReal === 'saldo'
+                    ? <Wallet size={18} color={BROWN} />
+                    : <Wallet size={18} color={BROWN} />}
+                <span>{nombrePago}</span>
               </PayMethod>
 
+              {/* Entrega real: la dirección elegida, o el retiro en el local */}
               <DeliveryAddress>
-                <MapPin size={16} color={BROWN} style={{ marginTop: 2, flexShrink: 0 }} />
+                {esDomicilioReal
+                  ? <MapPin size={16} color={BROWN} style={{ marginTop: 2, flexShrink: 0 }} />
+                  : <StoreFront size={16} color={BROWN} style={{ marginTop: 2, flexShrink: 0 }} />}
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>Dirección de entrega</div>
-                  <div style={{ color: BROWN, fontSize: 13 }}>Shopping in 07114</div>
+                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>
+                    {esDomicilioReal ? 'Dirección de entrega' : 'Retiro en el local'}
+                  </div>
+                  {esDomicilioReal && (
+                    <div style={{ color: BROWN, fontSize: 13 }}>{direccionReal || 'Sin dirección'}</div>
+                  )}
                 </div>
               </DeliveryAddress>
 
-              <PlaceOrderBtn style={{ marginTop: 24 }} onClick={handleConfirmClose}>
+              {/* Ver el estado del pedido con su línea de tiempo y el mapa en vivo */}
+              {ordenCreada?._id && (
+                <PlaceOrderBtn
+                  style={{ marginTop: 18, background: '#fff', color: BROWN, border: `1.5px solid ${BROWN}` }}
+                  onClick={() => { onCheckout?.(); onCerrar(); navigate(`/mi-cuenta/pedido/${ordenCreada._id}`); }}
+                >
+                  Ver el estado del pedido
+                </PlaceOrderBtn>
+              )}
+
+              <PlaceOrderBtn style={{ marginTop: 12 }} onClick={handleConfirmClose}>
                 Volver a la tienda
               </PlaceOrderBtn>
             </ConfirmSummaryCard>

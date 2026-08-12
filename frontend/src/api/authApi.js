@@ -88,3 +88,20 @@ export const loginClientDB = async (data) => {
   }
   return response.json();
 };
+
+// 5- Login de clientes con Google. `credential` es el ID token que devuelve el
+// botón de Google; el backend lo verifica y crea/enlaza la cuenta. Misma cookie
+// y misma forma de respuesta que loginClientDB.
+export const googleLoginDB = async (credential) => {
+  const response = await fetch('http://localhost:4000/api/loginClient/google', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || 'No se pudo iniciar sesión con Google');
+  }
+  return response.json();
+};

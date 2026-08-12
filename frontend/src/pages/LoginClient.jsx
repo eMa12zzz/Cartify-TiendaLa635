@@ -3,8 +3,9 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
 import { Mail, Lock, Loader2, ArrowRight, Store as StoreIcon, Star, Bike, Heart } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
-import { loginClientDB } from '../api/authApi';
+import { loginClientDB, googleLoginDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import { consumirRecienRegistrado } from '../utils/primerIngreso';
@@ -327,6 +328,31 @@ const Button = styled.button`
   &:disabled { background: #d8c5af; cursor: not-allowed; }
 `;
 
+// Separador "o" entre el formulario y el botón de Google.
+const Divisor = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 18px;
+  color: #b7b0a8;
+  font-size: 12.5px;
+  font-weight: 600;
+
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #eee;
+  }
+`;
+
+// El botón de Google se centra en su fila.
+const GoogleFila = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+`;
+
 const FooterText = styled.div`
   text-align: center;
   font-size: 13px;
@@ -361,11 +387,12 @@ const LoginClient = () => {
     defaultValues: { email: '', password: '' }
   });
 
-  // 2- Enviar credenciales al backend de clientes (SELECT y VERIFY)
-  const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      const res = await loginClientDB({ email: data.email, password: data.password });
+  /*
+   * Lo que pasa DESPUÉS de que el backend confirmó la sesión, sea por
+   * contraseña o por Google: se guarda en el contexto y se decide a dónde ir.
+   * Se comparte para que las dos puertas se comporten igual.
+   */
+  const alEntrar = (res) => {
       // 3- Guardamos el token y datos del cliente en el contexto
       /*
        * El tipo lo dice el servidor: por esta misma puerta entran clientes y
@@ -421,8 +448,35 @@ const LoginClient = () => {
       if (destino) navigate(destino, { replace: true });
       else if (esPersonal) navigate('/mi-cuenta/reparto', { replace: true });
       else navigate(recienRegistrado ? '/bienvenida' : '/', { replace: true });
+  };
+
+  // 2- Enviar credenciales al backend de clientes (SELECT y VERIFY)
+  const onSubmit = async (data) => {
+    try {
+      setLoading(true);
+      const res = await loginClientDB({ email: data.email, password: data.password });
+      alEntrar(res);
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Inicio de sesión con Google. El botón nos entrega el ID token; lo mandamos
+  // al backend y, si todo cuadra, seguimos el mismo camino que el login normal.
+  const onGoogle = async (credentialResponse) => {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      toast.error('No se recibió la respuesta de Google');
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await googleLoginDB(credential);
+      alEntrar(res);
+    } catch (err) {
+      toast.error(err.message || 'No se pudo iniciar sesión con Google');
     } finally {
       setLoading(false);
     }
@@ -532,6 +586,19 @@ const LoginClient = () => {
             </Button>
 
           </form>
+
+          <Divisor>o</Divisor>
+
+          <GoogleFila>
+            <GoogleLogin
+              onSuccess={onGoogle}
+              onError={() => toast.error('No se pudo iniciar sesión con Google')}
+              text="continue_with"
+              shape="pill"
+              locale="es"
+              width="320"
+            />
+          </GoogleFila>
 
           <FooterText>
             ¿No tiene una cuenta?{' '}

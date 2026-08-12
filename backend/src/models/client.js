@@ -50,6 +50,15 @@ const clientSchema = new Schema({
     email: { type:"String"},
     userName: { type:"String"},
     password: { type:"String"},
+    /*
+     * Inicio de sesión con Google. `googleId` es el "sub" (identificador
+     * estable) que devuelve Google; con él se reconoce a quien vuelve a entrar
+     * aunque cambie el correo. `authProvider` distingue 'local' (correo y
+     * contraseña) de 'google' — quien entró por Google no tiene contraseña, así
+     * que el login normal no debe pedírsela.
+     */
+    googleId: { type:"String"},
+    authProvider: { type:"String", default: "local"},
     // Campo viejo (con typo y tipo String). Se mantiene por compatibilidad con
     // los datos que ya existen en la base; la lógica nueva NO lo usa.
     lolayitypoints: { type:"String", default: 0},

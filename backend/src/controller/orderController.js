@@ -8,6 +8,7 @@ import productModel from "../models/product.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
+import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 
 const orderController = {};
 
@@ -117,11 +118,33 @@ orderController.createOrder = async (req, res) => {
       }
     }
 
-    const total = Number((subtotal - discount).toFixed(2));
+    const metodo = paymentMethod || "efectivo";
+    const entrega = deliveryType === "delivery" ? "delivery" : "retiro";
 
-    // Los puntos se ganan sobre lo que REALMENTE se pagó (no sobre el subtotal).
+    if (entrega === "delivery" && !deliveryAddress) {
+      return res.status(400).json({ message: "Indica la dirección de entrega" });
+    }
+
+    /*
+     * ── ENVÍO ──
+     * El costo lo fija el panel (storeSettings.costoEnvio), NO el navegador: el
+     * front solo lo muestra. Se cobra únicamente a domicilio; en retiro es 0.
+     * Antes esto no se sumaba a ningún lado y el "$4.78" era decorativo.
+     */
+    const ajustesTienda = await storeSettingsModel
+      .findOne({ clave: CLAVE_UNICA })
+      .select("costoEnvio");
+    const shippingCost = entrega === "delivery"
+      ? Number((Number(ajustesTienda?.costoEnvio ?? 4.78)).toFixed(2))
+      : 0;
+
+    const total = Number((subtotal - discount + shippingCost).toFixed(2));
+
+    // Los puntos se ganan sobre los productos pagados (no sobre el envío, que
+    // no es "compra"): subtotal menos el descuento por puntos.
+    const baseParaPuntos = Number((subtotal - discount).toFixed(2));
     const pointsEarned = config.isActive
-      ? Math.floor(total * config.pointsPerDollar)
+      ? Math.floor(baseParaPuntos * config.pointsPerDollar)
       : 0;
 
     /*
@@ -131,13 +154,6 @@ orderController.createOrder = async (req, res) => {
      * ({ balance: { $gte: total } }) para que dos compras simultáneas no
      * puedan gastar el mismo dinero dos veces.
      */
-    const metodo = paymentMethod || "efectivo";
-    const entrega = deliveryType === "delivery" ? "delivery" : "retiro";
-
-    if (entrega === "delivery" && !deliveryAddress) {
-      return res.status(400).json({ message: "Indica la dirección de entrega" });
-    }
-
     if (metodo === "saldo") {
       const cobrado = await clientModel.findOneAndUpdate(
         { _id: clientId, balance: { $gte: total } },
@@ -158,6 +174,7 @@ orderController.createOrder = async (req, res) => {
       subtotal,
       discount,
       pointsRedeemed,
+      shippingCost,
       total,
       paymentMethod: metodo,
       deliveryType: entrega,
@@ -259,6 +276,42 @@ orderController.getOrdersByClient = async (req, res) => {
       .populate("items.productId");
 
     return res.status(200).json(orders);
+
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * SELECT — UN pedido completo, para la pantalla de estado del pedido.
+ *
+ * Distinto de getCourierPosition (que devuelve solo el puntito y se consulta
+ * cada pocos segundos): esto trae el pedido entero —productos, dirección,
+ * método de pago, envío, total— para pintar la pantalla una vez. Mismo candado:
+ * tener sesión no basta, hay que ser el dueño; el personal ve el de cualquiera.
+ */
+orderController.getOrderById = async (req, res) => {
+  try {
+    // Igual que en getCourierPosition: un id con mala forma es un 404 limpio,
+    // no un 500 por el CastError de Mongoose.
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    const pedido = await orderModel
+      .findById(req.params.id)
+      .populate("items.productId");
+
+    if (!pedido) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    if (req.usuario?.tipo === "Client" && String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+
+    return res.status(200).json(pedido);
 
   } catch (error) {
     console.log("error " + error);

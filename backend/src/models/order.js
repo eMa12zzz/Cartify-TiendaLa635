@@ -35,6 +35,9 @@ const orderSchema = new Schema({
     subtotal: { type: Number },            // antes del descuento por puntos
     discount: { type: Number, default: 0 }, // descuento aplicado al canjear puntos
     pointsRedeemed: { type: Number, default: 0 },
+    // Costo del envío cobrado en este pedido (0 si es retiro en el local). Se
+    // saca de los ajustes de la tienda al momento de comprar, no del navegador.
+    shippingCost: { type: Number, default: 0 },
     total: { type: Number, required: true },
     status: {
         type: String,

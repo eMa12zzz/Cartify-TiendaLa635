@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { EdadProvider } from './context/EdadContext';
@@ -61,6 +62,7 @@ import AccountSettings from './pages/AccountSettings';
 import ClienteLayout from './components/Layout/ClienteLayout';
 import PuntosFidelidad from './pages/cliente/PuntosFidelidad';
 import MisPedidos from './pages/cliente/MisPedidos';
+import EstadoPedido from './pages/cliente/EstadoPedido';
 import Favoritos from './pages/cliente/Favoritos';
 import Bienvenida from './pages/Bienvenida';
 import Reparto from './pages/cliente/Reparto';
@@ -92,8 +94,17 @@ const PinturaDeTemporada = () => {
  * panel o la tienda— para decidir cuál de los dos cajones de sesión manda, y
  * eso solo lo sabe estando dentro del router. Ver AuthContext.
  */
+/*
+ * El clientId de Google sale de la variable de entorno del frontend
+ * (VITE_GOOGLE_CLIENT_ID). Es el mismo id que el backend usa para verificar el
+ * token. Si falta, el botón de Google simplemente no funciona, pero el resto de
+ * la app sigue igual.
+ */
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
 function App() {
   return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <BrowserRouter>
       <AuthProvider>
         {/*
@@ -238,6 +249,8 @@ function App() {
             <Route element={<ClienteLayout />}>
               <Route path="/mi-cuenta"           element={<DetallesCuenta />} />
               <Route path="/mi-cuenta/pedidos"   element={<MisPedidos />} />
+              {/* Estado de UN pedido: línea de tiempo, envío y mapa en vivo */}
+              <Route path="/mi-cuenta/pedido/:id" element={<EstadoPedido />} />
               <Route path="/mi-cuenta/favoritos" element={<Favoritos />} />
               {/* Reparto: la usa el personal desde el teléfono, en la calle */}
               <Route path="/mi-cuenta/reparto"   element={<Reparto />} />
@@ -271,6 +284,7 @@ function App() {
         </AjustesProvider>
       </AuthProvider>
     </BrowserRouter>
+    </GoogleOAuthProvider>
   );
 }
 
