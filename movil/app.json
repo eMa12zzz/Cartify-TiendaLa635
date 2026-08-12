@@ -24,6 +24,21 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "La app usa tu ubicación para marcar la dirección de entrega de tu pedido."
+        }
+      ],
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "La app usa el micrófono para el asistente por voz.",
+          "speechRecognitionPermission": "La app usa el reconocimiento de voz para entender tu pedido."
+        }
+      ]
+    ]
   }
 }

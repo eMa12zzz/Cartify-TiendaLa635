@@ -3,43 +3,85 @@
  * CONTEXTO DE AUTENTICACIÓN — AuthContext.js
  * ============================================================
  * El mismo contrato que `frontend/src/context/AuthContext.jsx`: expone
- * `user`, `token`, `login()`, `logout()` e `isAuthenticated`, para que quien
- * venga de la web encuentre lo que espera.
+ * `user`, `token`, `login()`, `logout()`, `actualizarUsuario`, `esCliente` e
+ * `isAuthenticated`.
  *
- * La diferencia está en dónde vive la sesión. La web la guarda en
- * localStorage, que en React Native no existe. Su reemplazo natural es
- * expo-secure-store (o AsyncStorage), y ninguno está instalado.
- *
- * Así que por ahora la sesión vive en memoria: se entra bien, se navega bien y
- * se cierra bien, pero al matar la app hay que volver a entrar. Es una línea
- * de código el día que se agregue el paquete —guardar y leer en `login` y en
- * el efecto de arranque— y se prefiere eso antes que meter una dependencia a
- * escondidas.
+ * La web guarda la sesión en localStorage; aquí se guarda en AsyncStorage (una
+ * llave con el token y los datos del usuario). Así la sesión SOBREVIVE al
+ * cerrar la app: se entra una vez y al volver a abrir sigue dentro, igual que
+ * en la web.
  * ============================================================
  */
 
-import { createContext, useCallback, useMemo, useState } from 'react';
+import { createContext, useCallback, useMemo, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const AuthContext = createContext(null);
+
+const LLAVE = 'kartify:sesion';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [cargando, setCargando] = useState(true);
 
-  // Guarda el token y los datos que devolvió el servidor al entrar.
+  // Al arrancar, se lee la sesión guardada (si la hay).
+  useEffect(() => {
+    let vivo = true;
+    AsyncStorage.getItem(LLAVE)
+      .then((crudo) => {
+        if (!vivo || !crudo) return;
+        try {
+          const s = JSON.parse(crudo);
+          setToken(s.token || null);
+          setUser(s.user || null);
+        } catch { /* dato corrupto: se ignora */ }
+      })
+      .finally(() => { if (vivo) setCargando(false); });
+    return () => { vivo = false; };
+  }, []);
+
+  // Guarda el token y los datos que devolvió el servidor al entrar (+ AsyncStorage).
   const login = useCallback((nuevoToken, tipoUsuario = 'client', datosUsuario = null) => {
+    const u = { type: tipoUsuario, ...datosUsuario };
     setToken(nuevoToken);
-    setUser({ type: tipoUsuario, ...datosUsuario });
+    setUser(u);
+    AsyncStorage.setItem(LLAVE, JSON.stringify({ token: nuevoToken, user: u })).catch(() => {});
   }, []);
 
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
+    AsyncStorage.removeItem(LLAVE).catch(() => {});
   }, []);
 
+  /*
+   * Parche parcial del usuario en sesión (ej. la foto de perfil). Refresca el
+   * estado y lo persistido, para que el cambio sobreviva al reinicio.
+   */
+  const actualizarUsuario = useCallback((cambios) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const u = { ...prev, ...cambios };
+      AsyncStorage.setItem(LLAVE, JSON.stringify({ token, user: u })).catch(() => {});
+      return u;
+    });
+  }, [token]);
+
   const valor = useMemo(
-    () => ({ user, token, login, logout, isAuthenticated: !!token }),
-    [user, token, login, logout]
+    () => ({
+      user,
+      token,
+      cargando,
+      login,
+      logout,
+      actualizarUsuario,
+      isAuthenticated: !!token,
+      // ¿La sesión es de un CLIENTE (y no del personal)? Las pantallas de
+      // "Mi Cuenta" piden datos a /client/:id, que solo conoce clientes.
+      esCliente: user?.type === 'client' && !!user?.id,
+    }),
+    [user, token, cargando, login, logout, actualizarUsuario]
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
