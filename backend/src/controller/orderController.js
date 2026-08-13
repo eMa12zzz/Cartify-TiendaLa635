@@ -8,6 +8,7 @@ import productModel from "../models/product.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
+import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 
 const orderController = {};
 
@@ -15,9 +16,19 @@ const orderController = {};
 orderController.createOrder = async (req, res) => {
   try {
     const {
-      clientId, items, paymentMethod, channel, pointsToRedeem,
+      items, paymentMethod, channel, pointsToRedeem,
       deliveryType, deliveryAddress, deliveryReference, deliveryLat, deliveryLng,
     } = req.body;
+
+    /*
+     * A nombre de quién va el pedido lo decide el SERVIDOR, no el navegador.
+     *
+     * Antes se leía `clientId` del cuerpo de la petición, así que cualquiera
+     * podía cargarle una compra —con su stock y sus puntos— a la cuenta de
+     * otra persona. Ahora sale de la cookie del cliente, del código del kiosco
+     * o de la sesión del empleado que cobra. Ver middlewares/identificarComprador.js.
+     */
+    const clientId = req.compradorId;
 
     // Validación básica: sin cliente o sin productos no hay pedido.
     if (!clientId || !items || items.length === 0) {
@@ -107,11 +118,33 @@ orderController.createOrder = async (req, res) => {
       }
     }
 
-    const total = Number((subtotal - discount).toFixed(2));
+    const metodo = paymentMethod || "efectivo";
+    const entrega = deliveryType === "delivery" ? "delivery" : "retiro";
 
-    // Los puntos se ganan sobre lo que REALMENTE se pagó (no sobre el subtotal).
+    if (entrega === "delivery" && !deliveryAddress) {
+      return res.status(400).json({ message: "Indica la dirección de entrega" });
+    }
+
+    /*
+     * ── ENVÍO ──
+     * El costo lo fija el panel (storeSettings.costoEnvio), NO el navegador: el
+     * front solo lo muestra. Se cobra únicamente a domicilio; en retiro es 0.
+     * Antes esto no se sumaba a ningún lado y el "$4.78" era decorativo.
+     */
+    const ajustesTienda = await storeSettingsModel
+      .findOne({ clave: CLAVE_UNICA })
+      .select("costoEnvio");
+    const shippingCost = entrega === "delivery"
+      ? Number((Number(ajustesTienda?.costoEnvio ?? 4.78)).toFixed(2))
+      : 0;
+
+    const total = Number((subtotal - discount + shippingCost).toFixed(2));
+
+    // Los puntos se ganan sobre los productos pagados (no sobre el envío, que
+    // no es "compra"): subtotal menos el descuento por puntos.
+    const baseParaPuntos = Number((subtotal - discount).toFixed(2));
     const pointsEarned = config.isActive
-      ? Math.floor(total * config.pointsPerDollar)
+      ? Math.floor(baseParaPuntos * config.pointsPerDollar)
       : 0;
 
     /*
@@ -121,13 +154,6 @@ orderController.createOrder = async (req, res) => {
      * ({ balance: { $gte: total } }) para que dos compras simultáneas no
      * puedan gastar el mismo dinero dos veces.
      */
-    const metodo = paymentMethod || "efectivo";
-    const entrega = deliveryType === "delivery" ? "delivery" : "retiro";
-
-    if (entrega === "delivery" && !deliveryAddress) {
-      return res.status(400).json({ message: "Indica la dirección de entrega" });
-    }
-
     if (metodo === "saldo") {
       const cobrado = await clientModel.findOneAndUpdate(
         { _id: clientId, balance: { $gte: total } },
@@ -148,6 +174,7 @@ orderController.createOrder = async (req, res) => {
       subtotal,
       discount,
       pointsRedeemed,
+      shippingCost,
       total,
       paymentMethod: metodo,
       deliveryType: entrega,
@@ -231,6 +258,18 @@ orderController.createOrder = async (req, res) => {
 // SELECT — Pedidos de UN cliente (su historial). Alimenta MisPedidos/Recibidos.
 orderController.getOrdersByClient = async (req, res) => {
   try {
+    /*
+     * Tener sesión no basta: hay que ser ESE cliente.
+     *
+     * Sin esta comprobación, cualquiera con una cuenta leía el historial de
+     * cualquier otro cambiando el id de la URL — qué compró, a qué dirección
+     * se lo llevaron y las coordenadas de su casa. El personal sí puede ver
+     * los de todos: es la tienda atendiendo a su gente.
+     */
+    if (req.usuario?.tipo === "Client" && req.usuario.id !== req.params.clientId) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+
     const orders = await orderModel
       .find({ clientId: req.params.clientId })
       .sort({ createdAt: -1 })          // los más recientes primero
@@ -240,6 +279,91 @@ orderController.getOrdersByClient = async (req, res) => {
 
   } catch (error) {
     console.log("error " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * SELECT — UN pedido completo, para la pantalla de estado del pedido.
+ *
+ * Distinto de getCourierPosition (que devuelve solo el puntito y se consulta
+ * cada pocos segundos): esto trae el pedido entero —productos, dirección,
+ * método de pago, envío, total— para pintar la pantalla una vez. Mismo candado:
+ * tener sesión no basta, hay que ser el dueño; el personal ve el de cualquiera.
+ */
+orderController.getOrderById = async (req, res) => {
+  try {
+    // Igual que en getCourierPosition: un id con mala forma es un 404 limpio,
+    // no un 500 por el CastError de Mongoose.
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    const pedido = await orderModel
+      .findById(req.params.id)
+      .populate("items.productId");
+
+    if (!pedido) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    if (req.usuario?.tipo === "Client" && String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+
+    return res.status(200).json(pedido);
+
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * El cliente valora el SERVICIO de entrega de un pedido suyo YA entregado.
+ * No es una reseña del producto: es qué tal estuvo el reparto.
+ */
+orderController.rateService = async (req, res) => {
+  try {
+    const n = Number(req.body.rating);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      return res.status(400).json({ message: "La valoración va de 1 a 5 estrellas" });
+    }
+
+    const pedido = await orderModel
+      .findById(req.params.id)
+      .select("clientId status deliveryType serviceRating");
+
+    if (!pedido) {
+      return res.status(404).json({ message: "No se encontró el pedido" });
+    }
+
+    // Solo el cliente dueño del pedido lo valora (el personal no opina por él).
+    if (req.usuario?.tipo !== "Client" || String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+
+    // Y solo tiene sentido para un pedido a domicilio que ya se entregó.
+    if (pedido.deliveryType !== "delivery") {
+      return res.status(400).json({ message: "Solo se valora el servicio de los pedidos a domicilio" });
+    }
+    if (pedido.status !== "entregado") {
+      return res.status(400).json({ message: "Puede valorar el servicio cuando el pedido esté entregado" });
+    }
+
+    pedido.serviceRating = {
+      rating: n,
+      comment: String(req.body.comment || "").trim().slice(0, 500),
+      ratedAt: new Date(),
+    };
+    await pedido.save();
+
+    return res.status(200).json({
+      message: "¡Gracias por valorar el servicio!",
+      serviceRating: pedido.serviceRating,
+    });
+  } catch (error) {
+    console.log("error rateService: " + error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
@@ -329,7 +453,11 @@ orderController.updateOrderStatus = async (req, res) => {
 // INSERT — Crear un pedido de IMPRESIÓN (sube archivo + opciones).
 orderController.createPrintOrder = async (req, res) => {
   try {
-    const { clientId, serviceId, color, copies, pages, doubleSided, paper } = req.body;
+    const { serviceId, color, copies, pages, doubleSided, paper } = req.body;
+
+    // Igual que en createOrder: de quién es el pedido lo dice el servidor.
+    // Ver middlewares/identificarComprador.js.
+    const clientId = req.compradorId;
 
     if (!clientId || !serviceId) {
       return res.status(400).json({ message: "clientId y serviceId son requeridos" });
@@ -507,10 +635,21 @@ orderController.getCourierPosition = async (req, res) => {
 
     const pedido = await orderModel
       .findById(req.params.id)
-      .select("courier status deliveryType deliveryLat deliveryLng");
+      .select("courier status deliveryType deliveryLat deliveryLng clientId");
 
     if (!pedido) {
       return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    /*
+     * Solo el dueño del pedido —o el personal— puede ver por dónde viene.
+     *
+     * Esta ruta devuelve el punto del repartidor Y las coordenadas del
+     * destino, o sea la casa de alguien. `clientId` entra en el select de
+     * arriba solo para poder comprobarlo; no se devuelve al navegador.
+     */
+    if (req.usuario?.tipo === "Client" && String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
     }
 
     return res.status(200).json({

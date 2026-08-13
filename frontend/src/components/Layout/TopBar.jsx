@@ -58,10 +58,15 @@ const TopBar = ({ onAlternarMenu, menuAbierto = false }) => {
             <p className="text-xs truncate" style={{ color: c.textMuted }}>{roleLabel}</p>
           </div>
           <div
-            className="h-10 w-10 flex-none rounded-full flex items-center justify-center text-sm font-bold shadow-sm"
+            className="h-10 w-10 flex-none rounded-full flex items-center justify-center text-sm font-bold shadow-sm overflow-hidden"
             style={{ backgroundColor: c.primary, color: c.buttonText }}
           >
-            {initials}
+            {/* Su foto de perfil si la tiene; si no, las iniciales de siempre. */}
+            {user?.image ? (
+              <img src={user.image} alt="Foto de perfil" className="w-full h-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           <ChevronDown className="w-4 h-4 flex-none" style={{ color: c.textMuted }} />
         </div>

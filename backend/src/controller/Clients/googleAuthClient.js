@@ -1,0 +1,127 @@
+import { OAuth2Client } from "google-auth-library";
+import jsonwebtoken from "jsonwebtoken";
+import clientModel from "../../models/client.js";
+import { config } from "../../../config.js";
+
+/*
+ * ============================================================
+ * INICIO DE SESIÓN CON GOOGLE — googleAuthClient.js
+ * ============================================================
+ * El botón de Google del frontend obtiene un "ID token" firmado por Google y
+ * lo manda aquí. Este controlador NO confía en lo que diga el navegador sobre
+ * quién es la persona: verifica la firma del token con las llaves públicas de
+ * Google y comprueba que se haya emitido para ESTA app (audience === clientId).
+ * Solo entonces saca el correo, el nombre y la foto de adentro del token.
+ *
+ * Desde ahí es igual que el login normal: se busca (o se crea) el cliente, se
+ * emite el MISMO JWT y la MISMA cookie de cliente, y se responde con la misma
+ * forma que loginClient.login para que el frontend de sesión no note diferencia.
+ * ============================================================
+ */
+
+const googleAuthClientController = {};
+
+// Un solo cliente de verificación, reutilizado entre peticiones.
+const googleClient = new OAuth2Client(config.google.clientId);
+
+googleAuthClientController.login = async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({ message: "Falta el token de Google" });
+  }
+
+  if (!config.google.clientId) {
+    // Sin CLIENT_ID configurado no se puede verificar nada: mejor avisar claro
+    // que dejar pasar un token sin comprobar.
+    console.log("GOOGLE_CLIENT_ID no está configurado en el backend");
+    return res.status(500).json({ message: "El inicio con Google no está configurado" });
+  }
+
+  try {
+    // 1- Verificar el token con Google. Si la firma no cuadra o el token es de
+    //    otra app, verifyIdToken lanza y caemos al catch como 401.
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: config.google.clientId,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+    const emailVerificado = payload?.email_verified;
+
+    if (!email || !emailVerificado) {
+      return res.status(401).json({ message: "No se pudo verificar el correo de Google" });
+    }
+
+    // 2- Buscar el cliente por su correo. El correo es la llave: quien ya tenía
+    //    cuenta con ese correo entra a la MISMA, no a una nueva.
+    let cliente = await clientModel.findOne({ email });
+
+    if (cliente) {
+      // La cuenta existe pero está desactivada: no se deja entrar ni por Google.
+      if (!cliente.isActive) {
+        return res.status(403).json({ message: "La cuenta está desactivada" });
+      }
+
+      /*
+       * Enlazar una cuenta existente (creada con correo/contraseña) a Google la
+       * primera vez que entra por aquí. Se marca verificada —Google ya confirmó
+       * el correo— y se guarda el googleId. La contraseña que tuviera no se toca.
+       */
+      const cambios = {};
+      if (!cliente.googleId) cambios.googleId = payload.sub;
+      if (!cliente.isVerified) cambios.isVerified = true;
+      if (!cliente.image && payload.picture) cambios.image = payload.picture;
+      if (Object.keys(cambios).length) {
+        cliente = await clientModel.findByIdAndUpdate(cliente._id, cambios, { new: true });
+      }
+    } else {
+      // 3- Cuenta nueva. Sin contraseña: quien entra por Google no la usa. Queda
+      //    verificada y activa de una vez, porque Google ya confirmó el correo.
+      cliente = await clientModel.create({
+        fullName: payload.name || "",
+        email,
+        userName: (email.split("@")[0] || "").toLowerCase(),
+        image: payload.picture || "",
+        googleId: payload.sub,
+        authProvider: "google",
+        isVerified: true,
+        isActive: true,
+      });
+    }
+
+    // 4- Emitir el JWT y la cookie del ÁREA DE CLIENTE, igual que loginClient.
+    const token = jsonwebtoken.sign(
+      { id: cliente._id, userType: "Client" },
+      config.JWT.secret,
+      { expiresIn: "30d" }
+    );
+
+    res.cookie("authCookieCliente", token, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+    });
+
+    return res.status(200).json({
+      message: "Sesión iniciada",
+      token,
+      userType: "client",
+      client: {
+        id: cliente._id,
+        fullName: cliente.fullName,
+        email: cliente.email,
+        userName: cliente.userName,
+        image: cliente.image,
+        dui: cliente.dui,
+        fechaNacimiento: cliente.fechaNacimiento,
+      },
+    });
+
+  } catch (error) {
+    console.log("error login con Google: ", error?.message || error);
+    return res.status(401).json({ message: "No se pudo iniciar sesión con Google" });
+  }
+};
+
+export default googleAuthClientController;

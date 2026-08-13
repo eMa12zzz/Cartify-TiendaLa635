@@ -22,6 +22,8 @@ registerClientController.register = async (req, res) => {
     email,
     userName,
     password,
+    // Fecha de nacimiento (opcional): "YYYY-MM-DD". Para la edad de los +18.
+    fechaNacimiento,
     // El consentimiento. Llegan como texto: esto entra por multipart.
     aceptaTerminos,
     promociones
@@ -74,6 +76,8 @@ registerClientController.register = async (req, res) => {
         fullName,
         dui: duiLimpio,
         phoneNumber,
+        // Solo se lleva si vino algo: vacío queda undefined, no cadena.
+        fechaNacimiento: fechaNacimiento?.trim() ? fechaNacimiento.trim() : undefined,
         image,      // <-- Guardamos la URL de la imagen
         public_id,  // <-- Guardamos el ID de la imagen
         email,
@@ -196,6 +200,7 @@ registerClientController.verifyCode = async (req, res) => {
       fullName,
       dui,
       phoneNumber,
+      fechaNacimiento,
       image,
       public_id,
       email,
@@ -216,6 +221,8 @@ registerClientController.verifyCode = async (req, res) => {
       // Sin DUI el campo no se crea (ver el comentario en register): así una
       // eventual restricción de unicidad no choca entre clientes sin DUI.
       ...(dui ? { dui } : {}),
+      // La fecha de nacimiento solo se guarda si el cliente la dio.
+      ...(fechaNacimiento ? { fechaNacimiento } : {}),
       phoneNumber,
       // La lista de direcciones arranca vacía: la llena el cliente desde
       // "Mi cuenta > Direcciones", que es de donde salen las entregas.
@@ -273,7 +280,17 @@ registerClientController.verifyCode = async (req, res) => {
 };
 registerClientController.getAll = async (req, res) => {
   try {
-    const clients = await clientModel.find();
+    /*
+     * ESTA es la ruta que de verdad usa la pantalla de Clientes del panel
+     * (customerService.js pega aquí, no a /api/client), así que es la que
+     * estaba filtrando de verdad: devolvía el hash de la contraseña de cada
+     * cliente junto con su saldo, su DUI, su teléfono y sus direcciones con
+     * coordenadas. Sin autenticación, o sea a quien preguntara.
+     *
+     * El panel nunca usó la contraseña para nada; sacarla no le quita nada a
+     * la pantalla. Ver el mismo arreglo en clientController.getClients.
+     */
+    const clients = await clientModel.find().select("-password");
     return res.status(200).json(clients);
   } catch (error) {
     console.error(error);

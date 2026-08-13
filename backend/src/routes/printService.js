@@ -1,14 +1,19 @@
 import express from 'express';
 import printServiceController from '../controller/printServiceController.js';
 
+import { soloPersonal } from "../middlewares/validarSesion.js";
+
 const router = express.Router();
+
+// Los servicios de impresión y sus precios se consultan desde la tienda; el
+// catálogo lo arma el panel.
 
 router.route("/")
   .get(printServiceController.getServices)
-  .post(printServiceController.insertService);
+  .post(soloPersonal, printServiceController.insertService);
 
 router.route("/:id")
-  .put(printServiceController.updateService)
-  .delete(printServiceController.deleteService);
+  .put(soloPersonal, printServiceController.updateService)
+  .delete(soloPersonal, printServiceController.deleteService);
 
 export default router;

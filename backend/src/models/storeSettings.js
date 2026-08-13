@@ -102,6 +102,14 @@ const storeSettingsSchema = new Schema(
     // Dirección física: de aquí salen los repartos.
     direccion: { type: String, default: "Calle Sevilla 635, Col. Providencia", trim: true },
 
+    /*
+     * Costo del envío a domicilio, en dólares. Lo fija el panel y lo cobra el
+     * pedido. Antes estaba escrito a mano en el carrito (4.78) y —peor— el
+     * backend ni lo sumaba al total: se mostraba pero no se cobraba. Ahora es
+     * un solo número, editable, que manda tanto en la pantalla como en la cuenta.
+     */
+    costoEnvio: { type: Number, default: 4.78, min: 0 },
+
     secciones: { type: [seccionSchema], default: [] },
 
     temporada: { type: temporadaSchema, default: () => ({}) },

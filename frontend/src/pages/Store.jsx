@@ -641,7 +641,7 @@ const Store = () => {
       {/* Chip para limpiar el filtro de promo */}
       {promoSeleccionada && (
         <div style={{ padding: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 14, color: '#B46C30', fontWeight: 600 }}>
+          <span style={{ fontSize: 14, color: 'var(--marca-600)', fontWeight: 600 }}>
             Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
           </span>
           <button
@@ -672,7 +672,7 @@ const Store = () => {
             if (bloque.clave === 'promos') {
               // De orilla a orilla y sin carril: su carrusel asoma las
               // tarjetas de los lados y con relleno se le cortarían.
-              return <PromoBanners key={bloque.clave} onSelectPromo={abrirPromo} />;
+              return <PromoBanners key={bloque.clave} moduloId={moduloSeleccionado} onSelectPromo={abrirPromo} />;
             }
 
             if (bloque.clave === 'mas-vendidos') {

@@ -24,13 +24,30 @@ export const idsDePromo = (promo) =>
     .filter(Boolean);
 
 /*
- * Mapa productId -> info de promo (la primera promo vigente que lo incluya).
- * "Vigente" incluye la fecha: una promo que venció anoche no puede seguir
- * bajando precios hoy solo porque nadie recargó la lista.
+ * Mapa productId -> info de promo. "Vigente" incluye la fecha: una promo que
+ * venció anoche no puede seguir bajando precios hoy solo porque nadie recargó
+ * la lista.
+ *
+ * Un producto puede estar en VARIAS promos vigentes a la vez: por ejemplo un
+ * "anuncio" que solo lo destaca (sin tocar el precio) y un "descuento" que sí
+ * se lo baja. Cuando eso pasa gana la que AFECTA EL PRECIO por encima del
+ * anuncio, y entre dos que afectan el precio, la más nueva. Antes ganaba
+ * simplemente la primera de la lista —muchas veces el anuncio, que devuelve el
+ * precio de siempre—, así que el descuento recién creado quedaba tapado y no
+ * se veía en ningún lado.
  */
+const prioridadPromo = (tipo) => (tipo === 'anuncio' ? 0 : 1);
+
 const construirMapaPromo = (promos) => {
   const mapa = {};
-  (promos || []).filter(promoVigente).forEach((pr) => {
+  const ordenadas = (promos || [])
+    .filter(promoVigente)
+    .sort((a, b) =>
+      prioridadPromo(b.type) - prioridadPromo(a.type) ||
+      new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+
+  ordenadas.forEach((pr) => {
     (pr.items || []).forEach((it) => {
       const pid = typeof it.productId === 'object' ? it.productId?._id : it.productId;
       if (!pid || mapa[pid]) return;

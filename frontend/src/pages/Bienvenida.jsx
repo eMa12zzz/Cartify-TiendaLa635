@@ -191,7 +191,7 @@ const Ubicarme = styled.button`
   padding: 9px 14px;
   border-radius: 999px;
   border: 1px dashed ${BROWN};
-  background: #FBF6F0;
+  background: var(--marca-50);
   color: ${BROWN_DARK};
   font-size: 13px;
   font-weight: 600;

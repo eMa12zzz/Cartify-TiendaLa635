@@ -305,14 +305,14 @@ const BurbujaPedido = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', alignSelf: 'stretch' }}>
                     <div style={{
                       width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                      background: actual ? BROWN : hecho ? '#F3E7D8' : '#f3f0ed',
+                      background: actual ? BROWN : hecho ? 'var(--marca-100)' : '#f3f0ed',
                       color: actual ? '#fff' : color,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <p.Icono size={14} strokeWidth={2.4} />
                     </div>
                     {i < PASOS.length - 1 && (
-                      <div style={{ width: 2, flex: 1, minHeight: 14, background: hecho ? '#F3E7D8' : '#f3f0ed' }} />
+                      <div style={{ width: 2, flex: 1, minHeight: 14, background: hecho ? 'var(--marca-100)' : '#f3f0ed' }} />
                     )}
                   </div>
                   <div style={{ paddingBottom: i < PASOS.length - 1 ? 12 : 0 }}>
@@ -345,7 +345,7 @@ const BurbujaPedido = () => {
 
             <button
               type="button"
-              onClick={() => navigate('/mi-cuenta/pedidos')}
+              onClick={() => navigate(`/mi-cuenta/pedido/${enCurso._id}`)}
               style={{
                 marginTop: 12, width: '100%', padding: '9px 0', borderRadius: 999,
                 border: '1px solid #eee', background: '#fff', color: BROWN,

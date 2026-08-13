@@ -2,14 +2,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Phone, User, Hash, Lock, Loader2 } from 'lucide-react';
+import { Mail, Phone, User, Hash, Lock, Loader2, Calendar } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import toast from 'react-hot-toast';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ModalTerminos from '../components/Store/ModalTerminos';
 import { reglaDuiOpcional, reglaTelefono, bloquearNoDigitos } from '../utils/validaciones';
+import { calcularEdad, esMayorDeEdad } from '../utils/edad';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
 import { useRegistro } from '../hooks/useRegistro';
 import { useModalTerminos } from '../hooks/useModalTerminos';
+import { googleLoginDB } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 
 const BROWN = 'var(--marca-600)';
 const BROWN_HOVER = 'var(--marca-700)';
@@ -155,6 +160,28 @@ const Button = styled.button`
   }
 `;
 
+const Divisor = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: #b7b0a8;
+  font-size: 12.5px;
+  font-weight: 600;
+
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #eee;
+  }
+`;
+
+const GoogleFila = styled.div`
+  display: flex;
+  justify-content: center;
+`;
+
 const FooterText = styled.div`
   text-align: center;
   margin-top: 18px;
@@ -280,7 +307,38 @@ const Register = () => {
   const { abierto: terminosAbiertos, abrir: abrirTerminos, cerrar: cerrarTerminos } =
     useModalTerminos();
 
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+
+  const { login } = useAuth();
+  const [entrandoGoogle, setEntrandoGoogle] = useState(false);
+
+  /*
+   * Registrarse con Google. No pasa por el flujo de verificación por código: el
+   * correo ya viene confirmado por Google, así que la cuenta queda lista y se
+   * entra directo a la tienda. Si el correo ya existía, simplemente inicia esa
+   * sesión (el backend lo enlaza).
+   */
+  const onGoogle = async (credentialResponse) => {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      toast.error('No se recibió la respuesta de Google');
+      return;
+    }
+    try {
+      setEntrandoGoogle(true);
+      const res = await googleLoginDB(credential);
+      login(res.token, res.userType || 'client', res.client);
+      navigate('/', { replace: true });
+    } catch (err) {
+      toast.error(err.message || 'No se pudo registrar con Google');
+    } finally {
+      setEntrandoGoogle(false);
+    }
+  };
+
+  // El DUI solo se pide cuando la fecha de nacimiento ya dice que es mayor: en
+  // El Salvador el DUI se emite a los 18, así que antes no hay ninguno que dar.
+  const puedeDui = esMayorDeEdad(watch('fechaNacimiento'));
 
   return (
     <Container>
@@ -322,27 +380,57 @@ const Register = () => {
             </InputContainer>
 
             {/*
-              El DUI es opcional: quien no lo anda a mano igual se registra hoy.
-              Solo se revisa si escribió algo (ver reglaDuiOpcional).
+              Fecha de nacimiento: para calcular la edad de los productos +18.
+              Es obligatoria, pero NO bloquea a los menores de tener cuenta —
+              pueden comprar lo demás; solo no verán los productos restringidos.
+              Va ANTES que el DUI porque es la que decide si el DUI se pide.
             */}
             <InputContainer>
-              <Label>DUI (opcional)</Label>
+              <Label>Fecha de nacimiento</Label>
               <InputWrapper>
-                <IconWrapper><Hash size={18} /></IconWrapper>
+                <IconWrapper><Calendar size={18} /></IconWrapper>
                 <Input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={LARGO_DUI}
-                  placeholder="00000000-0"
-                  {...register("dui", reglaDuiOpcional)}
-                  onKeyDown={bloquearNoDigitos}
-                  // El guion se pone solo: si cada quien lo escribe a su manera,
-                  // el mismo DUI termina guardado de tres formas distintas.
-                  onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  {...register("fechaNacimiento", {
+                    required: "La fecha de nacimiento es obligatoria",
+                    validate: (v) => {
+                      const edad = calcularEdad(v);
+                      if (edad == null) return "Esa fecha no es válida";
+                      if (edad < 0 || edad > 120) return "Revisá la fecha";
+                      return true;
+                    },
+                  })}
                 />
-                {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
+                {errors.fechaNacimiento && <ErrorMsg>{errors.fechaNacimiento.message}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
+
+            {/*
+              El DUI solo aparece cuando la fecha ya dice que es mayor de edad:
+              es opcional, y a un menor no tendría por qué pedírsele. Se revisa
+              solo si escribió algo (ver reglaDuiOpcional).
+            */}
+            {puedeDui && (
+              <InputContainer>
+                <Label>DUI (opcional)</Label>
+                <InputWrapper>
+                  <IconWrapper><Hash size={18} /></IconWrapper>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={LARGO_DUI}
+                    placeholder="00000000-0"
+                    {...register("dui", reglaDuiOpcional)}
+                    onKeyDown={bloquearNoDigitos}
+                    // El guion se pone solo: si cada quien lo escribe a su manera,
+                    // el mismo DUI termina guardado de tres formas distintas.
+                    onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
+                  />
+                  {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
+                </InputWrapper>
+              </InputContainer>
+            )}
 
             <InputContainer>
               <Label>Teléfono</Label>
@@ -472,6 +560,23 @@ const Register = () => {
             </Button>
 
           </form>
+
+          <Divisor>o</Divisor>
+
+          <GoogleFila>
+            {entrandoGoogle ? (
+              <Loader2 size={22} className="animate-spin" style={{ color: BROWN }} />
+            ) : (
+              <GoogleLogin
+                onSuccess={onGoogle}
+                onError={() => toast.error('No se pudo registrar con Google')}
+                text="signup_with"
+                shape="pill"
+                locale="es"
+                width="320"
+              />
+            )}
+          </GoogleFila>
 
           <FooterText>
             ¿Ya tienes una cuenta?{' '}

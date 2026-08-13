@@ -31,6 +31,13 @@ const storeSettingsController = {};
  */
 const CAMPOS_DE_TEXTO = ["nombreLinea1", "nombreLinea2", "lema", "direccion"];
 
+/*
+ * Campos numéricos que el panel puede cambiar. Por ahora solo el costo del
+ * envío. Se validan aparte de los de texto porque un número mal formado o
+ * negativo tiene que rebotar como error del cliente (400), no guardarse.
+ */
+const CAMPOS_NUMERICOS = ["costoEnvio"];
+
 const MODOS_DE_TEMPORADA = ["automatico", "manual", "ninguno"];
 
 // SELECT — Los ajustes actuales. Si no existen todavía, se crean con los
@@ -72,6 +79,20 @@ storeSettingsController.updateSettings = async (req, res) => {
 
     if (cambios.nombreLinea1 !== undefined && !cambios.nombreLinea1) {
       return res.status(400).json({ message: "La primera línea del nombre no puede quedar vacía" });
+    }
+
+    /*
+     * Números. Se rechaza lo que no sea un número finito y no negativo: un
+     * costo de envío en blanco, con letras o negativo no tiene sentido y no
+     * debe pisar el valor bueno que ya estaba guardado.
+     */
+    for (const campo of CAMPOS_NUMERICOS) {
+      if (req.body[campo] === undefined) continue;
+      const valor = Number(req.body[campo]);
+      if (!Number.isFinite(valor) || valor < 0) {
+        return res.status(400).json({ message: "El costo de envío tiene que ser un número válido" });
+      }
+      cambios[campo] = valor;
     }
 
     /*

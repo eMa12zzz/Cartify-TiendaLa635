@@ -16,7 +16,7 @@
  * ============================================================
  */
 
-export const VERSION_TERMINOS = '1.0';
+export const VERSION_TERMINOS = '2.0';
 
 /*
  * Las casillas llegan por FormData, y ahí todo es texto: un checkbox marcado

@@ -107,6 +107,7 @@ loginAdminController.login = async (req, res) => {
         id: adminFound._id,
         email: adminFound.email,
         userName: adminFound.userName,
+        image: adminFound.image,
       },
     });
 

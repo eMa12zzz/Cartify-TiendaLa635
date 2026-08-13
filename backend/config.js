@@ -24,5 +24,11 @@ export const config = {
     audience: process.env.AUDIENCE,
     client_id: process.env.CLIENT_ID,
     client_secret: process.env.CLIENT_SECRET
+  },
+  // Inicio de sesión con Google (clientes). El CLIENT_ID es el mismo que usa el
+  // botón del frontend; el backend lo usa como "audience" para verificar que el
+  // token de Google se emitió para ESTA app y no para otra.
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID
   }
 };

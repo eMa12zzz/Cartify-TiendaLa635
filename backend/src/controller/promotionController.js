@@ -108,7 +108,7 @@ promotionController.insertPromotion = async (req, res) => {
 
 promotionController.updatePromotion = async (req, res) => {
   try {
-    const { title, promoDescription, type, etiqueta, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt } = req.body;
+    const { title, promoDescription, type, etiqueta, buyQty, payQty, isActive, showBanner, tema, colorFondo, colorFondo2, colorTexto, colorAcento, colorFlecha, icono, imagenCompleta, endsAt, removeImage } = req.body;
     const items = parseItems(req.body.items);
 
     if (!promoDescription) {
@@ -148,6 +148,20 @@ promotionController.updatePromotion = async (req, res) => {
       }
       updatedData.image = req.file.path;
       updatedData.public_id = req.file.filename;
+    } else if (removeImage === 'true' || removeImage === true) {
+      /*
+       * Quitó la imagen sin subir otra: se borra de Cloudinary y se limpian los
+       * campos para que el banner vuelva a dibujarse con el tema y los colores.
+       * Sin este brazo, un update sin archivo dejaba la foto vieja intacta.
+       */
+      if (found.public_id) {
+        try { await cloudinary.uploader.destroy(found.public_id); } catch (e) { /* ignore */ }
+      }
+      updatedData.image = null;
+      updatedData.public_id = null;
+      // Sin imagen no puede haber "banner completo": lo apagamos para no esconder
+      // el título de una promo que se quedó sin foto.
+      updatedData.imagenCompleta = false;
     }
 
     await promotionModel.findByIdAndUpdate(req.params.id, updatedData, { new: true });

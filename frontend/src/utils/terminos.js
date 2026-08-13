@@ -17,15 +17,17 @@
  *
  * Y una advertencia honesta: esto es un texto claro y de buena fe, no un
  * documento revisado por un abogado. Dice lo que la tienda de verdad hace hoy;
- * si la tienda cambia, hay que venir a cambiarlo.
+ * si la tienda cambia, hay que venir a cambiarlo. Se apoya en la Ley de
+ * Protección al Consumidor de El Salvador donde corresponde (derecho de
+ * retracto, reversión de pagos), pero explicada en palabras que se entienden.
  * ============================================================
  */
 
-export const VERSION_TERMINOS = '1.0';
+export const VERSION_TERMINOS = '2.0';
 
 // Se muestra al pie del documento. Va escrita y no calculada: es la fecha en
 // que se redactó este texto, no la de hoy.
-export const FECHA_TERMINOS = '5 de agosto de 2026';
+export const FECHA_TERMINOS = '11 de agosto de 2026';
 
 /*
  * La tabla de datos: qué se pide, para qué, quién más lo ve y cuánto se guarda.
@@ -54,8 +56,14 @@ export const TABLA_DATOS = [
     cuanto: 'Mientras tenga su cuenta.',
   },
   {
+    dato: 'Fecha de nacimiento (opcional)',
+    para: 'Habilitar la compra de productos para mayores de 18. Sin ella, esos productos quedan tapados; el resto de la tienda funciona igual.',
+    quien: 'Solo la tienda.',
+    cuanto: 'Mientras tenga su cuenta, o hasta que la borre.',
+  },
+  {
     dato: 'DUI (opcional)',
-    para: 'Identificarle si hay un reclamo con un pedido. Puede dejarlo en blanco: su cuenta funciona igual.',
+    para: 'Confirmar la mayoría de edad para productos restringidos e identificarle si hay un reclamo. Puede dejarlo en blanco: su cuenta funciona igual.',
     quien: 'Solo la tienda.',
     cuanto: 'Mientras tenga su cuenta, o hasta que lo borre.',
   },
@@ -118,7 +126,31 @@ export const SECCIONES = [
       {
         tipo: 'parrafo',
         texto:
-          'Lo de abajo es lo mismo, explicado con detalle. Está escrito para leerse, no para cansar: si algo no se entiende, escríbanos y se lo explicamos.',
+          'Lo de abajo es lo mismo, explicado con detalle: cómo contactarnos, cómo se paga, qué pasa si quiere devolver algo y qué hacemos con sus datos. Está escrito para leerse, no para cansar: si algo no se entiende, escríbanos y se lo explicamos.',
+      },
+    ],
+  },
+  {
+    id: 'identificacion',
+    titulo: 'Quiénes somos y cómo contactarnos',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Esta tienda en línea la opera el negocio cuyo nombre y dirección aparecen al pie de este documento, ubicado en El Salvador. Nos gusta que nos escriban: para cualquier consulta, reclamo o para ejercer los derechos que se explican más abajo, use el medio que le quede más cómodo.',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Por WhatsApp: con el botón verde de WhatsApp que ve en la tienda. Es la vía más rápida.',
+          'En persona: pásese por la tienda, en la dirección que está al pie de este documento.',
+          'Al recibir su pedido: quien se lo lleva también puede tomarle un mensaje o una queja.',
+        ],
+      },
+      {
+        tipo: 'nota',
+        texto:
+          'Los datos fiscales de la tienda (NIT y razón social) van en su factura y se los damos cuando los necesite para un trámite; pídalos por cualquiera de los medios de arriba.',
       },
     ],
   },
@@ -135,6 +167,7 @@ export const SECCIONES = [
         tipo: 'lista',
         puntos: [
           'Los datos que ponga tienen que ser suyos y de verdad. Un teléfono equivocado es un pedido que no llega.',
+          'La cuenta es para mayores de edad, o para menores con el permiso de quien los cuida. Hay productos que solo se le muestran y se le venden a personas mayores de 18.',
           'Usted responde por lo que se haga desde su cuenta, así que no comparta su contraseña. Nadie de la tienda se la va a pedir nunca, ni por WhatsApp ni por teléfono.',
           'Si vemos que una cuenta se usa para estafar o para molestar a otras personas, la cerramos.',
         ],
@@ -148,10 +181,12 @@ export const SECCIONES = [
       {
         tipo: 'lista',
         puntos: [
-          'El precio que vale es el que se ve cuando usted confirma el pedido.',
+          'El precio que vale es el que se ve cuando usted confirma el pedido. Nuestros precios ya incluyen los impuestos.',
           'Las existencias se mueven todo el día. Si algo se acabó justo después de su pedido, le avisamos y se le descuenta del total; no se lo cambiamos por otra cosa sin preguntarle.',
+          'Le llevamos el pedido a domicilio o usted lo pasa a traer, como prefiera. Con entrega a domicilio hace falta una dirección con su punto en el mapa.',
           'El tiempo de entrega que le mostramos sale del promedio real de las entregas anteriores a su zona. Es un estimado honesto, no una promesa: la lluvia y el tráfico existen.',
-          'Hay productos que solo se le entregan a personas mayores de edad. Quien se los lleve puede pedirle un documento, y si no lo tiene a mano, ese producto se devuelve.',
+          'Cuando su pedido va en camino puede seguir en el mapa por dónde viene, y valorar el servicio de entrega cuando lo reciba.',
+          'Hay productos que solo se le entregan a personas mayores de edad. Quien se los lleve puede pedirle su documento (DUI), y si no lo tiene a mano, ese producto se devuelve.',
         ],
       },
     ],
@@ -163,7 +198,7 @@ export const SECCIONES = [
       {
         tipo: 'parrafo',
         texto:
-          'Hoy la tienda no cobra tarjetas en línea. Se paga al recibir el pedido o en la caja de la tienda. Por eso mismo, en la aplicación nunca se le va a pedir el número completo de una tarjeta ni su código de seguridad.',
+          'Hoy la tienda no cobra tarjetas en línea. Se paga al recibir el pedido o en la caja de la tienda, en efectivo o con tarjeta en el datáfono. Por eso mismo, en la aplicación nunca se le va a pedir el número completo de una tarjeta ni su código de seguridad.',
       },
       {
         tipo: 'lista',
@@ -171,6 +206,58 @@ export const SECCIONES = [
           'Los puntos de fidelidad se ganan comprando y se vencen. Cuánto se gana y cuándo vence se ve en "Mi cuenta > Mis puntos", que siempre manda sobre lo que diga cualquier otro lado.',
           'El saldo de las tarjetas de regalo se canjea en la tienda, no caduca solo, y no se cambia por efectivo.',
           'Los puntos y el saldo son de su cuenta: no se pasan a otra persona.',
+          'La transacción con tarjeta debe hacerla el titular de la tarjeta.',
+        ],
+      },
+      {
+        tipo: 'nota',
+        texto:
+          'Si a futuro se habilita el pago con tarjeta en línea, se le avisará antes y estas condiciones se actualizarán con la versión correspondiente.',
+      },
+    ],
+  },
+  {
+    id: 'devoluciones',
+    titulo: 'Cambios, devoluciones y derecho de retracto',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Queremos que quede contento con lo que compra. Si algo no salió bien, escríbanos por WhatsApp o pásese por la tienda y lo resolvemos. Esto es lo que la ley y el sentido común nos piden:',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Si el producto llegó dañado, vencido, o no es el que pidió: se lo cambiamos o le devolvemos su dinero. Avísenos cuando lo reciba, sin usarlo.',
+          'Derecho de retracto (Ley de Protección al Consumidor de El Salvador): en compras hechas por este sitio, puede arrepentirse dentro de los primeros 8 días de recibido el producto, siempre que esté sin usar, completo y con su empaque original. Presente su comprobante de compra; si lo extravió, díganos su nombre, la fecha, el método de pago y qué compró.',
+          'Por salubridad, los productos perecederos —comida, pan, frutas, verduras, lácteos— y los de higiene personal NO se devuelven por retracto una vez entregados, salvo que lleguen en mal estado o vencidos.',
+          'No se aceptan devoluciones por cambio de opinión, gusto personal o insatisfacción subjetiva una vez que el producto fue usado o abierto.',
+          'El reintegro se hace por el mismo medio con el que pagó. Si pagó en efectivo o al recibir, se le devuelve en la tienda.',
+        ],
+      },
+      {
+        tipo: 'nota',
+        texto:
+          'El derecho de retracto aplica a las compras hechas de forma remota por este sitio. Las compras presenciales en la tienda no están sujetas a retracto, pero sí a cambio o devolución cuando el producto tenga un defecto o esté vencido.',
+      },
+    ],
+  },
+  {
+    id: 'advertencias',
+    titulo: 'Uso seguro de los productos',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Nos importa el bienestar suyo, de los niños, de los adultos mayores y de las mascotas. Antes de usar cualquier producto, tenga en cuenta lo siguiente:',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Lea la etiqueta y la fecha de vencimiento de cada producto antes de consumirlo o usarlo. Ante cualquier duda, pregúntenos.',
+          'Algunos productos y empaques traen piezas pequeñas que pueden causar asfixia: manténgalos fuera del alcance de los niños.',
+          'Los productos de limpieza y los líquidos deben guardarse lejos del alcance de niños y de quien no sepa manejarlos.',
+          'Los productos con alcohol o tabaco son solo para mayores de 18 años, y se pedirá documento al entregar.',
         ],
       },
     ],

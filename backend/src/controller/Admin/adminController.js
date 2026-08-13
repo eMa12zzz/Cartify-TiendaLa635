@@ -8,7 +8,9 @@ const adminController = {};
 adminController.getAdmins = async (req, res) => {
   try {
 
-    const admins = await adminModel.find();
+    // Sin el `-password` esto devolvía el hash del ADMINISTRADOR de la tienda,
+    // que es la llave del panel entero. Mismo arreglo que en clientes.
+    const admins = await adminModel.find().select("-password");
 
     return res.status(200).json(admins);
 

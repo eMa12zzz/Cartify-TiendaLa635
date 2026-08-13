@@ -21,7 +21,7 @@ const pinEntrega = divIcon({
   className: '',
   html: `<div style="
     width:26px;height:26px;border-radius:50% 50% 50% 0;
-    background:#B46C30;transform:rotate(-45deg);
+    background:var(--marca-600);transform:rotate(-45deg);
     border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.35);
   "></div>`,
   iconSize: [26, 26],

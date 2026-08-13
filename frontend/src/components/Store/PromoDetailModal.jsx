@@ -1,5 +1,5 @@
 import styled, { keyframes } from 'styled-components';
-import { X, Clock, Tag, ArrowRight } from 'lucide-react';
+import { X, Clock, Tag, ArrowRight, MapPin } from 'lucide-react';
 import PromoCard from './PromoCard';
 import ProductCard from './ProductCard';
 import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promos';
@@ -104,6 +104,29 @@ const Descripcion = styled.p`
   margin: 10px 0 0;
 `;
 
+/*
+ * "Lo encontrás en" — el pasillo físico donde está lo de la promo.
+ *
+ * La 635 es una tienda de verdad: saber que el 2x1 está en Lácteos le ahorra
+ * al cliente dar vueltas buscándolo. El dato ya viene con cada producto
+ * (su módulo), así que aquí solo se juntan los pasillos distintos.
+ */
+const Ubicacion = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #FAF4EE;
+  border: 1px solid #F0E2D4;
+  color: ${BROWN_DARK};
+  font-size: 13.5px;
+  line-height: 1.4;
+
+  strong { font-weight: 700; }
+`;
+
 const Titulo = styled.h3`
   font-size: 17px;
   font-weight: 800;
@@ -152,6 +175,13 @@ const PromoDetailModal = ({ promo, productos = [], onCerrar, onVerEnTienda, onVe
   const vencimiento = textoVencimiento(promo);
   const vencida = promoVencida(promo);
 
+  /*
+   * Pasillos distintos donde vive lo de la promo. Se sacan de los productos ya
+   * mapeados (cada uno trae su `modulo`), así que no hace falta pedir nada más.
+   * Se ordenan para que "Lácteos · Panadería" salga siempre igual y no baile.
+   */
+  const pasillos = [...new Set(productos.map((p) => p.modulo).filter(Boolean))].sort();
+
   return (
     <Overlay onClick={onCerrar}>
       <Panel onClick={(e) => e.stopPropagation()}>
@@ -195,6 +225,16 @@ const PromoDetailModal = ({ promo, productos = [], onCerrar, onVerEnTienda, onVe
           </Datos>
 
           {promo.promoDescription && <Descripcion>{promo.promoDescription}</Descripcion>}
+
+          {pasillos.length > 0 && (
+            <Ubicacion>
+              <MapPin size={16} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+              <span>
+                {pasillos.length === 1 ? 'Lo encontrás en: ' : 'Lo encontrás en los pasillos: '}
+                <strong>{pasillos.join(' · ')}</strong>
+              </span>
+            </Ubicacion>
+          )}
 
           <Titulo>Productos en esta promoción</Titulo>
 

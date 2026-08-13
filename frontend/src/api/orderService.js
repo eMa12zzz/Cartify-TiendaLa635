@@ -16,6 +16,13 @@ export const orderService = {
     return response.data;
   },
 
+  // UN pedido completo (pantalla de estado del pedido). El backend comprueba
+  // que sea del cliente que pregunta.
+  getOrderById: async (id) => {
+    const response = await api.get(`/order/${id}`);
+    return response.data;
+  },
+
   // TODOS los pedidos (pantalla del empleado). status opcional: 'pagado', etc.
   getAllOrders: async (status) => {
     const response = await api.get('/order', {
@@ -34,6 +41,12 @@ export const orderService = {
   // `quien` deja constancia de quién movió el pedido (lo sella el servidor).
   updateStatus: async (id, status, quien) => {
     const response = await api.put(`/order/${id}/status`, { status, quien });
+    return response.data;
+  },
+
+  // El cliente valora el SERVICIO de entrega de su pedido entregado (1-5 estrellas).
+  rateService: async (id, { rating, comment }) => {
+    const response = await api.patch(`/order/${id}/rating`, { rating, comment });
     return response.data;
   },
 

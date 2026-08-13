@@ -28,6 +28,12 @@ const clientSchema = new Schema({
      * los controladores guardan undefined y nunca cadena vacía.
      */
     dui: { type:"String"},
+    /*
+     * Fecha de nacimiento (opcional). Con ella se calcula la edad para destapar
+     * los productos +18 en la tienda. Es una barrera blanda —se puede mentir—,
+     * así que la verificación de verdad sigue siendo el DUI físico en la entrega.
+     */
+    fechaNacimiento: { type: Date },
     phoneNumber: { type:"String"},
     /*
      * Direcciones de entrega: { nombre, direccion, referencia, lat, lng }.
@@ -44,6 +50,15 @@ const clientSchema = new Schema({
     email: { type:"String"},
     userName: { type:"String"},
     password: { type:"String"},
+    /*
+     * Inicio de sesión con Google. `googleId` es el "sub" (identificador
+     * estable) que devuelve Google; con él se reconoce a quien vuelve a entrar
+     * aunque cambie el correo. `authProvider` distingue 'local' (correo y
+     * contraseña) de 'google' — quien entró por Google no tiene contraseña, así
+     * que el login normal no debe pedírsela.
+     */
+    googleId: { type:"String"},
+    authProvider: { type:"String", default: "local"},
     // Campo viejo (con typo y tipo String). Se mantiene por compatibilidad con
     // los datos que ya existen en la base; la lógica nueva NO lo usa.
     lolayitypoints: { type:"String", default: 0},

@@ -119,17 +119,24 @@ const FILA = {
 const DEGRADADO_ORILLAS =
   'linear-gradient(to right, transparent 0%, #000 7%, #000 93%, transparent 100%)';
 
-const PromoBanners = ({ onSelectPromo }) => {
+const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
   const reducirMovimiento = useReducedMotion();
   const cabenTres = useCabenTres();
+  // moduloId: si el cliente está parado en un pasillo, solo salen sus promos.
   const { promos, activa, total, irA, siguiente, anterior, distancia, pausar, reanudar } =
-    usePromoCarousel({ autoplay: !reducirMovimiento });
+    usePromoCarousel({ autoplay: !reducirMovimiento, moduloId });
 
   if (total === 0) return null;
 
   const unaSola = total === 1;
-  // La fila solo tiene sentido si de verdad hay más de una que poner al lado.
-  const enFila = cabenTres && total > 1;
+  /*
+   * La fila (el MISMO formato que el carrusel de toda la tienda) se usa siempre
+   * que quepa en pantalla, aunque en el pasillo haya una sola promo. Antes se
+   * exigía más de una, así que una promo suelta de un pasillo salía como un
+   * banner ancho aparte; ahora se ve igual que las de la portada: una tarjeta
+   * del mismo tamaño, centrada. En pantalla angosta se sigue usando el anillo.
+   */
+  const enFila = cabenTres;
   const L = enFila ? FILA : ANILLO;
 
   return (
@@ -350,7 +357,7 @@ const PromoBanners = ({ onSelectPromo }) => {
                     width: i === activa ? 22 : 8,
                     height: 8,
                     borderRadius: 4,
-                    background: i === activa ? '#9C6026' : '#D9C7B4',
+                    background: i === activa ? 'var(--marca-700)' : '#D9C7B4',
                     transition: 'width var(--dur-popover) var(--ease-out), background var(--dur-popover) var(--ease-out)',
                   }}
                 />
@@ -384,7 +391,7 @@ const flecha = {
   borderRadius: '50%',
   border: '1px solid #E4D5C3',
   background: '#fff',
-  color: '#9C6026',
+  color: 'var(--marca-700)',
   fontSize: 20,
   lineHeight: 1,
   cursor: 'pointer',
