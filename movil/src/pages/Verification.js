@@ -17,6 +17,7 @@ import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
+import { useTema } from '../context/TemaContext';
 import { COLORES } from '../theme/colores';
 import { verificarCodigoCorreo } from '../api/authApi';
 
@@ -39,6 +40,9 @@ const LARGO = 6;
  * porque son un campo normal.
  */
 const Verification = ({ correo, alVerificar, alVolver }) => {
+  // La paleta de la temporada, para que las casillas del código y el botón
+  // sigan el mismo color que la tienda. Fuera de temporada es el café de siempre.
+  const { colores } = useTema();
   const [codigo, setCodigo] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -91,9 +95,12 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
                 key={indice}
                 style={[
                   estilos.casilla,
-                  codigo[indice] && estilos.casillaLlena,
+                  codigo[indice] && [estilos.casillaLlena, { borderColor: colores.marca }],
                   // La casilla que sigue se marca, para saber dónde va uno.
-                  indice === codigo.length && estilos.casillaActiva,
+                  indice === codigo.length && [
+                    estilos.casillaActiva,
+                    { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
+                  ],
                 ]}
               >
                 <Text style={estilos.caracter}>{codigo[indice] || ''}</Text>
@@ -116,7 +123,13 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
 
         {error ? <Text style={estilos.error}>{error}</Text> : null}
 
-        <Boton texto="Verificar" alPresionar={verificar} cargando={cargando} />
+        <Boton
+          texto="Verificar"
+          alPresionar={verificar}
+          cargando={cargando}
+          color={colores.marca}
+          colorPresionado={colores.marcaOscuro}
+        />
 
         <Text style={estilos.ayuda}>
           El código vence a los 15 minutos. Si ya venció, vuelva a registrarse.

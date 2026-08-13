@@ -11,11 +11,10 @@
  * la tienda queda debajo de la hora y la señal.
  */
 
-import { Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Store } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
-import { Tienda } from './Iconos';
-
-const ALTURA_ESTADO = Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 44;
+import { ALTURA_ESTADO } from '../../theme/pantalla';
 
 const BarraMarca = ({ centrado = false, alTocarMarca, textoAccion, alPresionarAccion }) => (
   <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 12 }, centrado && estilos.barraCentrada]}>
@@ -30,7 +29,8 @@ const BarraMarca = ({ centrado = false, alTocarMarca, textoAccion, alPresionarAc
         style={({ pressed }) => [estilos.accion, pressed && estilos.accionPresionada]}
         accessibilityRole="button"
       >
-        <Tienda size={15} color="#6B6B6B" />
+        {/* Mismo icono que la web: lucide `Store`, 15 px y trazo 2.2. */}
+        <Store size={15} color="#6B6B6B" strokeWidth={2.2} />
         <Text style={estilos.textoAccion}>{textoAccion}</Text>
       </Pressable>
     )}
