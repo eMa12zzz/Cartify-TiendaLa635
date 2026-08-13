@@ -21,7 +21,17 @@ export const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 export const direccionDesdeCoords = async (lat, lng) => {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=es`;
-  const r = await fetch(url, { headers: { Accept: 'application/json' } });
+  /*
+   * Nominatim (igual que las tiles de OSM) exige un User-Agent que identifique
+   * la app; sin él responde 403/418 y la dirección nunca se autocompleta. Es el
+   * mismo UA que usa el WebView del mapa.
+   */
+  const r = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'TiendaLa635/1.0 (contacto@tiendala635.com)',
+    },
+  });
   if (!r.ok) throw new Error('No se pudo leer la dirección');
 
   const d = await r.json();

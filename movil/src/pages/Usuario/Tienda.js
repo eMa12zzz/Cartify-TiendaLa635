@@ -95,7 +95,7 @@ export default function Tienda({ navigation }) {
 
       {/* Dirección de entrega (toca para cambiarla en el mapa) */}
       <TouchableOpacity style={styles.dirBar} onPress={() => navigation.navigate('direccion')} activeOpacity={0.8}>
-        <Text style={styles.dirLabel}>📍 Entregar en:</Text>
+        <Text style={styles.dirLabel}>Entregar en:</Text>
         <Text style={styles.dirValor} numberOfLines={1}>{etiqueta || 'Elige tu dirección'}</Text>
         <Text style={styles.dirChevron}>›</Text>
       </TouchableOpacity>

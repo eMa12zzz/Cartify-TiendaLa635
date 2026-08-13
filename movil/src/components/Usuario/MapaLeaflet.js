@@ -34,9 +34,16 @@ export default function MapaLeaflet({ centro, coord, onMove }) {
   <script>
     var lat = ${inicial.latitude}, lng = ${inicial.longitude};
     var map = L.map('map', { zoomControl: true, attributionControl: false }).setView([lat, lng], 16);
-    // Las MISMAS tiles del frontend, con subdominios a/b/c (así OSM no rechaza).
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, subdomains: 'abc',
+    /*
+     * Tiles de OpenStreetMap, host canónico SIN subdominios: OSM deprecó los
+     * a/b/c.tile y pedirlos así cuenta como violar su política de uso, lo que
+     * dispara el famoso 418 ("I'm a teapot") y deja el mapa en gris. El otro
+     * requisito —un User-Agent que identifique la app— lo pone el WebView con
+     * su prop userAgent; sin él, OSM ve el UA de navegador falso del WebView
+     * de Android y también responde 418.
+     */
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
     }).addTo(map);
 
     // El MISMO pin del frontend: gota café con borde blanco.
@@ -85,6 +92,13 @@ export default function MapaLeaflet({ centro, coord, onMove }) {
         // El baseUrl le da un "referer" real a las peticiones: sin él, OSM y
         // unpkg pueden responder 404/403 a un WebView con html suelto.
         source={{ html, baseUrl: 'https://www.openstreetmap.org/' }}
+        /*
+         * User-Agent que identifica la app, como pide la política de tiles de
+         * OSM. El WebView de Android manda por defecto un UA de navegador con
+         * el marcador "; wv" que OSM trata como navegador falso y bloquea con
+         * 418; con este UA propio las tiles cargan.
+         */
+        userAgent="TiendaLa635/1.0 (contacto@tiendala635.com)"
         style={styles.web}
         onMessage={(e) => {
           try {

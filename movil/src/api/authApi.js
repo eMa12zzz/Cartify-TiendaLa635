@@ -47,6 +47,8 @@ export const registrarCliente = ({
   email,
   userName,
   password,
+  aceptaTerminos,
+  promociones,
 }) =>
   peticion('/registerClient', {
     metodo: 'POST',
@@ -58,6 +60,14 @@ export const registrarCliente = ({
       email,
       userName,
       password,
+      /*
+       * El consentimiento. Sin `aceptaTerminos` en true el servidor rechaza el
+       * registro (ver registerClient.js): por eso el móvil también tiene que
+       * mandarlo, igual que la web. La versión del texto la pone el servidor;
+       * aquí solo viaja el "sí acepto" y la elección de promociones.
+       */
+      aceptaTerminos: !!aceptaTerminos,
+      promociones: !!promociones,
     },
   });
 

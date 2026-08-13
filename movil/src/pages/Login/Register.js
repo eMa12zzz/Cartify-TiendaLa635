@@ -38,6 +38,7 @@ import {
 import BarraMarca from '../../components/UI/BarraMarca';
 import Boton from '../../components/UI/Boton';
 import CampoTexto from '../../components/UI/CampoTexto';
+import Casilla from '../../components/UI/Casilla';
 import { Camara, Candado, Numeral, Persona, Pin, Sobre, Telefono } from '../../components/UI/Iconos';
 import { registrarCliente } from '../../api/authApi';
 import { COLORES } from '../../theme/colores';
@@ -60,6 +61,9 @@ const VALORES_INICIALES = {
   clientAddress: '',
   email: '',
   password: '',
+  // Consentimiento: aceptar es obligatorio, recibir promociones NO (va apagado).
+  aceptaTerminos: false,
+  promociones: false,
 };
 
 const REGLAS = {
@@ -70,6 +74,8 @@ const REGLAS = {
   clientAddress: (v) => requerido(v, 'La dirección es obligatoria'),
   email: validarCorreo,
   password: validarContrasena,
+  // El servidor vuelve a exigirlo; esto es el aviso amable antes de enviar.
+  aceptaTerminos: (v) => (v ? null : 'Debes aceptar los términos para crear la cuenta'),
 };
 
 const Register = ({ irALogin, alPedirCodigo }) => {
@@ -89,6 +95,13 @@ const Register = ({ irALogin, alPedirCodigo }) => {
     if (avisoServidor) setAvisoServidor('');
   };
 
+  // Casillas: guardan un booleano en vez de texto, pero limpian igual el error.
+  const alternar = (campo) => (marcada) => {
+    setValores((v) => ({ ...v, [campo]: marcada }));
+    if (errores[campo]) setErrores((e) => ({ ...e, [campo]: null }));
+    if (avisoServidor) setAvisoServidor('');
+  };
+
   const enviar = async () => {
     const encontrados = validarFormulario(valores, REGLAS);
     setErrores(encontrados);
@@ -98,7 +111,12 @@ const Register = ({ irALogin, alPedirCodigo }) => {
       setCargando(true);
       setAvisoServidor('');
 
-      await registrarCliente({ ...valores, email: valores.email.trim() });
+      await registrarCliente({
+        ...valores,
+        email: valores.email.trim(),
+        aceptaTerminos: valores.aceptaTerminos,
+        promociones: valores.promociones,
+      });
 
       // La cuenta todavía no existe: nace cuando vuelva el código del correo.
       alPedirCodigo(valores.email.trim());
@@ -209,6 +227,23 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             <Text style={estilos.ayudaFoto}>JPG o PNG, hasta 8 MB</Text>
           </Pressable>
 
+          <View style={estilos.consentimiento}>
+            <Casilla
+              marcada={valores.aceptaTerminos}
+              alCambiar={alternar('aceptaTerminos')}
+              etiqueta="Acepto los términos y el aviso de privacidad"
+            />
+            {errores.aceptaTerminos ? (
+              <Text style={estilos.errorCasilla}>{errores.aceptaTerminos}</Text>
+            ) : null}
+
+            <Casilla
+              marcada={valores.promociones}
+              alCambiar={alternar('promociones')}
+              etiqueta="Quiero recibir promociones y novedades (opcional)"
+            />
+          </View>
+
           {avisoServidor ? (
             <View style={estilos.aviso}>
               <Text style={estilos.avisoTexto}>{avisoServidor}</Text>
@@ -277,6 +312,17 @@ const estilos = StyleSheet.create({
   ayudaFoto: {
     fontSize: 12,
     color: COLORES.marcador,
+  },
+  consentimiento: {
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  errorCasilla: {
+    color: '#B4231F',
+    fontSize: 12,
+    marginTop: -6,
+    marginLeft: 26,
   },
   aviso: {
     backgroundColor: '#FEF2F2',

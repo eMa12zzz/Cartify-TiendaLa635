@@ -70,7 +70,7 @@ const Navegacion = () => {
       return (
         <Verification
           correo={params.correo}
-          alVerificar={() => navegar('login')}
+          alVerificar={() => navegar('tienda')}
           alVolver={() => navegar('registro')}
         />
       );
