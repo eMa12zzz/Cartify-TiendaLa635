@@ -408,6 +408,16 @@ export const TiendaProvider = ({ children }) => {
     if (cuantos) avisar(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
   }, [carrito, guardarCarrito, avisar]);
 
+  /*
+   * Vaciar el carrito porque el pedido YA SE HIZO.
+   *
+   * Hace lo mismo que `limpiarCarrito` pero sin decir nada, y ese es todo el
+   * motivo de que exista: "Se vació el carrito (3 productos)" apareciendo justo
+   * después de comprar se lee como que algo se perdió, cuando lo que pasó es
+   * exactamente lo contrario. Ver pages/Confirmacion.js.
+   */
+  const vaciarTrasPedido = useCallback(() => guardarCarrito([]), [guardarCarrito]);
+
   // El total ya trae aplicado el NxM: la cuenta vive en utils/catalogo.js para
   // que la línea y este total no puedan discrepar.
   const totalCarrito = useMemo(
@@ -449,13 +459,14 @@ export const TiendaProvider = ({ children }) => {
       eliminarDelCarrito,
       actualizarCantidad,
       limpiarCarrito,
+      vaciarTrasPedido,
     }),
     [
       productos, cargando, errorCarga, traerCatalogo, categorias, categoriaSeleccionada,
       terminoBusqueda, productosFiltrados, productosDestacados, secciones, promosDelCarrusel,
       promoSeleccionada, promoDetalle, productosDePromo, abrirPromo, cerrarPromo,
       verPromoEnTienda, carrito, totalCarrito, cantidadItems, agregarAlCarrito,
-      eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+      eliminarDelCarrito, actualizarCantidad, limpiarCarrito, vaciarTrasPedido,
     ]
   );
 

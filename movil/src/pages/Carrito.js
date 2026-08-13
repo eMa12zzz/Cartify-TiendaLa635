@@ -5,18 +5,18 @@
  * Lo que lleva, cuánto lleva de cada cosa y cuánto suma. Es la "CART VIEW" de
  * `ShoppingCart.jsx` — la primera de sus tres vistas.
  *
- * ── Lo que NO está, y por qué ──
+ * Las otras dos vistas de ese archivo —el checkout y la confirmación— ya
+ * existen: pages/Checkout.js y pages/Confirmacion.js. Esta pantalla se queda
+ * con lo suyo, que es qué lleva y cuánto suma, y pasa el relevo con el botón
+ * de abajo.
  *
- * Las otras dos vistas de ese archivo son el checkout y la confirmación, y son
- * un apartado entero: retiro contra envío a domicilio, elegir dirección o
- * marcarla en el mapa, método de pago (efectivo, tarjeta, saldo), canje de
- * puntos de fidelidad, tarjetas de regalo y la creación del pedido contra
- * /api/order. Nada de eso entra en "la página del carrito", y traerlo a medias
- * —un botón de pagar que no cobra— sería peor que no traerlo.
+ * ── Por qué el resumen no menciona el envío ──
  *
- * Por eso tampoco aparece el "Costo de envío" en el resumen: en la web ese
- * renglón sale de haber elegido domicilio, y aquí no hay dónde elegirlo.
- * Mostrar "$0.00" fijo diría que el envío es gratis.
+ * Porque todavía no se sabe si lo hay. El renglón de "Costo de envío" sale de
+ * haber elegido domicilio, y eso se elige en la pantalla siguiente; aquí un
+ * "$0.00" fijo diría que el envío es gratis y un "+$4.78" cobraría de más a
+ * quien piensa pasar a traerlo. Por eso el total de aquí se llama Subtotal —es
+ * lo que valen los productos— y el de verdad se arma en el checkout.
  *
  * ── Una corrección respecto de la web ──
  *
@@ -129,7 +129,7 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
   );
 };
 
-const Carrito = ({ irAInicio }) => {
+const Carrito = ({ irAInicio, irAPagar }) => {
   const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito } =
     useTienda();
   const { colores } = useTema();
@@ -228,6 +228,12 @@ const Carrito = ({ irAInicio }) => {
               </View>
             </View>
 
+            {/*
+              "Vaciar" y "Ir a pagar" en el mismo renglón, con los pesos
+              cambiados respecto del tamaño: el que se lleva el ancho es el que
+              sigue el camino, y el que borra todo se queda del tamaño justo
+              para tocarlo a propósito y no de pasada.
+            */}
             <View style={estilos.botones}>
               <Pressable
                 onPress={limpiarCarrito}
@@ -236,6 +242,17 @@ const Carrito = ({ irAInicio }) => {
               >
                 <Text style={estilos.botonVaciarTexto}>Vaciar</Text>
               </Pressable>
+
+              <View style={estilos.botonPagar}>
+                {/* Lleva el monto encima: es la última vez que se ve antes de
+                    empezar a elegir cómo se paga. */}
+                <Boton
+                  texto={`Ir a pagar · $${totalCarrito.toFixed(2)}`}
+                  alPresionar={irAPagar}
+                  color={colores.marca}
+                  colorPresionado={colores.marcaOscuro}
+                />
+              </View>
             </View>
           </View>
         </>
@@ -480,15 +497,24 @@ const estilos = StyleSheet.create({
     color: COLORES.tituloFuerte,
   },
   botones: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginTop: 12,
   },
   botonVaciar: {
     height: 48,
+    // Ancho justo para el texto y el dedo, sin competir con el de pagar.
+    paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORES.borde,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // El que sigue el camino se lleva todo lo que sobra del renglón.
+  botonPagar: {
+    flex: 1,
   },
   botonVaciarPresionado: {
     borderColor: COLORES.error,

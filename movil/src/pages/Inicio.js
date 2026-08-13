@@ -46,7 +46,7 @@ import ModalPromo from '../components/Tienda/ModalPromo';
 import Boton from '../components/UI/Boton';
 import { Equis, Lupa } from '../components/UI/Iconos';
 
-const Inicio = ({ irACarrito, irACuenta, irASeccion, haySesion }) => {
+const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
   const {
     cargando,
@@ -205,8 +205,6 @@ const Inicio = ({ irACarrito, irACuenta, irASeccion, haySesion }) => {
         alBuscar={setTerminoBusqueda}
         cantidadItems={cantidadItems}
         alAbrirCarrito={irACarrito}
-        alAbrirCuenta={irACuenta}
-        haySesion={haySesion}
       />
 
       {cargando ? (

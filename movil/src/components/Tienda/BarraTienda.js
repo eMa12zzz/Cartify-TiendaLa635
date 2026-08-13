@@ -11,9 +11,22 @@
  * dos pisos — marca y carrito arriba, buscador abajo— que es como resuelven
  * esto las tiendas que se usan desde el teléfono.
  *
- * Lo que NO se trajo del encabezado de la web: el menú de pasillos y el
- * asistente de voz. Los pasillos quedaron fuera del alcance de esta pantalla y
- * el asistente necesita micrófono, permisos y su propia dependencia.
+ * ── Por qué aquí arriba solo queda el carrito ──
+ *
+ * Había un segundo botón, el de la persona, que era la única puerta a la cuenta
+ * y a cerrar sesión. Dejó de serlo cuando llegó la barra de abajo: la cuenta es
+ * uno de sus cuatro apartados, está siempre en el mismo sitio y al alcance del
+ * pulgar. Dos botones que llevan al mismo lugar, a un centímetro uno del otro,
+ * no son dos caminos: son uno mal contado.
+ *
+ * El carrito sí se queda arriba, y no es incoherencia. La barra de abajo es
+ * para CAMBIAR de apartado; el carrito no es un apartado, es lo que uno lleva
+ * en la mano mientras recorre este. Su contador tiene que verse desde la
+ * tienda, junto a los productos que lo van llenando.
+ *
+ * Lo que NO se trajo del encabezado de la web: el menú de pasillos. Quedó fuera
+ * del alcance de esta pantalla. El asistente de voz tampoco está aquí — tiene
+ * su propio apartado en la barra de abajo.
  * ============================================================
  */
 
@@ -21,16 +34,9 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORES } from '../../theme/colores';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
-import { Bolsa, Equis, Lupa, Persona } from '../UI/Iconos';
+import { Bolsa, Equis, Lupa } from '../UI/Iconos';
 
-const BarraTienda = ({
-  busqueda,
-  alBuscar,
-  cantidadItems = 0,
-  alAbrirCarrito,
-  alAbrirCuenta,
-  haySesion = false,
-}) => {
+const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito }) => {
   const { colores } = useTema();
 
   return (
@@ -42,27 +48,6 @@ const BarraTienda = ({
       </View>
 
       <View style={estilos.acciones}>
-        {/*
-          La cuenta. Con sesión lleva a sus datos y a cerrarla; sin sesión, a
-          entrar. Es la única puerta a cerrar sesión que hay en la app: sin
-          este botón, quien entra se queda dentro para siempre.
-        */}
-        <Pressable
-          onPress={alAbrirCuenta}
-          accessibilityRole="button"
-          accessibilityLabel={haySesion ? 'Mi cuenta' : 'Iniciar sesión'}
-          hitSlop={8}
-          style={({ pressed }) => [
-            estilos.botonRedondo,
-            pressed && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
-          ]}
-        >
-          <Persona size={20} color={COLORES.texto} />
-          {/* El puntito café dice "hay sesión abierta" sin ocupar un renglón
-              con el nombre, que en un teléfono no cabe al lado de la marca. */}
-          {haySesion && <View style={[estilos.puntoSesion, { backgroundColor: colores.marca }]} />}
-        </Pressable>
-
         <Pressable
           onPress={alAbrirCarrito}
           accessibilityRole="button"
@@ -171,18 +156,7 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORES.linea,
   },
-  // El color de estos dos lo pone la temporada en línea (ver arriba): aquí
-  // solo va la forma.
-  puntoSesion: {
-    position: 'absolute',
-    top: 5,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: COLORES.fondo,
-  },
+  // El color lo pone la temporada en línea (ver arriba): aquí solo va la forma.
   contador: {
     position: 'absolute',
     top: 1,
