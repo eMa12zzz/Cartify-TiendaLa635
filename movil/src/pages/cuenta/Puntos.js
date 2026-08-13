@@ -1,0 +1,325 @@
+/*
+ * ============================================================
+ * PUNTOS DE FIDELIDAD — la tarjeta del cliente
+ * ============================================================
+ * El equivalente de `frontend/src/pages/cliente/PuntosFidelidad.jsx`: cuántos
+ * puntos tiene disponibles, cuánto valen en dinero, cuándo vence el lote que
+ * vence primero, y las tres preguntas de siempre.
+ *
+ * ── Los números no se inventan ──
+ *
+ * Ni el "cada 100 puntos es $1" ni el "vencen a los 3 meses" están escritos
+ * aquí: salen de `/loyaltyConfig`, que es lo que la tienda tiene configurado de
+ * verdad. Los respaldos del `??` son los mismos que usa la web y solo entran
+ * cuando el servidor no contesta — un texto que promete una tasa distinta de la
+ * que se aplica en la caja es una discusión en el mostrador.
+ *
+ * Y el saldo sale del resumen, no del `loyaltyPoints` del cliente: ese es todo
+ * lo que ganó en su vida, y lo que se le puede prometer hoy es solo lo que no
+ * ha vencido ni canjeado. Ver api/fidelidadApi.js.
+ *
+ * ── Las dos peticiones van juntas ──
+ *
+ * Con `Promise.all`, como la web. En serie son dos viajes al servidor uno tras
+ * otro, y en una red de datos del teléfono eso se nota: la tarjeta aparecería
+ * con el saldo pero sin saber cuánto vale, y se acomodaría sola un segundo
+ * después con el cliente mirándola.
+ * ============================================================
+ */
+
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { TriangleAlert } from 'lucide-react-native';
+import { COLORES } from '../../theme/colores';
+import { useAuth } from '../../hooks/useAuth';
+import { useTema } from '../../context/TemaContext';
+import { getResumenPuntos, getConfigFidelidad } from '../../api/fidelidadApi';
+import BarraCuenta from '../../components/Cuenta/BarraCuenta';
+import Boton from '../../components/UI/Boton';
+import { Estrella } from '../../components/UI/Iconos';
+
+const Puntos = ({ alVolver }) => {
+  const { user } = useAuth();
+  const { colores } = useTema();
+
+  const [resumen, setResumen] = useState({ available: 0, nextExpiry: null, expiringSoon: 0 });
+  const [config, setConfig] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setError('');
+    try {
+      const [sum, cfg] = await Promise.all([getResumenPuntos(user.id), getConfigFidelidad()]);
+      setResumen(sum || { available: 0, nextExpiry: null, expiringSoon: 0 });
+      setConfig(cfg);
+    } catch (e) {
+      setError(e?.message || 'No se pudieron cargar sus puntos');
+    } finally {
+      setCargando(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  // Los mismos respaldos que la web, para que las dos digan lo mismo.
+  const porDolar = config?.pointsPerDollar ?? 1;
+  const meses = config?.expiryMonths ?? 3;
+  const tasaCanje = config?.pointsPerDollarRedeem ?? 100;
+  const minimoCanje = config?.minRedeemPoints ?? 100;
+  const valorEnDinero = resumen.available / tasaCanje;
+
+  const plural = porDolar === 1 ? '' : 's';
+
+  const vence = resumen.nextExpiry
+    ? new Date(resumen.nextExpiry).toLocaleDateString('es-SV', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : '—';
+
+  return (
+    <View style={estilos.pantalla}>
+      <BarraCuenta titulo="Puntos de fidelidad" alVolver={alVolver} />
+
+      {cargando ? (
+        <View style={estilos.centro}>
+          <ActivityIndicator size="large" color={colores.marca} />
+        </View>
+      ) : error ? (
+        <View style={estilos.centro}>
+          <Text style={estilos.errorTitulo}>No se pudieron cargar sus puntos</Text>
+          <Text style={estilos.errorTexto}>{error}</Text>
+          <View style={estilos.botonError}>
+            <Boton
+              texto="Reintentar"
+              alPresionar={cargar}
+              color={colores.marca}
+              colorPresionado={colores.marcaOscuro}
+            />
+          </View>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={estilos.cuerpo}>
+          {/* ── La tarjeta ── */}
+          <View style={estilos.tarjeta}>
+            {/*
+              El degradado de la web va de `primary` a `accent` y termina en el
+              hover del primario. Aquí se arma con los tres de la temporada, así
+              que en Navidad la tarjeta es verde sin tocar este archivo.
+            */}
+            <LinearGradient
+              colors={[colores.marca, colores.acento, colores.marcaOscuro]}
+              locations={[0, 0.55, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+
+            {/* El cuadrito con el nombre de la tienda, como el chip de una
+                tarjeta de verdad. */}
+            <View style={estilos.chip}>
+              <View style={estilos.chipPunto} />
+              <Text style={estilos.chipTexto}>Tienda</Text>
+              <Text style={estilos.chipTexto}>la 635</Text>
+            </View>
+
+            <View style={estilos.tarjetaCuerpo}>
+              <Text style={estilos.nombre} numberOfLines={1}>
+                {user?.fullName || user?.userName || 'Cliente'}
+              </Text>
+
+              <View style={estilos.filaPuntos}>
+                <Estrella size={14} color="#FFFFFF" />
+                <Text style={estilos.puntosTexto}>{resumen.available} puntos disponibles</Text>
+              </View>
+
+              {/* Lo que de verdad le importa al cliente: cuánto valen. */}
+              <Text style={estilos.valor}>
+                Valen ${valorEnDinero.toFixed(2)} en su próxima compra
+              </Text>
+              <Text style={estilos.detalle}>
+                Gana {porDolar} punto{plural} por cada $1 que gasta.
+              </Text>
+              <Text style={estilos.detalleTenue}>Próximo vencimiento: {vence}</Text>
+            </View>
+          </View>
+
+          {/* El aviso de lo que se va a vencer. Solo aparece si hay algo que
+              perder: sin puntos por vencer sería una alarma sin incendio. */}
+          {resumen.expiringSoon > 0 && (
+            <View style={estilos.aviso}>
+              <TriangleAlert size={16} color="#B45309" strokeWidth={2} />
+              <Text style={estilos.avisoTexto}>
+                Tiene {resumen.expiringSoon} puntos que vencen en los próximos 30 días.
+              </Text>
+            </View>
+          )}
+
+          {/* ── Las tres preguntas, con los números reales ── */}
+          <View style={estilos.preguntas}>
+            <Pregunta
+              titulo="¿Cómo consigo puntos?"
+              texto={`Por cada $1 que gasta en la tienda gana ${porDolar} punto${plural}. Se acumulan solos con cada compra.`}
+            />
+            <Pregunta
+              titulo="¿Cómo los uso?"
+              texto={`Cada ${tasaCanje} puntos equivalen a $1 de descuento. Al pagar en la tienda puede elegir usarlos (necesita al menos ${minimoCanje}).`}
+            />
+            <Pregunta
+              titulo="¿Cuándo vencen?"
+              texto={`Los puntos de cada compra vencen a los ${meses} meses de haberlos ganado. Arriba ve la fecha del lote que vence primero.`}
+            />
+          </View>
+        </ScrollView>
+      )}
+    </View>
+  );
+};
+
+const Pregunta = ({ titulo, texto }) => (
+  <View style={estilos.pregunta}>
+    <Text style={estilos.preguntaTitulo}>{titulo}</Text>
+    <Text style={estilos.preguntaTexto}>{texto}</Text>
+  </View>
+);
+
+const estilos = StyleSheet.create({
+  pantalla: {
+    flex: 1,
+    backgroundColor: COLORES.fondo,
+  },
+  centro: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 8,
+  },
+  errorTitulo: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+  },
+  errorTexto: {
+    fontSize: 13.5,
+    lineHeight: 20,
+    color: COLORES.textoSuave,
+    textAlign: 'center',
+  },
+  botonError: {
+    marginTop: 12,
+    alignSelf: 'stretch',
+  },
+  cuerpo: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  tarjeta: {
+    borderRadius: 18,
+    padding: 20,
+    // `hidden` es lo que recorta el degradado a las esquinas redondeadas: sin
+    // esto el fondo sale cuadrado y se asoma por las cuatro puntas.
+    overflow: 'hidden',
+    minHeight: 190,
+    justifyContent: 'space-between',
+  },
+  chip: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
+    width: 78,
+    height: 78,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  chipPunto: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    marginBottom: 5,
+  },
+  chipTexto: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    lineHeight: 14,
+  },
+  tarjetaCuerpo: {
+    // Le deja el rincón de arriba a la derecha al chip: sin este margen, un
+    // nombre largo se le mete debajo y las letras se pisan.
+    marginRight: 88,
+    gap: 3,
+  },
+  nombre: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  filaPuntos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 14,
+  },
+  puntosTexto: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  valor: {
+    fontSize: 16.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  detalle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  detalleTenue: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  aviso: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    marginTop: 14,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#FBF0DF',
+  },
+  avisoTexto: {
+    flexShrink: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#B45309',
+  },
+  preguntas: {
+    marginTop: 26,
+    gap: 18,
+  },
+  pregunta: {
+    gap: 4,
+  },
+  preguntaTitulo: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORES.tituloVentaja,
+  },
+  preguntaTexto: {
+    fontSize: 13.5,
+    lineHeight: 21,
+    color: COLORES.textoSuave,
+  },
+});
+
+export default Puntos;
