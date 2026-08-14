@@ -30,8 +30,8 @@ import SinPermiso from '../../pages/SinPermiso';
  * "Mi Cuenta" tiene que seguir abierta a los dos, porque /mi-cuenta/reparto es
  * la pantalla que usa el repartidor desde su teléfono, en la calle.
  */
-const ProtectedRoute = ({ soloPersonal = false }) => {
-  const { isAuthenticated, esCliente, haySesionDeCliente } = useAuth();
+const ProtectedRoute = ({ soloPersonal = false, soloAdmin = false }) => {
+  const { isAuthenticated, esCliente, haySesionDeCliente, user } = useAuth();
   const { pathname, search } = useLocation();
 
   /*
@@ -71,6 +71,16 @@ const ProtectedRoute = ({ soloPersonal = false }) => {
    *    que dejarla ver el panel a medias.
    */
   if (soloPersonal && esCliente) {
+    return <SinPermiso />;
+  }
+
+  /*
+   * 2.5- Ruta de solo-dueño. Un empleado tiene sesión de personal perfecta —
+   * pasó los dos filtros de arriba— pero esta puerta no es la suya: precios,
+   * proveedores, promociones, empleados, clientes, ajustes de la tienda. No
+   * es un problema de sesión (por eso no se manda al login); es un permiso.
+   */
+  if (soloAdmin && user?.type !== 'admin') {
     return <SinPermiso />;
   }
 

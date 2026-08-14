@@ -1,4 +1,5 @@
 import adminModel from "../../models/admin.js";
+import employeeModel from "../../models/employee.js";
 import bcryptjs from "bcryptjs";
 import jsonwebtoken from "jsonwebtoken";
 import crypto from "crypto";
@@ -10,24 +11,27 @@ const loginAdminController = {};
 
 /*
  * ============================================================
- * LOGIN DE ADMIN CON DOBLE FACTOR (2FA)
+ * LOGIN DEL PERSONAL (Admin Y Empleado) CON DOBLE FACTOR (2FA)
  * ============================================================
- * Saber la contraseña ya no basta para entrar. El ingreso son DOS pasos:
+ * Una sola puerta para las dos cuentas de personal. El correo dice de cuál se
+ * trata: se busca primero en admins y, si no está ahí, en empleados. El resto
+ * es igual para los dos — misma contraseña hasheada, mismo bloqueo por
+ * intentos, mismo código por correo — pero el ROL que gana la búsqueda es el
+ * que queda firmado en el token final, y de ese rol depende qué ve cada quien
+ * en el panel (ver validarSesion.js → soloAdmin).
  *
  *   Paso 1 (login):     correo + contraseña. Si están bien, NO se abre la
- *                       sesión: se genera un código, se manda al correo del
- *                       admin y se guarda —firmado— en una cookie corta.
- *   Paso 2 (verify2FA): el admin escribe el código. Si coincide con el de la
- *                       cookie, ahí sí se abre la sesión.
+ *                       sesión: se genera un código, se manda al correo y se
+ *                       guarda —firmado, con el rol adentro— en una cookie
+ *                       corta.
+ *   Paso 2 (verify2FA): la persona escribe el código. Si coincide, ahí sí se
+ *                       abre la sesión, con el rol que quedó en la cookie.
  *
  * El código NO se guarda en la base: viaja dentro de un JWT en cookie (igual
- * que la recuperación de contraseña), así que expira solo y no deja rastro que
- * limpiar. Con esto, aunque alguien tenga la contraseña, sin el correo del
- * dueño no entra.
+ * que la recuperación de contraseña), así que expira solo.
  * ============================================================
  */
 
-// Emisor de correos, el mismo que usa la recuperación de contraseña.
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -37,6 +41,41 @@ const transporter = nodemailer.createTransport({
 });
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/*
+ * Busca la cuenta en UN modelo y aplica las mismas reglas (activa, bloqueo,
+ * contraseña) que antes solo vivían para el admin. Devuelve { error, message }
+ * si algo no pasa, o { cuenta } si todo está bien — nunca las dos cosas.
+ */
+const buscarYValidar = async (modelo, email, password) => {
+  const cuenta = await modelo.findOne({ email });
+  if (!cuenta) return { error: 404 };
+
+  if (!cuenta.isActive) {
+    return { error: 403, message: "La cuenta está desactivada" };
+  }
+  if (cuenta.timeOut && cuenta.timeOut > Date.now()) {
+    return { error: 403, message: "Cuenta bloqueada un rato. Intente de nuevo en unos minutos." };
+  }
+
+  const isMatch = await bcryptjs.compare(password, cuenta.password);
+  if (!isMatch) {
+    cuenta.loginAttemps = (cuenta.loginAttemps || 0) + 1;
+    if (cuenta.loginAttemps >= 5) {
+      cuenta.timeOut = Date.now() + 5 * 60 * 1000; // 5 minutos
+      cuenta.loginAttemps = 0;
+      await cuenta.save();
+      return { error: 403, message: "Cuenta bloqueada por varios intentos fallidos. Espere 5 minutos." };
+    }
+    await cuenta.save();
+    return { error: 401, message: "La contraseña es incorrecta" };
+  }
+
+  cuenta.loginAttemps = 0;
+  cuenta.timeOut = null;
+  await cuenta.save();
+  return { cuenta };
+};
 
 // ── PASO 1: correo + contraseña → manda el código ──
 loginAdminController.login = async (req, res) => {
@@ -50,51 +89,29 @@ loginAdminController.login = async (req, res) => {
   }
 
   try {
-    const adminFound = await adminModel.findOne({ email });
+    // Primero admin; si el correo no es de ningún admin, se prueba empleado.
+    // El rol lo decide en cuál de los dos se encontró, no lo que mande nadie.
+    let resultado = await buscarYValidar(adminModel, email, password);
+    let rol = "Admin";
 
-    if (!adminFound) {
-      return res.status(404).json({ message: "No se encontró el administrador" });
-    }
-    if (!adminFound.isActive) {
-      return res.status(403).json({ message: "La cuenta está desactivada" });
-    }
-
-    // Bloqueo por intentos fallidos (lo de antes, intacto).
-    if (adminFound.timeOut && adminFound.timeOut > Date.now()) {
-      return res.status(403).json({
-        message: "Cuenta bloqueada un rato. Intente de nuevo en unos minutos.",
-      });
+    if (resultado.error === 404) {
+      resultado = await buscarYValidar(employeeModel, email, password);
+      rol = "Employee";
     }
 
-    const isMatch = await bcryptjs.compare(password, adminFound.password);
-
-    if (!isMatch) {
-      adminFound.loginAttemps = (adminFound.loginAttemps || 0) + 1;
-      if (adminFound.loginAttemps >= 5) {
-        adminFound.timeOut = Date.now() + 5 * 60 * 1000; // 5 minutos
-        adminFound.loginAttemps = 0;
-        await adminFound.save();
-        return res.status(403).json({
-          message: "Cuenta bloqueada por varios intentos fallidos. Espere 5 minutos.",
-        });
-      }
-      await adminFound.save();
-      return res.status(401).json({ message: "La contraseña es incorrecta" });
+    if (resultado.error === 404) {
+      return res.status(404).json({ message: "No se encontró la cuenta" });
+    }
+    if (resultado.error) {
+      return res.status(resultado.error).json({ message: resultado.message });
     }
 
-    // Contraseña correcta: se reinician los intentos, pero AÚN NO hay sesión.
-    adminFound.loginAttemps = 0;
-    adminFound.timeOut = null;
-    await adminFound.save();
+    const cuenta = resultado.cuenta;
 
-    /*
-     * Código de 6 dígitos. Se firma dentro de un JWT junto con el id del admin
-     * y viaja en una cookie de 10 minutos; el código no se guarda en la base.
-     */
     const code = ("" + Math.floor(100000 + Math.random() * 900000));
 
     const twofaToken = jsonwebtoken.sign(
-      { id: adminFound._id, code, purpose: "admin-2fa" },
+      { id: cuenta._id, code, rol, purpose: "personal-2fa" },
       config.JWT.secret,
       { expiresIn: "10m" }
     );
@@ -104,12 +121,10 @@ loginAdminController.login = async (req, res) => {
       maxAge: 10 * 60 * 1000,
     });
 
-    // El correo se manda, pero un fallo del correo no debe tumbar el login: se
-    // reporta y el admin puede reintentar.
     try {
       await transporter.sendMail({
         from: config.email.user_email,
-        to: adminFound.email,
+        to: cuenta.email,
         subject: "Código de acceso al panel — Tienda la 635",
         html: HTML2FAEmail(code),
       });
@@ -120,8 +135,7 @@ loginAdminController.login = async (req, res) => {
       });
     }
 
-    // Se avisa a dónde se mandó, con el correo enmascarado.
-    const [nombre, dominio] = adminFound.email.split("@");
+    const [nombre, dominio] = cuenta.email.split("@");
     const enmascarado = `${nombre.slice(0, 2)}${"*".repeat(Math.max(1, nombre.length - 2))}@${dominio}`;
 
     return res.status(200).json({
@@ -130,20 +144,18 @@ loginAdminController.login = async (req, res) => {
       email: enmascarado,
     });
   } catch (error) {
-    console.log("Error login admin:", error);
+    console.log("Error login personal:", error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
-// ── PASO 2: verifica el código y ABRE la sesión ──
+// ── PASO 2: verifica el código y ABRE la sesión, con el rol correcto ──
 loginAdminController.verify2FA = async (req, res) => {
   const { code } = req.body;
   const twofaToken = req.cookies?.twofaCookie;
 
   if (!twofaToken) {
-    return res.status(400).json({
-      message: "El código venció. Vuelva a iniciar sesión.",
-    });
+    return res.status(400).json({ message: "El código venció. Vuelva a iniciar sesión." });
   }
   if (!code || !String(code).trim()) {
     return res.status(400).json({ message: "Escriba el código que le llegó" });
@@ -153,28 +165,27 @@ loginAdminController.verify2FA = async (req, res) => {
   try {
     datos = jsonwebtoken.verify(twofaToken, config.JWT.secret);
   } catch {
-    return res.status(400).json({
-      message: "El código venció. Vuelva a iniciar sesión.",
-    });
+    return res.status(400).json({ message: "El código venció. Vuelva a iniciar sesión." });
   }
 
-  if (datos.purpose !== "admin-2fa") {
+  if (datos.purpose !== "personal-2fa") {
     return res.status(400).json({ message: "Código no válido" });
   }
-
-  // Comparación segura, tolerando espacios.
   if (String(code).trim() !== String(datos.code)) {
     return res.status(401).json({ message: "El código no es correcto" });
   }
 
   try {
-    const adminFound = await adminModel.findById(datos.id);
-    if (!adminFound || !adminFound.isActive) {
+    const rol = datos.rol === "Employee" ? "Employee" : "Admin";
+    const Modelo = rol === "Employee" ? employeeModel : adminModel;
+
+    const cuenta = await Modelo.findById(datos.id);
+    if (!cuenta || !cuenta.isActive) {
       return res.status(403).json({ message: "La cuenta ya no está disponible" });
     }
 
     const token = jsonwebtoken.sign(
-      { id: adminFound._id, userType: "Admin" },
+      { id: cuenta._id, userType: rol },
       config.JWT.secret,
       { expiresIn: "30d" }
     );
@@ -183,21 +194,23 @@ loginAdminController.verify2FA = async (req, res) => {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
-    // El código ya cumplió: se borra su cookie.
     res.clearCookie("twofaCookie");
 
     return res.status(200).json({
       message: "Sesión iniciada",
       token,
+      // Minúscula: es lo que espera AuthContext.login(token, tipo, datos) del
+      // frontend para saber en qué cajón guardar la sesión y qué ve cada quien.
+      tipo: rol === "Employee" ? "employee" : "admin",
       admin: {
-        id: adminFound._id,
-        email: adminFound.email,
-        userName: adminFound.userName,
-        image: adminFound.image,
+        id: cuenta._id,
+        email: cuenta.email,
+        userName: cuenta.userName,
+        image: cuenta.image,
       },
     });
   } catch (error) {
-    console.log("Error verificando 2FA admin:", error);
+    console.log("Error verificando 2FA personal:", error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };

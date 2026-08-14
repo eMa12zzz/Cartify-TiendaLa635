@@ -221,22 +221,31 @@ function App() {
               panel. Ver ProtectedRoute. */}
           <Route element={<ProtectedRoute soloPersonal />}>
             <Route element={<AdminLayout />}>
+              {/* Lo que ve TODO el personal, admin o empleado */}
               <Route path="/dashboard"   element={<AdminDashboard />} />
-              <Route path="/inventario"  element={<Inventory />} />
               <Route path="/pedidos"     element={<Orders />} />
-              <Route path="/modulos"     element={<Modules />} />
-              <Route path="/marcas"      element={<Brands />} />
-              <Route path="/empleados"   element={<Employees />} />
-              <Route path="/clientes"    element={<Customers />} />
-              <Route path="/proveedores" element={<Suppliers />} />
-              <Route path="/categorias"  element={<Categories />} />
-              <Route path="/fidelidad"   element={<Fidelidad />} />
-              <Route path="/promociones" element={<Promociones />} />
-              <Route path="/servicios-impresion" element={<ServiciosImpresion />} />
-              <Route path="/tarjetas"    element={<GiftCards />} />
-              {/* Nombre, logo y orden de la portada de la tienda */}
-              <Route path="/personalizacion" element={<Personalizacion />} />
               <Route path="/cuenta"      element={<AccountSettings />} />
+
+              {/*
+                soloAdmin: un empleado con sesión de personal válida no pasa de
+                aquí — precios, proveedores, promociones, empleados, clientes y
+                ajustes de la tienda son cosa del dueño. Ver ProtectedRoute.
+              */}
+              <Route element={<ProtectedRoute soloAdmin />}>
+                <Route path="/inventario"  element={<Inventory />} />
+                <Route path="/modulos"     element={<Modules />} />
+                <Route path="/marcas"      element={<Brands />} />
+                <Route path="/empleados"   element={<Employees />} />
+                <Route path="/clientes"    element={<Customers />} />
+                <Route path="/proveedores" element={<Suppliers />} />
+                <Route path="/categorias"  element={<Categories />} />
+                <Route path="/fidelidad"   element={<Fidelidad />} />
+                <Route path="/promociones" element={<Promociones />} />
+                <Route path="/servicios-impresion" element={<ServiciosImpresion />} />
+                <Route path="/tarjetas"    element={<GiftCards />} />
+                {/* Nombre, logo y orden de la portada de la tienda */}
+                <Route path="/personalizacion" element={<Personalizacion />} />
+              </Route>
             </Route>
           </Route>
 

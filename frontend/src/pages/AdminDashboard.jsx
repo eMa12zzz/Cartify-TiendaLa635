@@ -56,8 +56,16 @@ const AdminDashboard = () => {
   const { data, grafica, loading, loadingGrafica, periodo, setPeriodo } = useDashboard();
   const { palette } = useTheme();
   const c = palette.colors; // las barras y acentos siguen la paleta activa
-  const [modal, setModal] = useState(null); // 'reponer' | 'caducar' | 'pdf'
-  const [pdfTimeFilter, setPdfTimeFilter] = useState('Mensual');
+  const [modal, setModal] = useState(null); // 'reponer' | 'caducar'
+
+  // Cómo se llama, en el reporte, el rango que de verdad trae la gráfica de
+  // Ventas y Compras según el periodo elegido en pantalla. Ver construirSerie
+  // en dashboardController.js — 'semana' son 7 días, los otros dos van por mes.
+  const etiquetaPeriodo = {
+    semana: 'últimos 7 días',
+    mes: 'últimos 6 meses',
+    anio: 'últimos 12 meses',
+  };
 
   // ── Reporte PDF con los datos reales que están en pantalla ──
   const handleDownloadPDF = () => {
@@ -77,7 +85,7 @@ const AdminDashboard = () => {
     doc.text('la 635', 14, 28);
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
-    doc.text(`Reporte: ${pdfTimeFilter}`, pageWidth - 14, 16, { align: 'right' });
+    doc.text('Resumen de hoy', pageWidth - 14, 16, { align: 'right' });
     doc.text(`Fecha: ${new Date().toLocaleDateString('es-SV')}`, pageWidth - 14, 24, { align: 'right' });
 
     const tabla = (titulo, y, head, body, color = brown) => {

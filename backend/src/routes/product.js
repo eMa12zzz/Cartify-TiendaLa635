@@ -3,7 +3,7 @@ import productController from '../controller/product.js';
 import upload from '../utils/cloudinaryConfig.js';
 
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
@@ -15,11 +15,11 @@ const router = express.Router();
 
 router.route("/")
     .get(productController.getProduct)
-    .post(soloPersonal, upload.single('image'), productController.insertProduct);
+    .post(soloAdmin, upload.single('image'), productController.insertProduct);
 
 router.route("/:id")
-    .put(soloPersonal, upload.single('image'), productController.updateProduct)
+    .put(soloAdmin, upload.single('image'), productController.updateProduct)
     .get(productController.getProduct)
-    .delete(soloPersonal, productController.deleteProduct);
+    .delete(soloAdmin, productController.deleteProduct);
 
 export default router;

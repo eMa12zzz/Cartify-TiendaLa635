@@ -1,5 +1,6 @@
 import employeeModel from '../../models/employee.js';
 import mongoose from "mongoose";
+import bcryptjs from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
 
 
@@ -31,9 +32,16 @@ employeeController.insertEmployee = async (req, res) => {
      * La foto es opcional: antes esto hacía req.file.path a secas y, si el
      * empleado se registraba sin foto, reventaba con un 500 sin explicar nada.
      * Sin foto, la ficha muestra las iniciales.
+     *
+     * La contraseña se guarda HASHEADA. Antes se guardaba tal cual llegaba del
+     * formulario — un curl a la base la dejaba leíble, y de paso el login del
+     * empleado (que compara con bcrypt) nunca iba a coincidir contra texto
+     * plano.
      */
+    const passwordHasheada = await bcryptjs.hash(password, 10);
+
     const newEmployee = new employeeModel({
-      fullName, dui, phoneNumber, email, userName, password,
+      fullName, dui, phoneNumber, email, userName, password: passwordHasheada,
       image: req.file ? req.file.path : undefined,
       public_id: req.file ? req.file.filename : undefined,
     });
@@ -71,13 +79,15 @@ employeeController.updateEmployee = async (req, res) => {
       });
     }
 
+    // Misma razón que en insertEmployee: la contraseña nunca se guarda tal
+    // cual llega, se hashea antes de tocar la base.
     const updatedData = {
       fullName,
       dui,
       phoneNumber,
       email,
       userName,
-      password
+      password: await bcryptjs.hash(password, 10),
     };
 
     //Si viene una nueva imagen

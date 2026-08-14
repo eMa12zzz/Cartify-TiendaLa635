@@ -50,7 +50,10 @@ const LoginAdmin = () => {
    * historial y el "atrás" no regrese a esta pantalla.
    */
   const entrar = (res) => {
-    login(res.token, 'admin', res.admin);
+    // El rol lo decide el backend (en cuál de las dos cuentas encontró el
+    // correo), no esta pantalla: por eso res.tipo y no 'admin' fijo. Con esto
+    // un empleado entra por la misma puerta y el panel le muestra lo suyo.
+    login(res.token, res.tipo || 'admin', res.admin);
     toast.success('¡Bienvenido! Inicio de sesión exitoso', {
       style: { borderRadius: '10px', background: '#333', color: '#fff' },
     });
@@ -121,10 +124,10 @@ const LoginAdmin = () => {
             <h1 className="text-4xl font-extrabold text-black leading-tight mb-4 tracking-tight">
               Tienda<br />la 635
             </h1>
-            <p className="text-gray-500 text-sm font-medium">Panel Administrativo</p>
+            <p className="text-gray-500 text-sm font-medium">Panel del personal</p>
             <p className="text-gray-400 text-xs mt-2 max-w-xs mx-auto">
               {paso === 'credenciales'
-                ? 'Ingresa tus credenciales de administrador para continuar.'
+                ? 'Ingresa tus credenciales para continuar.'
                 : `Escribe el código que enviamos a ${correoEnm || 'tu correo'}.`}
             </p>
           </div>

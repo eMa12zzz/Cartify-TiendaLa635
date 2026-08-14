@@ -2,7 +2,7 @@ import express from 'express';
 import employeeController from '../controller/Employee/employeeController.js';
 import upload from '../utils/cloudinaryConfig.js';
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
@@ -12,7 +12,7 @@ const router = express.Router();
  * abierto, así que la lista con sus nombres y correos —y hasta ayer con el
  * hash de su contraseña— se la llevaba cualquiera.
  */
-router.use(soloPersonal);
+router.use(soloAdmin);
 
 router.route("/")
     .get(employeeController.getEmployees)

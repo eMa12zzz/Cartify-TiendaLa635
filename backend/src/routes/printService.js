@@ -1,7 +1,7 @@
 import express from 'express';
 import printServiceController from '../controller/printServiceController.js';
 
-import { soloPersonal } from "../middlewares/validarSesion.js";
+import { soloAdmin } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
 
@@ -10,10 +10,10 @@ const router = express.Router();
 
 router.route("/")
   .get(printServiceController.getServices)
-  .post(soloPersonal, printServiceController.insertService);
+  .post(soloAdmin, printServiceController.insertService);
 
 router.route("/:id")
-  .put(soloPersonal, printServiceController.updateService)
-  .delete(soloPersonal, printServiceController.deleteService);
+  .put(soloAdmin, printServiceController.updateService)
+  .delete(soloAdmin, printServiceController.deleteService);
 
 export default router;

@@ -1,12 +1,12 @@
 import express from 'express';
 import supplierCreditController from '../controller/supplierCreditController.js';
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
 // Lo que la tienda le debe a cada proveedor. Cosa del personal.
-router.use(soloPersonal);
+router.use(soloAdmin);
 
 // Resumen de todos los proveedores (listado y aviso del dashboard).
 router.route("/")

@@ -4,7 +4,7 @@ import express from "express";
 import upload from "../utils/cloudinaryConfig.js"; 
 
 import registerclients from "../controller/Clients/registerClient.js";
-import { soloPersonal } from "../middlewares/validarSesion.js";
+import { soloAdmin } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
 
@@ -22,6 +22,6 @@ router.route("/verifyCodeEmail").post(registerclients.verifyCode);
  * DUI, saldos y direcciones con coordenadas de toda la clientela de la tienda.
  * Estaba abierta a internet. Ver middlewares/validarSesion.js.
  */
-router.route("/all").get(soloPersonal, registerclients.getAll);
+router.route("/all").get(soloAdmin, registerclients.getAll);
 
 export default router;
