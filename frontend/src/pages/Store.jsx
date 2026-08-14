@@ -5,6 +5,7 @@ import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-rea
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
+import EsqueletoProductos from '../components/Store/EsqueletoProductos';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
 import AsistenteVoz from '../components/Store/AsistenteVoz';
@@ -462,6 +463,8 @@ const Store = () => {
     productosDestacados,
     productos, // all products for recommendations
     productosDelPasillo,
+    // Para no confundir "todavía no sé" con "no hay". Ver más abajo.
+    cargando,
     agregarAlCarrito,
     eliminarDelCarrito,
     actualizarCantidad,
@@ -785,7 +788,21 @@ const Store = () => {
             </FilterBar>
           </SectionHeader>
 
-          {productosFiltrados.length === 0 ? (
+          {/*
+            CARGANDO Y VACÍO NO SON LO MISMO, y confundirlos costaba caro: si
+            el servidor tardaba en contestar, la tienda anunciaba "Todavía no
+            hay productos en la tienda". Un arranque lento se leía como un
+            negocio sin nada que vender.
+
+            Ahora, mientras no se sepa, se dibujan los huecos donde van a caer
+            los productos; el aviso de vacío se guarda para cuando de verdad
+            conste que no hay nada.
+          */}
+          {cargando ? (
+            <ProductsGrid>
+              <EsqueletoProductos />
+            </ProductsGrid>
+          ) : productosFiltrados.length === 0 ? (
             <EmptyState>
               <div className="icon"><Search size={34} strokeWidth={1.6} /></div>
               {/*

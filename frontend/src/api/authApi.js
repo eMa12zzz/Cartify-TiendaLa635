@@ -92,16 +92,31 @@ export const loginClientDB = async (data) => {
 // 5- Login de clientes con Google. `credential` es el ID token que devuelve el
 // botón de Google; el backend lo verifica y crea/enlaza la cuenta. Misma cookie
 // y misma forma de respuesta que loginClientDB.
-export const googleLoginDB = async (credential) => {
+/*
+ * `extra` lleva el consentimiento y el teléfono, y SOLO lo manda la pantalla de
+ * Registro. Entrar con una cuenta que ya existe no vuelve a pedir nada; crear
+ * una nueva sí, porque Google prueba quién es la persona pero no que haya
+ * aceptado los términos. Ver googleAuthClient.js en el backend.
+ */
+export const googleLoginDB = async (credential, extra = {}) => {
   const response = await fetch('http://localhost:4000/api/loginClient/google', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ credential }),
+    body: JSON.stringify({ credential, ...extra }),
   });
   if (!response.ok) {
     const err = await response.json();
-    throw new Error(err.message || 'No se pudo iniciar sesión con Google');
+    const error = new Error(err.message || 'No se pudo iniciar sesión con Google');
+    /*
+     * El detalle viaja PEGADO al error y no se pierde: cuando el servidor
+     * responde "esta cuenta es nueva y falta el consentimiento", la pantalla
+     * de login necesita saberlo para llevar a registrarse en vez de dejar un
+     * aviso rojo que no dice qué hacer.
+     */
+    error.requiereConsentimiento = !!err.requiereConsentimiento;
+    error.sugerido = err.sugerido || null;
+    throw error;
   }
   return response.json();
 };

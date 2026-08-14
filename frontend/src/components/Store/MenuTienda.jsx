@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { Menu, Store as StoreIcon, Check } from 'lucide-react';
 import { useDropdown } from '../../hooks/useDropdown';
@@ -103,7 +103,25 @@ const Panel = styled.div`
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
   padding: 6px;
   z-index: 300;
-  animation: cardIn 180ms var(--ease-out, ease);
+
+  /*
+   * El panel CRECE desde el botón que lo abrió, no aparece de la nada.
+   *
+   * Antes entraba con cardIn, que sube 8px y desvanece: la misma entrada que
+   * usan las tarjetas de producto. Servía para que no apareciera de golpe, pero
+   * no contaba de DÓNDE venía. Con el origen arriba a la izquierda —justo donde
+   * está el nombre de la tienda que se acaba de tocar— el menú queda atado a su
+   * botón y se entiende qué lo abrió.
+   *
+   * Los fotogramas viven en index.css con el resto del vocabulario de
+   * movimiento, y ahí mismo se apagan con prefers-reduced-motion.
+   *
+   * (Ojo para quien edite estos comentarios: van DENTRO de un template literal,
+   * así que no se pueden usar comillas invertidas — cierran la cadena y el
+   * archivo deja de compilar. Pasó.)
+   */
+  transform-origin: top left;
+  animation: panelIn var(--dur-popover, 180ms) var(--ease-out, ease);
 
   /*
    * Con muchos pasillos la lista pasaba de largo del teléfono y los últimos
@@ -150,6 +168,7 @@ const Opcion = styled.button`
 
 const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { isOpen, toggle, close, ref } = useDropdown();
   const { modulos } = useModulos();
   // El nombre y el logo salen de la base, no del código. Ver AjustesContext.
@@ -174,8 +193,34 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
 
   const verTodo = () => {
     close();
+    /*
+     * Desde Impresiones hay que VOLVER a la tienda: aquella es pantalla
+     * aparte, así que cambiarle el pasillo por props no la saca de ahí.
+     */
+    if (enPantallaPropia) { navigate('/'); return; }
     onElegirModulo?.(null);
   };
+
+  /*
+   * CUÁL PASILLO ESTÁ MARCADO.
+   *
+   * Los pasillos normales se saben por `moduloSeleccionado`, que es estado de
+   * la tienda. Pero Impresiones no es un pasillo de la tienda: es OTRA
+   * PANTALLA, y ahí ese estado no existe. El resultado era que al entrar a
+   * Impresiones el menú marcaba "Toda la tienda" y dejaba Impresiones sin
+   * palomita — justo lo contrario de donde estaba parada la persona.
+   *
+   * Así que cuando la ruta es la de un flujo propio, quien manda es la RUTA.
+   */
+  const enPantallaPropia = pathname.startsWith('/impresiones');
+
+  const estaActiva = (modulo) =>
+    enPantallaPropia
+      ? flujoDeModulo(modulo) === 'impresiones'
+      : String(moduloSeleccionado) === String(modulo._id);
+
+  // "Toda la tienda" solo está marcada si de verdad estamos en la tienda.
+  const todaLaTienda = !enPantallaPropia && !moduloSeleccionado;
 
   return (
     <Zona ref={ref}>
@@ -207,15 +252,15 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
         <Panel role="menu">
           <Titulo>Pasillos de la tienda</Titulo>
 
-          <Opcion role="menuitem" $activa={!moduloSeleccionado} onClick={verTodo}>
-            <StoreIcon size={17} strokeWidth={2.1} color={!moduloSeleccionado ? BROWN : '#9a938c'} />
+          <Opcion role="menuitem" $activa={todaLaTienda} onClick={verTodo}>
+            <StoreIcon size={17} strokeWidth={2.1} color={todaLaTienda ? BROWN : '#9a938c'} />
             Toda la tienda
-            {!moduloSeleccionado && <Check size={15} strokeWidth={2.6} color={BROWN} style={{ marginLeft: 'auto' }} />}
+            {todaLaTienda && <Check size={15} strokeWidth={2.6} color={BROWN} style={{ marginLeft: 'auto' }} />}
           </Opcion>
 
           {modulos.map((m) => {
             const Icono = iconoDeModulo(m);
-            const activa = String(moduloSeleccionado) === String(m._id);
+            const activa = estaActiva(m);
             return (
               <Opcion key={m._id} role="menuitem" $activa={activa} onClick={() => abrir(m)}>
                 <Icono size={17} strokeWidth={2.1} color={activa ? BROWN : '#9a938c'} />

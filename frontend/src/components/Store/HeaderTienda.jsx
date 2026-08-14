@@ -289,7 +289,17 @@ const HeaderTienda = ({
 
         <Pill onClick={() => (onAbrirCarrito ? onAbrirCarrito() : navigate('/'))} title="Carrito">
           <ShoppingBag size={18} strokeWidth={2.2} /> <Etiqueta>Carrito</Etiqueta>
-          {cantidadItems > 0 && <Globo>{cantidadItems}</Globo>}
+          {/*
+            El `key` con la cantidad es lo que hace que esto se vea.
+
+            Una animación CSS corre al montar el elemento y nunca más; si el
+            globo solo cambia su número, el rebote no vuelve a dispararse.
+            Cambiando la key, React lo remonta en cada cambio de cuenta y la
+            animación arranca de nuevo. Ver .globo-pop en index.css.
+          */}
+          {cantidadItems > 0 && (
+            <Globo key={cantidadItems} className="globo-pop">{cantidadItems}</Globo>
+          )}
         </Pill>
 
         {/*

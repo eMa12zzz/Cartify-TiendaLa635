@@ -2,6 +2,7 @@ import { OAuth2Client } from "google-auth-library";
 import jsonwebtoken from "jsonwebtoken";
 import clientModel from "../../models/client.js";
 import { config } from "../../../config.js";
+import { VERSION_TERMINOS, esVerdadero } from "../../utils/terminos.js";
 
 /*
  * ============================================================
@@ -25,7 +26,12 @@ const googleAuthClientController = {};
 const googleClient = new OAuth2Client(config.google.clientId);
 
 googleAuthClientController.login = async (req, res) => {
-  const { credential } = req.body;
+  /*
+   * Además del token de Google viene el consentimiento, pero SOLO cuando esto
+   * se usa para registrarse (el botón de la pantalla de Registro). Entrar con
+   * una cuenta que ya existe no vuelve a pedir nada.
+   */
+  const { credential, aceptaTerminos, promociones, phoneNumber } = req.body;
 
   if (!credential) {
     return res.status(400).json({ message: "Falta el token de Google" });
@@ -77,17 +83,61 @@ googleAuthClientController.login = async (req, res) => {
         cliente = await clientModel.findByIdAndUpdate(cliente._id, cambios, { new: true });
       }
     } else {
-      // 3- Cuenta nueva. Sin contraseña: quien entra por Google no la usa. Queda
-      //    verificada y activa de una vez, porque Google ya confirmó el correo.
+      /*
+       * 3- CUENTA NUEVA, y aquí no se puede tomar el atajo.
+       *
+       * Entrar con Google prueba QUIÉN es la persona, no que haya aceptado
+       * nada. Antes esta rama creaba la cuenta de una y se saltaba el
+       * consentimiento entero: quedaba un cliente sin constancia de haber
+       * aceptado los términos —justo lo que el aviso de privacidad promete
+       * poder demostrar— y, como no se escribían las preferencias, caía en el
+       * default del modelo y quedaba inscrito en promociones sin pedirlo.
+       *
+       * Así que el registro por Google exige lo mismo que el normal. Si no
+       * viene la aceptación, no se crea nada y se le dice al navegador que
+       * mande a la persona a completar su registro.
+       */
+      if (!esVerdadero(aceptaTerminos)) {
+        return res.status(403).json({
+          message: "Para crear su cuenta hay que aceptar los términos y el aviso de privacidad",
+          // Lo lee el frontend para llevar a la pantalla de registro en vez de
+          // quedarse con un error suelto que no dice qué hacer.
+          requiereConsentimiento: true,
+          // Se devuelve lo que Google ya confirmó, para no volver a pedirlo.
+          sugerido: {
+            fullName: payload.name || "",
+            email,
+            image: payload.picture || "",
+          },
+        });
+      }
+
+      // Sin contraseña: quien entra por Google no la usa. Queda verificada y
+      // activa de una vez, porque Google ya confirmó el correo.
       cliente = await clientModel.create({
         fullName: payload.name || "",
         email,
         userName: (email.split("@")[0] || "").toLowerCase(),
         image: payload.picture || "",
+        // El teléfono es de la tienda, no de Google: sin él no hay a quién
+        // llamar cuando el repartidor no encuentra la casa.
+        ...(phoneNumber ? { phoneNumber: String(phoneNumber).trim() } : {}),
         googleId: payload.sub,
         authProvider: "google",
         isVerified: true,
         isActive: true,
+        // La versión que se guarda es la del SERVIDOR, igual que en el registro
+        // normal: el navegador no decide qué texto se aceptó.
+        consentimiento: {
+          terminosVersion: VERSION_TERMINOS,
+          aceptadoEn: new Date(),
+          promociones: esVerdadero(promociones),
+        },
+        notificationPrefs: {
+          promociones: esVerdadero(promociones),
+          nuevosProductos: true,
+          pedidoCerca: false,
+        },
       });
     }
 
