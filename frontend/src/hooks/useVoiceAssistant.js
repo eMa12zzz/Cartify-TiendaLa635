@@ -38,6 +38,16 @@ const VELOCIDADES = [
 ];
 
 /*
+ * PACIENCIA CON EL SILENCIO.
+ * El asistente no debe repetir "¿sigue ahí?" a cada rato: fastidia y se siente
+ * como que apura. Solo re-pregunta tras VARIOS silencios seguidos Y si ya pasó
+ * un buen rato desde la última vez. Entre medio sigue escuchando calladito.
+ */
+const SILENCIOS_ANTES_DE_PREGUNTAR = 3;      // silencios seguidos antes de hablar
+const SILENCIO_COOLDOWN_MS = 30000;          // y no más seguido que cada 30 s
+const REINTENTO_SILENCIO_MS = 900;           // cada cuánto vuelve a escuchar en silencio
+
+/*
  * ============================================================
  * LAS VOCES
  * ============================================================
@@ -221,6 +231,7 @@ export const useVoiceAssistant = ({
   const hablarRef = useRef(null);
   const confirmandoRef = useRef(false); // esperando "sí" para comprar
   const silencioRef = useRef(0);
+  const ultimoSiguesRef = useRef(0);    // cuándo preguntó "¿sigue ahí?" por última vez
   const sugeridoRef = useRef(false);     // ya hicimos upsell esta sesión
   const idRef = useRef(0);
 
@@ -261,13 +272,24 @@ export const useVoiceAssistant = ({
       if (finalTexto.trim()) {
         procesarRef.current?.(finalTexto.trim());
       } else if (activoRef.current && !hablandoRef.current) {
-        // Silencio: reintenta y, tras 2 silencios seguidos, re-pregunta.
+        /*
+         * Silencio. El asistente es paciente: sigue escuchando calladito y solo
+         * re-pregunta muy de vez en cuando. Hacen falta varios silencios
+         * seguidos Y que haya pasado el cooldown desde la última vez que
+         * preguntó; si no, vuelve a escuchar sin decir nada.
+         */
         silencioRef.current += 1;
-        if (silencioRef.current >= 2) {
+        const ahora = Date.now();
+        const toca =
+          silencioRef.current >= SILENCIOS_ANTES_DE_PREGUNTAR &&
+          ahora - ultimoSiguesRef.current >= SILENCIO_COOLDOWN_MS;
+
+        if (toca) {
           silencioRef.current = 0;
-          hablarRef.current?.('¿Sigues ahí? Dime qué quieres, o di comprar cuando termines.');
+          ultimoSiguesRef.current = ahora;
+          hablarRef.current?.('Aquí sigo cuando me necesites. Toca el micrófono y dime qué quieres llevar.');
         } else {
-          setTimeout(() => arrancarReconocimiento(), 500);
+          setTimeout(() => arrancarReconocimiento(), REINTENTO_SILENCIO_MS);
         }
       }
     };

@@ -59,7 +59,9 @@ export const loginStep2 = async (data) => {
   return response.json();
 };
 
-// 3- Login de administradores: valida correo y contraseña directamente (sin OTP)
+// 3- Login de administradores, PASO 1: valida correo y contraseña. Si están
+// bien, el backend manda un código al correo y responde { needs2FA: true }; la
+// sesión todavía NO se abre.
 export const loginAdminDB = async (data) => {
   const response = await fetch('http://localhost:4000/api/loginAdmin/login', {
     method: 'POST',
@@ -70,6 +72,22 @@ export const loginAdminDB = async (data) => {
   if (!response.ok) {
     const err = await response.json();
     throw new Error(err.message || 'Error en inicio de sesión de admin');
+  }
+  return response.json();
+};
+
+// 3b- Login de administradores, PASO 2: verifica el código del correo. Si
+// coincide, el backend abre la sesión y devuelve el token y los datos del admin.
+export const verify2FAAdmin = async (data) => {
+  const response = await fetch('http://localhost:4000/api/loginAdmin/verify-2fa', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || 'No se pudo verificar el código');
   }
   return response.json();
 };

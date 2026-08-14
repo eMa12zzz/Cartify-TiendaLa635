@@ -7,10 +7,17 @@
  * páginas del cliente cambien SOLO el import y nada más de su código.
  */
 export const clientColors = {
-  primary: '#8B5A2B',
-  primaryHover: '#5a3a1a',
-  primaryLight: '#f5ede4',
-  accent: '#a06a35',
+  /*
+   * Los roles de MARCA salen de los tokens de la tienda (--marca-*), no de
+   * hexes fijos. Así, cuando el dueño cambia el color de la tienda en el panel
+   * (o cae una temporada), el área "Mi Cuenta" —incluida la pantalla de estado
+   * del pedido— se pinta del mismo color, sin quedarse en el café viejo.
+   * Las variables de CSS funcionan igual dentro de estilos en línea.
+   */
+  primary: 'var(--marca-600)',
+  primaryHover: 'var(--marca-700)',
+  primaryLight: 'var(--marca-100)',
+  accent: 'var(--acento)',
   buttonText: '#ffffff',
   /*
    * Fondo blanco, igual que la tienda.

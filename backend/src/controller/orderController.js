@@ -8,6 +8,7 @@ import productModel from "../models/product.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
+import { calcularEnvio } from "../utils/envio.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 
 const orderController = {};
@@ -127,18 +128,29 @@ orderController.createOrder = async (req, res) => {
 
     /*
      * ── ENVÍO ──
-     * El costo lo fija el panel (storeSettings.costoEnvio), NO el navegador: el
-     * front solo lo muestra. Se cobra únicamente a domicilio; en retiro es 0.
-     * Antes esto no se sumaba a ningún lado y el "$4.78" era decorativo.
+     * El costo lo fija el panel, NO el navegador: el front solo lo muestra. Se
+     * cobra únicamente a domicilio; en retiro es 0. El cálculo (zona → por km →
+     * plano) vive en utils/envio.js para que la cuenta sea la misma aquí y en el
+     * carrito. Las coordenadas del cliente vienen con el pedido (deliveryLat/Lng).
      */
     const ajustesTienda = await storeSettingsModel
       .findOne({ clave: CLAVE_UNICA })
-      .select("costoEnvio");
+      .select("costoEnvio ubicacionTienda envioBase envioPorKm zonasEnvio servicioActivo servicioTipo servicioValor");
     const shippingCost = entrega === "delivery"
-      ? Number((Number(ajustesTienda?.costoEnvio ?? 4.78)).toFixed(2))
+      ? calcularEnvio(ajustesTienda || {}, { lat: deliveryLat, lng: deliveryLng }).costo
       : 0;
 
-    const total = Number((subtotal - discount + shippingCost).toFixed(2));
+    /*
+     * Tarifa de servicio: solo si la tienda la tiene activa. Fija (dólares) o un
+     * porcentaje del subtotal. Se cobra igual a domicilio y a retiro.
+     */
+    const serviceFee = ajustesTienda?.servicioActivo
+      ? (ajustesTienda.servicioTipo === "porcentaje"
+          ? Number(((subtotal * (Number(ajustesTienda.servicioValor) || 0)) / 100).toFixed(2))
+          : Number((Number(ajustesTienda.servicioValor) || 0).toFixed(2)))
+      : 0;
+
+    const total = Number((subtotal - discount + shippingCost + serviceFee).toFixed(2));
 
     // Los puntos se ganan sobre los productos pagados (no sobre el envío, que
     // no es "compra"): subtotal menos el descuento por puntos.
@@ -175,6 +187,7 @@ orderController.createOrder = async (req, res) => {
       discount,
       pointsRedeemed,
       shippingCost,
+      serviceFee,
       total,
       paymentMethod: metodo,
       deliveryType: entrega,

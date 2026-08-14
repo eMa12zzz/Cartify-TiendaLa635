@@ -10,6 +10,9 @@ import { useDireccionCtx } from '../../context/DireccionContext';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { orderService } from '../../api/orderService';
 import { esPorLibra, pasoDe, ajustarCantidad, cantidadConUnidad } from '../../utils/unidades';
+import { calcularEnvio } from '../../utils/envio.js';
+import { calcularServicio } from '../../utils/servicio.js';
+import SeguimientoConfirmacion from './SeguimientoConfirmacion';
 // El nombre de la tienda sale de los ajustes; el carrito y el recibo se habían
 // quedado con el escrito a mano. Ver AjustesContext.
 import { useAjustesCtx } from '../../context/AjustesContext';
@@ -44,7 +47,10 @@ const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(4px);
+  /* Desenfoque ligero: a 4px el navegador repintaba toda la pantalla detrás en
+     cada cuadro y la apertura se sentía pesada. 2px da la sensación de foco sin
+     ese costo. */
+  backdrop-filter: blur(2px);
   z-index: 999;
   display: flex;
   justify-content: flex-end;
@@ -77,8 +83,8 @@ const FullPanel = styled.div`
   flex-direction: column;
   transform: translateX(${p => (p.$montado ? '0' : '100%')});
   /* Más ágil: la curva de "drawer" tenía una cola muy lenta que se sentía
-     pesada al abrir. Con dur-modal + ease-out entra rápido y limpio. */
-  transition: transform var(--dur-modal) var(--ease-out);
+     pesada al abrir. Con dur-popover + ease-out entra rápido y limpio. */
+  transition: transform var(--dur-popover) var(--ease-out);
   overflow-y: auto;
   overscroll-behavior: contain;
 `;
@@ -94,8 +100,8 @@ const CartPanel = styled.div`
   box-shadow: -12px 0 40px rgba(0,0,0,0.12);
   transform: translateX(${p => (p.$montado ? '0' : '100%')});
   /* Más ágil: la curva de "drawer" tenía una cola muy lenta que se sentía
-     pesada al abrir. Con dur-modal + ease-out entra rápido y limpio. */
-  transition: transform var(--dur-modal) var(--ease-out);
+     pesada al abrir. Con dur-popover + ease-out entra rápido y limpio. */
+  transition: transform var(--dur-popover) var(--ease-out);
 `;
 
 /* ── SHARED TOP BAR ── */
@@ -1157,12 +1163,17 @@ const ShoppingCart = ({
   const { user, esCliente } = useAuth();
   const { ajustes } = useAjustesCtx();
 
-  // El costo del envío lo fija el panel (Personalización). El respaldo 4.78 es
-  // el mismo valor de siempre, por si los ajustes aún no cargaron.
-  const COSTO_ENVIO = Number(ajustes.costoEnvio ?? 4.78);
+  // El costo del envío se calcula por DISTANCIA (zona → por km → plano) con la
+  // ubicación de la dirección elegida. Es el MISMO cálculo que hace el backend,
+  // así que lo que se ve aquí es lo que se va a cobrar. Si aún no cargan los
+  // ajustes o la dirección no tiene coordenadas, cae a la tarifa plana.
+  const envioCalc = calcularEnvio(ajustes, { lat: direccionElegida?.lat, lng: direccionElegida?.lng });
+  const COSTO_ENVIO = envioCalc.costo;
   const ENVIO = items.length > 0 && entrega === 'delivery' ? COSTO_ENVIO : 0;
-  const SERVICIO = 0;
   const subtotal = total;
+  // La tarifa de servicio la fija el panel (apagada, fija o % del subtotal). Es
+  // el mismo cálculo del backend, así que lo que se ve aquí es lo que se cobra.
+  const SERVICIO = items.length > 0 ? calcularServicio(ajustes, subtotal) : 0;
   const totalFinal = subtotal + ENVIO + SERVICIO;
   const { saldo, canjeando, canjear, recargar: recargarSaldo } = useSaldo();
   const [codigoTarjeta, setCodigoTarjeta] = useState('');
@@ -1433,9 +1444,9 @@ const ShoppingCart = ({
                     <div style={{ flex: '1 1 auto', minWidth: 0 }}>
                       <div style={{ fontSize: 17, fontWeight: 700, color: '#111' }}>Checkout</div>
                     </div>
-                    <DeliveryBadge>
-                      <CalendarDays size={14} strokeWidth={2} /> Deliver Tomorrow, Sep 17, 8am–10am
-                    </DeliveryBadge>
+                    {/* Se quitó el badge "Deliver Tomorrow…": era texto en inglés y una
+                        franja horaria inventada. La tienda entrega el mismo día contra
+                        entrega; el tiempo real a la zona ya se muestra más abajo. */}
                   </div>
                 </div>
 
@@ -1812,7 +1823,10 @@ const ShoppingCart = ({
             <SummaryCard>
               <SummaryCardTitle>Resumen de orden</SummaryCardTitle>
               <SummaryCardRow><span>Costo de envío</span><span>${ENVIO.toFixed(2)}</span></SummaryCardRow>
-              <SummaryCardRow><span>Tarifa de servicio</span><span>${SERVICIO.toFixed(2)}</span></SummaryCardRow>
+              {/* La tarifa de servicio solo se muestra si la tienda la cobra. */}
+              {SERVICIO > 0 && (
+                <SummaryCardRow><span>Tarifa de servicio</span><span>${SERVICIO.toFixed(2)}</span></SummaryCardRow>
+              )}
               <SummaryCardRow><span>Total de artículos</span><span>${subtotal.toFixed(2)}</span></SummaryCardRow>
               <Divider />
               <TotalBig>
@@ -1917,19 +1931,10 @@ const ShoppingCart = ({
                 </CheckCircle>
                 <AcceptedMsg>Tu orden ha sido aceptada</AcceptedMsg>
 
-                {/* Timeline: los tres pasos reales, con el primero activo (el
-                    pedido acaba de entrar). El avance se sigue en "Ver el pedido". */}
-                <Timeline>
-                  {PASOS_CONFIRM.map((step, i) => (
-                    <TimelineStep key={i}>
-                      <div style={{ position: 'relative' }}>
-                        <TimelineDot $active={i === 0} />
-                        {i < 2 && <TimelineLine $active={i === 0} />}
-                      </div>
-                      <TimelineLabel $active={i === 0}>{step}</TimelineLabel>
-                    </TimelineStep>
-                  ))}
-                </Timeline>
+                {/* Seguimiento en vivo: el avance del pedido y, a domicilio, el
+                    mapa del repartidor — aquí mismo y actualizándose solo, sin
+                    tener que ir a otra pantalla. */}
+                <SeguimientoConfirmacion orderId={ordenCreada?._id} esDomicilio={esDomicilioReal} />
               </ConfirmCard>
 
               {/* Products card */}
@@ -2038,17 +2043,9 @@ const ShoppingCart = ({
                 </div>
               </DeliveryAddress>
 
-              {/* Ver el estado del pedido con su línea de tiempo y el mapa en vivo */}
-              {ordenCreada?._id && (
-                <PlaceOrderBtn
-                  style={{ marginTop: 18, background: '#fff', color: BROWN, border: `1.5px solid ${BROWN}` }}
-                  onClick={() => { onCheckout?.(); onCerrar(); navigate(`/mi-cuenta/pedido/${ordenCreada._id}`); }}
-                >
-                  Ver el estado del pedido
-                </PlaceOrderBtn>
-              )}
-
-              <PlaceOrderBtn style={{ marginTop: 12 }} onClick={handleConfirmClose}>
+              {/* Se quitó "Ver el estado del pedido": el avance y el mapa ya se ven
+                  arriba, en la misma confirmación, y se actualizan solos. */}
+              <PlaceOrderBtn style={{ marginTop: 18 }} onClick={handleConfirmClose}>
                 Volver a la tienda
               </PlaceOrderBtn>
             </ConfirmSummaryCard>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Mic, X, ShoppingCart, Volume2, VolumeX, Gauge, Minimize2, QrCode, UserCheck } from 'lucide-react';
+import { Mic, X, ShoppingCart, Volume2, VolumeX, Minimize2, QrCode, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { useKiosco } from '../../hooks/useKiosco';
@@ -36,8 +36,8 @@ const AsistenteVoz = ({
   const hablarRef = useRef(null);
 
   const {
-    activo, escuchando, muteado, transcripcion, historial, velLabel, pensando, hablando,
-    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado, interrumpir,
+    activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
+    iniciar, detener, toggleMute, hablar, soportado, interrumpir,
     voces, vozActual, cambiarVoz,
   } = useVoiceAssistant({
     productos, carrito, totalCarrito,
@@ -122,14 +122,15 @@ const AsistenteVoz = ({
   };
 
   const chatRef = useRef(null);
-  const saludadoRef = useRef(false);
 
+  /*
+   * Al abrir, el asistente NO habla solo: espera a que la persona toque el
+   * micrófono. Antes soltaba un saludo hablado apenas se abría, que sorprendía
+   * y a veces hablaba encima de quien ya sabía qué pedir. La instrucción de qué
+   * hacer ya está escrita grande en la pantalla.
+   */
   useEffect(() => {
-    if (saludadoRef.current) return; // evita el saludo doble en desarrollo (StrictMode)
-    saludadoRef.current = true;
     toast.dismiss();
-    hablar('Hola, soy tu asistente. Toca el micrófono y dime qué quieres llevar. Por ejemplo: quiero una manzana.');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-scroll del chat al último mensaje.
@@ -196,7 +197,7 @@ const AsistenteVoz = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2, ease: EASE_OUT }}
+      transition={{ duration: 0.14, ease: EASE_OUT }}
     >
       {/*
         ── Vincular la compra con su cuenta ──
@@ -283,9 +284,9 @@ const AsistenteVoz = ({
 
       <motion.div
         className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 text-center max-w-3xl mx-auto w-full overflow-y-auto pt-20"
-        initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+        initial={{ opacity: 0, y: reduce ? 0 : 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.05 }}
+        transition={{ duration: 0.18, ease: EASE_OUT }}
       >
         <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Asistente de voz</h1>
         <p className="text-base md:text-lg text-gray-300 mb-6">
@@ -326,12 +327,9 @@ const AsistenteVoz = ({
 
         <p className="mt-4 text-base md:text-lg font-semibold" style={{ color: estadoColor }}>{estadoTexto}</p>
 
-        {/* Velocidad y voz, uno al lado del otro */}
+        {/* Selección de voz (la velocidad se quitó: quedaba en Normal, que sirve
+            para todos, y un control menos es una pantalla más simple). */}
         <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-          <button onClick={cambiarVelocidad} className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm shadow" style={pill}>
-            <Gauge className="w-4 h-4" /> Velocidad: {velLabel}
-          </button>
-
           {/*
             Quién habla. Solo aparece si el sistema tiene más de una voz en
             español: con una sola, un selector de un elemento es un botón que
@@ -399,9 +397,9 @@ const AsistenteVoz = ({
       {/* Carrito abajo */}
       <motion.div
         className="w-full max-w-3xl mx-auto px-6 pb-6 flex-none"
-        initial={{ opacity: 0, y: reduce ? 0 : 16 }}
+        initial={{ opacity: 0, y: reduce ? 0 : 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.1 }}
+        transition={{ duration: 0.2, ease: EASE_OUT, delay: 0.05 }}
       >
         <div className="rounded-2xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center justify-between mb-2">
