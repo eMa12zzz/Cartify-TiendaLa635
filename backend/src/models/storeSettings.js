@@ -75,6 +75,24 @@ const temporadaSchema = new Schema(
  */
 export const CLAVE_UNICA = "tienda";
 
+/*
+ * Una ZONA de envío: un círculo en el mapa (centro + radio) con un precio fijo.
+ * Sirve para sobreescribir la fórmula por km donde el dueño quiere un precio
+ * puntual: "todo el Centro a $2", "la colonia de arriba a $4 aunque quede cerca".
+ * Si una dirección cae dentro de una zona, manda el precio de la zona; si cae en
+ * varias, manda la más específica (el radio más chico).
+ */
+const zonaEnvioSchema = new Schema(
+  {
+    nombre: { type: String, required: true, trim: true },
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true },
+    radioKm: { type: Number, default: 1, min: 0.05 }, // radio del círculo, en km
+    precio: { type: Number, required: true, min: 0 },  // precio fijo dentro de la zona
+  },
+  { _id: false }
+);
+
 const storeSettingsSchema = new Schema(
   {
     clave: { type: String, default: CLAVE_UNICA, unique: true, index: true },
@@ -103,12 +121,56 @@ const storeSettingsSchema = new Schema(
     direccion: { type: String, default: "Calle Sevilla 635, Col. Providencia", trim: true },
 
     /*
+     * Color base de la marca (hex, ej. "#B46C30"). De él sale toda la escala
+     * --marca-* de la tienda. Vacío = el café de siempre que declara index.css.
+     * Solo pinta la cara del cliente; el panel usa sus paletas de accesibilidad.
+     */
+    colorMarca: { type: String, default: "", trim: true },
+
+    /*
      * Costo del envío a domicilio, en dólares. Lo fija el panel y lo cobra el
      * pedido. Antes estaba escrito a mano en el carrito (4.78) y —peor— el
      * backend ni lo sumaba al total: se mostraba pero no se cobraba. Ahora es
      * un solo número, editable, que manda tanto en la pantalla como en la cuenta.
      */
     costoEnvio: { type: Number, default: 4.78, min: 0 },
+
+    /*
+     * ENVÍO POR DISTANCIA (+ ajustes por zona).
+     *
+     * El precio ya no es un solo número plano. Se calcula así, de más específico
+     * a más general:
+     *   1. Si la dirección cae dentro de una zonaEnvio → precio de esa zona.
+     *   2. Si no, y hay ubicacionTienda + coordenadas del cliente →
+     *      envioBase + envioPorKm × distancia (redondeado).
+     *   3. Si no se puede medir (falta la ubicación de la tienda o del cliente) →
+     *      se cae al costoEnvio plano de arriba, que es como funcionaba antes.
+     *
+     * Así una tienda que no configure nada sigue cobrando su tarifa plana, y la
+     * que sí lo haga cobra justo por distancia con los ajustes que quiera.
+     */
+    ubicacionTienda: {
+      lat: { type: Number, default: null }, // de dónde salen los repartos
+      lng: { type: Number, default: null },
+    },
+    // El texto de la dirección que se buscó para fijar el punto, para que el
+    // panel la recuerde y no aparezca el buscador vacío la próxima vez.
+    ubicacionTiendaTexto: { type: String, default: "", trim: true },
+    envioBase: { type: Number, default: 1.0, min: 0 },  // tarifa base fija
+    envioPorKm: { type: Number, default: 0.5, min: 0 }, // dólares por cada km
+    zonasEnvio: { type: [zonaEnvioSchema], default: [] }, // sobreescriben la fórmula
+
+    /*
+     * TARIFA DE SERVICIO. Un cobro extra opcional (empaque, comisión, lo que
+     * el dueño decida). Apagada por defecto: nadie cobra de más sin querer.
+     *   servicioTipo 'fijo'       → servicioValor es en dólares.
+     *   servicioTipo 'porcentaje' → servicioValor es un % del subtotal.
+     * Se aplica igual a domicilio y a retiro; es un cobro de la casa, no del
+     * reparto.
+     */
+    servicioActivo: { type: Boolean, default: false },
+    servicioTipo: { type: String, enum: ["fijo", "porcentaje"], default: "fijo" },
+    servicioValor: { type: Number, default: 0, min: 0 },
 
     secciones: { type: [seccionSchema], default: [] },
 

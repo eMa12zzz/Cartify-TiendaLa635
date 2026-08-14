@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Search, Package, CheckCircle2, ChefHat, Printer, Eye, Download } from 'lucide-react';
+import {
+  Search, Package, CheckCircle2, ChefHat, Printer, Eye, Download,
+  MapPin, Store as StoreIcon, Bike, Banknote, CreditCard, Wallet, Clock, X,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EASE_OUT, DUR, stagger } from '../utils/motion';
 import { useOrders } from '../hooks/useOrders';
@@ -11,12 +14,17 @@ import { useOrders } from '../hooks/useOrders';
  * La lógica vive en useOrders; aquí solo pintamos.
  */
 
-// Etiqueta + color por estado (los colores están protegidos en index.css).
+/*
+ * Cada estado con su color, icono y etiqueta. El color se usa en el chip y en
+ * el filo izquierdo de la tarjeta, para que el empleado ubique de un vistazo qué
+ * hay que hacer con cada pedido. Son los colores de estado protegidos en
+ * index.css (no los repinta ninguna paleta).
+ */
 const estadoInfo = {
-  pagado:     { label: 'Pagado',     clase: 'text-blue-500' },
-  preparando: { label: 'Preparando', clase: 'text-orange-500' },
-  entregado:  { label: 'Entregado',  clase: 'text-green-500' },
-  cancelado:  { label: 'Cancelado',  clase: 'text-red-500' },
+  pagado:     { label: 'Por preparar',   corto: 'Por preparar',   Icono: Package,      color: '#3b82f6' },
+  preparando: { label: 'En preparación', corto: 'Preparando',     Icono: ChefHat,      color: '#f97316' },
+  entregado:  { label: 'Entregado',      corto: 'Entregado',      Icono: CheckCircle2, color: '#22c55e' },
+  cancelado:  { label: 'Cancelado',      corto: 'Cancelado',      Icono: X,            color: '#ef4444' },
 };
 
 const filtros = [
@@ -26,8 +34,26 @@ const filtros = [
   { id: 'todos',      label: 'Todos' },
 ];
 
+// Cómo se paga, para que el repartidor sepa si cobra.
+const pagoInfo = {
+  efectivo: { Icono: Banknote,   label: 'Efectivo' },
+  tarjeta:  { Icono: CreditCard, label: 'Tarjeta' },
+  saldo:    { Icono: Wallet,     label: 'Saldo / gift card' },
+};
+
 const formatFecha = (iso) =>
-  iso ? new Date(iso).toLocaleDateString('es-SV', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+  iso ? new Date(iso).toLocaleDateString('es-SV', { day: '2-digit', month: 'short' }) : '';
+
+// "hace 10 min", "hace 2 h", "hace 3 d" — para priorizar lo más viejo.
+const haceCuanto = (iso) => {
+  if (!iso) return '';
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (min < 1) return 'recién';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  return `hace ${Math.round(h / 24)} d`;
+};
 
 // Abre el archivo listo para imprimir. Si es imagen, abre una ventana con la
 // imagen y lanza el diálogo de impresión; si es PDF, el visor del navegador
@@ -52,13 +78,20 @@ const Orders = () => {
   const [filtro, setFiltro] = useState('pagado');
   const [busqueda, setBusqueda] = useState('');
 
-  // Conteos reales para las tarjetas de resumen.
+  // Conteos reales para las tarjetas de resumen (ahora clicables para filtrar).
   const counts = {
     total: orders.length,
     pagado: orders.filter((o) => o.status === 'pagado').length,
     preparando: orders.filter((o) => o.status === 'preparando').length,
     entregado: orders.filter((o) => o.status === 'entregado').length,
   };
+
+  const resumen = [
+    { id: 'pagado',     label: 'Por preparar',   valor: counts.pagado,     color: '#3b82f6' },
+    { id: 'preparando', label: 'En preparación', valor: counts.preparando, color: '#f97316' },
+    { id: 'entregado',  label: 'Entregados',     valor: counts.entregado,  color: '#22c55e' },
+    { id: 'todos',      label: 'Total',          valor: counts.total,      color: '#6b7280' },
+  ];
 
   const visibles = orders.filter((o) => {
     const nombre = (o.clientId?.fullName || '').toLowerCase();
@@ -69,16 +102,31 @@ const Orders = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D] mb-2">Pedidos</h1>
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Pedidos</h1>
 
-      {/* Resumen real */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          <div><h4 className="text-sm font-bold text-blue-500 mb-1">Por preparar</h4><p className="text-3xl font-extrabold text-gray-800">{counts.pagado}</p></div>
-          <div><h4 className="text-sm font-bold text-orange-500 mb-1">En preparación</h4><p className="text-3xl font-extrabold text-gray-800">{counts.preparando}</p></div>
-          <div><h4 className="text-sm font-bold text-green-500 mb-1">Entregados</h4><p className="text-3xl font-extrabold text-gray-800">{counts.entregado}</p></div>
-          <div><h4 className="text-sm font-bold text-gray-500 mb-1">Total</h4><p className="text-3xl font-extrabold text-gray-800">{counts.total}</p></div>
-        </div>
+      {/* Resumen: cada número es un botón que filtra la lista. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {resumen.map((r) => {
+          const activo = filtro === r.id;
+          return (
+            <button
+              key={r.id}
+              onClick={() => setFiltro(r.id)}
+              className="text-left p-4 rounded-2xl border shadow-sm transition-colors"
+              style={{
+                backgroundColor: 'var(--theme-card-bg)',
+                borderColor: activo ? r.color : 'var(--theme-card-border)',
+                boxShadow: activo ? `inset 0 0 0 1px ${r.color}` : undefined,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ backgroundColor: r.color }} />
+                <span className="text-xs font-bold" style={{ color: 'var(--theme-text-secondary)' }}>{r.label}</span>
+              </div>
+              <p className="text-3xl font-extrabold" style={{ color: 'var(--theme-text-primary)' }}>{r.valor}</p>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filtros + búsqueda */}
@@ -119,12 +167,14 @@ const Orders = () => {
           <p className="text-sm text-gray-500">Cuando entren pedidos pagados, aparecerán aquí para prepararlos.</p>
         </div>
       ) : (
-        // `layout` hace que las tarjetas se reacomoden con suavidad cuando una
-        // cambia de estado y sale del filtro — antes la lista pegaba un brinco.
         <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <AnimatePresence mode="popLayout">
           {visibles.map((order, i) => {
             const estado = estadoInfo[order.status] || estadoInfo.pagado;
+            const EstadoIcono = estado.Icono;
+            const esDomicilio = order.deliveryType === 'delivery';
+            const pago = pagoInfo[order.paymentMethod] || pagoInfo.efectivo;
+            const PagoIcono = pago.Icono;
             return (
               <motion.div
                 key={order._id}
@@ -133,96 +183,137 @@ const Orders = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: DUR.modal, ease: EASE_OUT, delay: stagger(i) }}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                {/* Encabezado: cliente + estado */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  {/* Teléfono, folio y fecha en una línea no caben en 375px: se
-                      deja que envuelvan en vez de estirar la tarjeta. */}
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold text-gray-800 break-words">
-                      {order.clientId?.fullName || 'Cliente'}
-                    </div>
-                    <div className="text-xs text-gray-500 break-words">
-                      {order.clientId?.phoneNumber || 's/tel'} · #{String(order._id).slice(-6).toUpperCase()} · {formatFecha(order.createdAt)}
-                    </div>
-                  </div>
-                  <span className={`text-xs font-bold flex-none ${estado.clase}`}>{estado.label}</span>
-                </div>
-
-                {/* Impresión (con archivo) o productos a preparar */}
-                {order.channel === 'impresion' && order.printJob ? (
-                  <div className="rounded-xl bg-gray-50 p-3 mb-3 text-sm">
-                    <div className="flex items-center gap-2 mb-1 font-medium text-gray-800">
-                      <Printer className="w-4 h-4 text-[#B47C4D]" /> Impresión — {order.printJob.serviceName}
-                    </div>
-                    <div className="text-gray-600 text-xs">
-                      {order.printJob.copies} copia(s) · {order.printJob.pages > 1 ? `${order.printJob.pages} págs · ` : ''}
-                      {order.printJob.color ? 'Color' : 'B/N'} · {order.printJob.doubleSided ? 'Doble cara' : 'Una cara'} · {order.printJob.paper || 'Normal'}
-                    </div>
-
-                    {/* Botones para trabajar el archivo */}
-                    {order.printJob.fileUrl && (
-                      <div className="flex flex-wrap items-center gap-2 mt-3">
-                        <button
-                          onClick={() => imprimirArchivo(order.printJob.fileUrl)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#B47C4D] text-white transition-colors"
-                        >
-                          <Printer className="w-3.5 h-3.5" /> Imprimir
-                        </button>
-                        <a
-                          href={order.printJob.fileUrl} target="_blank" rel="noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> Ver archivo
-                        </a>
-                        <a
-                          href={urlDescarga(order.printJob.fileUrl)} target="_blank" rel="noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <Download className="w-3.5 h-3.5" /> Descargar
-                        </a>
-                        <span className="text-xs ml-1" style={{ color: order.printJob.emailedToPrinter ? '#16a34a' : '#d97706' }}>
-                          {order.printJob.emailedToPrinter ? '✓ Ya enviado a impresora' : 'Pendiente de imprimir'}
-                        </span>
+                className="rounded-2xl shadow-sm border overflow-hidden"
+                style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)' }}
+              >
+                <div className="p-5">
+                  {/* Encabezado: cliente + chip de estado */}
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold break-words" style={{ color: 'var(--theme-text-primary)' }}>
+                        {order.clientId?.fullName || 'Cliente'}
                       </div>
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs mt-0.5" style={{ color: 'var(--theme-text-muted)' }}>
+                        <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {haceCuanto(order.createdAt)}</span>
+                        <span>·</span>
+                        <span>#{String(order._id).slice(-6).toUpperCase()}</span>
+                        <span>·</span>
+                        <span>{order.clientId?.phoneNumber || 's/tel'}</span>
+                        <span>·</span>
+                        <span>{formatFecha(order.createdAt)}</span>
+                      </div>
+                    </div>
+                    <span
+                      className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full flex-none"
+                      style={{ color: estado.color, backgroundColor: `${estado.color}1a` }}
+                    >
+                      <EstadoIcono className="w-3.5 h-3.5" /> {estado.corto}
+                    </span>
+                  </div>
+
+                  {/* Info operativa: entrega + pago (lo que el empleado necesita saber ya) */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{ color: esDomicilio ? '#B47C4D' : 'var(--theme-text-secondary)', backgroundColor: 'var(--theme-primary-light)' }}
+                    >
+                      {esDomicilio ? <Bike className="w-3.5 h-3.5" /> : <StoreIcon className="w-3.5 h-3.5" />}
+                      {esDomicilio ? 'Domicilio' : 'Retiro en local'}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{ color: 'var(--theme-text-secondary)', backgroundColor: 'var(--theme-primary-light)' }}
+                    >
+                      <PagoIcono className="w-3.5 h-3.5" /> {pago.label}
+                    </span>
+                  </div>
+
+                  {/* Dirección, solo cuando va a domicilio */}
+                  {esDomicilio && order.deliveryAddress && (
+                    <div className="flex items-start gap-1.5 text-xs mb-3" style={{ color: 'var(--theme-text-secondary)' }}>
+                      <MapPin className="w-3.5 h-3.5 flex-none mt-0.5" style={{ color: '#B47C4D' }} />
+                      <span className="break-words">{order.deliveryAddress}</span>
+                    </div>
+                  )}
+
+                  {/* Impresión (con archivo) o productos a preparar */}
+                  {order.channel === 'impresion' && order.printJob ? (
+                    <div className="rounded-xl p-3 mb-3 text-sm" style={{ backgroundColor: 'var(--theme-primary-light)' }}>
+                      <div className="flex items-center gap-2 mb-1 font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                        <Printer className="w-4 h-4 text-[#B47C4D]" /> Impresión — {order.printJob.serviceName}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                        {order.printJob.copies} copia(s) · {order.printJob.pages > 1 ? `${order.printJob.pages} págs · ` : ''}
+                        {order.printJob.color ? 'Color' : 'B/N'} · {order.printJob.doubleSided ? 'Doble cara' : 'Una cara'} · {order.printJob.paper || 'Normal'}
+                      </div>
+
+                      {order.printJob.fileUrl && (
+                        <div className="flex flex-wrap items-center gap-2 mt-3">
+                          <button
+                            onClick={() => imprimirArchivo(order.printJob.fileUrl)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#B47C4D] text-white transition-colors"
+                          >
+                            <Printer className="w-3.5 h-3.5" /> Imprimir
+                          </button>
+                          <a
+                            href={order.printJob.fileUrl} target="_blank" rel="noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Ver archivo
+                          </a>
+                          <a
+                            href={urlDescarga(order.printJob.fileUrl)} target="_blank" rel="noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Descargar
+                          </a>
+                          <span className="text-xs ml-1" style={{ color: order.printJob.emailedToPrinter ? '#16a34a' : '#d97706' }}>
+                            {order.printJob.emailedToPrinter ? '✓ Ya enviado a impresora' : 'Pendiente de imprimir'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl p-3 mb-3" style={{ backgroundColor: 'var(--theme-primary-light)' }}>
+                      {order.items?.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-3 text-sm py-0.5">
+                          <span className="font-medium min-w-0 truncate" style={{ color: 'var(--theme-text-primary)' }}>
+                            <span className="font-bold" style={{ color: '#B47C4D' }}>{item.amount}×</span> {item.name || item.productId?.name || 'Producto'}
+                          </span>
+                          <span className="flex-none" style={{ color: 'var(--theme-text-muted)' }}>${(item.price * item.amount).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Pie: total + acción */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <span className="text-base font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                      Total: ${Number(order.total).toFixed(2)}
+                    </span>
+
+                    {order.status === 'pagado' && (
+                      <button
+                        onClick={() => cambiarEstado(order._id, 'preparando')}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-[#B47C4D] text-white transition-colors"
+                      >
+                        <ChefHat className="w-4 h-4" /> Empezar a preparar
+                      </button>
+                    )}
+                    {order.status === 'preparando' && (
+                      <button
+                        onClick={() => cambiarEstado(order._id, 'entregado')}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-500 text-white transition-colors"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Marcar entregado
+                      </button>
+                    )}
+                    {order.status === 'entregado' && (
+                      <span className="flex items-center gap-1 text-sm font-semibold text-green-500">
+                        <CheckCircle2 className="w-4 h-4" /> Entregado
+                      </span>
                     )}
                   </div>
-                ) : (
-                  <div className="rounded-xl bg-gray-50 p-3 mb-3">
-                    {order.items?.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between gap-3 text-sm py-0.5">
-                        <span className="text-gray-800 font-medium min-w-0 truncate">{item.amount}× {item.name || item.productId?.name || 'Producto'}</span>
-                        <span className="text-gray-500 flex-none">${(item.price * item.amount).toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Pie: total + acción */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-base font-bold text-gray-800">Total: ${Number(order.total).toFixed(2)}</span>
-
-                  {order.status === 'pagado' && (
-                    <button
-                      onClick={() => cambiarEstado(order._id, 'preparando')}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-[#B47C4D] text-white transition-colors"
-                    >
-                      <ChefHat className="w-4 h-4" /> Empezar a preparar
-                    </button>
-                  )}
-                  {order.status === 'preparando' && (
-                    <button
-                      onClick={() => cambiarEstado(order._id, 'entregado')}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-500 text-white transition-colors"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Marcar entregado
-                    </button>
-                  )}
-                  {order.status === 'entregado' && (
-                    <span className="flex items-center gap-1 text-sm font-semibold text-green-500">
-                      <CheckCircle2 className="w-4 h-4" /> Entregado
-                    </span>
-                  )}
                 </div>
               </motion.div>
             );

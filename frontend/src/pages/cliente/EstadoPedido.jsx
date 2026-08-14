@@ -10,6 +10,7 @@ import {
 import { useTheme } from '../../hooks/useClientTheme';
 import { orderService } from '../../api/orderService';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
+import ValoracionPedido from '../../components/Store/ValoracionPedido';
 
 /*
  * ============================================================
@@ -138,6 +139,7 @@ const EstadoPedido = () => {
 
   const subtotal = Number(pedido.subtotal ?? pedido.total ?? 0);
   const envio = Number(pedido.shippingCost || 0);
+  const servicio = Number(pedido.serviceFee || 0);
   const descuento = Number(pedido.discount || 0);
   const total = Number(pedido.total || 0);
 
@@ -295,6 +297,9 @@ const EstadoPedido = () => {
               ))}
             </div>
           </div>
+
+          {/* Valoración: solo cuando el pedido ya se entregó. */}
+          {estado === 'entregado' && <ValoracionPedido items={pedido.items} />}
         </div>
 
         {/* ── Columna derecha: resumen ── */}
@@ -311,6 +316,12 @@ const EstadoPedido = () => {
             <span>Gastos de envío</span>
             <span style={{ color: c.textPrimary }}>{envio > 0 ? `$${envio.toFixed(2)}` : 'Gratis'}</span>
           </div>
+          {servicio > 0 && (
+            <div className="flex justify-between text-sm mb-2" style={{ color: c.textSecondary }}>
+              <span>Tarifa de servicio</span>
+              <span style={{ color: c.textPrimary }}>${servicio.toFixed(2)}</span>
+            </div>
+          )}
           {descuento > 0 && (
             <div className="flex justify-between text-sm mb-2" style={{ color: c.textSecondary }}>
               <span>Descuento por puntos</span><span style={{ color: '#16a34a' }}>−${descuento.toFixed(2)}</span>

@@ -29,14 +29,15 @@ const storeSettingsController = {};
  * (con cadena vacía). Ninguna pantalla la manda en el PUT, así que sacarla no
  * rompe nada.
  */
-const CAMPOS_DE_TEXTO = ["nombreLinea1", "nombreLinea2", "lema", "direccion"];
+const CAMPOS_DE_TEXTO = ["nombreLinea1", "nombreLinea2", "lema", "direccion", "ubicacionTiendaTexto"];
 
 /*
- * Campos numéricos que el panel puede cambiar. Por ahora solo el costo del
- * envío. Se validan aparte de los de texto porque un número mal formado o
- * negativo tiene que rebotar como error del cliente (400), no guardarse.
+ * Campos numéricos que el panel puede cambiar: el costo plano de respaldo y las
+ * dos piezas del envío por distancia (tarifa base y precio por km). Se validan
+ * aparte de los de texto porque un número mal formado o negativo tiene que
+ * rebotar como error del cliente (400), no guardarse.
  */
-const CAMPOS_NUMERICOS = ["costoEnvio"];
+const CAMPOS_NUMERICOS = ["costoEnvio", "envioBase", "envioPorKm", "servicioValor"];
 
 const MODOS_DE_TEMPORADA = ["automatico", "manual", "ninguno"];
 
@@ -79,6 +80,18 @@ storeSettingsController.updateSettings = async (req, res) => {
 
     if (cambios.nombreLinea1 !== undefined && !cambios.nombreLinea1) {
       return res.status(400).json({ message: "La primera línea del nombre no puede quedar vacía" });
+    }
+
+    /*
+     * Color base de la marca: un hex válido (#RGB o #RRGGBB), o vacío para
+     * volver al café que declara index.css. Cualquier otra cosa rebota.
+     */
+    if (req.body.colorMarca !== undefined) {
+      const hex = String(req.body.colorMarca).trim();
+      if (hex && !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) {
+        return res.status(400).json({ message: "El color de la marca no es un color válido" });
+      }
+      cambios.colorMarca = hex;
     }
 
     /*
@@ -136,6 +149,77 @@ storeSettingsController.updateSettings = async (req, res) => {
       }
       if (tema !== undefined) cambios["temporada.tema"] = String(tema).trim();
       if (decoracion !== undefined) cambios["temporada.decoracion"] = !!decoracion;
+    }
+
+    /*
+     * Ubicación de la tienda (de dónde salen los repartos). Va con notación de
+     * puntos por lo mismo que la temporada: es un subobjeto, y mandarlo entero
+     * pisaría la mitad con los valores por defecto. Se acepta null/null para
+     * borrarla y volver a la tarifa plana.
+     */
+    if (req.body.ubicacionTienda && typeof req.body.ubicacionTienda === "object") {
+      const { lat, lng } = req.body.ubicacionTienda;
+      if (lat === null && lng === null) {
+        cambios["ubicacionTienda.lat"] = null;
+        cambios["ubicacionTienda.lng"] = null;
+      } else {
+        const nLat = Number(lat);
+        const nLng = Number(lng);
+        if (!Number.isFinite(nLat) || !Number.isFinite(nLng)) {
+          return res.status(400).json({ message: "La ubicación de la tienda no es válida" });
+        }
+        cambios["ubicacionTienda.lat"] = nLat;
+        cambios["ubicacionTienda.lng"] = nLng;
+      }
+    }
+
+    /*
+     * Zonas de envío: cada una es un círculo (centro + radio) con precio fijo.
+     * Se reemplaza el arreglo completo, igual que las secciones de la portada.
+     * Se validan una por una: sin nombre, sin ubicación o con precio malo, se
+     * rebota con 400 diciendo cuál falló.
+     */
+    if (Array.isArray(req.body.zonasEnvio)) {
+      const zonas = [];
+      for (const z of req.body.zonasEnvio) {
+        if (!z || typeof z !== "object") continue;
+        const nombre = String(z.nombre || "").trim();
+        const lat = Number(z.lat);
+        const lng = Number(z.lng);
+        const radioKm = Number(z.radioKm);
+        const precio = Number(z.precio);
+        if (!nombre) {
+          return res.status(400).json({ message: "Cada zona de envío necesita un nombre" });
+        }
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          return res.status(400).json({ message: `La zona "${nombre}" no tiene una ubicación válida` });
+        }
+        if (!Number.isFinite(precio) || precio < 0) {
+          return res.status(400).json({ message: `El precio de la zona "${nombre}" no es válido` });
+        }
+        zonas.push({
+          nombre,
+          lat,
+          lng,
+          radioKm: Number.isFinite(radioKm) && radioKm > 0 ? radioKm : 1,
+          precio,
+        });
+      }
+      cambios.zonasEnvio = zonas;
+    }
+
+    /*
+     * Tarifa de servicio: encendido/apagado y el tipo (fijo o porcentaje). El
+     * valor viaja por CAMPOS_NUMERICOS de arriba.
+     */
+    if (req.body.servicioActivo !== undefined) {
+      cambios.servicioActivo = !!req.body.servicioActivo;
+    }
+    if (req.body.servicioTipo !== undefined) {
+      if (!["fijo", "porcentaje"].includes(req.body.servicioTipo)) {
+        return res.status(400).json({ message: "El tipo de tarifa de servicio no es válido" });
+      }
+      cambios.servicioTipo = req.body.servicioTipo;
     }
 
     const ajustes = await storeSettingsModel.findOneAndUpdate(

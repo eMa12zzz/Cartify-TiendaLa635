@@ -38,6 +38,9 @@ const orderSchema = new Schema({
     // Costo del envío cobrado en este pedido (0 si es retiro en el local). Se
     // saca de los ajustes de la tienda al momento de comprar, no del navegador.
     shippingCost: { type: Number, default: 0 },
+    // Tarifa de servicio cobrada en este pedido (0 si la tienda no la tiene
+    // activa). Como el envío, sale de los ajustes al comprar, no del navegador.
+    serviceFee: { type: Number, default: 0 },
     total: { type: Number, required: true },
     status: {
         type: String,
