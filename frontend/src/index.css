@@ -180,6 +180,68 @@ input:disabled {
 }
 
 /*
+  El globo del carrito, cuando sube la cuenta.
+
+  Agregar algo ya avisa con un toast, pero el número del carrito cambiaba en
+  silencio en la esquina: el ojo no lo cazaba. Este rebote es la confirmación
+  de la acción central de la tienda.
+
+  Solo `transform`, y corto: se ve decenas de veces por compra, así que tiene
+  que registrarse sin hacerse notar. Se redispara remontando el elemento con
+  `key={cantidad}` — sin eso, la animación corre una sola vez en la vida.
+*/
+/*
+  El panel de pasillos, creciendo desde el botón que lo abrió.
+
+  Quien lo usa pone `transform-origin` en la esquina que corresponda; aquí solo
+  está el "de dónde a dónde". Ver MenuTienda.
+*/
+@keyframes panelIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes globoPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+.globo-pop { animation: globoPop 220ms var(--ease-out); }
+
+/*
+  Esqueletos de carga.
+
+  Reemplazan al "Cargando…" suelto y, sobre todo, al aviso de tienda vacía que
+  salía mientras el servidor todavía estaba contestando. Ocupan el MISMO lugar
+  que las tarjetas de verdad, así que al llegar los datos nada se recorre.
+
+  El brillo va en `transform` sobre un pseudo-elemento y no animando
+  `background-position`, que obliga al navegador a repintar en cada cuadro.
+*/
+@keyframes esqueletoBrillo {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+.esqueleto {
+  position: relative;
+  overflow: hidden;
+  background: var(--marca-50, #FAF5F0);
+}
+.esqueleto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, #fff 70%, transparent),
+    transparent
+  );
+  animation: esqueletoBrillo 1200ms linear infinite;
+}
+
+/*
   ACCESIBILIDAD — "menos movimiento".
   Si la persona lo pidió en su sistema (tercera edad, migrañas, mareo),
   quitamos los desplazamientos pero dejamos los cambios de color/opacidad,
@@ -193,6 +255,17 @@ input:disabled {
   }
   .card-in { animation: none; }
   .hover-scale:hover, .hover-lift:hover { transform: none !important; }
+  /*
+    El globo se queda quieto, pero el esqueleto NO se apaga: no es decoración,
+    es la única señal de que la tienda está cargando. Se le quita el brillo que
+    viaja y queda el bloque gris, que informa igual sin movimiento.
+  */
+  .globo-pop { animation: none; }
+  .esqueleto::after { animation: none; opacity: 0; }
+  /*
+    El panel de pasillos no necesita regla propia: la de arriba ya deja toda
+    animación en 0.01ms, así que aparece sin crecer y se lee igual.
+  */
 }
 
 /* 

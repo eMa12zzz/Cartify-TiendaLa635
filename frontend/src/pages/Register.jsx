@@ -324,9 +324,31 @@ const Register = () => {
       toast.error('No se recibió la respuesta de Google');
       return;
     }
+    /*
+     * El consentimiento viaja TAMBIÉN por el camino de Google.
+     *
+     * Antes no: entrar con Google creaba la cuenta de una y se saltaba las
+     * casillas de esta misma pantalla, así que quedaba un cliente sin
+     * constancia de haber aceptado los términos y —peor— inscrito en
+     * promociones por el valor por defecto del modelo, sin haberlo pedido.
+     *
+     * Se revisa aquí antes de molestar al servidor, y el servidor lo vuelve a
+     * exigir por su cuenta: la casilla del navegador no le prueba nada a nadie.
+     */
+    if (!watch('aceptaTerminos')) {
+      toast.error('Marque primero que acepta los términos y el aviso de privacidad');
+      return;
+    }
+
     try {
       setEntrandoGoogle(true);
-      const res = await googleLoginDB(credential);
+      const res = await googleLoginDB(credential, {
+        aceptaTerminos: true,
+        promociones: !!watch('promociones'),
+        // Google no da teléfono. Si ya lo escribió arriba, se aprovecha; sin
+        // él la cuenta queda sin a quién llamar cuando no encuentren la casa.
+        phoneNumber: watch('phoneNumber') || '',
+      });
       login(res.token, res.userType || 'client', res.client);
       navigate('/', { replace: true });
     } catch (err) {

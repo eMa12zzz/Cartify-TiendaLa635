@@ -476,6 +476,20 @@ const LoginClient = () => {
       const res = await googleLoginDB(credential);
       alEntrar(res);
     } catch (err) {
+      /*
+       * Esta pantalla es para ENTRAR, no para registrarse. Si Google trae un
+       * correo que no tiene cuenta, el servidor se niega a crearla aquí: no
+       * hay dónde aceptar los términos ni dónde dejar un teléfono, y una
+       * cuenta creada a la callada es justo lo que rompía el consentimiento.
+       *
+       * Así que se lleva a Registro, que sí tiene las casillas, en vez de
+       * dejar un aviso rojo que no dice qué hacer.
+       */
+      if (err.requiereConsentimiento) {
+        toast('Complete su registro para crear la cuenta');
+        navigate('/register');
+        return;
+      }
       toast.error(err.message || 'No se pudo iniciar sesión con Google');
     } finally {
       setLoading(false);

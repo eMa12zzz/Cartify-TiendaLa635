@@ -10,8 +10,6 @@ const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
 
   const isEditing = !!moduleData;
   const watchIsActive = watch('isActive');
-  const watchFlujo = watch('flujo');
-
   const watchIcono = watch('icono');
 
   useEffect(() => {
@@ -108,42 +106,30 @@ const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
             </div>
 
             {/*
-              La única pregunta que de verdad separa un módulo de otro. Casi
-              siempre es la primera opción: un pasillo más de la misma tienda,
-              que no necesita ni una línea de código nueva.
+              AQUÍ HABÍA UN SELECTOR DE "¿CÓMO SE COMPRA?" con dos opciones:
+              pasillo normal o pantalla propia tipo Impresiones. Se quitó.
+
+              El motivo: elegir "pide datos antes de comprar" prometía una
+              pantalla que NO existe. Impresiones tiene la suya porque alguien
+              la programó entera —subir archivo, elegir tamaño, calcular hojas—;
+              un pasillo nuevo marcado con ese flujo salía del formulario sin
+              ninguna pantalla detrás y dejaba al cliente en el vacío.
+
+              Así que todo pasillo nuevo es un pasillo de la tienda, que es
+              justamente lo que hace fuerte a este diseño: panadería, pupusería
+              o farmacia funcionan sin una línea de código nueva.
+
+              El campo `flujo` SIGUE EXISTIENDO en el modelo y no se toca: el
+              módulo de Impresiones que ya está creado lo necesita para seguir
+              abriendo su pantalla. Lo que se quitó es la posibilidad de crear
+              otros. El formulario manda 'estandar' siempre (ver el reset de
+              arriba) y al editar respeta el flujo que el módulo ya tenía.
+
+              Va como campo oculto y no confiando en el reset: así el valor
+              viaja seguro en el envío, y editar Impresiones no lo convierte
+              en un pasillo normal sin que nadie lo pidiera.
             */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">¿Cómo se compra?</label>
-              <div className="space-y-2">
-                {[
-                  {
-                    v: 'estandar',
-                    t: 'Como cualquier producto',
-                    d: 'Se agrega al carrito y se paga con el resto. Panadería, pupusería, librería…',
-                  },
-                  {
-                    v: 'impresiones',
-                    t: 'Pide datos antes de comprar',
-                    d: 'Como Impresiones: el cliente sube un archivo y elige tamaño y color. Tiene pantalla propia.',
-                  },
-                ].map((o) => (
-                  <label
-                    key={o.v}
-                    className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
-                    style={{
-                      borderColor: watchFlujo === o.v ? 'var(--theme-primary)' : 'var(--theme-card-border)',
-                      background: watchFlujo === o.v ? 'var(--theme-primary-light)' : 'var(--theme-card-bg)',
-                    }}
-                  >
-                    <input type="radio" value={o.v} {...register('flujo')} className="mt-1" />
-                    <span>
-                      <span className="block text-sm font-medium text-gray-800">{o.t}</span>
-                      <span className="block text-xs text-gray-500">{o.d}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            <input type="hidden" {...register('flujo')} />
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
