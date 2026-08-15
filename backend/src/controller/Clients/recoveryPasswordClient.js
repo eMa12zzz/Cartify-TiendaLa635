@@ -1,8 +1,8 @@
 import jsonwebtoken from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 
+import { sendEmail } from "../../utils/sendMailMailjet.js";
 import HTMLRecoveryEmail from "../../utils/sendMailRecovery.js";
 import clientModel from "../../models/client.js";
 
@@ -43,29 +43,19 @@ recoveryPasswordClientController.requestCode = async (req, res) => {
       httpOnly: true,
     });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: config.email.user_email,
-        pass: config.email.user_password,
-      },
-    });
-
-    const mailOptions = {
-      from: config.email.user_email,
-      to: email,
-      subject: "Código de recuperación",
-      html: HTMLRecoveryEmail(randomCode),
-    };
-
-    transporter.sendMail(mailOptions, (error) => {
-      if (error) {
-        console.log(error);
-        return res.status(500).json({
-          message: "No se pudo enviar el correo",
-        });
-      }
-    });
+    try {
+      await sendEmail(
+        email,
+        "Código de recuperación — Tienda la 635",
+        HTMLRecoveryEmail(randomCode),
+        `Recibimos una solicitud para restablecer su contraseña en Tienda la 635. Su código es: ${randomCode}. Vale por 15 minutos. Si usted no lo pidió, ignore este correo.`
+      );
+    } catch (mailError) {
+      console.log("No se pudo enviar el código de recuperación:", mailError.message);
+      return res.status(500).json({
+        message: "No se pudo enviar el correo",
+      });
+    }
 
     return res.status(200).json({
       message: "Le enviamos el código a su correo",

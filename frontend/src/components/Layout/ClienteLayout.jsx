@@ -89,12 +89,19 @@ const ClienteLayout = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: c.mainBg, color: c.textPrimary }}>
-      {/* ── Barra superior ── */}
+      {/*
+        ── Barra superior ──
+        Misma altura, mismo blanco pegajoso y mismos botones-píldora que el
+        encabezado de la tienda (HeaderTienda.jsx) — adaptada: acá no hay
+        buscador, dirección ni carrito porque no aplican en "Mi cuenta", así
+        que la barra se queda con lo que sí tiene sentido: el nombre y la
+        vuelta a comprar.
+      */}
       <nav
-        className="h-14 px-6 flex items-center justify-between"
+        className="h-16 px-4 sm:px-7 flex items-center justify-between gap-3 sticky top-0 z-30"
         style={{ backgroundColor: c.topbarBg, borderBottom: `1px solid ${c.sidebarBorder}` }}
       >
-        <Link to="/store" className="font-bold leading-none text-sm" style={{ color: c.textPrimary }}>
+        <Link to="/store" className="font-extrabold leading-none text-base tracking-tight flex-none" style={{ color: c.textPrimary }}>
           {/* El nombre sale de los ajustes, no del código: la Fase 4 lo hizo
               editable y esta pantalla se había quedado con el de siempre. */}
           {ajustes.nombreLinea1}<br />{ajustes.nombreLinea2}
@@ -103,10 +110,10 @@ const ClienteLayout = () => {
         {/* Quién está dentro. Se mudó del menú lateral a aquí: ahora que la
             navegación es horizontal, este es el único lugar donde el dato
             cabe sin robarle sitio a las secciones. */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden sm:flex items-center gap-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm overflow-hidden"
+              className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm overflow-hidden flex-none"
               style={{ backgroundColor: c.primary, color: c.buttonText }}
             >
               {/* Su foto si la tiene; si no, la inicial de siempre. */}
@@ -121,12 +128,14 @@ const ClienteLayout = () => {
             </span>
           </div>
 
+          {/* Misma píldora que "Carrito" / "Mi Cuenta" en la tienda: 44px de
+              alto, borde y texto de marca. */}
           <Link
             to="/store"
-            className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full transition-colors"
-            style={{ border: `1px solid ${c.sidebarBorder}`, color: c.textSecondary }}
+            className="flex items-center gap-2 text-sm font-semibold px-4 h-11 rounded-full border transition-colors press"
+            style={{ borderColor: c.primary, color: c.primary }}
           >
-            <Store className="w-4 h-4" /> Ir a la tienda
+            <Store className="w-4 h-4 flex-none" /> <span className="hidden sm:inline">Ir a la tienda</span>
           </Link>
         </div>
       </nav>

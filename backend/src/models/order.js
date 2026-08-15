@@ -42,9 +42,16 @@ const orderSchema = new Schema({
     // activa). Como el envío, sale de los ajustes al comprar, no del navegador.
     serviceFee: { type: Number, default: 0 },
     total: { type: Number, required: true },
+    /*
+     * 'en_camino' solo aplica a domicilio: es cuando el repartidor ya salió
+     * de la tienda con el pedido. Antes eso no era un estado — era nada más
+     * un interruptor de "compartir ubicación" separado del estado del
+     * pedido, así que era fácil que alguien empezara a repartir sin tocarlo
+     * y el cliente se quedara viendo "Preparando" sin mapa toda la entrega.
+     */
     status: {
         type: String,
-        enum: ['pagado', 'preparando', 'entregado', 'cancelado'],
+        enum: ['pagado', 'preparando', 'en_camino', 'entregado', 'cancelado'],
         default: 'pagado',
     },
     /*
@@ -81,6 +88,8 @@ const orderSchema = new Schema({
      */
     preparedAt: { type: Date },
     preparedBy: { type: String },        // nombre de quien lo preparó
+    enCaminoAt: { type: Date },          // a qué hora salió el repartidor
+    enCaminoBy: { type: String },
     deliveredAt: { type: Date },
     deliveredBy: { type: String },
 

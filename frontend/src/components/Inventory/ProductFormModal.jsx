@@ -508,7 +508,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                       maxMB={8}
                       valorInicial={imagenGuardada}
                       onArchivo={handleImageChange}
-                      variante="claro"
+                      variante="panel"
                       ajuste="contain"
                       alto={180}
                       radio={12}

@@ -5,7 +5,9 @@ import { AuthProvider } from './context/AuthContext';
 import { EdadProvider } from './context/EdadContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
-import { AjustesProvider } from './context/AjustesContext';
+import { AjustesProvider, useAjustesCtx } from './context/AjustesContext';
+import { derivarMarca, hexAValido } from './utils/colorMarca';
+import { ThemeProvider } from './context/ThemeContext';
 import { useTemporada } from './hooks/useTemporada';
 import DecoracionTemporada from './components/Store/DecoracionTemporada';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
@@ -89,6 +91,46 @@ const PinturaDeTemporada = () => {
 };
 
 /*
+ * El Toaster es UNO SOLO para toda la app —panel y tienda por igual—, así
+ * que el ✓ de los avisos de éxito sigue el color de marca de verdad en vez
+ * de un café clavado. No basta con var(--marca-600) en el estilo: react-hot-
+ * toast pinta sus avisos en un portal aparte, y en las rutas del panel
+ * useTemporada() apaga esa variable a propósito (ver SinPermiso.jsx). Por
+ * eso el color se calcula acá, en JS, con el mismo colorMarca de siempre —
+ * así llega resuelto sin depender de qué variable esté pintada en :root en
+ * ese momento. El rojo de error se queda fijo: es un color de estado
+ * (peligro), no de marca.
+ */
+const AvisosConMarca = () => {
+  const { ajustes } = useAjustesCtx();
+  const baseMarca = hexAValido(ajustes.colorMarca) ? ajustes.colorMarca : '#B46C30';
+  const escalaMarca = derivarMarca(baseMarca) || {};
+
+  return (
+    <Toaster
+      position="top-right"
+      gutter={10}
+      toastOptions={{
+        duration: 3500,
+        style: {
+          background: '#fff',
+          color: '#2A1A0E',
+          border: '1px solid #EDE7E0',
+          borderRadius: 14,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.10)',
+          fontSize: 14,
+          fontWeight: 500,
+          padding: '12px 16px',
+          maxWidth: 420,
+        },
+        success: { iconTheme: { primary: escalaMarca['--marca-600'] || '#B46C30', secondary: '#fff' } },
+        error: { duration: 5000, iconTheme: { primary: '#D8542C', secondary: '#fff' } },
+      }}
+    />
+  );
+};
+
+/*
  * El router va POR FUERA de la sesión, al revés que antes.
  * AuthProvider ahora necesita saber en qué área está parada la persona —el
  * panel o la tienda— para decidir cuál de los dos cajones de sesión manda, y
@@ -114,6 +156,12 @@ function App() {
           Ver AjustesContext.
         */}
         <AjustesProvider>
+        {/*
+          ThemeProvider (paletas del PANEL, no de la tienda) va aquí adentro
+          porque su paleta "Mi marca" necesita leer ajustes.colorMarca. Ver
+          ThemeContext.jsx — antes vivía en main.jsx, arriba de todo.
+        */}
+        <ThemeProvider>
         <PinturaDeTemporada />
         {/*
           El candado de los productos +18: vive alto para que la tarjeta, el
@@ -142,26 +190,14 @@ function App() {
           no diga ya, y hace que la tienda parezca un chat. Se quedan los
           iconos de la librería, que son marcas discretas de éxito o error.
         */}
-        <Toaster
-          position="bottom-right"
-          gutter={10}
-          toastOptions={{
-            duration: 3500,
-            style: {
-              background: '#fff',
-              color: '#2A1A0E',
-              border: '1px solid #EDE7E0',
-              borderRadius: 14,
-              boxShadow: '0 10px 30px rgba(0,0,0,0.10)',
-              fontSize: 14,
-              fontWeight: 500,
-              padding: '12px 16px',
-              maxWidth: 420,
-            },
-            success: { iconTheme: { primary: '#B46C30', secondary: '#fff' } },
-            error: { duration: 5000, iconTheme: { primary: '#D8542C', secondary: '#fff' } },
-          }}
-        />
+        {/*
+          Arriba a la derecha, no abajo: ahí abajo también viven el botón de
+          WhatsApp y la burbuja de seguimiento del pedido. Con varios avisos
+          apilados a la vez, la pila llegaba a taparlos (o quedaba ella tapada
+          detrás, según el z-index del momento). Arriba no hay nada con quien
+          pelear la esquina.
+        */}
+        <AvisosConMarca />
         {/* Flotante de WhatsApp: se pinta solo en las pantallas del cliente. */}
         <BotonWhatsApp />
         {/* Seguimiento del pedido en curso; va a la izquierda para no chocar
@@ -290,6 +326,7 @@ function App() {
         </DireccionProvider>
         </FavoritosProvider>
         </EdadProvider>
+        </ThemeProvider>
         </AjustesProvider>
       </AuthProvider>
     </BrowserRouter>

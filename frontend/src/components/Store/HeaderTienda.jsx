@@ -182,8 +182,14 @@ const Pill = styled.button`
               color var(--dur-press) var(--ease-out),
               transform var(--dur-press) var(--ease-out);
 
+  /*
+   * El borde solo se pinta de marca en la pastilla SOLIDA (Asistente, que ya
+   * nace de ese color). Carrito y Mi Cuenta no tienen un estado "activo" que
+   * marcar, así que su borde se queda en la misma línea gris de siempre — solo
+   * el texto se tiñe un poco al pasar el mouse, como aviso de que es clicable.
+   */
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: ${BROWN}; color: ${(p) => (p.$solida ? '#fff' : BROWN)}; }
+    &:hover { border-color: ${(p) => (p.$solida ? BROWN : 'var(--linea)')}; color: ${(p) => (p.$solida ? '#fff' : BROWN)}; }
   }
   &:active { transform: scale(0.97); }
 

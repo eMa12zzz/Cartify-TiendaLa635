@@ -18,7 +18,10 @@ import { useAuth } from '../../hooks/useAuth';
  */
 const ESTRELLAS = [1, 2, 3, 4, 5];
 
-const ValoracionPedido = ({ items = [] }) => {
+// Una clave por pedido: omitir uno no debe ocultar el aviso de los demás.
+const claveOmitida = (pedidoId) => `valoracion-omitida-${pedidoId}`;
+
+const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
   const { user } = useAuth();
 
   const [rating, setRating] = useState(0);
@@ -26,6 +29,16 @@ const ValoracionPedido = ({ items = [] }) => {
   const [comentario, setComentario] = useState('');
   const [enviado, setEnviado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  // Se recuerda entre visitas: si ya dijo "ahora no", no se le vuelve a
+  // preguntar cada vez que entra a ver su pedido entregado.
+  const [omitido, setOmitido] = useState(
+    () => !!pedidoId && localStorage.getItem(claveOmitida(pedidoId)) === '1'
+  );
+
+  const omitir = () => {
+    if (pedidoId) localStorage.setItem(claveOmitida(pedidoId), '1');
+    setOmitido(true);
+  };
 
   // Los productos únicos del pedido (uno puede venir repetido).
   const vistos = new Set();
@@ -37,7 +50,7 @@ const ValoracionPedido = ({ items = [] }) => {
       return true;
     });
 
-  if (!user?.id || productosIds.length === 0) return null;
+  if (!user?.id || productosIds.length === 0 || omitido) return null;
 
   const enviar = async () => {
     if (rating < 1) {
@@ -113,15 +126,26 @@ const ValoracionPedido = ({ items = [] }) => {
             style={{ backgroundColor: 'var(--papel)', borderColor: 'var(--linea)', color: 'var(--tinta)' }}
           />
 
-          <button
-            type="button"
-            onClick={enviar}
-            disabled={guardando}
-            className="press px-6 py-2.5 rounded-full text-sm font-bold text-white disabled:opacity-60"
-            style={{ backgroundColor: 'var(--marca-600)' }}
-          >
-            {guardando ? 'Enviando…' : 'Enviar valoración'}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={enviar}
+              disabled={guardando}
+              className="press px-6 py-2.5 rounded-full text-sm font-bold text-white disabled:opacity-60"
+              style={{ backgroundColor: 'var(--marca-600)' }}
+            >
+              {guardando ? 'Enviando…' : 'Enviar valoración'}
+            </button>
+            <button
+              type="button"
+              onClick={omitir}
+              disabled={guardando}
+              className="press text-sm font-semibold disabled:opacity-60"
+              style={{ color: 'var(--tinta-suave)' }}
+            >
+              Ahora no
+            </button>
+          </div>
         </>
       )}
     </div>

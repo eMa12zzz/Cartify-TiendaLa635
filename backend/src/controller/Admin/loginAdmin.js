@@ -3,9 +3,9 @@ import employeeModel from "../../models/employee.js";
 import bcryptjs from "bcryptjs";
 import jsonwebtoken from "jsonwebtoken";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 import { config } from "../../../config.js";
 import HTML2FAEmail from "../../utils/sendMail2FA.js";
+import { sendEmail } from "../../utils/sendMailMailjet.js";
 
 const loginAdminController = {};
 
@@ -31,14 +31,6 @@ const loginAdminController = {};
  * que la recuperación de contraseña), así que expira solo.
  * ============================================================
  */
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: config.email.user_email,
-    pass: config.email.user_password,
-  },
-});
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -122,12 +114,12 @@ loginAdminController.login = async (req, res) => {
     });
 
     try {
-      await transporter.sendMail({
-        from: config.email.user_email,
-        to: cuenta.email,
-        subject: "Código de acceso al panel — Tienda la 635",
-        html: HTML2FAEmail(code),
-      });
+      await sendEmail(
+        cuenta.email,
+        "Código de acceso al panel — Tienda la 635",
+        HTML2FAEmail(code),
+        `Alguien está iniciando sesión en el panel de Tienda la 635. Su código de acceso es: ${code}. Vale por 10 minutos. Si no fue usted, cambie su contraseña.`
+      );
     } catch (mailError) {
       console.log("No se pudo enviar el código 2FA:", mailError.message);
       return res.status(500).json({

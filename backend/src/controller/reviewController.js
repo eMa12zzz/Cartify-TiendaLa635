@@ -58,7 +58,7 @@ reviewController.upsert = async (req, res) => {
     const loCompro = await orderModel.exists({
       clientId,
       "items.productId": productId,
-      status: { $in: ["pagado", "preparando", "entregado"] },
+      status: { $in: ["pagado", "preparando", "en_camino", "entregado"] },
     });
 
     if (!loCompro) {
