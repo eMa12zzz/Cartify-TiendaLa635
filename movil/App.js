@@ -335,50 +335,27 @@ const Pantallas = ({
     );
   }
 
-  const navegar = (nombre, nuevosParams = {}) => {
-    setPantalla(nombre);
-    setParams(nuevosParams);
-  };
+  if (pantalla === 'register') {
+    return (
+      <Register
+        irALogin={() => setPantalla('login')}
+        alPedirCodigo={(correo) => {
+          setCorreoPendiente(correo);
+          setPantalla('verification');
+        }}
+      />
+    );
+  }
 
-  switch (pantalla) {
-    case 'search':
-      return (
-        <SearchScreen
-          navigation={{ navigate: navegar, goBack: () => navegar('home') }}
-        />
-      );
-    case 'searchResults':
-      return (
-        <SearchResultsScreen
-          route={{ params }}
-          navigation={{ navigate: navegar, goBack: () => navegar('search') }}
-        />
-      );
-    case 'productDetail':
-      return (
-        <ProductDetailScreen
-          route={{ params }}
-          navigation={{ navigate: navegar, goBack: () => navegar('home'), push: navegar }}
-        />
-      );
-    case 'cart':
-      return (
-        <CartScreen
-          navigation={{ navigate: navegar, goBack: () => navegar('home') }}
-        />
-      );
-    case 'orderDetail':
-      return (
-        <OrderDetailScreen
-          route={{ params }}
-          navigation={{ navigate: navegar, goBack: () => navegar('home') }}
-        />
-      );
-    case 'home':
-    default:
-      return (
-        <HomeScreen navigation={{ navigate: navegar }} />
-      );
+  if (pantalla === 'verification') {
+    return (
+      <Verification
+        correo={correoPendiente}
+        // Cuenta creada: se entra por la puerta normal, con su correo y su clave.
+        alVerificar={() => setPantalla('login')}
+        alVolver={() => setPantalla('register')}
+      />
+    );
   }
 
   return (

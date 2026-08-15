@@ -53,7 +53,18 @@ export const validarSesion =
         ? [dePersonal]
         : [deCliente];
 
-    const token = candidatas.find(Boolean);
+    /*
+     * La app móvil no tiene cookies —fetch en React Native no las administra
+     * solo, como sí hace un navegador— así que manda el mismo token por el
+     * header Authorization: Bearer <token>. Se prueba DESPUÉS de las cookies,
+     * nunca antes: el navegador siempre tiene que seguir mandando por la
+     * cookie, que es la fuente de siempre.
+     */
+    const deCabecera = req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.slice(7)
+      : null;
+
+    const token = candidatas.find(Boolean) || deCabecera;
 
     if (!token) {
       return res.status(401).json({ message: "Inicie sesión para continuar" });

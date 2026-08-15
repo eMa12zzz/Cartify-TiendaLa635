@@ -32,10 +32,10 @@ router
   .put(duenoOPersonal("id"), upload.single("image"), clientController.updateClient)
   .delete(soloPersonal, clientController.deleteClient);
 
-// El cliente edita su propio perfil (datos básicos, JSON).
+// El cliente edita su propio perfil (datos básicos, y opcionalmente su foto).
 router
   .route("/:id/profile")
-  .patch(duenoOPersonal("id"), clientController.updateClientProfile);
+  .patch(duenoOPersonal("id"), upload.single("image"), clientController.updateClientProfile);
 
 // Los productos que el cliente marcó con el corazón.
 router

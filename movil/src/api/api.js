@@ -38,6 +38,20 @@ const HOST_POR_DEFECTO = Platform.select({
 export const URL_API = HOST_MANUAL || HOST_POR_DEFECTO;
 
 /*
+ * El token de sesión vigente, para mandarlo por Authorization en cada
+ * petición. Aquí no hay cookies como en el navegador —fetch en React Native
+ * no las administra solo—, así que este es su reemplazo: AuthContext llama a
+ * establecerToken() cada vez que la sesión cambia (al restaurarla del
+ * almacén, al entrar, al salir), y de ahí lo toma peticion() sin que cada
+ * pantalla tenga que pasarlo a mano.
+ */
+let tokenActual = null;
+
+export const establecerToken = (token) => {
+  tokenActual = token;
+};
+
+/*
  * Un error que ya trae el mensaje que va a leer el cliente.
  *
  * El backend contesta en español ("El correo o contraseña son incorrectos",
@@ -73,15 +87,21 @@ const RESPALDO_POR_ESTADO = {
 export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras } = {}) => {
   let respuesta;
 
+  // Un FormData (la foto de perfil) va tal cual: ni se convierte a JSON ni se
+  // le pone Content-Type a mano, que si no fetch no agrega el boundary del
+  // multipart y el backend no puede separar los campos.
+  const esFormData = cuerpo instanceof FormData;
+
   try {
     respuesta = await fetch(`${URL_API}${ruta}`, {
       method: metodo,
       headers: {
         Accept: 'application/json',
-        ...(cuerpo ? { 'Content-Type': 'application/json' } : {}),
+        ...(cuerpo && !esFormData ? { 'Content-Type': 'application/json' } : {}),
+        ...(tokenActual ? { Authorization: `Bearer ${tokenActual}` } : {}),
         ...cabeceras,
       },
-      body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+      body: esFormData ? cuerpo : cuerpo ? JSON.stringify(cuerpo) : undefined,
     });
   } catch {
     throw new ErrorApi(

@@ -33,6 +33,17 @@ export const actualizarPerfil = (clienteId, campos) =>
   peticion(`/client/${clienteId}/profile`, { metodo: 'PATCH', cuerpo: campos });
 
 /*
+ * La foto va por el mismo endpoint que los datos de texto, pero como
+ * multipart: el backend solo mira los campos que vengan, así que mandar
+ * nada más que "image" no toca ni borra el nombre, el correo, etc.
+ */
+export const actualizarFotoPerfil = (clienteId, foto) => {
+  const cuerpo = new FormData();
+  cuerpo.append('image', foto);
+  return peticion(`/client/${clienteId}/profile`, { metodo: 'PATCH', cuerpo });
+};
+
+/*
  * Manda la lista COMPLETA, no la que cambió. Es como está hecho el endpoint —
  * reemplaza el arreglo entero— así que borrar una dirección es mandar todas
  * menos esa.

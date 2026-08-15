@@ -42,6 +42,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Bell, ChevronRight, Heart, LogOut, MapPin, Star, User } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
@@ -148,9 +149,13 @@ const Perfil = () => {
       <ScrollView contentContainerStyle={estilos.cuerpo}>
         {/* Quién está dentro */}
         <View style={estilos.cabecera}>
-          <View style={[estilos.avatar, { backgroundColor: colores.marca }]}>
-            <Text style={estilos.avatarTexto}>{inicial}</Text>
-          </View>
+          {cliente?.image ? (
+            <Image source={{ uri: cliente.image }} contentFit="cover" style={estilos.avatarFoto} />
+          ) : (
+            <View style={[estilos.avatar, { backgroundColor: colores.marca }]}>
+              <Text style={estilos.avatarTexto}>{inicial}</Text>
+            </View>
+          )}
           <View style={estilos.identidad}>
             <Text style={estilos.nombre} numberOfLines={1}>
               {nombre}
@@ -254,6 +259,11 @@ const estilos = StyleSheet.create({
     borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarFoto: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
   },
   avatarTexto: {
     fontSize: 24,

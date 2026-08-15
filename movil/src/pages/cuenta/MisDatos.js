@@ -5,6 +5,14 @@
  * El equivalente de `frontend/src/pages/cliente/DetallesCuenta.jsx`: los cuatro
  * campos que el cliente puede cambiar de su propia cuenta.
  *
+ * ── La foto se sube aparte, tocando el círculo ──
+ *
+ * Va por el mismo endpoint (`PATCH /client/:id/profile`), pero como una
+ * petición propia con FormData en cuanto se elige: no espera al botón
+ * "Guardar cambios" de abajo, que es para los campos de texto. Total, el
+ * cliente ya vio la foto puesta en el círculo — parecería que se subió y en
+ * realidad quedó esperando a que toque otro botón.
+ *
  * ── El DUI se ve pero no se toca ──
  *
  * Igual que en la web: se muestra debajo del avatar cuando existe, y no hay
@@ -23,13 +31,15 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { AtSign, Mail, Phone, User } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { AtSign, Camera, Mail, Phone, User } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
-import { getCliente, actualizarPerfil } from '../../api/clienteApi';
+import { getCliente, actualizarPerfil, actualizarFotoPerfil } from '../../api/clienteApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import CampoTexto from '../../components/UI/CampoTexto';
 import Boton from '../../components/UI/Boton';
@@ -50,9 +60,11 @@ const MisDatos = ({ alVolver }) => {
 
   const [form, setForm] = useState({ fullName: '', userName: '', email: '', phoneNumber: '' });
   const [dui, setDui] = useState('');
+  const [foto, setFoto] = useState(null);
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   useEffect(() => {
     let vivo = true;
@@ -70,6 +82,7 @@ const MisDatos = ({ alVolver }) => {
           phoneNumber: formatearTelefono(cliente?.phoneNumber || ''),
         });
         setDui(cliente?.dui || '');
+        setFoto(cliente?.image || null);
       } catch (e) {
         if (vivo) avisar(e?.message || 'No se pudieron cargar sus datos', 'error');
       } finally {
@@ -87,6 +100,40 @@ const MisDatos = ({ alVolver }) => {
   const escribir = (campo, valor) => {
     setForm((prev) => ({ ...prev, [campo]: valor }));
     setErrores((prev) => (prev[campo] ? { ...prev, [campo]: null } : prev));
+  };
+
+  const elegirFoto = async () => {
+    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permiso.granted) {
+      avisar('Necesita darle permiso a la app para ver sus fotos', 'error');
+      return;
+    }
+
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (resultado.canceled) return;
+
+    const elegida = resultado.assets[0];
+    setSubiendoFoto(true);
+    try {
+      // React Native no acepta un Blob real en FormData: quiere este objeto
+      // con uri/name/type, y de ahí arma la parte multipart él solo.
+      const respuesta = await actualizarFotoPerfil(user.id, {
+        uri: elegida.uri,
+        name: elegida.fileName || 'foto.jpg',
+        type: elegida.mimeType || 'image/jpeg',
+      });
+      setFoto(respuesta?.client?.image || elegida.uri);
+      avisar('Foto de perfil actualizada');
+    } catch (e) {
+      avisar(e?.message || 'No se pudo subir la foto', 'error');
+    } finally {
+      setSubiendoFoto(false);
+    }
   };
 
   const guardar = async () => {
@@ -126,9 +173,29 @@ const MisDatos = ({ alVolver }) => {
           keyboardDismissMode="on-drag"
         >
           <View style={estilos.cabecera}>
-            <View style={[estilos.avatar, { backgroundColor: colores.marca }]}>
-              <Text style={estilos.avatarTexto}>{inicial}</Text>
-            </View>
+            <Pressable
+              onPress={elegirFoto}
+              disabled={subiendoFoto}
+              accessibilityRole="button"
+              accessibilityLabel="Cambiar foto de perfil"
+              style={estilos.avatarToque}
+            >
+              {foto ? (
+                <Image source={{ uri: foto }} contentFit="cover" style={estilos.avatarFoto} />
+              ) : (
+                <View style={[estilos.avatar, { backgroundColor: colores.marca }]}>
+                  <Text style={estilos.avatarTexto}>{inicial}</Text>
+                </View>
+              )}
+
+              <View style={[estilos.botonCamara, { backgroundColor: colores.marca }]}>
+                {subiendoFoto ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Camera size={15} color="#FFFFFF" strokeWidth={2.2} />
+                )}
+              </View>
+            </Pressable>
             {/* Sin DUI no se pinta el renglón: es opcional, y una etiqueta
                 vacía solo hace ruido (mismo criterio que la web). */}
             {!!dui && <Text style={estilos.dui}>DUI: {formatearDui(dui)}</Text>}
@@ -214,6 +281,10 @@ const estilos = StyleSheet.create({
     marginBottom: 24,
     gap: 8,
   },
+  avatarToque: {
+    width: 84,
+    height: 84,
+  },
   avatar: {
     width: 84,
     height: 84,
@@ -221,10 +292,27 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarFoto: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+  },
   avatarTexto: {
     fontSize: 34,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  botonCamara: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORES.fondo,
   },
   dui: {
     fontSize: 12,

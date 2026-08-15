@@ -3,36 +3,38 @@
  * DIRECCIONES — a dónde le llevamos los pedidos
  * ============================================================
  * El equivalente de `frontend/src/pages/cliente/Direcciones.jsx`: la lista de
- * direcciones guardadas, con su nombre, su texto y su referencia.
+ * direcciones guardadas, con su nombre, su texto y su referencia. A diferencia
+ * de la web, aquí también se agregan: mismos tres campos y el mismo endpoint
+ * que usa Checkout.js al escribir una nueva al elegir el envío.
  *
- * ── Aquí se ven y se borran; se agregan al pagar ──
+ * ── Sin mapa, igual que en el checkout ──
  *
- * Igual que en la web, y por el mismo motivo. Allá esta pantalla tampoco tiene
- * un campo para escribir: el botón abre un MAPA. Pero el CARRITO sí lo tiene, y
- * su comentario explica por qué se le agregó — mandar al mapa en mitad del pago
- * es pedirle un viaje a alguien que ya tenía la plata en la mano.
+ * react-leaflet es del navegador, y en nativo pide react-native-maps, la
+ * llave de Google y su compilación propia — otro trabajo. Por eso las
+ * direcciones escritas desde el teléfono van sin coordenadas: el repartidor
+ * lee el texto y la referencia, que es con lo que se llegaba antes de que
+ * existiera el mapa.
  *
- * Aquí pasa lo mismo: escribir una dirección se hace en el momento en que hace
- * falta, que es al elegir el envío (ver pages/Checkout.js), no en una pantalla
- * de mantenimiento a la que casi nadie entra.
- *
- * El mapa no está en móvil y es otro trabajo: react-leaflet es del navegador, y
- * en nativo pide react-native-maps, la llave de Google y su compilación propia.
- * Por eso las direcciones escritas desde el teléfono van sin coordenadas — el
- * repartidor lee el texto y la referencia, que es con lo que se llegaba antes
- * de que existiera el mapa.
- *
- * ── Borrar es mandar la lista completa ──
+ * ── Borrar (y agregar) es mandar la lista completa ──
  *
  * El endpoint reemplaza el arreglo entero (ver api/clienteApi.js), así que
- * quitar una es guardar todas menos esa. Y va con confirmación, que la web no
- * pide: en un teléfono el basurero queda a un centímetro del renglón que se
- * quería tocar.
+ * tanto quitar una como sumar una nueva es guardar la lista completa ya
+ * modificada. Borrar va con confirmación, que la web no pide: en un teléfono
+ * el basurero queda a un centímetro del renglón que se quería tocar.
  * ============================================================
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { MapPin, Signpost, Trash2 } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useAuth } from '../../hooks/useAuth';
@@ -70,6 +72,9 @@ const Direcciones = ({ alVolver }) => {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
+  const [escribiendo, setEscribiendo] = useState(false);
+  const [nueva, setNueva] = useState({ nombre: '', direccion: '', referencia: '' });
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError('');
@@ -87,6 +92,27 @@ const Direcciones = ({ alVolver }) => {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  const agregar = async () => {
+    if (!nueva.direccion.trim()) {
+      avisar('Escriba la dirección para poder guardarla', 'error');
+      return;
+    }
+
+    const lista = [...direcciones, { ...nueva, lat: null, lng: null }];
+    setGuardando(true);
+    try {
+      await actualizarDirecciones(user.id, lista);
+      setDirecciones(lista);
+      setNueva({ nombre: '', direccion: '', referencia: '' });
+      setEscribiendo(false);
+      avisar('Dirección guardada');
+    } catch (e) {
+      avisar(e?.message || 'No se pudo guardar la dirección', 'error');
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const borrar = (indice) => {
     const dir = direcciones[indice];
@@ -139,23 +165,76 @@ const Direcciones = ({ alVolver }) => {
             />
           </View>
         </View>
-      ) : direcciones.length === 0 ? (
-        <View style={estilos.centro}>
-          <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />
-          <Text style={estilos.vacioTitulo}>Sin direcciones guardadas</Text>
-          <Text style={estilos.vacioTexto}>
-            Al hacer un pedido con envío a domicilio puede escribir la suya, y queda guardada aquí.
-          </Text>
-        </View>
       ) : (
         <FlatList
           data={direcciones}
           keyExtractor={(_, i) => String(i)}
           contentContainerStyle={estilos.lista}
+          ListEmptyComponent={
+            <View style={estilos.vacio}>
+              <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />
+              <Text style={estilos.vacioTitulo}>Sin direcciones guardadas</Text>
+              <Text style={estilos.vacioTexto}>Agregue la primera abajo.</Text>
+            </View>
+          }
           ListFooterComponent={
-            <Text style={estilos.pie}>
-              Para agregar otra, escríbala al elegir el envío a domicilio en su próximo pedido.
-            </Text>
+            <View style={estilos.agregar}>
+              {escribiendo ? (
+                /*
+                 * Tres campos y nada más, como en Checkout.js. La referencia
+                 * es la que de verdad usa el repartidor ("portón verde,
+                 * frente a la cancha"), así que se pide pero no se obliga.
+                 */
+                <View style={[estilos.formulario, { borderColor: colores.marcaSuave }]}>
+                  <TextInput
+                    value={nueva.nombre}
+                    onChangeText={(v) => setNueva((d) => ({ ...d, nombre: v }))}
+                    placeholder="Nombre (Casa, Trabajo…)"
+                    placeholderTextColor={COLORES.marcador}
+                    style={estilos.campo}
+                    accessibilityLabel="Nombre de la dirección"
+                  />
+                  <TextInput
+                    value={nueva.direccion}
+                    onChangeText={(v) => setNueva((d) => ({ ...d, direccion: v }))}
+                    placeholder="Calle, número y colonia"
+                    placeholderTextColor={COLORES.marcador}
+                    style={estilos.campo}
+                    accessibilityLabel="Dirección"
+                  />
+                  <TextInput
+                    value={nueva.referencia}
+                    onChangeText={(v) => setNueva((d) => ({ ...d, referencia: v }))}
+                    placeholder="Referencia para encontrarla (opcional)"
+                    placeholderTextColor={COLORES.marcador}
+                    style={estilos.campo}
+                    accessibilityLabel="Referencia"
+                  />
+                  <Boton
+                    texto="Guardar dirección"
+                    alPresionar={agregar}
+                    cargando={guardando}
+                    color={colores.marca}
+                    colorPresionado={colores.marcaOscuro}
+                  />
+                  <Pressable
+                    onPress={() => {
+                      setEscribiendo(false);
+                      setNueva({ nombre: '', direccion: '', referencia: '' });
+                    }}
+                    hitSlop={8}
+                  >
+                    <Text style={estilos.enlaceTenue}>Cancelar</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={() => setEscribiendo(true)} hitSlop={8}>
+                  <Text style={[estilos.enlace, { color: colores.marca }]}>
+                    {direcciones.length === 0 ? '+ Agregar mi primera dirección' : '+ Agregar otra dirección'}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           }
           renderItem={({ item, index }) => (
             <View style={estilos.tarjeta}>
@@ -222,6 +301,12 @@ const estilos = StyleSheet.create({
   botonError: {
     marginTop: 12,
     alignSelf: 'stretch',
+  },
+  vacio: {
+    alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    gap: 8,
   },
   vacioTitulo: {
     marginTop: 4,
@@ -291,13 +376,39 @@ const estilos = StyleSheet.create({
   botonBorrarApagado: {
     opacity: 0.5,
   },
-  pie: {
-    marginTop: 14,
-    paddingHorizontal: 4,
-    fontSize: 12.5,
-    lineHeight: 19,
-    color: COLORES.textoTenue,
+  agregar: {
+    marginTop: 4,
+  },
+  formulario: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 9,
+  },
+  campo: {
+    borderWidth: 1,
+    borderColor: COLORES.borde,
+    borderRadius: 10,
+    paddingHorizontal: 13,
+    height: 44,
+    fontSize: 13.5,
+    color: COLORES.texto,
+    backgroundColor: COLORES.fondo,
+    // Android le mete relleno propio a los TextInput y descuadra el alto.
+    paddingVertical: 0,
+  },
+  enlace: {
+    fontSize: 13,
+    fontWeight: '700',
     textAlign: 'center',
+    paddingVertical: 4,
+  },
+  enlaceTenue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORES.textoSuave,
+    textAlign: 'center',
+    paddingVertical: 4,
   },
 });
 
