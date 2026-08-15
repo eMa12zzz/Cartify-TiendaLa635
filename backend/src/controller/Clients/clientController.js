@@ -169,8 +169,9 @@ clientController.deleteClient = async (req, res) => {
 };
 
 // UPDATE PROFILE (self) — el cliente edita SUS datos básicos desde "Mi Cuenta".
-// A diferencia de updateClient (admin, con imagen/multipart y todos los campos
-// obligatorios), este acepta JSON y solo toca los campos que vengan.
+// Acepta tanto JSON (los campos de texto) como multipart con una imagen: el
+// campo "image" es opcional, y cuando llega se sube igual que en updateClient
+// (admin) — se borra la anterior de Cloudinary antes de guardar la nueva.
 clientController.updateClientProfile = async (req, res) => {
   try {
     const { fullName, userName, email, phoneNumber } = req.body;
@@ -180,6 +181,18 @@ clientController.updateClientProfile = async (req, res) => {
     if (userName !== undefined) updates.userName = userName;
     if (email !== undefined) updates.email = email?.trim();
     if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
+
+    if (req.file) {
+      const clientFound = await clientModel.findById(req.params.id);
+      if (!clientFound) {
+        return res.status(404).json({ message: "No se encontró el cliente" });
+      }
+      if (clientFound.public_id) {
+        await cloudinary.uploader.destroy(clientFound.public_id);
+      }
+      updates.image = req.file.path;
+      updates.public_id = req.file.filename;
+    }
 
     const updated = await clientModel
       .findByIdAndUpdate(req.params.id, updates, { new: true })
