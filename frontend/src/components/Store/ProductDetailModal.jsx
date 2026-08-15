@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, ShoppingBag, Star, ChevronRight, ChevronLeft, Package, MessageCircle } from 'lucide-react';
-import { useReviews } from '../../hooks/useReviews';
+import { X, ShoppingBag, ChevronRight, ChevronLeft, Package, MessageCircle } from 'lucide-react';
+import { useEdad } from '../../context/EdadContext';
 import ProductCard from './ProductCard';
 import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 
@@ -468,44 +468,58 @@ const haceCuanto = (iso) => {
 /* ── Component ── */
 const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProducto, todosLosProductos = [] }) => {
   const [imgError, setImgError] = useState(false);
-  const [activeThumb, setActiveThumb] = useState(0);
+
+  // onClose siempre fresco para los listeners de abajo, sin re-armarlos.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+
+  // UN SOLO SCROLL: el overlay ya scrollea por dentro; sin congelar el de la
+  // página de atrás quedaban dos barras independientes peleando.
+  useEffect(() => {
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflowPrevio; };
+  }, []);
+
+  /*
+   * EL "ATRÁS" DEL NAVEGADOR CIERRA EL DETALLE. Sin esto, con el modal abierto
+   * la flecha del navegador salía de la tienda —y si se venía del login,
+   * devolvía ahí—. Metemos una entrada de historia: el "atrás" la consume,
+   * dispara popstate y aquí solo cerramos el modal.
+   *
+   * OJO: NO se llama history.back() en la limpieza. En StrictMode (dev) el
+   * efecto se monta→desmonta→monta, y ese back() asíncrono terminaba
+   * disparándose después de re-montar y cerraba el modal al instante — o sea,
+   * "no se veía ningún producto". Dejar la entrada extra es inofensivo; el
+   * próximo "atrás" solo la consume sin salir de la tienda.
+   */
+  useEffect(() => {
+    window.history.pushState({ modalProducto: true }, '');
+    const alVolver = () => onCloseRef.current?.();
+    window.addEventListener('popstate', alVolver);
+    return () => window.removeEventListener('popstate', alVolver);
+  }, []);
 
   // Los que se venden por peso muestran el precio de la libra y se agregan de
   // libra en libra. Ver utils/unidades.js.
   const porLibra = esPorLibra(producto);
 
-  /*
-   * Valoraciones REALES. Antes esto era un 4.3 clavado con "5,961 reseñas" y
-   * dos comentarios firmados por gente inventada, iguales en todos los
-   * productos: publicidad engañosa puesta frente a quien está por comprar.
-   */
-  const { total: reviewCount, promedio: rating, reparto, reviews, miValoracion, puedeOpinar, guardar, guardando } = useReviews(producto.id);
-  const [estrellas, setEstrellas] = useState(0);
-  const [comentario, setComentario] = useState('');
-
-  // Barras del desglose, calculadas sobre lo que hay de verdad.
-  const barras = [5, 4, 3, 2, 1].map((stars) => ({
-    stars,
-    count: reparto?.[stars] || 0,
-    pct: reviewCount ? Math.round(((reparto?.[stars] || 0) / reviewCount) * 100) : 0,
-  }));
-
-  const enviarValoracion = async () => {
-    if (!estrellas) return;
-    const ok = await guardar({ rating: estrellas, comment: comentario });
-    if (ok) { setEstrellas(0); setComentario(''); }
-  };
-
-  // fake thumbnails using same emoji/image
-  const thumbs = [0, 1, 2];
-
   const recomendados = todosLosProductos
     .filter(p => p.id !== producto.id && p.categoria === producto.categoria)
     .slice(0, 5);
 
+  // Candado +18 también aquí: agregar un producto restringido pasa antes por
+  // la confirmación de edad. Normalmente ya se confirmó al abrir el detalle,
+  // pero este es el paso que de verdad mete el producto al carrito.
+  const { mayorConfirmado, pedirConfirmacion } = useEdad();
+
   const handleAgregar = () => {
-    onAgregarAlCarrito(producto, 1);
-    onClose();
+    const meter = () => { onAgregarAlCarrito(producto, 1); onClose(); };
+    if (esSoloAdultos(producto) && !mayorConfirmado) {
+      pedirConfirmacion(meter);
+      return;
+    }
+    meter();
   };
 
 
@@ -533,19 +547,11 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProduc
           {/* ── Left column ── */}
           <LeftCol>
             <ImageArea>
-              {/* Thumbnails */}
-              <Thumbnails>
-                {thumbs.map(i => (
-                  <Thumb key={i} $active={activeThumb === i} onClick={() => setActiveThumb(i)}>
-                    {producto.imagen && !imgError
-                      ? <img src={producto.imagen} alt="" onError={() => setImgError(true)} />
-                      : <Package size={22} strokeWidth={1.4} />
-                    }
-                  </Thumb>
-                ))}
-              </Thumbnails>
-
-              {/* Main image */}
+              {/*
+                Una sola imagen: el producto tiene UNA foto. Antes había una
+                tira de tres miniaturas que repetían la misma imagen, dando a
+                entender que había varias vistas cuando no las hay.
+              */}
               <MainImageWrapper>
                 {producto.esMasVendido && <BestBadge>Los más vendidos</BestBadge>}
                 {producto.imagen && !imgError
@@ -555,121 +561,12 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProduc
               </MainImageWrapper>
             </ImageArea>
 
-            {/* Reviews summary */}
-            <ReviewsBlock>
-              <ReviewsHeader>
-                <ReviewsTitle>Reseñas de clientes</ReviewsTitle>
-              </ReviewsHeader>
-
-              {/*
-                Sin reseñas se dice sin adornos. Antes aquí había un 4.3 con
-                "5,961 reseñas" que no existían: mejor una tienda honesta y
-                vacía que una que finge tener miles de clientes contentos.
-              */}
-              {reviewCount === 0 ? (
-                <p style={{ fontSize: 12, color: '#888', margin: '0 0 14px', lineHeight: 1.5 }}>
-                  Todavía nadie ha opinado sobre este producto.
-                  {puedeOpinar ? ' Si ya lo compró, sea el primero.' : ''}
-                </p>
-              ) : (
-                <>
-                  <RatingSummary>
-                    <BigRating>
-                      <BigNumber>{rating}</BigNumber>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: 2, margin: '4px 0 2px' }}>
-                        {[1,2,3,4,5].map(i => (
-                          <Star key={i} size={12} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
-                        ))}
-                      </div>
-                      <BigLabel>({reviewCount})</BigLabel>
-                    </BigRating>
-                    <RatingBars>
-                      {barras.map(row => (
-                        <RatingBarRow key={row.stars}>
-                          <span style={{ minWidth: 8 }}>{row.stars}</span>
-                          <Star size={10} fill="#f59e0b" stroke="#f59e0b" />
-                          <BarBg><BarFill $pct={row.pct} /></BarBg>
-                          <BarCount>{row.count}</BarCount>
-                        </RatingBarRow>
-                      ))}
-                    </RatingBars>
-                  </RatingSummary>
-
-                  {reviews.map(r => {
-                    const nombre = r.clientId?.fullName || 'Cliente';
-                    return (
-                      <ReviewCard key={r._id}>
-                        <ReviewerRow>
-                          <Avatar>{nombre[0]}</Avatar>
-                          <div>
-                            <ReviewerName>{nombre}</ReviewerName>
-                            <ReviewDate>{haceCuanto(r.createdAt)}</ReviewDate>
-                          </div>
-                        </ReviewerRow>
-                        <ReviewStars>
-                          {[1,2,3,4,5].map(i => (
-                            <Star key={i} size={12} fill={i <= r.rating ? '#f59e0b' : 'none'} stroke={i <= r.rating ? '#f59e0b' : '#ddd'} />
-                          ))}
-                        </ReviewStars>
-                        {r.comment && <ReviewText>{r.comment}</ReviewText>}
-                      </ReviewCard>
-                    );
-                  })}
-                </>
-              )}
-
-              {/*
-                Dejar opinión. Solo se ofrece a clientes; el servidor además
-                exige haber comprado el producto, así que una reseña de aquí
-                vale algo.
-              */}
-              {puedeOpinar && (
-                <div style={{ borderTop: '1px solid #eee', paddingTop: 12, marginTop: 4 }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: '#333', margin: '0 0 8px' }}>
-                    {miValoracion ? 'Su opinión' : 'Deje su opinión'}
-                  </p>
-                  <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                    {[1,2,3,4,5].map(i => {
-                      const marcada = i <= (estrellas || miValoracion?.rating || 0);
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setEstrellas(i)}
-                          aria-label={`${i} estrella${i > 1 ? 's' : ''}`}
-                          style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0 }}
-                        >
-                          <Star size={20} fill={marcada ? '#f59e0b' : 'none'} stroke={marcada ? '#f59e0b' : '#ccc'} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <textarea
-                    value={comentario}
-                    onChange={(e) => setComentario(e.target.value)}
-                    maxLength={500}
-                    rows={2}
-                    placeholder={miValoracion?.comment || 'Cuente cómo le fue con el producto (opcional)'}
-                    style={{
-                      width: '100%', border: '1px solid #e5e5e5', borderRadius: 10,
-                      padding: '8px 10px', fontSize: 12, fontFamily: 'inherit', resize: 'none',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={enviarValoracion}
-                    disabled={!estrellas || guardando}
-                    style={{
-                      marginTop: 8, width: '100%', padding: '9px 0', borderRadius: 999,
-                      border: 'none', background: estrellas ? BROWN : '#e5e5e5',
-                      color: estrellas ? '#fff' : '#999', fontSize: 12, fontWeight: 700,
-                    }}
-                  >
-                    {guardando ? 'Enviando…' : miValoracion ? 'Actualizar mi opinión' : 'Enviar opinión'}
-                  </button>
-                </div>
-              )}
-            </ReviewsBlock>
+            {/*
+              Aquí iba el bloque de reseñas del PRODUCTO. Se quitó a propósito:
+              lo que se valora en esta tienda es el SERVICIO de entrega, no el
+              producto, y esa valoración se pide en "Mis pedidos" cuando el
+              pedido a domicilio ya llegó. Ver MisPedidos y order.serviceRating.
+            */}
 
             {/*
               Aquí iban tres desplegables: "Detalles", "Conservación y
@@ -710,20 +607,6 @@ const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, onVerProduc
           <RightCol>
             <BrandTag>{producto.marca}</BrandTag>
             <ProductName>{producto.nombre}</ProductName>
-
-            {/* Las estrellas de arriba solo aparecen si alguien opinó */}
-            {reviewCount > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <div style={{ display: 'flex', gap: 2 }}>
-                  {[1,2,3,4,5].map(i => (
-                    <Star key={i} size={14} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
-                  ))}
-                </div>
-                <span style={{ fontSize: 13, color: '#888' }}>
-                  {rating} ({reviewCount} {reviewCount === 1 ? 'reseña' : 'reseñas'})
-                </span>
-              </div>
-            )}
 
             {/*
               El cliente ve si hay o no hay, no cuántas quedan: el inventario

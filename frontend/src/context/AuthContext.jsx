@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../api/api';
+import { CAJON, areaDeRuta } from '../utils/sesion';
 
 /*
  * ============================================================
@@ -34,43 +35,12 @@ import api from '../api/api';
  */
 export const AuthContext = createContext();
 
-/* Dónde vive cada cajón. */
-const CAJON = {
-  personal: 'sesion:personal',
-  cliente: 'sesion:cliente',
-};
-
 /*
- * Las rutas del panel. Todo lo demás —la tienda, Mi Cuenta, los logins de
- * cliente— es área de cliente.
- *
- * '/admin' entra en la lista aunque sea la pantalla de entrada: es la puerta
- * del personal, así que lo que se haga ahí (entrar, salir) tiene que caer en
- * el cajón del personal y no rozar la sesión de la tienda.
+ * Dónde vive cada cajón y qué área manda en cada ruta: bajó a utils/sesion.js
+ * porque el interceptor de axios también lo necesita para saber a quién echar
+ * cuando el servidor contesta 401, y no puede importar este archivo sin armar
+ * un círculo.
  */
-const RUTAS_DEL_PANEL = [
-  '/admin',
-  '/dashboard',
-  '/inventario',
-  '/pedidos',
-  '/modulos',
-  '/marcas',
-  '/empleados',
-  '/clientes',
-  '/proveedores',
-  '/categorias',
-  '/fidelidad',
-  '/promociones',
-  '/servicios-impresion',
-  '/tarjetas',
-  '/personalizacion',
-  '/cuenta',
-];
-
-export const areaDeRuta = (pathname = '') =>
-  RUTAS_DEL_PANEL.some((r) => pathname === r || pathname.startsWith(`${r}/`))
-    ? 'personal'
-    : 'cliente';
 
 /*
  * En qué cajón va una sesión según a quién pertenece. El backend responde
@@ -203,6 +173,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /*
+   * 3.5- Actualizar datos de la sesión que está abierta, sin volver a entrar.
+   *
+   * Lo pide la foto de perfil: al subirla, el nombre y el token siguen igual
+   * pero el `image` cambió, y hay que reflejarlo de una en el avatar (el TopBar
+   * y la pantalla de Cuenta) y dejarlo guardado para el próximo arranque. El
+   * cajón es el de la sesión activa, que lo dice su propio `type`.
+   */
+  const actualizarUsuario = useCallback((cambios = {}) => {
+    if (!activa) return;
+    const cajon = cajonDeTipo(activa.type);
+    setSesiones((previas) => {
+      const actual = previas[cajon];
+      if (!actual) return previas;
+      const fusionada = { ...actual, ...cambios };
+      localStorage.setItem(CAJON[cajon], JSON.stringify(fusionada));
+      return { ...previas, [cajon]: fusionada };
+    });
+  }, [activa]);
+
+  /*
    * 4- Cerrar sesión cierra la de ESTA área, no las dos.
    *
    * Salir del panel no tiene por qué sacar a la persona de la tienda: son dos
@@ -233,6 +223,7 @@ export const AuthProvider = ({ children }) => {
       token: activa?.token || null,
       login,
       logout,
+      actualizarUsuario,
       loading,
       isAuthenticated: !!activa?.token,
       /*
@@ -243,7 +234,7 @@ export const AuthProvider = ({ children }) => {
       haySesionDePersonal: !!sesiones.personal,
       haySesionDeCliente: !!sesiones.cliente,
     }),
-    [activa, login, logout, loading, sesiones.personal, sesiones.cliente]
+    [activa, login, logout, actualizarUsuario, loading, sesiones.personal, sesiones.cliente]
   );
 
   // 5- No se pintan los hijos hasta saber si hay sesión, para evitar el

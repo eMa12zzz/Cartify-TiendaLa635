@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Mic, X, ShoppingCart, Volume2, VolumeX, Gauge, Minimize2, QrCode, UserCheck } from 'lucide-react';
+import { Mic, X, ShoppingCart, Volume2, VolumeX, Minimize2, QrCode, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { useKiosco } from '../../hooks/useKiosco';
@@ -36,8 +36,8 @@ const AsistenteVoz = ({
   const hablarRef = useRef(null);
 
   const {
-    activo, escuchando, muteado, transcripcion, historial, velLabel, pensando, hablando,
-    iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado, interrumpir,
+    activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
+    iniciar, detener, toggleMute, hablar, soportado, interrumpir,
     voces, vozActual, cambiarVoz,
   } = useVoiceAssistant({
     productos, carrito, totalCarrito,
@@ -82,7 +82,19 @@ const AsistenteVoz = ({
 
     try {
       await orderService.createOrder({
-        clientId: cliente.id,
+        /*
+         * El código es lo que le PRUEBA al servidor de quién es este pedido.
+         *
+         * El kiosco no tiene sesión —ni debe tenerla: esa es toda la gracia de
+         * que el cliente escanee con su teléfono y la contraseña nunca pase
+         * por la pantalla pública—. Antes bastaba con mandar un clientId y el
+         * servidor le creía, así que se le podía cargar una compra a
+         * cualquiera. Ahora el servidor busca el código, mira que siga
+         * vinculada y sin usar, y saca el cliente de ahí.
+         *
+         * Va antes de `kiosco.cerrar()`, que quema el código en el `finally`.
+         */
+        codigoKiosco: kiosco.codigo,
         items: carrito.map((i) => ({
           productId: i.id,
           name: i.nombre,
@@ -110,14 +122,15 @@ const AsistenteVoz = ({
   };
 
   const chatRef = useRef(null);
-  const saludadoRef = useRef(false);
 
+  /*
+   * Al abrir, el asistente NO habla solo: espera a que la persona toque el
+   * micrófono. Antes soltaba un saludo hablado apenas se abría, que sorprendía
+   * y a veces hablaba encima de quien ya sabía qué pedir. La instrucción de qué
+   * hacer ya está escrita grande en la pantalla.
+   */
   useEffect(() => {
-    if (saludadoRef.current) return; // evita el saludo doble en desarrollo (StrictMode)
-    saludadoRef.current = true;
     toast.dismiss();
-    hablar('Hola, soy tu asistente. Toca el micrófono y dime qué quieres llevar. Por ejemplo: quiero una manzana.');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-scroll del chat al último mensaje.
@@ -143,7 +156,7 @@ const AsistenteVoz = ({
     : hablando ? '#a7f3d0'
     : !activo ? '#e5e7eb'
     : escuchando ? '#fca5a5' : '#fcd34d';
-  const micColor = escuchando ? '#dc2626' : activo ? '#d97706' : '#B47C4D';
+  const micColor = escuchando ? '#dc2626' : activo ? '#d97706' : 'var(--marca-600)';
 
   const pill = { backgroundColor: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)' };
 
@@ -154,7 +167,7 @@ const AsistenteVoz = ({
         onClick={() => setMinimizado(false)}
         aria-label="Volver a la pantalla del asistente"
         className="fixed bottom-6 right-6 flex items-center gap-3 pl-4 pr-5 py-3 rounded-full shadow-2xl text-white"
-        style={{ backgroundColor: '#B47C4D', zIndex: 9998 }}
+        style={{ backgroundColor: 'var(--marca-600)', zIndex: 9998 }}
         initial={{ opacity: 0, y: reduce ? 0 : 12, scale: reduce ? 1 : 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2, ease: EASE_OUT }}
@@ -169,7 +182,7 @@ const AsistenteVoz = ({
           Asistente {escuchando ? 'escuchando…' : 'activo'}
         </span>
         {items > 0 && (
-          <span className="min-w-[24px] h-6 px-1.5 rounded-full bg-white text-[#B47C4D] text-xs font-bold flex items-center justify-center">
+          <span className="min-w-[24px] h-6 px-1.5 rounded-full bg-white text-xs font-bold flex items-center justify-center" style={{ color: 'var(--marca-600)' }}>
             {items}
           </span>
         )}
@@ -184,7 +197,7 @@ const AsistenteVoz = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2, ease: EASE_OUT }}
+      transition={{ duration: 0.14, ease: EASE_OUT }}
     >
       {/*
         ── Vincular la compra con su cuenta ──
@@ -222,7 +235,7 @@ const AsistenteVoz = ({
             </p>
             {/* El código escrito es el plan B: si la cámara no agarra, se
                 puede teclear en el teléfono. */}
-            <p className="text-[13px] font-black tracking-[3px]" style={{ color: '#B46C30' }}>
+            <p className="text-[13px] font-black tracking-[3px]" style={{ color: 'var(--marca-600)' }}>
               {kiosco.codigo}
             </p>
           </div>
@@ -271,9 +284,9 @@ const AsistenteVoz = ({
 
       <motion.div
         className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 text-center max-w-3xl mx-auto w-full overflow-y-auto pt-20"
-        initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+        initial={{ opacity: 0, y: reduce ? 0 : 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.05 }}
+        transition={{ duration: 0.18, ease: EASE_OUT }}
       >
         <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Asistente de voz</h1>
         <p className="text-base md:text-lg text-gray-300 mb-6">
@@ -314,12 +327,9 @@ const AsistenteVoz = ({
 
         <p className="mt-4 text-base md:text-lg font-semibold" style={{ color: estadoColor }}>{estadoTexto}</p>
 
-        {/* Velocidad y voz, uno al lado del otro */}
+        {/* Selección de voz (la velocidad se quitó: quedaba en Normal, que sirve
+            para todos, y un control menos es una pantalla más simple). */}
         <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-          <button onClick={cambiarVelocidad} className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm shadow" style={pill}>
-            <Gauge className="w-4 h-4" /> Velocidad: {velLabel}
-          </button>
-
           {/*
             Quién habla. Solo aparece si el sistema tiene más de una voz en
             español: con una sola, un selector de un elemento es un botón que
@@ -368,7 +378,7 @@ const AsistenteVoz = ({
                   <div
                     className="max-w-[80%] px-3.5 py-2 rounded-2xl text-sm text-left text-white"
                     style={m.tipo === 'user'
-                      ? { backgroundColor: '#B47C4D' }
+                      ? { backgroundColor: 'var(--marca-600)' }
                       : { backgroundColor: 'rgba(255,255,255,0.10)' }}
                   >
                     {m.texto}
@@ -387,9 +397,9 @@ const AsistenteVoz = ({
       {/* Carrito abajo */}
       <motion.div
         className="w-full max-w-3xl mx-auto px-6 pb-6 flex-none"
-        initial={{ opacity: 0, y: reduce ? 0 : 16 }}
+        initial={{ opacity: 0, y: reduce ? 0 : 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.1 }}
+        transition={{ duration: 0.2, ease: EASE_OUT, delay: 0.05 }}
       >
         <div className="rounded-2xl p-4" style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center justify-between mb-2">

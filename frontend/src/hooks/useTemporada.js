@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAjustesCtx } from '../context/AjustesContext';
 import { temaActivo, aplicarTema } from '../utils/temporadas';
+import { derivarMarca } from '../utils/colorMarca';
 
 /*
  * ============================================================
@@ -43,14 +44,25 @@ export const useTemporada = () => {
     [ajustes.temporada]
   );
 
+  /*
+   * El color base de la marca que eligió el dueño. Es el tema de todos los días:
+   * se aplica siempre en la tienda, y una temporada activa lo pisa mientras dura.
+   * Sin color elegido, queda null y manda el café que declara index.css.
+   */
+  const temaBase = useMemo(() => {
+    const colores = derivarMarca(ajustes.colorMarca);
+    return colores ? { clave: 'personalizado', colores } : null;
+  }, [ajustes.colorMarca]);
+
   const enPanel = esPanel(pathname);
 
   useEffect(() => {
-    aplicarTema(enPanel ? null : tema);
+    // Prioridad: temporada (temporal) > color base del dueño > café de fábrica.
+    aplicarTema(enPanel ? null : (tema || temaBase));
     // Al desmontar se despinta: si no, el tema quedaría puesto sobre cualquier
     // pantalla que se monte después sin pasar por aquí.
     return () => aplicarTema(null);
-  }, [tema, enPanel]);
+  }, [tema, temaBase, enPanel]);
 
   /*
    * La decoración (la cinta y las figuras cayendo) se puede apagar dejando

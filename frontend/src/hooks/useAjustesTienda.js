@@ -33,6 +33,20 @@ const DE_RESPALDO = {
   logoUrl: '',
   lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
+  colorMarca: '', // vacío = el café de siempre que declara index.css
+  costoEnvio: 4.78,
+  // Envío por distancia (ver utils/envio.js). Sin ubicación de la tienda, el
+  // cálculo cae al costoEnvio plano de arriba, así que estos defaults dejan la
+  // tienda funcionando igual que siempre hasta que el dueño los configure.
+  ubicacionTienda: { lat: null, lng: null },
+  ubicacionTiendaTexto: '',
+  envioBase: 1,
+  envioPorKm: 0.5,
+  zonasEnvio: [],
+  // Tarifa de servicio (cobro opcional de la casa). Apagada por defecto.
+  servicioActivo: false,
+  servicioTipo: 'fijo', // 'fijo' | 'porcentaje'
+  servicioValor: 0,
   secciones: [],
   temporada: { modo: 'automatico', tema: '' },
 };

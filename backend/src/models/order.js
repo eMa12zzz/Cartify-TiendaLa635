@@ -35,6 +35,12 @@ const orderSchema = new Schema({
     subtotal: { type: Number },            // antes del descuento por puntos
     discount: { type: Number, default: 0 }, // descuento aplicado al canjear puntos
     pointsRedeemed: { type: Number, default: 0 },
+    // Costo del envío cobrado en este pedido (0 si es retiro en el local). Se
+    // saca de los ajustes de la tienda al momento de comprar, no del navegador.
+    shippingCost: { type: Number, default: 0 },
+    // Tarifa de servicio cobrada en este pedido (0 si la tienda no la tiene
+    // activa). Como el envío, sale de los ajustes al comprar, no del navegador.
+    serviceFee: { type: Number, default: 0 },
     total: { type: Number, required: true },
     status: {
         type: String,
@@ -77,6 +83,19 @@ const orderSchema = new Schema({
     preparedBy: { type: String },        // nombre de quien lo preparó
     deliveredAt: { type: Date },
     deliveredBy: { type: String },
+
+    /*
+     * Valoración del SERVICIO de entrega (no del producto).
+     *
+     * La deja el cliente cuando su pedido a DOMICILIO ya fue entregado: qué tal
+     * llegó, a tiempo, el trato del repartidor. Va embebida porque es 1:1 con el
+     * pedido —una entrega, una valoración— y así no hace falta otra colección.
+     */
+    serviceRating: {
+        rating:  { type: Number, min: 1, max: 5 },
+        comment: { type: String, maxlength: 500, default: '' },
+        ratedAt: { type: Date },
+    },
 
     /*
      * Dónde va el repartidor, en vivo.

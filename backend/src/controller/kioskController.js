@@ -109,7 +109,15 @@ kioskController.estadoSesion = async (req, res) => {
  */
 kioskController.vincularSesion = async (req, res) => {
     try {
-        const { clientId } = req.body;
+        /*
+         * Quién se vincula lo dice la SESIÓN, no el cuerpo de la petición.
+         *
+         * Antes venía en el body: con eso, cualquiera podía atar el kiosco a la
+         * cuenta de otra persona —basta con saber su id— y dejarle la compra
+         * cargada. Ahora sale de la cookie de quien está escaneando, que es
+         * justamente la persona parada frente al kiosco con su teléfono.
+         */
+        const clientId = req.usuario.id;
         const codigo = (req.params.codigo || "").toUpperCase();
 
         if (!clientId) {

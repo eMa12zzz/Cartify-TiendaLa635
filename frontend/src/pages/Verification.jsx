@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import styled from 'styled-components';
 import toast from 'react-hot-toast';
 import api from '../api/api';
+import { marcarRecienRegistrado } from '../utils/primerIngreso';
 
 const BROWN = 'var(--marca-600)';
 
@@ -209,6 +210,14 @@ const Verification = () => {
         });
         toast.success('¡Registro exitoso! Ya puedes iniciar sesión.');
         localStorage.removeItem('verificationFlow');
+        /*
+         * Este es EL punto donde consta que la persona es nueva: acaba de
+         * verificar el código de su registro. En ningún otro lugar del sistema
+         * se sabe con esta certeza. La marca hace que el mapa de bienvenida le
+         * salga en el login que viene a continuación —y solo en ese—.
+         * Ver utils/primerIngreso.js.
+         */
+        marcarRecienRegistrado();
         navigate('/iniciar-sesion');
       } 
       else if (flow === 'recovery') {

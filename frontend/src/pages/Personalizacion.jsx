@@ -1,8 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Palette, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Lock, Check } from 'lucide-react';
+import { Palette, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Lock, Check, Store as StoreIcon, Truck, LayoutGrid } from 'lucide-react';
 import { useAjustesCtx } from '../context/AjustesContext';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
+import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
+import ColorMarca from '../components/Admin/ColorMarca';
+import ServicioTarifa from '../components/Admin/ServicioTarifa';
 import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo } from '../utils/temporadas';
+
+/*
+ * Los apartados de la izquierda. Antes todo era un scroll largo de tarjetas que
+ * dejaba media pantalla vacía; ahora cada cosa vive en su pestaña.
+ */
+const SECCIONES = [
+  { id: 'identidad', label: 'Identidad', Icono: StoreIcon },
+  { id: 'apariencia', label: 'Apariencia', Icono: Palette },
+  { id: 'cobros', label: 'Envío y cobros', Icono: Truck },
+  { id: 'portada', label: 'Portada', Icono: LayoutGrid },
+];
 
 /*
  * ============================================================
@@ -34,8 +48,11 @@ const Personalizacion = () => {
   } = useAjustesCtx();
 
   const [form, setForm] = useState({
-    nombreLinea1: '', nombreLinea2: '', lema: '', direccion: '',
+    nombreLinea1: '', nombreLinea2: '', lema: '', direccion: '', costoEnvio: '',
   });
+
+  // Qué apartado se está viendo (navegación lateral).
+  const [seccion, setSeccion] = useState('identidad');
 
   useEffect(() => {
     setForm({
@@ -43,12 +60,18 @@ const Personalizacion = () => {
       nombreLinea2: ajustes.nombreLinea2 || '',
       lema: ajustes.lema || '',
       direccion: ajustes.direccion || '',
+      // Se guarda como texto en el formulario para poder escribir con comodidad;
+      // se convierte a número al enviar.
+      costoEnvio: ajustes.costoEnvio != null ? String(ajustes.costoEnvio) : '',
     });
-  }, [ajustes.nombreLinea1, ajustes.nombreLinea2, ajustes.lema, ajustes.direccion]);
+  }, [ajustes.nombreLinea1, ajustes.nombreLinea2, ajustes.lema, ajustes.direccion, ajustes.costoEnvio]);
 
   const onSubmit = (e) => {
     e.preventDefault();
-    guardar(form);
+    // El costo de envío viaja como número; si quedó vacío o inválido, se
+    // manda 0 en vez de NaN (que el backend rechazaría).
+    const costoEnvio = Number(form.costoEnvio);
+    guardar({ ...form, costoEnvio: Number.isFinite(costoEnvio) && costoEnvio >= 0 ? costoEnvio : 0 });
   };
 
   const inputStyle = {
@@ -82,7 +105,7 @@ const Personalizacion = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-6 w-full pb-8 max-w-3xl">
+    <div className="flex flex-col gap-6 w-full pb-8 max-w-6xl">
       <div className="flex items-center gap-3">
         <Palette className="w-8 h-8" style={{ color: 'var(--theme-accent)' }} />
         <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>
@@ -95,8 +118,28 @@ const Personalizacion = () => {
           Cargando los ajustes de la tienda…
         </p>
       ) : (
-        <>
-          {/* ── Identidad ── */}
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          {/* Navegación lateral: cada apartado en su pestaña, sin scroll eterno */}
+          <nav className="flex md:flex-col gap-1 md:w-52 flex-none overflow-x-auto">
+            {SECCIONES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSeccion(s.id)}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-left whitespace-nowrap transition-colors flex-none"
+                style={{
+                  backgroundColor: seccion === s.id ? 'var(--theme-primary-light)' : 'transparent',
+                  color: seccion === s.id ? 'var(--theme-primary)' : 'var(--theme-text-secondary)',
+                }}
+              >
+                <s.Icono className="w-4 h-4 flex-none" /> {s.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Contenido del apartado elegido */}
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
+            {seccion === 'identidad' && (
           <form
             onSubmit={onSubmit}
             className="p-6 rounded-2xl shadow-sm border space-y-6"
@@ -226,6 +269,29 @@ const Personalizacion = () => {
               />
             </div>
 
+            {/* Costo de envío (respaldo plano) */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                Tarifa de envío de respaldo
+              </label>
+              <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                Lo que se cobra cuando no se puede medir la distancia (sin ubicación de la tienda
+                fijada, o una dirección sin punto en el mapa). El cálculo normal por km y por zona
+                se configura más abajo, en “Envío por distancia”.
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold" style={{ color: 'var(--theme-text-secondary)' }}>$</span>
+                <input
+                  type="number" min="0" step="0.01" inputMode="decimal"
+                  value={form.costoEnvio}
+                  onChange={(e) => setForm({ ...form, costoEnvio: e.target.value })}
+                  placeholder="4.78"
+                  className="w-40 px-4 py-2.5 rounded-xl border outline-none"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
             <button
               type="submit" disabled={guardando}
               className="px-8 py-2.5 rounded-full font-bold shadow-sm transition-colors disabled:opacity-60"
@@ -234,8 +300,20 @@ const Personalizacion = () => {
               {guardando ? 'Guardando…' : 'Guardar identidad'}
             </button>
           </form>
+            )}
 
-          {/* ── Portada ── */}
+            {/* ── Apariencia: color de la marca (la Temporada va más abajo) ── */}
+            {seccion === 'apariencia' && <ColorMarca />}
+
+            {/* ── Envío y cobros ── */}
+            {seccion === 'cobros' && (
+              <>
+                <ConfiguracionEnvio />
+                <ServicioTarifa />
+              </>
+            )}
+
+            {seccion === 'portada' && (
           <div className="p-6 rounded-2xl shadow-sm border" style={tarjeta}>
             <div className="mb-4">
               <h2 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary)' }}>
@@ -337,8 +415,10 @@ const Personalizacion = () => {
               quitar: es la tienda en sí, no una fila de adorno.
             </p>
           </div>
+            )}
 
-          {/* ── Temporada ── */}
+            {/* ── Apariencia (2.ª parte): Temporada ── */}
+            {seccion === 'apariencia' && (
           <div className="p-6 rounded-2xl shadow-sm border" style={tarjeta}>
             <div className="mb-4">
               <h2 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary)' }}>
@@ -501,7 +581,9 @@ const Personalizacion = () => {
               </button>
             </div>
           </div>
-        </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

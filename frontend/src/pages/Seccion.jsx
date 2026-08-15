@@ -10,6 +10,7 @@ import ProductCard from '../components/Store/ProductCard';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
 import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
+import EsqueletoProductos from '../components/Store/EsqueletoProductos';
 
 /*
  * ============================================================
@@ -194,7 +195,15 @@ const Seccion = () => {
           error que se va a desmentir solo en medio segundo es peor que esperar.
         */}
         {cargando ? (
-          <Cuenta>Cargando…</Cuenta>
+          /*
+            Antes aquí decía "Cargando…" a secas: una línea de texto donde
+            después aparece una cuadrícula entera, así que al llegar los datos
+            todo se recorría de golpe. Los esqueletos ocupan desde el principio
+            el lugar exacto de las tarjetas.
+          */
+          <Cuadricula>
+            <EsqueletoProductos cuantos={10} />
+          </Cuadricula>
         ) : !seccion ? (
           <Vacio>
             <PackageOpen size={44} strokeWidth={1.5} />

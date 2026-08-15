@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, Trash2, Settings2 } from 'lucide-react';
+import { X, AlertTriangle, Trash2, Settings2, CalendarPlus, QrCode } from 'lucide-react';
+import toast from 'react-hot-toast';
+import QRCodeLib from 'qrcode';
 import { useCreditoProveedor } from '../../hooks/useCreditoProveedor';
 import { bloquearTeclasNumero } from '../../utils/validaciones';
 import { modalTransition, modalInitial, modalAnimate } from '../../utils/motion';
+import { descargarEventoIcs, urlAgregarCalendario } from '../../utils/calendario';
 
 /*
  * CuentaProveedorModal — el estado de cuenta con un proveedor.
@@ -22,11 +25,52 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
   const [form, setForm] = useState({ type: 'compra', amount: '', date: hoyISO(), reference: '', note: '' });
   const [editandoLimite, setEditandoLimite] = useState(false);
   const [limite, setLimite] = useState({ creditLimit: '', creditDays: '' });
+  // El QR abierto para escanear con el teléfono: { titulo, dataUrl } o null.
+  const [qr, setQr] = useState(null);
 
   const onRegistrar = async (e) => {
     e.preventDefault();
     if (await registrar(form)) {
       setForm({ type: form.type, amount: '', date: hoyISO(), reference: '', note: '' });
+    }
+  };
+
+  /*
+   * Convierte un crédito pendiente en un evento .ics con recordatorio, para que
+   * el vencimiento le caiga al calendario del teléfono (y el calendario le
+   * avise). No se puede escribir directo en el calendario del sistema desde una
+   * web; ver utils/calendario.js.
+   */
+  const agregarAlCalendario = (p) => {
+    const nombre = cuenta?.supplier?.name || proveedor?.name || 'proveedor';
+    descargarEventoIcs({
+      titulo: `Pagar a ${nombre}: ${dinero(p.pendiente)}`,
+      descripcion: `Crédito con ${nombre}. Factura ${p.reference || 's/n'}, ${dinero(p.pendiente)}. Vence el ${fecha(p.dueDate)}.`,
+      fecha: p.dueDate,
+      diasAntes: 1,
+      uid: String(p._id),
+      ahora: new Date(),
+    });
+    toast.success('Descargamos el recordatorio. Ábralo para agregarlo a su calendario.');
+  };
+
+  /*
+   * Muestra un QR que lleva a "agregar al calendario". Sirve cuando el dueño
+   * está en la computadora: escanea con el teléfono y el evento cae allá.
+   */
+  const mostrarQR = async (p) => {
+    const nombre = cuenta?.supplier?.name || proveedor?.name || 'proveedor';
+    const titulo = `Pagar a ${nombre}: ${dinero(p.pendiente)}`;
+    const url = urlAgregarCalendario({
+      titulo,
+      descripcion: `Crédito con ${nombre}. Factura ${p.reference || 's/n'}. Vence el ${fecha(p.dueDate)}.`,
+      fecha: p.dueDate,
+    });
+    try {
+      const dataUrl = await QRCodeLib.toDataURL(url, { width: 240, margin: 1 });
+      setQr({ titulo, dataUrl });
+    } catch {
+      toast.error('No se pudo generar el QR');
     }
   };
 
@@ -208,8 +252,31 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                               {p.pagado > 0 && ` · abonado ${dinero(p.pagado)}`}
                             </div>
                           </div>
-                          <div className={`font-bold ${p.vencida ? 'text-red-600' : 'text-gray-800'}`}>
-                            {dinero(p.pendiente)}
+                          <div className="flex items-center gap-2">
+                            {/* Solo tiene sentido recordar un vencimiento que aún no pasó. */}
+                            {p.dueDate && !p.vencida && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => agregarAlCalendario(p)}
+                                  title="Descargar el recordatorio (.ics) para su calendario"
+                                  className="press flex items-center gap-1 text-xs font-semibold text-[#B47C4D] hover:text-[#9C6026] border border-[#E4D5C3] hover:border-[#B47C4D] rounded-full px-2.5 py-1 transition-colors"
+                                >
+                                  <CalendarPlus size={13} /> Calendario
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => mostrarQR(p)}
+                                  title="Mostrar un QR para agregarlo desde el teléfono"
+                                  className="press flex items-center gap-1 text-xs font-semibold text-[#B47C4D] hover:text-[#9C6026] border border-[#E4D5C3] hover:border-[#B47C4D] rounded-full px-2.5 py-1 transition-colors"
+                                >
+                                  <QrCode size={13} /> QR
+                                </button>
+                              </>
+                            )}
+                            <span className={`font-bold ${p.vencida ? 'text-red-600' : 'text-gray-800'}`}>
+                              {dinero(p.pendiente)}
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -246,6 +313,34 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
               )}
             </div>
           </motion.div>
+        </div>
+      )}
+
+      {/* QR para agregar el recordatorio desde el teléfono */}
+      {qr && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setQr(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-xs w-full text-center shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-gray-800 mb-1">Escanee con su teléfono</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Se abrirá para agregar el recordatorio al calendario de su teléfono.
+            </p>
+            <img src={qr.dataUrl} alt="Código QR del recordatorio" className="w-56 h-56 mx-auto rounded-lg" />
+            <p className="text-xs text-gray-600 mt-3 font-medium">{qr.titulo}</p>
+            <button
+              type="button"
+              onClick={() => setQr(null)}
+              className="press mt-4 w-full bg-[#B47C4D] hover:bg-[#9C6026] text-white text-sm font-medium py-2 rounded-full"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       )}
     </AnimatePresence>

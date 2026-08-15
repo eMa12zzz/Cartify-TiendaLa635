@@ -25,3 +25,6 @@ Thumbs.db
 .idea/
 
 .claude
+
+# Herramientas de asistencia (Impeccable): configuración local, no del proyecto.
+.impeccable/
