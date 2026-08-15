@@ -260,11 +260,14 @@ const estilos = StyleSheet.create({
   },
   paso: {
     flex: 1,
+    alignItems: 'center',
     gap: 7,
   },
   pasoMarca: {
+    width: '100%',
     height: 12,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   punto: {
     width: 12,
@@ -274,16 +277,20 @@ const estilos = StyleSheet.create({
   puntoApagado: {
     backgroundColor: COLORES.borde,
   },
+  // Va de la mitad de ESTE punto a la mitad del siguiente: empieza en el centro
+  // (left: 50%) y mide un paso completo (width: 100%), así el otro extremo cae
+  // justo en el centro del próximo paso, sin importar cuánto mida el texto.
   raya: {
     position: 'absolute',
-    left: 12,
-    right: 0,
+    left: '50%',
+    width: '100%',
     height: 2,
     backgroundColor: COLORES.linea,
   },
   pasoTexto: {
     fontSize: 12,
     color: COLORES.textoTenue,
+    textAlign: 'center',
   },
   tarjeta: {
     alignSelf: 'stretch',

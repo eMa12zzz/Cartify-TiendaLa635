@@ -73,15 +73,20 @@ const RESPALDO_POR_ESTADO = {
 export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras } = {}) => {
   let respuesta;
 
+  // Un FormData (la foto de perfil) va tal cual: ni se convierte a JSON ni se
+  // le pone Content-Type a mano, que si no fetch no agrega el boundary del
+  // multipart y el backend no puede separar los campos.
+  const esFormData = cuerpo instanceof FormData;
+
   try {
     respuesta = await fetch(`${URL_API}${ruta}`, {
       method: metodo,
       headers: {
         Accept: 'application/json',
-        ...(cuerpo ? { 'Content-Type': 'application/json' } : {}),
+        ...(cuerpo && !esFormData ? { 'Content-Type': 'application/json' } : {}),
         ...cabeceras,
       },
-      body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+      body: esFormData ? cuerpo : cuerpo ? JSON.stringify(cuerpo) : undefined,
     });
   } catch {
     throw new ErrorApi(
