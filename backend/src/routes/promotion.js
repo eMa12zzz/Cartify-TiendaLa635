@@ -2,7 +2,7 @@ import express from 'express';
 import promotionController from '../controller/promotionController.js';
 import upload from '../utils/cloudinaryConfig.js';
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
@@ -10,10 +10,10 @@ const router = express.Router();
 
 router.route("/")
     .get(promotionController.getPromotions)
-    .post(soloPersonal, upload.single("image"), promotionController.insertPromotion);
+    .post(soloAdmin, upload.single("image"), promotionController.insertPromotion);
 
 router.route("/:id")
-    .put(soloPersonal, upload.single("image"), promotionController.updatePromotion)
-    .delete(soloPersonal, promotionController.deletePromotion);
+    .put(soloAdmin, upload.single("image"), promotionController.updatePromotion)
+    .delete(soloAdmin, promotionController.deletePromotion);
 
 export default router;

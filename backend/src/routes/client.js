@@ -1,7 +1,7 @@
 import express from "express";
 import clientController from "../controller/Clients/clientController.js";
 import upload from "../utils/cloudinaryConfig.js";
-import { soloPersonal, duenoOPersonal } from "../middlewares/validarSesion.js";
+import { soloAdmin, duenoOPersonal } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ const router = express.Router();
  */
 router
   .route("/")
-  .get(soloPersonal, clientController.getClients);
+  .get(soloAdmin, clientController.getClients);
 
 /*
  * Borrar una cuenta es irreversible y hasta hace poco estaba abierto: con un
@@ -30,7 +30,7 @@ router
   .route("/:id")
   .get(duenoOPersonal("id"), clientController.getClientById)
   .put(duenoOPersonal("id"), upload.single("image"), clientController.updateClient)
-  .delete(soloPersonal, clientController.deleteClient);
+  .delete(soloAdmin, clientController.deleteClient);
 
 // El cliente edita su propio perfil (datos básicos, y opcionalmente su foto).
 router
