@@ -23,6 +23,7 @@
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { borrar, guardar, leer, llave } from '../utils/almacen';
+import { establecerToken } from '../api/api';
 
 export const AuthContext = createContext(null);
 
@@ -49,6 +50,7 @@ export const AuthProvider = ({ children }) => {
         if (datos?.token) {
           setToken(datos.token);
           setUser(datos.user || null);
+          establecerToken(datos.token);
         }
       } catch {
         /*
@@ -71,6 +73,7 @@ export const AuthProvider = ({ children }) => {
     const nuevoUsuario = { type: tipoUsuario, ...datosUsuario };
     setToken(nuevoToken);
     setUser(nuevoUsuario);
+    establecerToken(nuevoToken);
     /*
      * Sin await: la pantalla no tiene por qué esperar al disco para dejar
      * entrar. Si la escritura falla —almacén lleno, dispositivo sin caja
@@ -83,6 +86,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
+    establecerToken(null);
     borrar(LLAVE_SESION);
   }, []);
 
