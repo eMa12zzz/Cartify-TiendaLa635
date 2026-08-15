@@ -1,6 +1,6 @@
 import orderModel from "../models/order.js";
 import productModel from "../models/product.js";
-import shoppingModel from "../models/shoppings.js";
+import supplierMovementModel from "../models/supplierMovement.js";
 import clientModel from "../models/client.js";
 
 /*
@@ -47,6 +47,11 @@ const filtroStockBajo = {
 /*
  * Serie de la gráfica (ventas vs compras). Vive aparte porque el front la pide
  * sola cuando cambias de Semana/Mes/Año — así no recarga todo el dashboard.
+ *
+ * "Compras" salía SIEMPRE en cero: la consulta apuntaba a `Shoppings`, una
+ * colección que nadie llena — registrar una compra a un proveedor (Suppliers
+ * → estado de cuenta) crea un `SupplierMovement` con type:'compra', no un
+ * `Shopping`. Ahora la gráfica lee de donde de verdad se guardan las compras.
  */
 const construirSerie = async (periodo, desde) => {
   const porDia = periodo === "semana";
@@ -58,9 +63,9 @@ const construirSerie = async (periodo, desde) => {
       { $group: { _id: { $dateToString: { format: formato, date: "$createdAt" } }, total: { $sum: "$total" } } },
       { $sort: { _id: 1 } },
     ]),
-    shoppingModel.aggregate([
-      { $match: { date: { $gte: desde } } },
-      { $group: { _id: { $dateToString: { format: formato, date: "$date" } }, total: { $sum: "$total" } } },
+    supplierMovementModel.aggregate([
+      { $match: { type: "compra", date: { $gte: desde } } },
+      { $group: { _id: { $dateToString: { format: formato, date: "$date" } }, total: { $sum: "$amount" } } },
       { $sort: { _id: 1 } },
     ]),
   ]);
@@ -186,8 +191,8 @@ dashboardController.getSummary = async (req, res) => {
         .limit(50),
 
       // ── Trabajo pendiente ──
-      orderModel.countDocuments({ status: { $in: ["pagado", "preparando"] } }),
-      orderModel.countDocuments({ channel: "impresion", status: { $in: ["pagado", "preparando"] } }),
+      orderModel.countDocuments({ status: { $in: ["pagado", "preparando", "en_camino"] } }),
+      orderModel.countDocuments({ channel: "impresion", status: { $in: ["pagado", "preparando", "en_camino"] } }),
 
       // ── Clientes nuevos esta semana ──
       clientModel.countDocuments({ createdAt: { $gte: hace7 } }),
@@ -201,57 +206,42 @@ dashboardController.getSummary = async (req, res) => {
       /*
        * ── Productos más vendidos ──
        *
-       * Un producto que se borró del inventario deja su pedido huérfano: el
-       * $lookup no encuentra nada y antes la fila salía en blanco, con guiones,
-       * $0.00 y "Quedan 0". Esa venta ocurrió de verdad, así que nos apoyamos
-       * en la foto que el pedido guardó (items.name / items.price) para poder
-       * nombrarla, y solo la marcamos como eliminada.
+       * Solo del catálogo ACTUAL: un producto borrado no vuelve a aparecer
+       * aquí, así el top-8 son 8 productos reales, no un hueco ocupado por
+       * "Clarence (eliminado)" desplazando a uno que sí se puede reponer.
        */
       orderModel.aggregate([
         { $match: noCancelado },
         { $unwind: "$items" },
         { $match: { "items.productId": { $ne: null } } },
-        // Del más viejo al más nuevo, para que los $last de abajo se queden con
-        // la foto MÁS RECIENTE del nombre y del precio con que se vendió.
-        { $sort: { createdAt: 1 } },
         {
           $group: {
             _id: "$items.productId",
             vendidos: { $sum: "$items.amount" },
             ingreso: { $sum: { $multiply: [numero("$items.price"), numero("$items.amount")] } },
-            nombreVendido: { $last: "$items.name" },
-            precioVendido: { $last: "$items.price" },
           },
         },
         { $sort: { vendidos: -1 } },
         /*
-         * Pedimos de más y recortamos a 8 hasta el final. Si cortáramos aquí,
-         * cada fila que después resultara imposible de nombrar dejaría un hueco
-         * y la tabla se quedaría en 6 o 7 sin explicación visible.
+         * Pedimos de más y recortamos a 8 hasta el final: algunos de los
+         * primeros pueden caer en el $match de abajo por ser de un producto
+         * ya borrado, y cortar antes dejaría la tabla en menos de 8 sin razón
+         * visible.
          */
         { $limit: 24 },
         { $lookup: { from: "Products", localField: "_id", foreignField: "_id", as: "p" } },
-        { $unwind: { path: "$p", preserveNullAndEmptyArrays: true } },
+        { $unwind: "$p" },
         { $lookup: { from: "ProductTypes", localField: "p.typeId", foreignField: "_id", as: "t" } },
         { $unwind: { path: "$t", preserveNullAndEmptyArrays: true } },
         {
           $project: {
             vendidos: 1, ingreso: 1,
-            nombre: { $ifNull: ["$p.name", "$nombreVendido"] },
-            // Si el $lookup no trajo producto, es que ya no está en el catálogo.
-            eliminado: { $eq: [{ $type: "$p" }, "missing"] },
+            nombre: "$p.name",
             stock: "$p.stock", maxQuantity: "$p.maxQuantity",
-            // Del eliminado no hay precio de lista; queda el que se cobró.
-            precio: { $ifNull: ["$p.salePrice", "$precioVendido"] },
+            precio: "$p.salePrice",
             categoria: "$t.type",
           },
         },
-        /*
-         * Pedidos viejos que ni nombre guardaron no tienen cómo mostrarse. Una
-         * fila de guiones no informa nada y ensucia el único lugar donde el
-         * encargado mira qué se vende, así que no se pinta.
-         */
-        { $match: { nombre: { $nin: [null, ""] } } },
         { $limit: 8 },
       ]),
 

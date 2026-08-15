@@ -30,7 +30,7 @@ export const useOrders = () => {
       await orderService.updateStatus(id, status);
       // Actualización optimista: reflejamos el cambio sin recargar todo.
       setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, status } : o)));
-      const etiquetas = { preparando: 'En preparación', entregado: 'Entregado', cancelado: 'Cancelado' };
+      const etiquetas = { preparando: 'En preparación', en_camino: 'En camino', entregado: 'Entregado', cancelado: 'Cancelado' };
       toast.success(`Pedido: ${etiquetas[status] || status}`);
     } catch (error) {
       console.error('Error cambiando estado:', error);

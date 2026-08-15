@@ -29,7 +29,21 @@ import { derivarMarca } from '../utils/colorMarca';
 const esPanel = (pathname = '') =>
   /^\/(admin|dashboard|inventario|pedidos|modulos|marcas|empleados|clientes|proveedores|categorias|fidelidad|promociones|servicios-impresion|tarjetas|personalizacion|cuenta)(\/|$)/.test(pathname);
 
-export const useTemporada = () => {
+/*
+ * useTemaCalculado — SOLO datos: qué tema toca ahora mismo, sin tocar el DOM.
+ * Cualquier pantalla que necesite SABER la temporada (CintaTemporada) usa
+ * esto, no useTemporada — esa es de solo lectura, esta no pinta nada.
+ *
+ * Por qué la separación: antes CintaTemporada llamaba a useTemporada()
+ * directamente, así que había DOS efectos independientes pintando las mismas
+ * variables --marca-* sobre document.documentElement (este y el de
+ * PinturaDeTemporada, montada aparte y para siempre). CintaTemporada no vive
+ * en todas las pantallas —en /mi-cuenta no se monta—, así que al navegar ahí
+ * se desmontaba y su limpieza (aplicarTema(null)) borraba el color que
+ * PinturaDeTemporada ya había puesto, sin que nada lo repintara: la pantalla
+ * se quedaba con el café de fábrica de index.css en vez del color de marca.
+ */
+export const useTemaCalculado = () => {
   const { ajustes } = useAjustesCtx();
   const { pathname } = useLocation();
 
@@ -56,14 +70,6 @@ export const useTemporada = () => {
 
   const enPanel = esPanel(pathname);
 
-  useEffect(() => {
-    // Prioridad: temporada (temporal) > color base del dueño > café de fábrica.
-    aplicarTema(enPanel ? null : (tema || temaBase));
-    // Al desmontar se despinta: si no, el tema quedaría puesto sobre cualquier
-    // pantalla que se monte después sin pasar por aquí.
-    return () => aplicarTema(null);
-  }, [tema, temaBase, enPanel]);
-
   /*
    * La decoración (la cinta y las figuras cayendo) se puede apagar dejando
    * solo los colores. Va encendida por defecto: quien elige poner Navidad
@@ -73,7 +79,30 @@ export const useTemporada = () => {
 
   return {
     tema,
+    temaBase,
+    enPanel,
     activo: !enPanel && !!tema,
     conDecoracion,
   };
+};
+
+/*
+ * useTemporada — dueño ÚNICO del efecto que pinta document.documentElement.
+ * Se llama UNA sola vez, desde PinturaDeTemporada (montada fuera de las
+ * rutas, para toda la vida de la app). Cualquier otro lugar que solo
+ * necesite SABER la temporada usa useTemaCalculado — nunca este.
+ */
+export const useTemporada = () => {
+  const calculado = useTemaCalculado();
+  const { tema, temaBase, enPanel } = calculado;
+
+  useEffect(() => {
+    // Prioridad: temporada (temporal) > color base del dueño > café de fábrica.
+    aplicarTema(enPanel ? null : (tema || temaBase));
+    // Al desmontar se despinta: si no, el tema quedaría puesto sobre cualquier
+    // pantalla que se monte después sin pasar por aquí.
+    return () => aplicarTema(null);
+  }, [tema, temaBase, enPanel]);
+
+  return calculado;
 };

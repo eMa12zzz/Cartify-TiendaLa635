@@ -391,7 +391,13 @@ orderController.getOrders = async (req, res) => {
       .find(filter)
       .sort({ createdAt: -1 })
       .populate("clientId", "fullName email phoneNumber")
-      .populate("items.productId");
+      /*
+       * La marca va anidada: sin este segundo populate, items.productId.brandId
+       * llegaba como un ObjectId pelado y el panel no tenía forma de mostrar
+       * "Oreja" de cuál marca — con productos que se llaman igual entre sí
+       * (varias "Oreja", "Semita") era imposible saber cuál pidió el cliente.
+       */
+      .populate({ path: "items.productId", populate: { path: "brandId" } });
 
     return res.status(200).json(orders);
 
@@ -405,7 +411,7 @@ orderController.getOrders = async (req, res) => {
 orderController.updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ["pagado", "preparando", "entregado", "cancelado"];
+    const validStatuses = ["pagado", "preparando", "en_camino", "entregado", "cancelado"];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Estado inválido" });
@@ -429,6 +435,10 @@ orderController.updateOrderStatus = async (req, res) => {
     if (status === "preparando" && !actual.preparedAt) {
       cambios.preparedAt = new Date();
       cambios.preparedBy = quien || "";
+    }
+    if (status === "en_camino" && !actual.enCaminoAt) {
+      cambios.enCaminoAt = new Date();
+      cambios.enCaminoBy = quien || "";
     }
     if (status === "entregado" && !actual.deliveredAt) {
       cambios.deliveredAt = new Date();

@@ -648,6 +648,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                       maxMB={8}
                       valorInicial={promoData?.image || null}
                       onArchivo={onImagen}
+                      variante="panel"
                       ajuste="cover"
                       alto={100}
                       altoPreview={132}

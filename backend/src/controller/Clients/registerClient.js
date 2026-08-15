@@ -1,10 +1,10 @@
-import nodemailer from "nodemailer";
 import crypto from "crypto";
 import jsonwebtoken from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import clientModel from "../../models/client.js";
 import { config } from "../../../config.js";
 import { VERSION_TERMINOS, esVerdadero } from "../../utils/terminos.js";
+import { sendEmail } from "../../utils/sendMailMailjet.js";
 
 const registerClientController = {};
 
@@ -106,19 +106,11 @@ registerClientController.register = async (req, res) => {
     res.cookie("registrationCookie", token, { maxAge: 15 * 60 * 1000 });
 
     // 4. Enviar el correo con el código
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: config.email.user_email,
-        pass: config.email.user_password,
-      },
-    });
-
-    const mailOptions = {
-      from: `"Tienda la 635" <${config.email.user_email}>`,
-      to: email,
-      subject: "Verificación de cuenta — Tienda la 635",
-      html: `
+    // Alternativa en texto plano: un correo que es SOLO html es una de las
+    // señales que más pesan para que los filtros de spam lo dejen fuera de
+    // la bandeja principal. Mismo contenido, sin el diseño.
+    const textoPlano = `Gracias por registrarte en Tienda la 635. Tu código de verificación es: ${randomNumber}. Expira en 15 minutos. Si no solicitaste esto, ignora este correo.`;
+    const htmlVerificacion = `
         <!DOCTYPE html>
         <html lang="es">
         <head>
@@ -167,16 +159,16 @@ registerClientController.register = async (req, res) => {
           </table>
         </body>
         </html>
-      `,
-    };
+      `;
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log("error enviando correo de verificación: " + error);
-        return res.status(500).json({ message: "No se pudo enviar el correo" });
-      }
-      return res.status(200).json({ message: "Le enviamos el código a su correo" });
-    });
+    try {
+      await sendEmail(email, "Verificación de cuenta — Tienda la 635", htmlVerificacion, textoPlano);
+    } catch (mailError) {
+      console.log("error enviando correo de verificación: " + mailError.message);
+      return res.status(500).json({ message: "No se pudo enviar el correo" });
+    }
+
+    return res.status(200).json({ message: "Le enviamos el código a su correo" });
   } catch (error) {
     console.log("error register cliente: " + error);
     return res.status(500).json({ message: "Error interno del servidor" });

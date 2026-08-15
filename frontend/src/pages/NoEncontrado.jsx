@@ -2,6 +2,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Compass, ArrowLeft, Store, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useAjustesCtx } from '../context/AjustesContext';
+import { derivarMarca, hexAValido } from '../utils/colorMarca';
 
 /*
  * ============================================================
@@ -37,6 +39,15 @@ const Caja = styled.div`
   text-align: center;
 `;
 
+/*
+ * El color de marca real, inyectado por el propio componente (ver
+ * escalaMarca en NoEncontrado, más abajo) en vez de leído de --marca-* en
+ * :root — este 404 se puede pisar desde CUALQUIER dirección mal escrita,
+ * incluida una del panel (/inventario/algo-que-no-existe), y ahí
+ * useTemporada() apaga esa variable a propósito (ver SinPermiso.jsx, mismo
+ * caso). Con el valor puesto localmente en el envoltorio, estas reglas se
+ * quedan tal cual sin que la ruta les afecte.
+ */
 const Icono = styled.div`
   width: 74px;
   height: 74px;
@@ -129,13 +140,19 @@ const NoEncontrado = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, esCliente } = useAuth();
+  const { ajustes } = useAjustesCtx();
+  // El color de marca de VERDAD, sin depender de si esta ruta es del panel
+  // (ahí useTemporada() apaga --marca-* a propósito). Mismo respaldo café de
+  // fábrica que usa ColorMarca.jsx cuando nadie eligió un color todavía.
+  const baseMarca = hexAValido(ajustes.colorMarca) ? ajustes.colorMarca : '#B46C30';
+  const escalaMarca = derivarMarca(baseMarca) || {};
 
   // Personal = tiene sesión pero no es cliente. Su casa es el panel.
   const esPersonal = isAuthenticated && !esCliente;
   const casa = esPersonal ? '/dashboard' : '/';
 
   return (
-    <Fondo>
+    <Fondo style={escalaMarca}>
       <Caja>
         <Icono><Compass size={32} strokeWidth={1.7} /></Icono>
 

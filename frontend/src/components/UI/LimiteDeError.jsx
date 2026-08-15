@@ -25,20 +25,28 @@ import { AlertTriangle, RotateCcw, Store } from 'lucide-react';
  * ============================================================
  */
 
+/*
+ * Café clavado en el propio código, sin variables: este límite envuelve TODA
+ * la app —panel incluido— así que un color fijo se veía igual sin importar
+ * qué paleta tuviera puesta quien mira. --theme-* está siempre pintada por
+ * ThemeContext, en cualquier ruta; el hex que había antes queda de respaldo
+ * nada más para el caso extremo de que algo truene ANTES de que el proveedor
+ * del tema termine de montar.
+ */
 const Pantalla = styled.div`
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: #FBF6F0;
+  background: var(--theme-main-bg, #FBF6F0);
 `;
 
 const Tarjeta = styled.div`
   width: 100%;
   max-width: 520px;
-  background: #fff;
-  border: 1px solid #EDE7E0;
+  background: var(--theme-card-bg, #fff);
+  border: 1px solid var(--theme-card-border, #EDE7E0);
   border-radius: 20px;
   padding: 32px 28px;
   text-align: center;
@@ -50,8 +58,8 @@ const Icono = styled.div`
   height: 56px;
   margin: 0 auto 16px;
   border-radius: 50%;
-  background: #F3E7D8;
-  color: #B46C30;
+  background: var(--theme-primary-light, #F3E7D8);
+  color: var(--theme-primary, #B46C30);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -61,14 +69,14 @@ const Titulo = styled.h1`
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 800;
-  color: #2A1A0E;
+  color: var(--theme-text-primary, #2A1A0E);
 `;
 
 const Texto = styled.p`
   margin: 0 0 22px;
   font-size: 14px;
   line-height: 1.55;
-  color: #6B6560;
+  color: var(--theme-text-secondary, #6B6560);
 `;
 
 const Botones = styled.div`
@@ -91,9 +99,9 @@ const Boton = styled.button`
   transition: background-color var(--dur-press) var(--ease-out),
               transform var(--dur-press) var(--ease-out);
 
-  border: ${(p) => (p.$primario ? 'none' : '1.5px solid #B46C30')};
-  background: ${(p) => (p.$primario ? '#B46C30' : '#fff')};
-  color: ${(p) => (p.$primario ? '#fff' : '#B46C30')};
+  border: ${(p) => (p.$primario ? 'none' : '1.5px solid var(--theme-primary, #B46C30)')};
+  background: ${(p) => (p.$primario ? 'var(--theme-primary, #B46C30)' : 'var(--theme-card-bg, #fff)')};
+  color: ${(p) => (p.$primario ? 'var(--theme-button-text, #fff)' : 'var(--theme-primary, #B46C30)')};
 
   &:active { transform: scale(0.97); }
 

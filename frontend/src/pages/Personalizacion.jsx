@@ -6,6 +6,7 @@ import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
 import ColorMarca from '../components/Admin/ColorMarca';
 import ServicioTarifa from '../components/Admin/ServicioTarifa';
 import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo } from '../utils/temporadas';
+import { muestrasDeMarca } from '../utils/colorMarca';
 
 /*
  * Los apartados de la izquierda. Antes todo era un scroll largo de tarjetas que
@@ -97,6 +98,15 @@ const Personalizacion = () => {
   const temporada = ajustes.temporada || { modo: 'automatico', tema: '' };
   const porCalendario = temaDeLaFecha();
   const pintandoAhora = temaActivo(temporada);
+  /*
+   * Las muestras de "los colores de siempre" (sin temporada activa) salían
+   * en un café fijo, aunque la tienda ya tuviera otro color de marca
+   * configurado — esta vista previa decía una cosa y la tienda de verdad
+   * mostraba otra. Ahora salen del color de marca real; si nadie eligió
+   * uno todavía, muestrasDeMarca devuelve vacío y ahí sí cae al café de
+   * fábrica, que en ese caso es honesto: es el color de verdad.
+   */
+  const muestrasDeSiempre = muestrasDeMarca(ajustes.colorMarca);
 
   const MODOS = [
     { clave: 'automatico', nombre: 'Automático', ayuda: 'Lo elige la fecha, sin que nadie entre a cambiarlo.' },
@@ -165,6 +175,7 @@ const Personalizacion = () => {
                 maxMB={8}
                 valorInicial={ajustes.logoUrl || null}
                 onArchivo={(archivo) => { if (archivo) subirLogo(archivo); }}
+                variante="panel"
                 alto={140}
                 titulo="Arrastre el logo o haga clic para elegirlo"
                 ayuda="PNG con fondo transparente se ve mejor. Se muestra a 38 px de alto."
@@ -436,7 +447,7 @@ const Personalizacion = () => {
               style={{ backgroundColor: 'var(--theme-primary-light)' }}
             >
               <div className="flex gap-1 flex-none">
-                {(pintandoAhora?.muestras || ['#B46C30', '#D8A860', '#F3E7D8']).map((color) => (
+                {(pintandoAhora?.muestras || (muestrasDeSiempre.length ? muestrasDeSiempre : ['#B46C30', '#D8A860', '#F3E7D8'])).map((color) => (
                   <span
                     key={color}
                     className="w-5 h-5 rounded-full border"

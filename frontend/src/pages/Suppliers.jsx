@@ -201,9 +201,16 @@ const Suppliers = () => {
                 </td>
                 <td className="py-4 px-4 text-sm">
                   <div className="flex items-center gap-3">
+                    {/*
+                      Mismo padding/redondeo/sombreado de fondo que Editar y
+                      Eliminar (ver TableActions.jsx) — antes solo cambiaba de
+                      color al pasar el mouse, y ese cambio de color ni se
+                      notaba (ver el fix del hover en index.css), así que el
+                      botón parecía no reaccionar a nada.
+                    */}
                     <button
                       onClick={() => setCuentaAbierta(item)}
-                      className="press text-[#B47C4D] hover:text-[#9C6026] transition-colors"
+                      className="press p-1.5 rounded-md text-[#B47C4D] hover:text-[#9C6026] hover:bg-gray-100 transition-colors"
                       title="Estado de cuenta"
                     >
                       <Wallet size={17} />

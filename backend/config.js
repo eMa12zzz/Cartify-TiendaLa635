@@ -30,5 +30,17 @@ export const config = {
   // token de Google se emitió para ESTA app y no para otra.
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID
+  },
+  /*
+   * Mailjet: manda los correos por su API HTTPS en vez de SMTP (puertos
+   * 465/587), que Render bloquea en el plan gratis para frenar spam masivo.
+   * Con SMTP el correo funciona en local y se cae mudo en producción; con la
+   * API el mismo código sirve en los dos lados. Ver src/utils/sendMailMailjet.js.
+   */
+  mailjet: {
+    apiKey: process.env.apikeymail,
+    secretKey: process.env.apisecretmail,
+    fromEmail: process.env.MAILJET_FROM_EMAIL,
+    fromName: process.env.MAILJET_FROM_NAME
   }
 };

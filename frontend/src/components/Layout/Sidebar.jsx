@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
 import { DUR, EASE_OUT } from '../../utils/motion';
+import LogoMarca from '../UI/LogoMarca';
 
 /*
  * Sidebar — el menú del panel.
@@ -64,9 +65,8 @@ const Sidebar = ({ abierto = false, oculto = false, onCerrar, onTocarNavegacion 
       }}
     >
       <div className="p-6 flex items-start justify-between gap-3">
-        <h1 className="text-2xl font-bold leading-none tracking-tight" style={{ color: c.textPrimary }}>
-          Tienda<br />la 635
-        </h1>
+        {/* El nombre va DENTRO del sello — ver LogoMarca. */}
+        <LogoMarca height={60} />
         {/*
           El velo de atrás ya cierra el cajón, pero el pulgar viene subiendo
           desde la hamburguesa y espera encontrar la salida arriba. En pantalla

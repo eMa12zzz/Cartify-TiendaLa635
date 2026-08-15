@@ -319,10 +319,24 @@ input:disabled {
   
   /* Hover states */
   & .hover\:bg-\[\#9C6026\]:hover,
-  & .hover\:bg-\[\#A36B3D\]:hover { 
-    background-color: var(--theme-primary-hover) !important; 
-    color: var(--theme-button-text) !important; 
+  & .hover\:bg-\[\#A36B3D\]:hover {
+    background-color: var(--theme-primary-hover) !important;
+    color: var(--theme-button-text) !important;
   }
+
+  /*
+    Hover de TEXTO: el reposo (text-[#B47C4D] o text-gray-500, etc.) ya
+    queda fijo con !important arriba, así que el :hover:text-[#9C6026] de
+    Tailwind — sin !important — nunca ganaba la pelea y el botón se veía
+    "muerto" al pasar el mouse (Proveedores, Recuperar contraseña, login del
+    panel, estado de cuenta, Materiales de impresión). El pseudo-clase le da
+    más especificidad que el reposo, así que con !important esta sí gana.
+  */
+  & .hover\:text-\[\#9C6026\]:hover,
+  & .hover\:text-\[\#B47C4D\]:hover { color: var(--theme-primary-hover) !important; }
+
+  /* Mismo problema, con el borde: hover:border-[#B47C4D] sobre un reposo ya fijado. */
+  & .hover\:border-\[\#B47C4D\]:hover { border-color: var(--theme-primary-hover) !important; }
 
   /* Focus borders */
   & .focus\:border-\[\#B47C4D\]:focus,

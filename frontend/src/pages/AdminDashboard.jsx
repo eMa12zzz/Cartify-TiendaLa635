@@ -1,15 +1,69 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, X, AlertTriangle, Clock, ClipboardList, Printer, Star, Users } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Download, X, AlertTriangle, Clock, ClipboardList, Printer, Star, Users, Wallet } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import StatCard from '../components/UI/StatCard';
 import { useDashboard } from '../hooks/useDashboard';
+import { useResumenCredito } from '../hooks/useCreditoProveedor';
 import { useTheme } from '../context/ThemeContext';
+import { useAjustesCtx } from '../context/AjustesContext';
+import { derivarMarca, hexAValido } from '../utils/colorMarca';
+import { dashboardService } from '../api/dashboardService';
+import { productService } from '../api/productService';
 import { modalTransition, overlayTransition, modalInitial, modalAnimate } from '../utils/motion';
 import { formatearFecha } from '../utils/fechas';
+
+// "#RRGGBB" → [r, g, b] enteros, que es lo que pide jsPDF (setFillColor no
+// entiende variables CSS ni hex directo).
+const hexARgbArr = (hex) => {
+  const h = String(hex || '').replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+/*
+ * Encabezado compartido por los dos reportes (resumen e inventario). El
+ * nombre va como el logotipo de dos líneas que se usa en toda la tienda
+ * (MenuTienda.jsx, LoginAdmin.jsx): "Tienda" y "la 635" al MISMO tamaño y
+ * peso, pegaditas entre sí — antes "Tienda" salía chiquita como kicker y
+ * "la 635" enorme abajo, que no es como se ve la marca en ningún otro lado.
+ */
+const pintarEncabezado = (doc, colorFondo, subtitulo) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.setFillColor(...colorFondo);
+  doc.rect(0, 0, pageWidth, 38, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(20);
+  doc.text('Tienda', 14, 18);
+  doc.text('la 635', 14, 30);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text(subtitulo, pageWidth - 14, 16, { align: 'right' });
+  doc.text(`Fecha: ${new Date().toLocaleDateString('es-SV')}`, pageWidth - 14, 24, { align: 'right' });
+  return pageWidth;
+};
+
+// Numeración de página, la misma para cualquier reporte que se genere.
+const pintarPiePagina = (doc) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPaginas; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(
+      `Tienda la 635 · Página ${i} de ${totalPaginas}`,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 8,
+      { align: 'center' }
+    );
+  }
+};
 
 /*
  * AdminDashboard — el resumen operativo de la tienda, con datos REALES.
@@ -54,59 +108,75 @@ const Variacion = ({ valor, sufijo = 'vs ayer', esDinero = false }) => {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { data, grafica, loading, loadingGrafica, periodo, setPeriodo } = useDashboard();
+  const { totales: creditoTotales } = useResumenCredito();
   const { palette } = useTheme();
   const c = palette.colors; // las barras y acentos siguen la paleta activa
-  const [modal, setModal] = useState(null); // 'reponer' | 'caducar'
+  const { ajustes } = useAjustesCtx();
+  const [modal, setModal] = useState(null); // 'reponer' | 'caducar' | 'pdf'
+  // Periodo elegido DENTRO del modal de descarga — no depende del que esté
+  // activo en pantalla, así que se le pone su propio estado (arranca igual al
+  // de pantalla, que es lo más probable que quiera).
+  const [periodoDescarga, setPeriodoDescarga] = useState(periodo);
+  const [descargando, setDescargando] = useState(false);
+  const [descargandoInventario, setDescargandoInventario] = useState(false);
 
   // Cómo se llama, en el reporte, el rango que de verdad trae la gráfica de
-  // Ventas y Compras según el periodo elegido en pantalla. Ver construirSerie
-  // en dashboardController.js — 'semana' son 7 días, los otros dos van por mes.
+  // Ventas y Compras según el periodo elegido. Ver construirSerie en
+  // dashboardController.js — 'semana' son 7 días, los otros dos van por mes.
   const etiquetaPeriodo = {
     semana: 'últimos 7 días',
     mes: 'últimos 6 meses',
     anio: 'últimos 12 meses',
   };
 
-  // ── Reporte PDF con los datos reales que están en pantalla ──
-  const handleDownloadPDF = () => {
-    if (!data) return;
-    const doc = new jsPDF();
-    const brown = [180, 124, 77];
-    const brownDark = [156, 96, 38];
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setFillColor(...brownDark);
-    doc.rect(0, 0, pageWidth, 38, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.text('Tienda', 14, 14);
-    doc.setFontSize(26);
-    doc.setFont(undefined, 'bold');
-    doc.text('la 635', 14, 28);
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text('Resumen de hoy', pageWidth - 14, 16, { align: 'right' });
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-SV')}`, pageWidth - 14, 24, { align: 'right' });
-
-    const tabla = (titulo, y, head, body, color = brown) => {
-      doc.setTextColor(...brownDark);
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text(titulo, 14, y);
-      autoTable(doc, {
-        startY: y + 5,
-        head: [head],
-        body,
-        theme: 'grid',
-        headStyles: { fillColor: color, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
-        bodyStyles: { fontSize: 10 },
-        alternateRowStyles: { fillColor: [250, 245, 240] },
-        styles: { cellPadding: 4 },
-      });
-      return doc.lastAutoTable.finalY + 12;
+  // El café de marca, igual en los dos reportes.
+  const coloresDeMarca = () => {
+    const baseMarca = hexAValido(ajustes.colorMarca) ? ajustes.colorMarca : '#B46C30';
+    const escalaMarca = derivarMarca(baseMarca) || {};
+    return {
+      brown: hexARgbArr(escalaMarca['--marca-600']),
+      brownDark: hexARgbArr(escalaMarca['--marca-700']),
     };
+  };
 
-    let y = tabla('Resumen General', 50, ['Métrica', 'Valor'], [
+  /*
+   * ── Reporte "Resumen de la tienda" ──
+   * Antes tomaba lo que ya estaba en pantalla; el selector de periodo del
+   * modal era decorativo (rotulaba, pero nunca volvía a pedir datos). Ahora
+   * pide el resumen DE VERDAD para el periodo elegido — semanal, mensual o
+   * anual — así que el PDF trae otros números aunque no se haya tocado nada
+   * en pantalla.
+   */
+  const handleDescargarResumen = async () => {
+    setDescargando(true);
+    try {
+      const datosReporte = await dashboardService.getSummary(periodoDescarga);
+      const doc = new jsPDF();
+      const { brown, brownDark } = coloresDeMarca();
+      pintarEncabezado(doc, brownDark, `Resumen — ${etiquetaPeriodo[periodoDescarga] || periodoDescarga}`);
+
+      const tabla = (titulo, y, head, body, color = brown) => {
+        doc.setTextColor(...brownDark);
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text(titulo, 14, y);
+        autoTable(doc, {
+          startY: y + 5,
+          head: [head],
+          body,
+          theme: 'grid',
+          headStyles: { fillColor: color, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+          bodyStyles: { fontSize: 10 },
+          alternateRowStyles: { fillColor: [250, 245, 240] },
+          styles: { cellPadding: 4 },
+        });
+        return doc.lastAutoTable.finalY + 12;
+      };
+
+      const data = datosReporte;
+      const grafica = datosReporte.grafica || [];
+
+      let y = tabla('Resumen General', 50, ['Métrica', 'Valor'], [
       ['Pedidos de hoy', String(data.pedidosHoy.valor)],
       ['Entregados (7 días)', String(data.entregados.valor)],
       ['Ingresos del día', money(data.ingresos?.valor ?? 0)],
@@ -117,42 +187,107 @@ const AdminDashboard = () => {
       ['Productos por reponer', String(data.porReponer.total)],
       ['Lotes por caducar', String(data.porCaducar.total)],
       ['Pedidos por preparar', String(data.pedidosPorPreparar)],
+      ['Impresiones pendientes', String(data.impresionesPendientes)],
       ['Clientes nuevos (7 días)', String(data.clientesNuevos)],
       ['Puntos canjeados (30 días)', String(data.puntosCanjeados)],
+      ['Descuento por puntos (30 días)', money(data.descuentoPorPuntos)],
+      ['Productos activos', String(data.totalProductos)],
+      ['Clientes activos', String(data.totalClientes)],
     ]);
 
-    // El PDF cuenta lo mismo que la pantalla: los eliminados llevan su nota y
-    // no fingen tener bodega.
-    y = tabla('Productos Más Vendidos', y, ['#', 'Producto', 'Vendidos', 'En bodega', 'Precio'],
-      data.masVendidos.map((p, i) => [
-        i + 1,
-        p.eliminado ? `${p.nombre} (eliminado)` : p.nombre,
-        p.vendidos,
-        p.eliminado ? '—' : (p.stock ?? '—'),
-        money(p.precio),
-      ]), brownDark);
+      y = tabla('Productos Más Vendidos', y, ['#', 'Producto', 'Vendidos', 'En bodega', 'Precio'],
+        data.masVendidos.map((p, i) => [i + 1, p.nombre, p.vendidos, p.stock ?? '—', money(p.precio)]), brownDark);
 
-    if (y > 220) { doc.addPage(); y = 20; }
-    y = tabla('Ventas y Compras', y, ['Periodo', 'Ventas ($)', 'Compras ($)', 'Diferencia ($)'],
-      grafica.map((d) => [d.etiqueta, d.ventas.toFixed(2), d.compras.toFixed(2), (d.ventas - d.compras).toFixed(2)]));
-
-    if (data.porReponer.lista.length) {
       if (y > 220) { doc.addPage(); y = 20; }
-      y = tabla('Productos por Reponer', y, ['Producto', 'Stock'],
-        data.porReponer.lista.map((p) => [p.name, p.stock]), brownDark);
-    }
+      y = tabla(`Ventas y Compras (${etiquetaPeriodo[periodoDescarga] || 'periodo actual'})`, y,
+        ['Periodo', 'Ventas ($)', 'Compras ($)', 'Diferencia ($)'],
+        grafica.map((d) => [d.etiqueta, d.ventas.toFixed(2), d.compras.toFixed(2), (d.ventas - d.compras).toFixed(2)]));
 
-    doc.save(`reporte-la635-${new Date().toISOString().slice(0, 10)}.pdf`);
-    setModal(null);
+      if (data.ventasPorModulo.length) {
+        if (y > 220) { doc.addPage(); y = 20; }
+        y = tabla('Ventas por Módulo', y, ['Módulo', 'Total'],
+          data.ventasPorModulo.map((m) => [m.modulo, money(m.total)]), brownDark);
+      }
+
+      if (data.porReponer.lista.length) {
+        if (y > 220) { doc.addPage(); y = 20; }
+        y = tabla('Productos por Reponer', y, ['Producto', 'Stock'],
+          data.porReponer.lista.map((p) => [p.name, p.stock]), brownDark);
+      }
+
+      if (data.porCaducar.lista.length) {
+        if (y > 220) { doc.addPage(); y = 20; }
+        y = tabla('Lotes por Caducar', y, ['Producto', 'Caduca el', 'Stock'],
+          data.porCaducar.lista.map((p) => [p.name, formatearFecha(p.expirationDate) || 'Sin fecha', p.stock]), brownDark);
+      }
+
+      if (data.sinMovimiento.length) {
+        if (y > 220) { doc.addPage(); y = 20; }
+        tabla('Productos Sin Movimiento', y, ['Producto', 'Stock', 'Precio'],
+          data.sinMovimiento.map((p) => [p.name, p.stock, money(p.salePrice)]), brownDark);
+      }
+
+      pintarPiePagina(doc);
+      doc.save(`reporte-la635-${new Date().toISOString().slice(0, 10)}.pdf`);
+      setModal(null);
+    } catch (error) {
+      console.error('Error generando el reporte:', error);
+      toast.error('No se pudo generar el reporte. Intente de nuevo.');
+    } finally {
+      setDescargando(false);
+    }
+  };
+
+  /*
+   * ── Reporte "Inventario completo" ──
+   * Todo el catálogo activo con precio, costo y existencia — SIN imágenes: es
+   * para leer en una lista o imprimir, no para lucir fotos. Una sola tabla
+   * larga en horizontal, que jspdf-autotable pagina y repite el encabezado
+   * sola; a diferencia del resumen, aquí no hay que trocearla a mano.
+   */
+  const handleDescargarInventario = async () => {
+    setDescargandoInventario(true);
+    try {
+      const productos = await productService.getProducts();
+      const doc = new jsPDF({ orientation: 'landscape' });
+      const { brownDark } = coloresDeMarca();
+      pintarEncabezado(doc, brownDark, `Inventario — ${productos.length} productos`);
+
+      autoTable(doc, {
+        startY: 46,
+        margin: { top: 46 },
+        head: [['Producto', 'Categoría', 'Marca', 'Módulo', 'Precio', 'Costo', 'Stock']],
+        body: productos.map((p) => [
+          p.name || '—',
+          p.typeId?.type || '—',
+          p.brandId?.name || '—',
+          p.moduleId?.name || '—',
+          money(p.salePrice),
+          money(p.priceCost),
+          p.unidadVenta === 'libra' ? `${p.stock ?? 0} lb` : String(p.stock ?? 0),
+        ]),
+        theme: 'grid',
+        headStyles: { fillColor: brownDark, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
+        bodyStyles: { fontSize: 9 },
+        alternateRowStyles: { fillColor: [250, 245, 240] },
+        styles: { cellPadding: 3 },
+      });
+
+      pintarPiePagina(doc);
+      doc.save(`inventario-la635-${new Date().toISOString().slice(0, 10)}.pdf`);
+      setModal(null);
+    } catch (error) {
+      console.error('Error generando el inventario:', error);
+      toast.error('No se pudo generar el inventario. Intente de nuevo.');
+    } finally {
+      setDescargandoInventario(false);
+    }
   };
 
   if (loading || !data) {
     return <p className="text-gray-500">Cargando el resumen de la tienda…</p>;
   }
 
-  // Las ventas huérfanas (productos que nunca tuvieron módulo) viajan aparte
-  // del gráfico; se anuncian debajo en vez de competir con las áreas reales.
-  const sinModulo = data.ventasSinModulo || 0;
   const mayorModulo = data.ventasPorModulo[0]?.total || 1; // escala de las barras
 
   const alertas = [
@@ -180,6 +315,21 @@ const AdminDashboard = () => {
       sub: 'Trabajos de impresión sin entregar',
       accion: () => navigate('/pedidos'),
     },
+    /*
+      Mismo umbral y mismo tono que el banner de Proveedores: lo vencido
+      manda (rojo, urge) y si no hay nada vencido pero sí hay deuda, se
+      avisa en un tono más tranquilo. Sin deuda, la alerta ni aparece.
+    */
+    ...(creditoTotales.deuda > 0 ? [{
+      icon: Wallet,
+      color: creditoTotales.vencido > 0 ? '#dc2626' : '#7c3aed',
+      bg: creditoTotales.vencido > 0 ? 'rgba(220,38,38,.12)' : 'rgba(124,58,237,.12)',
+      titulo: creditoTotales.vencido > 0
+        ? `$${creditoTotales.vencido.toFixed(2)} vencidos con proveedores`
+        : `$${creditoTotales.deuda.toFixed(2)} en deuda con proveedores`,
+      sub: 'Ir a Proveedores',
+      accion: () => navigate('/proveedores'),
+    }] : []),
   ];
 
   return (
@@ -191,7 +341,7 @@ const AdminDashboard = () => {
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Resumen de hoy</h1>
         </div>
         <button
-          onClick={() => setModal('pdf')}
+          onClick={() => { setPeriodoDescarga(periodo); setModal('pdf'); }}
           className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
         >
           <Download className="w-4 h-4" /> Descargar PDF
@@ -293,20 +443,36 @@ const AdminDashboard = () => {
             <p className="text-sm text-gray-500 py-24 text-center">Todavía no hay ventas ni compras en este periodo.</p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={grafica} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+              {/*
+                Antes eran barras: con un mes disparado y el resto casi en
+                cero, las barras chicas quedaban invisibles al lado de la
+                grande. La línea conecta los mismos puntos y cada uno sigue
+                siendo legible (con su punto y su tooltip) sin importar qué
+                tan chico sea frente al vecino.
+              */}
+              <LineChart data={grafica} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="etiqueta" tick={{ fontSize: 12, fill: c.textSecondary }} />
                 <YAxis tick={{ fontSize: 12, fill: c.textSecondary }} tickFormatter={ejeMoneda} width={60} />
                 <RechartsTooltip
-                  cursor={{ fill: 'transparent' }}
                   formatter={(v) => money(v)}
                   contentStyle={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: 12, color: c.textPrimary }}
                 />
                 <Legend />
                 {/* Colores tomados de la paleta activa, no fijos */}
-                <Bar dataKey="ventas" name="Ventas" fill={c.primary} radius={[4, 4, 0, 0]} barSize={14} />
-                <Bar dataKey="compras" name="Compras" fill={c.textMuted} radius={[4, 4, 0, 0]} barSize={14} />
-              </BarChart>
+                {/*
+                  type="linear" (recta entre puntos), no "monotone": con
+                  meses en cero seguidos de un pico, una curva suavizada
+                  insinúa un crecimiento gradual que nunca pasó. La recta
+                  cuenta solo lo que hay, sin inventar el tramo de en medio.
+                */}
+                <Line type="linear" dataKey="ventas" name="Ventas" stroke={c.primary} strokeWidth={2}
+                  dot={{ r: 4, fill: c.primary, strokeWidth: 2, stroke: c.cardBg }}
+                  activeDot={{ r: 6, fill: c.primary, strokeWidth: 2, stroke: c.cardBg }} />
+                <Line type="linear" dataKey="compras" name="Compras" stroke={c.textMuted} strokeWidth={2}
+                  dot={{ r: 4, fill: c.textMuted, strokeWidth: 2, stroke: c.cardBg }}
+                  activeDot={{ r: 6, fill: c.textMuted, strokeWidth: 2, stroke: c.cardBg }} />
+              </LineChart>
             </ResponsiveContainer>
           )}
         </div>
@@ -369,30 +535,18 @@ const AdminDashboard = () => {
                   const bajo = maxNum > 0
                     ? stockNum <= maxNum * data.umbrales.ratioBajo
                     : stockNum <= data.umbrales.stockBajoAbs;
-                  /*
-                   * Del producto que ya se borró del inventario sí sabemos qué
-                   * y a cuánto se vendió, pero no queda bodega que reportar:
-                   * decir "Quedan 0" mandaría a reponer algo que ya no existe.
-                   */
                   return (
                     <tr key={p._id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-4 px-4 text-sm font-medium text-gray-800">{p.nombre}</td>
                       <td className="py-4 px-4 text-sm text-gray-600">{p.categoria || '—'}</td>
                       <td className="py-4 px-4 text-sm text-gray-600">{p.vendidos}</td>
-                      <td className="py-4 px-4 text-sm text-gray-600">{p.eliminado ? '—' : (p.stock ?? '—')}</td>
+                      <td className="py-4 px-4 text-sm text-gray-600">{p.stock ?? '—'}</td>
                       <td className="py-4 px-4 text-sm text-gray-600">{money(p.precio)}</td>
                       <td className="py-4 px-4 text-sm">
-                        {p.eliminado ? (
-                          <span className="text-xs font-bold px-2 py-1 rounded-full text-gray-500"
-                                style={{ backgroundColor: 'rgba(107,114,128,.12)' }}>
-                            Producto eliminado
-                          </span>
-                        ) : (
-                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${bajo ? 'text-red-500' : 'text-green-500'}`}
-                                style={{ backgroundColor: bajo ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)' }}>
-                            {bajo ? `Quedan ${p.stock ?? 0}` : 'En stock'}
-                          </span>
-                        )}
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${bajo ? 'text-red-500' : 'text-green-500'}`}
+                              style={{ backgroundColor: bajo ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)' }}>
+                          {bajo ? `Quedan ${p.stock ?? 0}` : 'En stock'}
+                        </span>
                       </td>
                     </tr>
                   );
@@ -408,36 +562,22 @@ const AdminDashboard = () => {
         <div className="min-w-0 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 mb-1">Ventas por módulo</h3>
           <p className="text-xs text-gray-500 mb-4">Cuál área de la tienda está rindiendo</p>
-          {data.ventasPorModulo.length === 0 && !sinModulo ? (
+          {data.ventasPorModulo.length === 0 ? (
             <p className="text-sm text-gray-500">Sin ventas todavía.</p>
           ) : (
-            <>
-              <div className="flex flex-col gap-3">
-                {data.ventasPorModulo.map((m) => (
-                  <div key={m.modulo}>
-                    <div className="flex justify-between gap-3 text-sm mb-1">
-                      <span className="font-medium text-gray-800 truncate">{m.modulo}</span>
-                      <span className="text-gray-600 flex-none">{money(m.total)}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                      <div className="h-full rounded-full bg-[#B47C4D]" style={{ width: `${(m.total / mayorModulo) * 100}%` }} />
-                    </div>
+            <div className="flex flex-col gap-3">
+              {data.ventasPorModulo.map((m) => (
+                <div key={m.modulo}>
+                  <div className="flex justify-between gap-3 text-sm mb-1">
+                    <span className="font-medium text-gray-800 truncate">{m.modulo}</span>
+                    <span className="text-gray-600 flex-none">{money(m.total)}</span>
                   </div>
-                ))}
-              </div>
-              {/*
-                Las ventas viejas sin módulo ya no compiten en el gráfico —una
-                barra gigante de "Sin módulo asignado" aplastaba a las demás y
-                no decía nada de ningún área—, pero tampoco desaparecen: esa
-                plata entró de verdad y callarla sería peor que mostrarla mal.
-              */}
-              {sinModulo > 0 && (
-                <p className="text-xs text-gray-400 mt-4 leading-relaxed">
-                  {money(sinModulo)} de ventas antiguas sin módulo asignado. No entran en la
-                  comparación porque no se sabe de qué área salieron.
-                </p>
-              )}
-            </>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-[#B47C4D]" style={{ width: `${(m.total / mayorModulo) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -497,26 +637,47 @@ const AdminDashboard = () => {
             transition={overlayTransition} className="absolute inset-0 bg-black/40" onClick={() => setModal(null)} />
           <motion.div
             initial={modalInitial} animate={modalAnimate} exit={modalInitial} transition={modalTransition}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 overflow-hidden"
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md relative z-10 overflow-hidden"
           >
-            <div className="bg-[#9C6026] text-white p-5">
-              <h2 className="text-xl font-bold text-center">Descargar reporte</h2>
+            <div className="bg-[#9C6026] text-white p-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold">Descargar</h2>
+              <button onClick={() => setModal(null)}><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-6">
-              <label className="block text-sm font-bold text-gray-700 mb-2">Título del periodo</label>
-              <select
-                value={pdfTimeFilter}
-                onChange={(e) => setPdfTimeFilter(e.target.value)}
-                className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm mb-5 focus:outline-none focus:border-[#9C6026]"
-              >
-                <option>Diario</option>
-                <option>Semanal</option>
-                <option>Mensual</option>
-                <option>Anual</option>
-              </select>
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setModal(null)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-6 py-2 rounded-full">Cancelar</button>
-                <button onClick={handleDownloadPDF} className="bg-[#B47C4D] hover:bg-[#9C6026] text-white font-medium px-6 py-2 rounded-full">Descargar</button>
+            <div className="p-6 flex flex-col gap-6">
+              {/* Resumen de la tienda, con periodo real */}
+              <div>
+                <p className="text-sm font-bold text-gray-700 mb-2">Resumen de la tienda</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {PERIODOS.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setPeriodoDescarga(p.id)}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium border ${periodoDescarga === p.id ? 'bg-[#B47C4D] text-white border-[#B47C4D]' : 'bg-white text-gray-600 border-gray-300'}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleDescargarResumen}
+                  disabled={descargando}
+                  className="w-full bg-[#B47C4D] hover:bg-[#9C6026] disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-full"
+                >
+                  {descargando ? 'Generando…' : 'Descargar resumen'}
+                </button>
+              </div>
+
+              {/* Inventario completo, sin imágenes */}
+              <div className="border-t border-gray-100 pt-5">
+                <p className="text-sm font-bold text-gray-700 mb-1">Inventario completo</p>
+                <p className="text-xs text-gray-500 mb-3">Todos los productos activos, con precio, costo y existencia. Sin imágenes.</p>
+                <button
+                  onClick={handleDescargarInventario}
+                  disabled={descargandoInventario}
+                  className="w-full bg-gray-800 hover:bg-black disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-full"
+                >
+                  {descargandoInventario ? 'Generando…' : 'Descargar inventario'}
+                </button>
               </div>
             </div>
           </motion.div>
