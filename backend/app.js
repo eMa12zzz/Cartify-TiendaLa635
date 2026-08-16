@@ -2,6 +2,8 @@
 //bryan
 import express from "express";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./src/docs/swagger.js";
 import adminRoutes from "./src/routes/admin.js";
 import cookieParser from "cookie-parser";
 import employeeRoutes from "./src/routes/employee.js";
@@ -60,6 +62,14 @@ app.use(cookieParser());
 
 app.use(express.json());
 //endpoint
+
+app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+        customSiteTitle: "Cartify API Docs",
+    })
+);
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/employee", employeeRoutes);

@@ -17,6 +17,147 @@
    channel:       'web' | 'kiosco'  (el kiosco será el Asistente de Voz futuro)
 */
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     OrderItem:
+ *       type: object
+ *       properties:
+ *         productId:
+ *           type: string
+ *           example: 68932f1a2b3c4d5e6f7a8b9c
+ *         name:
+ *           type: string
+ *           example: Arroz Diana 500g
+ *         price:
+ *           type: number
+ *           description: Precio unitario al momento de comprar.
+ *           example: 3200
+ *         amount:
+ *           type: number
+ *           example: 2
+ *     PrintJob:
+ *       type: object
+ *       description: Solo presente cuando channel es "impresion".
+ *       properties:
+ *         serviceName:
+ *           type: string
+ *           example: Carta
+ *         fileUrl:
+ *           type: string
+ *         public_id:
+ *           type: string
+ *         color:
+ *           type: boolean
+ *         copies:
+ *           type: number
+ *         pages:
+ *           type: number
+ *         doubleSided:
+ *           type: boolean
+ *         paper:
+ *           type: string
+ *         emailedToPrinter:
+ *           type: boolean
+ *     Order:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: 68932f1a2b3c4d5e6f7a8b80
+ *         clientId:
+ *           type: string
+ *           description: ObjectId del cliente que compró (ref clientModel).
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/OrderItem'
+ *         total:
+ *           type: number
+ *           example: 6400
+ *         status:
+ *           type: string
+ *           enum: [pagado, preparando, entregado, cancelado]
+ *           default: pagado
+ *         paymentMethod:
+ *           type: string
+ *           default: efectivo
+ *         paymentStatus:
+ *           type: string
+ *           enum: [pendiente, pagado]
+ *           default: pagado
+ *         pointsEarned:
+ *           type: number
+ *           example: 6
+ *         channel:
+ *           type: string
+ *           enum: [web, kiosco, impresion]
+ *           default: web
+ *         printJob:
+ *           $ref: '#/components/schemas/PrintJob'
+ *       required:
+ *         - clientId
+ *         - items
+ *         - total
+ *     OrderCreateInput:
+ *       type: object
+ *       description: Payload JSON para el checkout. El total y los puntos se calculan en el backend.
+ *       properties:
+ *         clientId:
+ *           type: string
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/OrderItem'
+ *         paymentMethod:
+ *           type: string
+ *           default: efectivo
+ *         channel:
+ *           type: string
+ *           enum: [web, kiosco]
+ *           default: web
+ *       required:
+ *         - clientId
+ *         - items
+ *     OrderStatusInput:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: string
+ *           enum: [pagado, preparando, entregado, cancelado]
+ *       required:
+ *         - status
+ *     PrintOrderInput:
+ *       type: object
+ *       description: Payload multipart/form-data para un pedido de impresión.
+ *       properties:
+ *         clientId:
+ *           type: string
+ *         serviceId:
+ *           type: string
+ *           description: ObjectId del PrintService a usar.
+ *         color:
+ *           type: boolean
+ *         copies:
+ *           type: number
+ *           default: 1
+ *         pages:
+ *           type: number
+ *           default: 1
+ *         doubleSided:
+ *           type: boolean
+ *         paper:
+ *           type: string
+ *         file:
+ *           type: string
+ *           format: binary
+ *       required:
+ *         - clientId
+ *         - serviceId
+ *         - file
+ */
+
 import { Schema, model } from 'mongoose';
 
 // Cada línea del pedido. Guardamos name y price como "foto" del momento de la

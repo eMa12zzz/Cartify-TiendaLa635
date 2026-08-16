@@ -8,6 +8,59 @@ Campos:
     isActive: Boolean,
 */
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Admin:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: 68932f1a2b3c4d5e6f7a8b10
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: admin@tienda635.com
+ *         userName:
+ *           type: string
+ *           example: admin_principal
+ *         password:
+ *           type: string
+ *           format: password
+ *           description: Hash bcrypt. Nunca se expone en las respuestas.
+ *         isActive:
+ *           type: boolean
+ *           default: true
+ *         loginAttemps:
+ *           type: number
+ *           description: Intentos fallidos consecutivos.
+ *           example: 0
+ *         timeOut:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           description: Fecha hasta la cual la cuenta queda bloqueada por intentos fallidos.
+ *       required:
+ *         - email
+ *         - userName
+ *         - password
+ *     AdminLoginInput:
+ *       type: object
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: admin@tienda635.com
+ *         password:
+ *           type: string
+ *           format: password
+ *           example: SuperSecreta123
+ *       required:
+ *         - email
+ *         - password
+ */
+
 import{ Schema, model } from 'mongoose';
 
 const adminSchema = new Schema(
