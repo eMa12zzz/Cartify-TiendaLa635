@@ -52,15 +52,30 @@ export const useReparto = () => {
    * Avanza el estado y deja constancia de quién lo hizo. El nombre viaja al
    * servidor porque es lo que después permite decir "lo entregó Andrés".
    */
-  const avanzar = async (pedido, estado) => {
+  /*
+   * `extras` es lo que hace falta SOLO para entregar: los cuatro dígitos que
+   * el cliente dicta en la puerta, o la omisión razonada si no los puede
+   * mostrar. El servidor los exige en el salto a "entregado". Ver
+   * utils/codigoEntrega.js y ModalCodigoEntrega.
+   */
+  const avanzar = async (pedido, estado, extras = {}) => {
     setMoviendo(pedido._id);
     try {
-      await orderService.updateStatus(pedido._id, estado, user?.fullName || user?.userName || '');
+      await orderService.updateStatus(pedido._id, estado, user?.fullName || user?.userName || '', extras);
       const etiquetas = { preparando: 'Pedido en preparación', en_camino: 'Pedido en camino', entregado: 'Pedido entregado' };
       toast.success(etiquetas[estado] || 'Pedido actualizado');
       await cargar();
     } catch (error) {
       console.error(error);
+      /*
+       * Se relanza. Quien llama tiene que poder distinguir "se entregó" de
+       * "el servidor lo rechazó", y hay dos cosas colgando de eso: el modal
+       * del código se queda abierto para volver a intentar, y el viaje en
+       * vivo NO se cierra por una entrega que no ocurrió.
+       *
+       * El aviso al repartidor ya lo pintó el interceptor de api.js.
+       */
+      throw error;
     } finally {
       setMoviendo(null);
     }

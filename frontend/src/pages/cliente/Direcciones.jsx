@@ -1,24 +1,33 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { MapPin, Trash2, Plus, Signpost } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAddresses } from '../../hooks/useAddresses';
+import MapaDireccion from '../../components/Store/MapaDireccion';
 
 /*
  * Direcciones — el cliente gestiona sus direcciones de entrega (área "Mi Cuenta").
  * La lógica (cargar/eliminar) vive en useAddresses; aquí solo pintamos.
  *
- * Agregar no se hace aquí: el botón abre la pantalla del mapa. Escribir la
- * dirección a ciegas en una caja de texto daba direcciones que el repartidor
- * después no encontraba; marcándola en el mapa quedan las coordenadas.
+ * Agregar es SIEMPRE con el mapa: escribir la dirección a ciegas en una caja
+ * de texto daba direcciones que el repartidor después no encontraba, que se
+ * cobraban a tarifa plana en vez de por distancia y que el cliente no podía
+ * seguir en el mapa. Ver MapaDireccion.jsx.
+ *
+ * El mapa se abre AQUÍ MISMO, en un panel. Antes mandaba a /bienvenida —otra
+ * pantalla, con su viaje de ida y vuelta— para hacer algo que cabe en esta.
  */
 const Direcciones = () => {
   const { palette } = useTheme();
   const c = palette.colors;
-  const navigate = useNavigate();
-  const { addresses, loading, saving, eliminar } = useAddresses();
+  const { addresses, loading, saving, agregar, eliminar } = useAddresses();
+  const [agregando, setAgregando] = useState(false);
 
-  // El mapa vuelve aquí al guardar o cancelar.
-  const abrirMapa = () => navigate('/bienvenida?volver=/mi-cuenta/direcciones');
+  const abrirMapa = () => setAgregando(true);
+
+  const guardar = (dir) => {
+    agregar(dir);
+    setAgregando(false);
+  };
 
   return (
     <div>
@@ -32,6 +41,24 @@ const Direcciones = () => {
           <Plus className="w-4 h-4" /> Agregar en el mapa
         </button>
       </div>
+
+      {/*
+        El mapa, incrustado. Va arriba de la lista porque cuando está abierto
+        es lo único que importa en la pantalla.
+      */}
+      {agregando && (
+        <div
+          className="mb-6 p-4 rounded-2xl"
+          style={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}` }}
+        >
+          <MapaDireccion
+            onGuardar={guardar}
+            onCancelar={() => setAgregando(false)}
+            guardando={saving}
+            alto={300}
+          />
+        </div>
+      )}
 
       {loading ? (
         <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tus direcciones…</p>

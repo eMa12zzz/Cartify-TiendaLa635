@@ -6,7 +6,6 @@ import {
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
-import { puedeRepartir } from '../../hooks/useReparto';
 import { useAjustesCtx } from '../../context/AjustesContext';
 
 /*
@@ -43,7 +42,7 @@ const navItems = [
 const ClienteLayout = () => {
   const { palette } = useTheme();
   const c = palette.colors;
-  const { user, logout } = useAuth();
+  const { user, logout, trabajando, setTrabajando, haySesionDePersonal } = useAuth();
   const { ajustes } = useAjustesCtx();
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,11 +53,37 @@ const ClienteLayout = () => {
   const [confirmarSalida, setConfirmarSalida] = useState(false);
 
   /*
-   * "Reparto" solo lo ve el personal. Va de primero porque para ellos es lo
-   * único que vienen a hacer aquí: el resto del menú es de su cuenta personal.
+   * DOS MENÚS, Y LO DECIDE EL INTERRUPTOR DE ARRIBA.
+   *
+   * Mientras está trabajando, esto es una herramienta de trabajo y nada más:
+   * se queda Reparto solo. Un repartidor en la calle, con una mano en el
+   * manubrio, no necesita tener a un toque sus puntos de fidelidad ni sus
+   * métodos de pago — y esas pantallas además piden datos de CLIENTE, que en
+   * modo trabajo no es quien está adentro.
+   *
+   * Apagado el interruptor vuelve a ser un cliente más y ve su cuenta
+   * completa, sin rastro de Reparto. Ver LLAVE_MODO_TRABAJO en utils/sesion.js.
    */
-  const items = puedeRepartir(user)
-    ? [{ to: '/mi-cuenta/reparto', label: 'Reparto', icon: Bike, ready: true }, ...navItems]
+  /*
+   * Cambiar de modo TAMBIÉN cambia de pantalla, y es obligatorio.
+   *
+   * Sin esto, quien tocaba el interruptor desde "Mis datos" se quedaba ahí:
+   * el menú ya decía Reparto, la sesión activa ya era la de personal, pero la
+   * pantalla seguía mostrando los datos del cliente que acababa de dejar de
+   * mandar. Datos de una cuenta con la identidad de la otra encima — se ve
+   * roto aunque no lo esté, y peor: parece una fuga de datos.
+   *
+   * Al encender se va a Reparto, que es lo único que hay en ese modo. Al
+   * apagar se vuelve a Mis datos, que es la puerta de la cuenta.
+   */
+  const cambiarModo = () => {
+    const encendiendo = !trabajando;
+    setTrabajando(encendiendo);
+    navigate(encendiendo ? '/mi-cuenta/reparto' : '/mi-cuenta');
+  };
+
+  const items = trabajando
+    ? [{ to: '/mi-cuenta/reparto', label: 'Reparto', icon: Bike, ready: true }]
     : navItems;
 
   /*
@@ -209,6 +234,32 @@ const ClienteLayout = () => {
           {/* Ayuda y salir se van al final, separados: no son secciones de la
               cuenta sino cosas que se hacen desde ella. */}
           <span className="flex-1 min-w-[8px]" />
+
+          {/*
+            EL INTERRUPTOR DE TRABAJO.
+
+            Solo aparece si hay una sesión de personal detrás: a un cliente
+            normal no se le ofrece "estoy repartiendo" porque no significa nada
+            para él. Ver LLAVE_MODO_TRABAJO en utils/sesion.js.
+
+            Va junto a Ayuda y Salir y no entre las secciones porque no es un
+            lugar a donde ir: es un cambio de qué está haciendo la persona.
+          */}
+          {haySesionDePersonal && (
+            <button
+              onClick={cambiarModo}
+              title={trabajando
+                ? 'Salir del modo trabajo y volver a su cuenta'
+                : 'Entrar al modo trabajo para ver los pedidos a repartir'}
+              className="press flex items-center gap-1.5 px-3 py-1.5 mx-1 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors"
+              style={trabajando
+                ? { backgroundColor: c.primary, color: c.buttonText }
+                : { border: `1px solid ${c.cardBorder}`, color: c.textSecondary }}
+            >
+              <Bike className="w-4 h-4 flex-shrink-0" />
+              {trabajando ? 'Trabajando' : 'Estoy trabajando'}
+            </button>
+          )}
 
           <Link
             to="/mi-cuenta/ayuda"
