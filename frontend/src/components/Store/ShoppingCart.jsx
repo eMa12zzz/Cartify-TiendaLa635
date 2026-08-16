@@ -51,7 +51,16 @@ const Overlay = styled.div`
      cada cuadro y la apertura se sentía pesada. 2px da la sensación de foco sin
      ese costo. */
   backdrop-filter: blur(2px);
-  z-index: 999;
+  /*
+   * POR ENCIMA de la ficha de producto (1000), no debajo.
+   *
+   * Desde que la ficha lleva el encabezado completo de la tienda, ahí adentro
+   * hay un botón de carrito — y con 999 el carrito se abría DETRÁS de la
+   * ficha: la pantalla se oscurecía, el pedido se movía y no se veía nada.
+   * Por debajo del candado de los +18 (1100), que tiene que poder preguntar
+   * la edad incluso con el carrito abierto.
+   */
+  z-index: 1050;
   display: flex;
   justify-content: flex-end;
   opacity: ${p => (p.$montado ? 1 : 0)};
@@ -269,7 +278,7 @@ const CartItemRow = styled.div`
 const ItemImgBox = styled.div`
   width: 52px;
   height: 52px;
-  background: #f7f3ef;
+  background: #F5F5F5;
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
@@ -635,7 +644,7 @@ const OrderThumbsRow = styled.div`
 const OrderThumb = styled.div`
   width: 48px;
   height: 48px;
-  background: #f7f3ef;
+  background: #F5F5F5;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -921,7 +930,7 @@ const PTableRow = styled.div`
 const PImgBox = styled.div`
   width: 42px;
   height: 42px;
-  background: #f7f3ef;
+  background: #F5F5F5;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -1572,7 +1581,7 @@ const ShoppingCart = ({
                                   <MapPin size={15} color={elegida ? BROWN : '#bbb'} style={{ marginTop: 2, flexShrink: 0 }} />
                                   <span style={{ flex: 1, minWidth: 0 }}>
                                     {dir.nombre && (
-                                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#2A1A0E' }}>
+                                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1C1614' }}>
                                         {dir.nombre}
                                       </span>
                                     )}

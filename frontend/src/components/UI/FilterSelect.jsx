@@ -33,7 +33,7 @@ const FilterSelect = ({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none pl-8 pr-8 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors shadow-sm outline-none cursor-pointer focus:border-[#B47C4D]"
+        className="appearance-none pl-8 pr-8 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors shadow-sm outline-none cursor-pointer focus:border-[#003049]"
       >
         <option value={defaultValue}>{defaultLabel}</option>
         {options.map((opt) => (

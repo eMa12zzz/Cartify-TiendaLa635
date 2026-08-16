@@ -134,11 +134,11 @@ const Button = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #8A5222;
+    background: #00283D;
   }
   
   &:disabled {
-    background: #d8c5af;
+    background: #C9D4DB;
     cursor: not-allowed;
   }
 `;

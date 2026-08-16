@@ -55,7 +55,7 @@ const ErrorMsg = styled.div`color: #ef4444; font-size: 13px; margin-bottom: 16px
  * el resto de la web, no la alarma roja de "esto no se puede enviar".
  */
 const Advertencia = styled.div`display: flex; align-items: flex-start; gap: 8px; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.4; margin-top: 10px;`;
-const ContinueBtn = styled.button`width: 100%; padding: 15px; background: ${BROWN}; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; &:hover { background: ${BROWN_DARK}; } &:disabled { background: #d8c5af; cursor: not-allowed; }`;
+const ContinueBtn = styled.button`width: 100%; padding: 15px; background: ${BROWN}; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; &:hover { background: ${BROWN_DARK}; } &:disabled { background: #C9D4DB; cursor: not-allowed; }`;
 const Bloque = styled.div`margin-bottom: 32px;`;
 
 const Impresiones = () => {

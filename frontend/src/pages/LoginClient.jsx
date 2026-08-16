@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { loginClientDB, googleLoginDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { BotonOjo } from '../components/UI/CampoContrasena';
+import { useAjustesCtx } from '../context/AjustesContext';
 import { consumirRecienRegistrado } from '../utils/primerIngreso';
 
 const BROWN = 'var(--marca-600)';
@@ -35,53 +36,86 @@ const Container = styled.div`
   flex-direction: column;
 `;
 
-const TopBar = styled.div`
-  width: 100%;
-  border-bottom: 1px solid #ebebeb;
-  padding: 12px 28px;
+/*
+ * La barra de arriba: SOLO el nombre y la salida a la tienda.
+ *
+ * No es el HeaderTienda completo a propósito —aquí no hacen falta el buscador
+ * ni los pasillos— pero se viste igual que él: mismo alto de 64px, misma línea
+ * de abajo y el mismo relleno lateral, para que pasar de la tienda al login no
+ * se sienta como cambiar de sitio.
+ *
+ * Lo que sí se arregló: el nombre estaba escrito a mano ("Tienda" / "la 635"),
+ * así que si el dueño le cambiaba el nombre al negocio, esta pantalla —la
+ * primera que ve quien va a entregar su correo— seguía diciendo el viejo.
+ * Ahora sale de los ajustes, igual que en el encabezado de verdad.
+ */
+const TopBar = styled.header`
+  background: #fff;
+  border-bottom: 1px solid #ECE7E1;
+  padding: 0 28px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+
+  @media (max-width: 700px) { padding: 0 16px; }
 `;
 
-const Marca = styled.div`
+const Marca = styled.button`
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  cursor: pointer;
+  align-items: flex-start;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background-color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: var(--marca-50); }
+  }
+  &:active { transform: scale(0.97); }
 `;
 
-const BrandSmall = styled.span`
+/* Las dos líneas del nombre, con el mismo peso y color: "Tienda" no es una
+   etiqueta que acompaña a "la 635", es parte del nombre del negocio. */
+const Linea = styled.span`
   display: block;
-  font-size: 12px;
-  color: #aaa;
-  line-height: 1.1;
-`;
-
-const BrandName = styled.span`
-  display: block;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
-  color: #111;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
+  line-height: 1.05;
+  letter-spacing: -0.4px;
+  color: var(--tinta);
 `;
 
-// Salida sin compromiso: quien no quiera cuenta puede seguir viendo la tienda.
+/* La misma pastilla que los botones del encabezado de la tienda. */
 const VolverTienda = styled.button`
-  background: none;
-  border: 1px solid var(--linea, #ebebeb);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #6b6b6b;
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  color: var(--tinta-suave);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  padding: 0 16px;
+  height: 44px;
+  border-radius: var(--radio-pill);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: border-color var(--dur-press) var(--ease-out),
+              color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
 
-  &:hover { border-color: ${BROWN}; color: ${BROWN}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: var(--marca-600); }
+  }
+  &:active { transform: scale(0.97); }
 `;
 
 const Body = styled.div`
@@ -113,7 +147,7 @@ const Titular = styled.h1`
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: -1px;
-  color: #1d1206;
+  color: #101820;
   margin: 0 0 16px;
 
   strong { color: ${BROWN}; font-weight: 800; }
@@ -122,7 +156,7 @@ const Titular = styled.h1`
 const Bajada = styled.p`
   font-size: 15.5px;
   line-height: 1.6;
-  color: #7a7269;
+  color: #6B7280;
   margin: 0 0 26px;
   max-width: 440px;
 
@@ -146,17 +180,17 @@ const Ventaja = styled.li`
   align-items: flex-start;
   gap: 11px;
   font-size: 14px;
-  color: #55504a;
+  color: #4B5563;
   line-height: 1.45;
 
-  strong { color: #2A1A0E; font-weight: 700; }
+  strong { color: #1C1614; font-weight: 700; }
 `;
 
 const IconoVentaja = styled.span`
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  background: #FAF3EB;
+  background: #F1F6F9;
   color: ${BROWN};
   display: flex;
   align-items: center;
@@ -176,7 +210,7 @@ const SinCuenta = styled.div`
 const SinCuentaTexto = styled.span`
   font-size: 14px;
   font-weight: 700;
-  color: #2A1A0E;
+  color: #1C1614;
 `;
 
 const BotonRegistro = styled(Link)`
@@ -190,19 +224,19 @@ const BotonRegistro = styled(Link)`
   border-radius: 999px;
   font-size: 14.5px;
   font-weight: 700;
-  box-shadow: 0 8px 20px rgba(180, 108, 48, 0.28);
+  box-shadow: 0 8px 20px rgba(0, 48, 73, 0.28);
   transition: background 0.18s, transform 0.18s;
 
-  &:hover { background: #8A5222; transform: translateY(-1px); }
+  &:hover { background: #00283D; transform: translateY(-1px); }
 `;
 
 // ── La mitad de la derecha: el formulario ──
 const Card = styled.div`
   width: 100%;
   background: #fff;
-  border: 1px solid #F0E7DE;
+  border: 1px solid #ECE7E1;
   border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(60, 40, 20, 0.10);
+  box-shadow: 0 20px 50px rgba(0, 48, 73, 0.10);
   padding: 32px 30px;
 
   @media (max-width: 940px) {
@@ -216,14 +250,14 @@ const Card = styled.div`
 const SectionTitle = styled.h2`
   font-size: 22px;
   font-weight: 800;
-  color: #1d1206;
+  color: #101820;
   margin: 0 0 6px 0;
   text-align: center;
 `;
 
 const SubTitle = styled.p`
   font-size: 13.5px;
-  color: #9a938c;
+  color: #9CA3AF;
   margin: 0 0 24px 0;
   text-align: center;
 `;
@@ -270,7 +304,7 @@ const Input = styled.input`
 
   &:focus {
     border-color: ${BROWN};
-    box-shadow: 0 0 0 3px rgba(139,90,43,0.08);
+    box-shadow: 0 0 0 3px rgba(0,48,73,0.08);
   }
 
   &::placeholder { color: #bbb; }
@@ -324,8 +358,8 @@ const Button = styled.button`
   transition: background 0.2s;
   margin-bottom: 20px;
 
-  &:hover { background: #8A5222; }
-  &:disabled { background: #d8c5af; cursor: not-allowed; }
+  &:hover { background: #00283D; }
+  &:disabled { background: #C9D4DB; cursor: not-allowed; }
 `;
 
 // Separador "o" entre el formulario y el botón de Google.
@@ -370,6 +404,8 @@ const LoginClient = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { login, logout } = useAuth();
+  // El nombre de la tienda sale de los ajustes, no escrito a mano.
+  const { ajustes } = useAjustesCtx();
   const [loading, setLoading] = useState(false);
   const [verPass, setVerPass] = useState(false);
 
@@ -486,8 +522,19 @@ const LoginClient = () => {
        * dejar un aviso rojo que no dice qué hacer.
        */
       if (err.requiereConsentimiento) {
-        toast('Complete su registro para crear la cuenta');
-        navigate('/register');
+        /*
+         * Y se va CON lo que Google ya dio. Antes esto mandaba a /register en
+         * blanco: la persona acababa de autorizar a la tienda a leer su nombre
+         * y su correo, y lo primero que veía era un formulario vacío
+         * pidiéndoselos otra vez.
+         *
+         * El token viaja en el estado de la navegación y no en la URL: un
+         * token de Google en la barra de direcciones queda en el historial, en
+         * los registros del servidor y en cualquier captura de pantalla.
+         */
+        navigate('/completar-registro', {
+          state: { credential, sugerido: err.sugerido || {}, volverA: volver || '/' },
+        });
         return;
       }
       toast.error(err.message || 'No se pudo iniciar sesión con Google');
@@ -499,12 +546,12 @@ const LoginClient = () => {
   return (
     <Container>
       <TopBar>
-        <Marca onClick={() => navigate('/')}>
-          <BrandSmall>Tienda</BrandSmall>
-          <BrandName>la 635</BrandName>
+        <Marca type="button" onClick={() => navigate('/')} title="Ir a la tienda">
+          <Linea>{ajustes.nombreLinea1}</Linea>
+          {ajustes.nombreLinea2 && <Linea>{ajustes.nombreLinea2}</Linea>}
         </Marca>
         <VolverTienda type="button" onClick={() => navigate('/')}>
-          <StoreIcon size={15} strokeWidth={2.2} /> Seguir viendo la tienda
+          <StoreIcon size={16} strokeWidth={2.2} /> Seguir viendo la tienda
         </VolverTienda>
       </TopBar>
 

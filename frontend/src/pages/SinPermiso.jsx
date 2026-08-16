@@ -2,8 +2,6 @@ import styled from 'styled-components';
 import { Lock, ArrowLeft, Store, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVolver } from '../hooks/useVolver';
-import { useAjustesCtx } from '../context/AjustesContext';
-import { derivarMarca, hexAValido } from '../utils/colorMarca';
 
 /*
  * ============================================================
@@ -110,12 +108,13 @@ const Boton = styled.button`
 const SinPermiso = () => {
   const { esCliente, haySesionDeCliente } = useAuth();
   const { volver, hayAtras, casa } = useVolver();
-  const { ajustes } = useAjustesCtx();
-  // El color de marca de VERDAD, sin depender de si esta ruta es del panel
-  // (ahí useTemporada() apaga --marca-* a propósito). Mismo respaldo café de
-  // fábrica que usa ColorMarca.jsx cuando nadie eligió un color todavía.
-  const baseMarca = hexAValido(ajustes.colorMarca) ? ajustes.colorMarca : '#B46C30';
-  const escalaMarca = derivarMarca(baseMarca) || {};
+  /*
+   * Sin escala derivada. Esta pantalla la calculaba del color que el dueño
+   * hubiera elegido y la pintaba en línea, porque en las rutas del panel
+   * useTemporada() borra las variables de marca. Pero solo borra los estilos EN
+   * LÍNEA; la regla :root de index.css se queda, y ahora la marca vive ahí fija.
+   * Así que var(--marca-*) ya resuelve bien sin ayuda de nadie.
+   */
 
   /*
    * "Viene con cuenta de cliente" es la misma situación de las dos maneras de
@@ -125,7 +124,7 @@ const SinPermiso = () => {
   const conCuentaDeCliente = esCliente || haySesionDeCliente;
 
   return (
-    <Fondo style={escalaMarca}>
+    <Fondo>
       <Caja>
         <Icono><Lock size={30} strokeWidth={1.8} /></Icono>
 

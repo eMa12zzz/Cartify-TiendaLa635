@@ -5,8 +5,8 @@ import { useModulos } from '../hooks/useModulos';
 import { useAuth } from '../hooks/useAuth';
 import { iconoDeModulo, flujoDeModulo } from '../utils/modulos';
 
-const BROWN = '#8B5A2B';
-const BROWN_DARK = '#5a3a1a';
+const BROWN = '#003049';
+const BROWN_DARK = '#00283D';
 
 const Container = styled.div`
   min-height: 100vh;

@@ -112,7 +112,7 @@ const Input = styled.input`
 
   &:focus {
     border-color: ${BROWN};
-    box-shadow: 0 0 0 3px rgba(139,90,43,0.08);
+    box-shadow: 0 0 0 3px rgba(0,48,73,0.08);
   }
 
   &::placeholder {
@@ -155,7 +155,7 @@ const Button = styled.button`
   }
   
   &:disabled {
-    background: #d8c5af;
+    background: #C9D4DB;
     cursor: not-allowed;
   }
 `;

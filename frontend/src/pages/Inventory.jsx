@@ -117,7 +117,7 @@ const Inventory = () => {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Inventario</h1>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#066494]">Inventario</h1>
 
         {/*
           Buscador, orden y "Añadir producto" sumaban más de 600px en una fila
@@ -132,7 +132,7 @@ const Inventory = () => {
               placeholder="Buscar producto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-full sm:w-64 shadow-sm"
+              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] transition-colors w-full sm:w-64 shadow-sm"
             />
           </div>
           {/*
@@ -153,7 +153,7 @@ const Inventory = () => {
           />
           <button
             onClick={handleAddProduct}
-            className="flex flex-none items-center gap-2 px-5 sm:px-6 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+            className="flex flex-none items-center gap-2 px-5 sm:px-6 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Añadir producto
@@ -194,7 +194,7 @@ const Inventory = () => {
               onClick={() => setStockFilter(activa ? 'Todos' : s.filtro)}
               aria-pressed={activa}
               title={activa ? 'Quitar el filtro' : `Ver solo: ${s.label}`}
-              className={`${base} press ${activa ? 'bg-[#FAF9F6] border-[#B47C4D]' : 'bg-white border-gray-100'}`}
+              className={`${base} press ${activa ? 'bg-[#F1F6F9] border-[#003049]' : 'bg-white border-gray-100'}`}
             >
               <div className="text-xs font-bold text-gray-500 mb-1">{s.label}</div>
               <div className={`text-2xl font-extrabold ${s.tono}`}>{s.valor}</div>
@@ -211,7 +211,7 @@ const Inventory = () => {
 
       <div>
         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-6">
-          <h2 className="text-2xl font-bold text-[#C28C5D]">{selectedCategory}</h2>
+          <h2 className="text-2xl font-bold text-[#066494]">{selectedCategory}</h2>
           <span className="text-sm text-gray-500">
             {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
           </span>

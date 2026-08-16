@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import jsonwebtoken from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import clientModel from "../../models/client.js";
@@ -103,7 +104,7 @@ registerClientController.register = async (req, res) => {
       { expiresIn: "15m" }
     );
 
-    res.cookie("registrationCookie", token, { maxAge: 15 * 60 * 1000 });
+    res.cookie("registrationCookie", token, opcionesCookie(15 * 60 * 1000));
 
     // 4. Enviar el correo con el código
     // Alternativa en texto plano: un correo que es SOLO html es una de las
@@ -125,8 +126,8 @@ registerClientController.register = async (req, res) => {
                 <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
                   <!-- HEADER -->
                   <tr>
-                    <td style="background:#8B5A2B;padding:32px 40px;text-align:center;">
-                      <p style="margin:0;font-size:12px;color:#f5dfc0;letter-spacing:2px;text-transform:uppercase;">Tienda</p>
+                    <td style="background:#003049;padding:32px 40px;text-align:center;">
+                      <p style="margin:0;font-size:12px;color:#DDECF3;letter-spacing:2px;text-transform:uppercase;">Tienda</p>
                       <h1 style="margin:4px 0 0;font-size:30px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">la 635</h1>
                     </td>
                   </tr>
@@ -138,9 +139,9 @@ registerClientController.register = async (req, res) => {
                         Gracias por registrarte. Usa el siguiente código de 6 caracteres para confirmar tu correo electrónico. <strong>Expira en 15 minutos.</strong>
                       </p>
                       <!-- CÓDIGO -->
-                      <div style="background:#fdf6ee;border:2px dashed #d4a96a;border-radius:10px;padding:24px;text-align:center;margin-bottom:28px;">
+                      <div style="background:#F1F6F9;border:2px dashed #066494;border-radius:10px;padding:24px;text-align:center;margin-bottom:28px;">
                         <p style="margin:0 0 8px;font-size:12px;color:#888;letter-spacing:1px;text-transform:uppercase;">Tu código de verificación</p>
-                        <span style="font-size:36px;font-weight:800;color:#8B5A2B;letter-spacing:10px;">${randomNumber}</span>
+                        <span style="font-size:36px;font-weight:800;color:#003049;letter-spacing:10px;">${randomNumber}</span>
                       </div>
                       <p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
                         Si no solicitaste esta verificación, puedes ignorar este correo con seguridad. Nadie ha accedido a tu cuenta.

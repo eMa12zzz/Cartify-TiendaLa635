@@ -40,7 +40,16 @@ const app = express();
 
 app.use(
     cors({
-        origin: ["http://localhost:5173", "http://localhost:5174"],
+        /*
+         * Los orígenes salen de una variable, no escritos a mano: al desplegar,
+         * el dominio de la tienda no se sabe hasta que existe. Se separan por
+         * coma. Sin la variable —o sea, en local— se queda con los puertos de
+         * Vite de siempre y nada cambia.
+         */
+        origin: (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:5174")
+          .split(",")
+          .map((o) => o.trim())
+          .filter(Boolean),
         credentials: true,
     })
 );

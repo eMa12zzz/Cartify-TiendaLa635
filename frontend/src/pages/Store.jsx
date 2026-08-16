@@ -16,6 +16,7 @@ import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
+import { useRastroTienda } from '../hooks/useRastroTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
 import { useModulos } from '../hooks/useModulos';
 import { useAjustesCtx } from '../context/AjustesContext';
@@ -23,7 +24,6 @@ import { bloqueDeSeccion } from '../utils/portada';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = 'var(--marca-600)';
-const BROWN_DARK = 'var(--marca-700)';
 const BROWN_LIGHT = 'var(--marca-100)';
 
 /* ─── Layout ─── */
@@ -489,6 +489,12 @@ const Store = () => {
   } = useStore({
     moduloInicial: searchParams.get('modulo'),
     busquedaInicial: searchParams.get('q') || '',
+    /*
+     * El `promo` lo trae el botón del correo con que se anuncian las
+     * promociones nuevas: abre esa promo en grande al entrar, en vez de dejar
+     * a la persona en la portada buscando lo que le acaban de ofrecer.
+     */
+    promoInicial: searchParams.get('promo'),
   });
 
   // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
@@ -554,17 +560,23 @@ const Store = () => {
   ];
 
   // Display labels matching design
-  const filterLabels = {
-    'todos': 'Todos',
-    '0-4': '$4 - 12$',
-    '4-12': '$4 - 12$',
-    '12+': 'Arriba de $4',
-  };
 
   const showTrending = !categoriaSeleccionada && !terminoBusqueda && !promoSeleccionada;
 
   // Nombre del pasillo donde está parado el cliente, para los títulos y avisos.
   const nombrePasillo = pasillos.find((m) => String(m._id) === String(moduloSeleccionado))?.name || '';
+
+  /*
+   * El camino que hizo hasta el producto que abra, para las migas de la ficha.
+   * Se arma aquí y no dentro de la ficha porque los filtros —y las funciones
+   * para deshacerlos— viven en esta pantalla. Ver useRastroTienda.
+   */
+  const rastro = useRastroTienda({
+    moduloSeleccionado, setModuloSeleccionado, nombrePasillo,
+    categoriaSeleccionada, setCategoriaSeleccionada,
+    terminoBusqueda, setTerminoBusqueda,
+    promoSeleccionada, setPromoSeleccionada,
+  });
 
   return (
     <Container>
@@ -864,6 +876,24 @@ const Store = () => {
           // Click en una recomendación: cambia el producto del mismo modal.
           onVerProducto={handleAbrirDetalle}
           todosLosProductos={productosDelPasillo?.length ? productosDelPasillo : productos}
+          // Por dónde pasó hasta llegar aquí, con cada escalón pisable.
+          rastro={rastro}
+          /*
+            La ficha lleva el MISMO encabezado de la tienda, así que necesita
+            los mismos mandos: el pasillo, la búsqueda y el carrito. Y al dar
+            Enter en el buscador la ficha se cierra sola — de nada sirve
+            filtrar una lista que está tapada por la foto de un producto.
+          */
+          header={{
+            moduloSeleccionado,
+            onElegirModulo: setModuloSeleccionado,
+            terminoBusqueda,
+            onBuscar: setTerminoBusqueda,
+            onEnviarBusqueda: handleCerrarDetalle,
+            cantidadItems,
+            onAbrirCarrito: () => setMostrarCarrito(true),
+            onAbrirAsistente: () => setMostrarAsistente(true),
+          }}
         />
       )}
 

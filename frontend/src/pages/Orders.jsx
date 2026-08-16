@@ -106,7 +106,7 @@ const Orders = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Pedidos</h1>
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#066494]">Pedidos</h1>
 
       {/* Resumen: cada número es un botón que filtra la lista. */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
@@ -142,7 +142,7 @@ const Orders = () => {
               <button
                 key={f.id}
                 onClick={() => setFiltro(f.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${activo ? 'bg-[#B47C4D] text-white border-[#B47C4D]' : 'bg-white text-gray-600 border-gray-300'}`}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${activo ? 'bg-[#003049] text-white border-[#003049]' : 'bg-white text-gray-600 border-gray-300'}`}
               >
                 {f.label}
               </button>
@@ -156,7 +156,7 @@ const Orders = () => {
             placeholder="Buscar por cliente..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] w-full sm:w-56 shadow-sm"
+            className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] w-full sm:w-56 shadow-sm"
           />
         </div>
       </div>
@@ -244,7 +244,7 @@ const Orders = () => {
                   {order.channel === 'impresion' && order.printJob ? (
                     <div className="rounded-xl p-3 mb-3 text-sm" style={{ backgroundColor: 'var(--theme-primary-light)' }}>
                       <div className="flex items-center gap-2 mb-1 font-medium" style={{ color: 'var(--theme-text-primary)' }}>
-                        <Printer className="w-4 h-4 text-[#B47C4D]" /> Impresión — {order.printJob.serviceName}
+                        <Printer className="w-4 h-4 text-[#003049]" /> Impresión — {order.printJob.serviceName}
                       </div>
                       <div className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
                         {order.printJob.copies} copia(s) · {order.printJob.pages > 1 ? `${order.printJob.pages} págs · ` : ''}
@@ -255,7 +255,7 @@ const Orders = () => {
                         <div className="flex flex-wrap items-center gap-2 mt-3">
                           <button
                             onClick={() => imprimirArchivo(order.printJob.fileUrl)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#B47C4D] text-white transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#003049] text-white transition-colors"
                           >
                             <Printer className="w-3.5 h-3.5" /> Imprimir
                           </button>
@@ -310,7 +310,7 @@ const Orders = () => {
                     {order.status === 'pagado' && (
                       <button
                         onClick={() => cambiarEstado(order._id, 'preparando')}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-[#B47C4D] text-white transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-[#003049] text-white transition-colors"
                       >
                         <ChefHat className="w-4 h-4" /> Empezar a preparar
                       </button>

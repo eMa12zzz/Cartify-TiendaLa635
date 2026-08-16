@@ -91,6 +91,17 @@ const promotionSchema = new mongoose.Schema(
      */
     endsAt: { type: Date, default: null },
 
+    /*
+     * Cuándo salió el correo avisando de esta promoción, si salió.
+     *
+     * Existe para que salga UNA sola vez. Sin esta marca, editar la promo para
+     * corregirle una palabra al título volvería a escribirle a toda la lista de
+     * clientes — y a la tercera corrección la tienda ya es spam. Vacío puede
+     * significar dos cosas ("todavía no" o "no había a quién"), y las dos se
+     * resuelven igual: no se manda nada. Ver utils/avisoPromo.js.
+     */
+    avisoEnviadoEn: { type: Date, default: null },
+
     isActive: { type: Boolean, default: true },
     /*
      * ¿Se anuncia en la tienda con banner?

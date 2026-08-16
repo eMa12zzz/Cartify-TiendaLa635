@@ -1,4 +1,5 @@
 import adminModel from "../../models/admin.js";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import employeeModel from "../../models/employee.js";
 import bcryptjs from "bcryptjs";
 import jsonwebtoken from "jsonwebtoken";
@@ -108,10 +109,7 @@ loginAdminController.login = async (req, res) => {
       { expiresIn: "10m" }
     );
 
-    res.cookie("twofaCookie", twofaToken, {
-      httpOnly: true,
-      maxAge: 10 * 60 * 1000,
-    });
+    res.cookie("twofaCookie", twofaToken, opcionesCookie(10 * 60 * 1000));
 
     try {
       await sendEmail(
@@ -182,10 +180,7 @@ loginAdminController.verify2FA = async (req, res) => {
       { expiresIn: "30d" }
     );
 
-    res.cookie("authCookie", token, {
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("authCookie", token, opcionesCookie(30 * 24 * 60 * 60 * 1000));
     res.clearCookie("twofaCookie");
 
     return res.status(200).json({

@@ -140,7 +140,7 @@ const Campo = styled.div`
     padding: 13px 0;
     font-size: 14px;
     font-family: inherit;
-    color: #2A1A0E;
+    color: #1C1614;
     background: transparent;
   }
 `;

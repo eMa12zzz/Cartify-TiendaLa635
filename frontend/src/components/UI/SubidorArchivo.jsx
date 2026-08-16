@@ -53,9 +53,9 @@ const fundido = keyframes`
 const PALETAS = {
   claro: {
     borde: '#d8d8d8',
-    bordeVivo: 'var(--theme-primary, #B46C30)',
+    bordeVivo: 'var(--theme-primary, #003049)',
     fondo: '#fafafa',
-    fondoVivo: 'var(--theme-primary-light, #F3E7D8)',
+    fondoVivo: 'var(--theme-primary-light, #DDECF3)',
     texto: '#6B6560',
     textoFuerte: '#1C1614',
     lienzo: '#ffffff',
@@ -73,9 +73,9 @@ const PALETAS = {
   },
   panel: {
     borde: 'var(--theme-card-border, #d8d8d8)',
-    bordeVivo: 'var(--theme-primary, #B46C30)',
+    bordeVivo: 'var(--theme-primary, #003049)',
     fondo: 'var(--theme-card-bg, #fafafa)',
-    fondoVivo: 'var(--theme-primary-light, #F3E7D8)',
+    fondoVivo: 'var(--theme-primary-light, #DDECF3)',
     texto: 'var(--theme-text-secondary, #6B6560)',
     textoFuerte: 'var(--theme-text-primary, #1C1614)',
     lienzo: 'var(--theme-card-bg, #ffffff)',

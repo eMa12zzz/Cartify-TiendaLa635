@@ -1,4 +1,5 @@
 import jsonwebtoken from "jsonwebtoken";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
 
@@ -38,10 +39,7 @@ recoveryPasswordClientController.requestCode = async (req, res) => {
       }
     );
 
-    res.cookie("recoveryCookie", token, {
-      maxAge: 15 * 60 * 1000,
-      httpOnly: true,
-    });
+    res.cookie("recoveryCookie", token, opcionesCookie(15 * 60 * 1000));
 
     try {
       await sendEmail(
@@ -105,10 +103,7 @@ recoveryPasswordClientController.verifyCode = async (req, res) => {
       }
     );
 
-    res.cookie("recoveryCookie", newToken, {
-      maxAge: 15 * 60 * 1000,
-      httpOnly: true,
-    });
+    res.cookie("recoveryCookie", newToken, opcionesCookie(15 * 60 * 1000));
 
     return res.status(200).json({
       message: "Código verificado",

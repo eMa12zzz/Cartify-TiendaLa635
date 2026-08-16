@@ -35,7 +35,7 @@ const CENTRO_POR_DEFECTO = [13.6989, -89.1914];
  */
 const pinTienda = divIcon({
   className: '',
-  html: `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:var(--theme-primary,#B46C30);transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.35);"></div>`,
+  html: `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:var(--theme-primary,#003049);transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.35);"></div>`,
   iconSize: [22, 22],
   iconAnchor: [11, 22],
 });

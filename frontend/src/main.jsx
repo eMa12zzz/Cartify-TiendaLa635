@@ -10,7 +10,7 @@ import App from './App.jsx'
  * (El CSS equivalente vive en index.css.)
  *
  * ThemeProvider (paletas del panel) vive DENTRO de App.jsx, anidado en
- * AjustesProvider — necesita el colorMarca de la tienda para armar la paleta
+ * AjustesProvider — de ahí salen el nombre, el logo y la portada. Ver
  * "Mi marca". Ver ThemeContext.jsx.
  */
 createRoot(document.getElementById('root')).render(

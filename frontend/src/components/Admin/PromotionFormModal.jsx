@@ -47,13 +47,13 @@ const hoyInputDate = () => aInputDate(new Date());
 const finDelDia = (valor) => (valor ? `${valor}T23:59:59.999` : null);
 
 /*
- * Saca los dos colores de un fondo de tema ("linear-gradient(135deg, #8A5222
- * 0%, #B46C30 100%)") para poder seguir editándolos con los selectores de
+ * Saca los dos colores de un fondo de tema ("linear-gradient(135deg, #00283D
+ * 0%, #003049 100%)") para poder seguir editándolos con los selectores de
  * color, que solo entienden hex sueltos.
  */
 const extraerColoresDeFondo = (fondo = '') => {
   const hex = fondo.match(/#[0-9a-fA-F]{3,8}/g) || [];
-  return [hex[0] || '#B46C30', hex[1] || ''];
+  return [hex[0] || '#003049', hex[1] || ''];
 };
 
 /*
@@ -107,10 +107,10 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   const [guardando, setGuardando] = useState(false);
   // Diseño del banner (reemplaza al canvas que armaba la IA).
   const [tema, setTema] = useState('cafe');
-  const [colorFondo, setColorFondo] = useState('#B46C30');
+  const [colorFondo, setColorFondo] = useState('#003049');
   const [colorFondo2, setColorFondo2] = useState('');
   const [colorTexto, setColorTexto] = useState('#FFFFFF');
-  const [colorAcento, setColorAcento] = useState('#F3E7D8');
+  const [colorAcento, setColorAcento] = useState('#DDECF3');
   const [colorFlecha, setColorFlecha] = useState('');
   const { generando, generarPromo } = usePromoAI();
 
@@ -163,10 +163,10 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       setIcono(promoData.icono || '');
       setEtiqueta(promoData.etiqueta || '');
       setTema(promoData.tema || 'cafe');
-      setColorFondo(promoData.colorFondo || '#B46C30');
+      setColorFondo(promoData.colorFondo || '#003049');
       setColorFondo2(promoData.colorFondo2 || '');
       setColorTexto(promoData.colorTexto || '#FFFFFF');
-      setColorAcento(promoData.colorAcento || '#F3E7D8');
+      setColorAcento(promoData.colorAcento || '#DDECF3');
       setColorFlecha(promoData.colorFlecha || '');
     } else {
       setForm({ title: '', promoDescription: '', isActive: true, showBanner: true });
@@ -179,10 +179,10 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
       setIcono('');
       setEtiqueta('');
       setTema('cafe');
-      setColorFondo('#B46C30');
+      setColorFondo('#003049');
       setColorFondo2('');
       setColorTexto('#FFFFFF');
-      setColorAcento('#F3E7D8');
+      setColorAcento('#DDECF3');
       setColorFlecha('');
     }
     setImagen(null);
@@ -425,7 +425,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     }
   };
 
-  const inputCls = 'w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]';
+  const inputCls = 'w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]';
 
   return (
     <AnimatePresence>
@@ -439,11 +439,11 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
             className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col overflow-hidden relative z-10 max-h-[92vh]"
           >
-            <div className="bg-[#9C6026] text-white p-5">
+            <div className="bg-[#00283D] text-white p-5">
               <h2 className="text-2xl font-bold text-center">{isEditing ? 'Editar Promoción' : 'Nueva Promoción'}</h2>
             </div>
 
-            <div className="p-6 bg-[#FAF9F6] flex-1 overflow-y-auto">
+            <div className="p-6 bg-[#F1F6F9] flex-1 overflow-y-auto">
               <form id="promo-form" onSubmit={onSubmit} className="space-y-4">
                 {/* Tipo */}
                 <div>
@@ -451,7 +451,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   <div className="flex flex-wrap gap-2">
                     {TIPOS.map((t) => (
                       <button type="button" key={t.v} onClick={() => setType(t.v)}
-                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${type === t.v ? 'bg-[#B47C4D] text-white border-[#B47C4D]' : 'bg-white text-gray-600 border-gray-300'}`}>
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${type === t.v ? 'bg-[#003049] text-white border-[#003049]' : 'bg-white text-gray-600 border-gray-300'}`}>
                         {t.l}
                       </button>
                     ))}
@@ -464,7 +464,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                   promo no hace nada.
                 */}
                 {type === 'anuncio' && (
-                  <div className="rounded-xl border border-gray-200 bg-[#FAF9F6] p-3">
+                  <div className="rounded-xl border border-gray-200 bg-[#F1F6F9] p-3">
                     <label className="block text-sm font-bold text-gray-700 mb-1">Sello del anuncio</label>
                     <input
                       value={etiqueta}
@@ -484,20 +484,20 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                 {type === 'nxm' && (
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <span className="font-bold">Compra</span>
-                    <input type="number" min="2" step="1" value={buyQty} onKeyDown={bloquearTeclasNumero} onChange={(e) => setBuyQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#9C6026]" />
+                    <input type="number" min="2" step="1" value={buyQty} onKeyDown={bloquearTeclasNumero} onChange={(e) => setBuyQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#00283D]" />
                     <span className="font-bold">paga</span>
-                    <input type="number" min="1" step="1" value={payQty} onKeyDown={bloquearTeclasNumero} onChange={(e) => setPayQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#9C6026]" />
+                    <input type="number" min="1" step="1" value={payQty} onKeyDown={bloquearTeclasNumero} onChange={(e) => setPayQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#00283D]" />
                   </div>
                 )}
 
                 {/* Ayudante de IA: escribe el texto y arma el banner solito */}
-                <div className="rounded-xl border border-[#E4D5C3] bg-[#FBF6F0] p-3">
+                <div className="rounded-xl border border-[#E4D5C3] bg-[#F1F6F9] p-3">
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={onGenerarIA}
                       disabled={generando || items.length === 0}
-                      className="hover-scale press flex items-center gap-2 bg-[#9C6026] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="hover-scale press flex items-center gap-2 bg-[#00283D] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Sparkles size={16} />
                       {generando ? 'Generando…' : 'Generar con IA'}
@@ -696,7 +696,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
                   <textarea value={form.promoDescription} onChange={(e) => setForm({ ...form, promoDescription: e.target.value })} rows={2}
-                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#9C6026] resize-none"
+                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#00283D] resize-none"
                     placeholder="Ej. Promo de quesos seleccionados" />
                 </div>
 
@@ -733,7 +733,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
 
                   {/* Al estirarle la fecha a una promo vencida hay que reactivarla */}
                   {isEditing && promoVencida(promoData) && endsAt >= hoyInputDate() && !form.isActive && (
-                    <p className="text-xs text-[#B47C4D] mt-2 font-medium">
+                    <p className="text-xs text-[#003049] mt-2 font-medium">
                       Esta promoción se apagó al vencerse: marque "Activa" abajo para que la nueva fecha sirva de algo.
                     </p>
                   )}
@@ -755,7 +755,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                           <button type="button" key={p._id} onClick={() => addProducto(p)}
                             className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between">
                             <span>{p.name}</span>
-                            <span className="text-xs text-[#B47C4D] font-medium">+ Agregar</span>
+                            <span className="text-xs text-[#003049] font-medium">+ Agregar</span>
                           </button>
                         ))
                       )}
@@ -767,7 +767,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     lácteos" nadie debería buscar treinta productos a mano.
                   */}
                   {categorias.length > 0 && (
-                    <div className="rounded-xl border border-gray-200 bg-[#FAF9F6] p-3 mb-2">
+                    <div className="rounded-xl border border-gray-200 bg-[#F1F6F9] p-3 mb-2">
                       <div className="flex items-center gap-2 mb-2">
                         <Layers size={15} style={{ color: 'var(--theme-primary)' }} />
                         <span className="text-xs font-bold text-gray-700">O agregue una categoría completa</span>
@@ -776,7 +776,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                         <select
                           value={categoriaElegida}
                           onChange={(e) => setCategoriaElegida(e.target.value)}
-                          className="flex-1 min-w-[140px] bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-3 py-2 focus:outline-none focus:border-[#9C6026] cursor-pointer"
+                          className="flex-1 min-w-[140px] bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-3 py-2 focus:outline-none focus:border-[#00283D] cursor-pointer"
                         >
                           <option value="">Elegir categoría…</option>
                           {categorias.map((c) => (
@@ -795,7 +795,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                               onKeyDown={bloquearTeclasNumero}
                               onChange={(e) => setValorCategoria(e.target.value)}
                               placeholder={type === 'descuento' ? '20' : '1.25'}
-                              className="w-20 bg-white border border-gray-300 rounded-full px-2 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]"
+                              className="w-20 bg-white border border-gray-300 rounded-full px-2 py-2 text-sm text-center focus:outline-none focus:border-[#00283D]"
                             />
                           </div>
                         )}
@@ -804,7 +804,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                           type="button"
                           onClick={agregarCategoria}
                           disabled={!categoriaElegida}
-                          className="press bg-[#9C6026] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="press bg-[#00283D] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Agregar
                         </button>
@@ -849,7 +849,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                           {type === 'descuento' && (
                             <div className="flex items-center gap-1">
                               <input type="number" min="0" max="100" value={it.discount} onKeyDown={bloquearTeclasNumero} onChange={(e) => updateItem(it.productId, 'discount', e.target.value)}
-                                className="w-16 bg-white border border-gray-300 rounded-full px-2 py-1 text-sm text-center focus:outline-none focus:border-[#9C6026]" />
+                                className="w-16 bg-white border border-gray-300 rounded-full px-2 py-1 text-sm text-center focus:outline-none focus:border-[#00283D]" />
                               <span className="text-xs text-gray-500">%</span>
                             </div>
                           )}
@@ -857,7 +857,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-gray-500">$</span>
                               <input type="number" min="0" step="0.01" value={it.fixedPrice} onKeyDown={bloquearTeclasNumero} onChange={(e) => updateItem(it.productId, 'fixedPrice', e.target.value)}
-                                className="w-20 bg-white border border-gray-300 rounded-full px-2 py-1 text-sm text-center focus:outline-none focus:border-[#9C6026]" />
+                                className="w-20 bg-white border border-gray-300 rounded-full px-2 py-1 text-sm text-center focus:outline-none focus:border-[#00283D]" />
                             </div>
                           )}
                           <button type="button" onClick={() => removeItem(it.productId)} className="text-red-500 text-sm px-1" aria-label="Quitar">✕</button>
@@ -873,7 +873,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     sorprenda de no verla en "toda la tienda" únicamente.
                   */}
                   {pasillosPromo.length > 0 && (
-                    <div className="mt-2 flex items-start gap-2 rounded-xl border border-gray-200 bg-[#FAF9F6] p-3">
+                    <div className="mt-2 flex items-start gap-2 rounded-xl border border-gray-200 bg-[#F1F6F9] p-3">
                       <MapPin size={15} className="mt-0.5 flex-none" style={{ color: 'var(--theme-primary)' }} />
                       <p className="text-xs text-gray-600">
                         Aparecerá en {pasillosPromo.length === 1 ? 'el pasillo' : 'los pasillos'}:{' '}
@@ -906,9 +906,9 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
               </form>
             </div>
 
-            <div className="p-4 bg-[#FAF9F6] border-t border-gray-100 flex justify-end gap-3">
+            <div className="p-4 bg-[#F1F6F9] border-t border-gray-100 flex justify-end gap-3">
               <button type="button" onClick={onClose} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-6 py-2 rounded-full transition-colors">Cancelar</button>
-              <button form="promo-form" type="submit" disabled={guardando} className="bg-[#B47C4D] hover:bg-[#9C6026] text-white font-medium px-8 py-2 rounded-full transition-colors disabled:opacity-60">
+              <button form="promo-form" type="submit" disabled={guardando} className="bg-[#003049] hover:bg-[#00283D] text-white font-medium px-8 py-2 rounded-full transition-colors disabled:opacity-60">
                 {guardando ? 'Guardando…' : 'Guardar'}
               </button>
             </div>

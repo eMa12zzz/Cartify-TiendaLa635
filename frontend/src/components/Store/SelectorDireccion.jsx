@@ -127,7 +127,7 @@ const Panel = styled.div`
   left: 8px;
   width: 290px;
   background: #fff;
-  border: 1px solid #F0E7DE;
+  border: 1px solid #ECE7E1;
   border-radius: 16px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
   padding: 6px;
@@ -156,7 +156,7 @@ const Panel = styled.div`
 
 const Titulo = styled.p`
   font-size: 11px;
-  color: #9a938c;
+  color: #9CA3AF;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -223,7 +223,7 @@ const SinPunto = styled.span`
 
 const Vacio = styled.p`
   font-size: 12.5px;
-  color: #9a938c;
+  color: #9CA3AF;
   line-height: 1.5;
   margin: 4px 10px 10px;
 `;
@@ -318,15 +318,15 @@ const SelectorDireccion = () => {
                 />
                 <span style={{ minWidth: 0, flex: 1 }}>
                   {dir.nombre && (
-                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: '#2A1A0E' }}>
+                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: '#1C1614' }}>
                       {dir.nombre}
                     </span>
                   )}
-                  <span style={{ display: 'block', fontSize: 12.5, color: '#7a7269', lineHeight: 1.4 }}>
+                  <span style={{ display: 'block', fontSize: 12.5, color: '#6B7280', lineHeight: 1.4 }}>
                     {dir.direccion}
                   </span>
                   {dir.referencia && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#9a938c', marginTop: 2 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#9CA3AF', marginTop: 2 }}>
                       <Signpost size={12} strokeWidth={2.2} style={{ flexShrink: 0 }} />
                       {dir.referencia}
                     </span>

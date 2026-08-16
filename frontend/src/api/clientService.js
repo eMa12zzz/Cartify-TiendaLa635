@@ -57,6 +57,18 @@ export const clientService = {
     return response.data;
   },
 
+  /*
+   * "Dejar de recibirlos", desde el pie de un correo. NO lleva id ni necesita
+   * sesión: la persona puede estar en un teléfono donde nunca inició sesión, y
+   * pedirle la contraseña para dejar de recibir correos que no pidió es la
+   * forma elegante de no dejarla salir. Quien identifica es el token firmado.
+   * Ver backend/utils/tokenBaja.js.
+   */
+  bajaNotificacion: async (token) => {
+    const response = await api.post('/client/notificaciones/baja', { token });
+    return response.data;
+  },
+
   // El cliente reemplaza su lista de métodos de pago (datos no sensibles).
   updatePaymentMethods: async (id, paymentMethods) => {
     const response = await api.patch(`/client/${id}/payment-methods`, { paymentMethods });

@@ -1,6 +1,4 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { useAjustesCtx } from './AjustesContext';
-import { derivarMarca, hexAValido } from '../utils/colorMarca';
 
 /**
  * 4 accessibility-oriented palettes designed for neurological conditions,
@@ -12,7 +10,7 @@ import { derivarMarca, hexAValido } from '../utils/colorMarca';
  * 3. Tritanopia     — red/cyan safe for blue-yellow color blindness
  * 4. Dark Mode      — low-light, reduced stimulation for migraines & photosensitivity
  *
- * Antes había una 5ta, "Predeterminado" (café fijo, #B47C4D): se quitó
+ * Antes había una 5ta, "Predeterminado" (café fijo, #003049): se quitó
  * porque duplicaba lo que ya hace "Mi marca" — un café que nadie podía
  * cambiar, cuando el color de marca YA es configurable. Un admin que
  * tenía 'default' guardado en su localStorage simplemente no encuentra ese
@@ -118,20 +116,27 @@ const ThemeContext = createContext();
 
 export const useTheme = () => useContext(ThemeContext);
 
-// El café de fábrica, igual que ColorMarca.jsx — mismo respaldo en todos
-// lados cuando nadie eligió un color todavía.
-const CAFE_DE_FABRICA = '#B46C30';
-
 /*
- * "Mi marca" — la paleta por defecto del panel. Sigue el mismo color que el
- * dueño eligió para la cara de la tienda (Personalización → Color de la
- * tienda) — si nunca eligió uno, cae al café de fábrica. Las 4 paletas de
+ * "Mi marca" — la paleta por defecto del panel. Va con el azul de la casa, el
+ * mismo que viste la cara de la tienda. Ya no sale de ningún ajuste: la marca
+ * es fija (ver index.css). Las 4 paletas de
  * accesibilidad de arriba siguen intactas, con sus colores pensados a
  * propósito para cada condición, para quien las necesite.
  */
-const armarPaletaDeMarca = (colorMarca) => {
-  const base = hexAValido(colorMarca) ? colorMarca : CAFE_DE_FABRICA;
-  const escala = derivarMarca(base) || {};
+/*
+ * Los mismos seis tonos que declara index.css. Se repiten aquí porque este
+ * archivo arma un objeto de JavaScript, no CSS, y no puede leer variables del
+ * documento. Si la marca cambia, cambian los dos sitios.
+ */
+const ESCALA_DE_MARCA = {
+  '--marca-600': '#003049',
+  '--marca-700': '#00283D',
+  '--marca-100': '#DDECF3',
+  '--acento': '#009AEB',
+};
+
+const armarPaletaDeMarca = () => {
+  const escala = ESCALA_DE_MARCA;
   return {
     id: 'marca',
     name: 'Mi marca',
@@ -158,12 +163,11 @@ const armarPaletaDeMarca = (colorMarca) => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const { ajustes } = useAjustesCtx();
   const [paletteId, setPaletteId] = useState(() => {
     return localStorage.getItem('theme-palette') || 'marca';
   });
 
-  const paletaDeMarca = useMemo(() => armarPaletaDeMarca(ajustes.colorMarca), [ajustes.colorMarca]);
+  const paletaDeMarca = useMemo(() => armarPaletaDeMarca(), []);
   // "Mi marca" primero: es la que arranca por defecto, no una opción más al fondo.
   const todasLasPaletas = useMemo(() => [paletaDeMarca, ...palettes], [paletaDeMarca]);
 

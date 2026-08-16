@@ -121,13 +121,6 @@ const storeSettingsSchema = new Schema(
     direccion: { type: String, default: "Calle Sevilla 635, Col. Providencia", trim: true },
 
     /*
-     * Color base de la marca (hex, ej. "#B46C30"). De él sale toda la escala
-     * --marca-* de la tienda. Vacío = el café de siempre que declara index.css.
-     * Solo pinta la cara del cliente; el panel usa sus paletas de accesibilidad.
-     */
-    colorMarca: { type: String, default: "", trim: true },
-
-    /*
      * Costo del envío a domicilio, en dólares. Lo fija el panel y lo cobra el
      * pedido. Antes estaba escrito a mano en el carrito (4.78) y —peor— el
      * backend ni lo sumaba al total: se mostraba pero no se cobraba. Ahora es

@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAjustesCtx } from '../context/AjustesContext';
 import { temaActivo, aplicarTema } from '../utils/temporadas';
-import { derivarMarca } from '../utils/colorMarca';
 
 /*
  * ============================================================
@@ -59,14 +58,12 @@ export const useTemaCalculado = () => {
   );
 
   /*
-   * El color base de la marca que eligió el dueño. Es el tema de todos los días:
-   * se aplica siempre en la tienda, y una temporada activa lo pisa mientras dura.
-   * Sin color elegido, queda null y manda el café que declara index.css.
+   * Ya no hay "color base" que aplicar: la marca vive fija en index.css y
+   * nadie la puede repintar desde el panel. Queda en null para que el único
+   * que llegue a pisar las variables sea una temporada activa, y al apagarse
+   * la tienda vuelva sola al azul de la casa.
    */
-  const temaBase = useMemo(() => {
-    const colores = derivarMarca(ajustes.colorMarca);
-    return colores ? { clave: 'personalizado', colores } : null;
-  }, [ajustes.colorMarca]);
+  const temaBase = null;
 
   const enPanel = esPanel(pathname);
 

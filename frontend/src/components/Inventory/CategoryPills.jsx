@@ -7,7 +7,7 @@ const CategoryPills = ({ categories, selectedCategory, onSelectCategory }) => {
           onClick={() => onSelectCategory(category)}
           className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
             selectedCategory === category
-              ? 'bg-[#C28C5D] text-white'
+              ? 'bg-[#066494] text-white'
               : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100'
           }`}
         >

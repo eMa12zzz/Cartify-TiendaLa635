@@ -50,7 +50,7 @@ const MaterialesImpresion = () => {
     if (ok) { setAbierto(false); setEditId(null); setForm(VACIO); }
   };
 
-  const campo = 'w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]';
+  const campo = 'w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]';
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -58,7 +58,7 @@ const MaterialesImpresion = () => {
         <h3 className="text-xl font-bold text-gray-800">Materiales</h3>
         <button
           onClick={abrirNuevo}
-          className="flex items-center gap-2 px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" /> Agregar material
         </button>
@@ -103,7 +103,7 @@ const MaterialesImpresion = () => {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => abrirEdicion(m)} title="Editar"
-                      className="p-2 rounded-lg text-gray-500 hover:text-[#9C6026] hover:bg-gray-50 transition-colors">
+                      className="p-2 rounded-lg text-gray-500 hover:text-[#00283D] hover:bg-gray-50 transition-colors">
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button onClick={() => eliminar(m._id)} title="Eliminar"
@@ -127,7 +127,7 @@ const MaterialesImpresion = () => {
                     onBlur={(e) => {
                       if (Number(e.target.value) !== Number(m.existencia)) ajustar(m._id, e.target.value);
                     }}
-                    className="w-24 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-center focus:outline-none focus:border-[#9C6026]"
+                    className="w-24 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-center focus:outline-none focus:border-[#00283D]"
                     aria-label={`Existencia de ${m.name}`}
                   />
                   <span className="text-sm text-gray-500">{m.unidad || 'unidades'}</span>
@@ -162,10 +162,10 @@ const MaterialesImpresion = () => {
               transition={{ duration: DUR.modal, ease: EASE_OUT }}
               className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
             >
-              <div className="bg-[#9C6026] text-white p-5">
+              <div className="bg-[#00283D] text-white p-5">
                 <h2 className="text-2xl font-bold text-center">{editId ? 'Editar material' : 'Nuevo material'}</h2>
               </div>
-              <form onSubmit={enviar} className="p-6 bg-[#FAF9F6] space-y-4">
+              <form onSubmit={enviar} className="p-6 bg-[#F1F6F9] space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Nombre</label>
                   <input
@@ -195,7 +195,7 @@ const MaterialesImpresion = () => {
                       type="checkbox"
                       checked={form.esColor}
                       onChange={(e) => setForm({ ...form, esColor: e.target.checked })}
-                      className="w-4 h-4 accent-[#9C6026]"
+                      className="w-4 h-4 accent-[#00283D]"
                     />
                     Es tinta de color (si se acaba, no se puede imprimir a color)
                   </label>
@@ -230,7 +230,7 @@ const MaterialesImpresion = () => {
                     Cancelar
                   </button>
                   <button type="submit" disabled={guardando}
-                    className="flex-1 py-2.5 rounded-full bg-[#B47C4D] hover:bg-[#9C6026] text-white text-sm font-medium transition-colors disabled:opacity-60">
+                    className="flex-1 py-2.5 rounded-full bg-[#003049] hover:bg-[#00283D] text-white text-sm font-medium transition-colors disabled:opacity-60">
                     {guardando ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>

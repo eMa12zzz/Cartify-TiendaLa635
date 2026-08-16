@@ -213,7 +213,7 @@ const BurbujaPedido = () => {
             background: '#fff',
             borderRadius: 18,
             boxShadow: '0 18px 44px rgba(0,0,0,0.22)',
-            border: '1px solid #F0E7DE',
+            border: '1px solid #ECE7E1',
             overflow: 'hidden',
             animation: 'cardIn 220ms var(--ease-out)',
           }}
@@ -332,10 +332,10 @@ const BurbujaPedido = () => {
                     )}
                   </div>
                   <div style={{ paddingBottom: i < PASOS.length - 1 ? 12 : 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: actual ? 800 : 600, color: actual ? '#2A1A0E' : '#7a7269' }}>
+                    <div style={{ fontSize: 13, fontWeight: actual ? 800 : 600, color: actual ? '#1C1614' : '#6B7280' }}>
                       {p.label}
                     </div>
-                    <div style={{ fontSize: 11.5, color: '#9a938c' }}>{p.detalle}</div>
+                    <div style={{ fontSize: 11.5, color: '#9CA3AF' }}>{p.detalle}</div>
                   </div>
                 </div>
               );
@@ -347,14 +347,14 @@ const BurbujaPedido = () => {
               novedad), se dice tal cual en vez de disimular.
             */}
             {esDomicilio && seguimiento.senalFria && (
-              <p style={{ fontSize: 11.5, color: '#9a938c', margin: '10px 0 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '10px 0 0', lineHeight: 1.45 }}>
                 Su pedido va en camino. La última novedad del repartidor fue hace{' '}
                 {seguimiento.minutosDesdeUltimoDato || 1} min.
               </p>
             )}
 
             {esDomicilio && enCurso.deliveryAddress && (
-              <p style={{ fontSize: 11.5, color: '#9a938c', margin: '10px 0 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '10px 0 0', lineHeight: 1.45 }}>
                 Se lo llevamos a: {enCurso.deliveryAddress}
               </p>
             )}

@@ -29,7 +29,7 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
       transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1], delay: Math.min(index, 8) * 0.045 }}
       className="flex bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover-lift"
     >
-      <div className="w-1/3 bg-[#9C6026] text-white p-4 flex flex-col items-center justify-between relative rounded-l-xl">
+      <div className="w-1/3 bg-[#00283D] text-white p-4 flex flex-col items-center justify-between relative rounded-l-xl">
         <div className="w-full text-left">
           <p className="text-[10px] uppercase tracking-wider opacity-80">{product.brandId?.name}</p>
           <h3 className="text-xl font-bold leading-tight">{product.name}</h3>
@@ -70,7 +70,7 @@ const ProductCard = ({ product, onEdit, onDelete, onView, index = 0 }) => {
             <p className="text-xs font-medium text-gray-700 mb-1">{unidad.existencia}</p>
             <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-[#E07A2B]" 
+                className="h-full bg-[#009AEB]" 
                 style={{ width: `${quantityPercentage}%` }}
               ></div>
             </div>

@@ -3,7 +3,6 @@ import toast from 'react-hot-toast';
 import { storeSettingsService } from '../api/storeSettingsService';
 import { resolverPortada } from '../utils/portada';
 import { NOMBRE_TIENDA, DIRECCION_EN_UNA_LINEA } from '../utils/tienda';
-import { derivarMarca, hexAValido } from '../utils/colorMarca';
 
 /*
  * ============================================================
@@ -34,7 +33,6 @@ const DE_RESPALDO = {
   logoUrl: '',
   lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
-  colorMarca: '', // vacío = el café de siempre que declara index.css
   costoEnvio: 4.78,
   // Envío por distancia (ver utils/envio.js). Sin ubicación de la tienda, el
   // cálculo cae al costoEnvio plano de arriba, así que estos defaults dejan la
@@ -52,54 +50,8 @@ const DE_RESPALDO = {
   temporada: { modo: 'automatico', tema: '' },
 };
 
-/*
- * El color de marca se guarda aparte, en el navegador, para no repetir el
- * café de fábrica cada vez que se abre la tienda.
- *
- * Sin esto, TODA carga —no solo la primera— pintaba café un instante: el
- * respaldo de arriba trae colorMarca vacío a propósito (para cuando el
- * servidor de verdad no contesta), y useTemporada() lee eso ANTES de que la
- * petición a /storeSettings vuelva. Con el último color ya en localStorage,
- * el primer pintado usa el de verdad de una vez — la petición solo lo
- * confirma o lo actualiza en silencio si cambió.
- *
- * Guardamos DOS cosas, no una:
- *   - CLAVE_COLOR_CACHE: el hex tal cual, para el estado de React (ajustes.colorMarca).
- *   - CLAVE_ESCALA_CACHE: la escala YA derivada (--marca-600, --marca-700...),
- *     para que un script en index.html la pinte ANTES de que React monte
- *     nada. React solo puede tocar el DOM desde un efecto, que corre
- *     DESPUÉS del primer pintado del navegador — así que aunque el estado
- *     inicial ya tuviera el color correcto, ese primerísimo cuadro seguía
- *     saliendo con el café que index.css declara por defecto. El script no
- *     tiene ese problema: corre antes de que haya algo que pintar.
- *
- * Con las dos cachés puestas, el parpadeo café queda solo para la
- * primerísima visita desde un navegador nuevo, que es la única vez que de
- * verdad no hay nada guardado todavía.
- */
-const CLAVE_COLOR_CACHE = 'la635_color_marca_cache';
-const CLAVE_ESCALA_CACHE = 'la635_escala_marca_cache';
-
-const respaldoConCache = () => {
-  const colorCache = localStorage.getItem(CLAVE_COLOR_CACHE);
-  return colorCache ? { ...DE_RESPALDO, colorMarca: colorCache } : DE_RESPALDO;
-};
-
-// Guarda las dos cachés de una vez, a partir del color crudo.
-const guardarCacheDeColor = (colorMarca) => {
-  localStorage.setItem(CLAVE_COLOR_CACHE, colorMarca || '');
-  const escala = hexAValido(colorMarca) ? derivarMarca(colorMarca) : null;
-  if (escala) {
-    localStorage.setItem(CLAVE_ESCALA_CACHE, JSON.stringify(escala));
-  } else {
-    // Vacío es "nadie eligió color": se borra la escala vieja para que el
-    // script de index.html no siga pintando un color que ya se quitó.
-    localStorage.removeItem(CLAVE_ESCALA_CACHE);
-  }
-};
-
 export const useAjustesTienda = () => {
-  const [ajustes, setAjustes] = useState(respaldoConCache);
+  const [ajustes, setAjustes] = useState(DE_RESPALDO);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
@@ -111,13 +63,6 @@ export const useAjustesTienda = () => {
       // día devuelve un documento viejo al que le falta un campo nuevo, ese
       // campo cae en su valor por defecto y no en `undefined`.
       setAjustes({ ...DE_RESPALDO, ...(datos || {}) });
-      // Guarda (o borra) la caché para la PRÓXIMA carga. Vacío es un color
-      // válido —"nadie eligió uno"— así que se guarda igual, con cadena
-      // vacía: si no, la caché vieja de un color que ya se quitó se quedaría
-      // pintando para siempre.
-      if (datos && 'colorMarca' in datos) {
-        guardarCacheDeColor(datos.colorMarca);
-      }
     } catch (error) {
       console.error('Error cargando los ajustes de la tienda:', error);
       // Se deja el respaldo puesto. El interceptor de axios ya avisó.
@@ -165,12 +110,6 @@ export const useAjustesTienda = () => {
       const res = await storeSettingsService.guardarAjustes(cambios);
       if (res?.ajustes) {
         setAjustes({ ...DE_RESPALDO, ...res.ajustes });
-        // Al guardar un color nuevo, la próxima carga EN ESTE MISMO
-        // navegador arranca ya con el recién elegido, no con el anterior
-        // (la caché es del navegador, cada quien tiene la suya).
-        if ('colorMarca' in res.ajustes) {
-          guardarCacheDeColor(res.ajustes.colorMarca);
-        }
       }
       toast.success('Ajustes guardados');
       return true;

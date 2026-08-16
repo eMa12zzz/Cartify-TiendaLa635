@@ -3,15 +3,20 @@ import { Palette, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Lock, Check, Store as
 import { useAjustesCtx } from '../context/AjustesContext';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
-import ColorMarca from '../components/Admin/ColorMarca';
 import ServicioTarifa from '../components/Admin/ServicioTarifa';
 import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo } from '../utils/temporadas';
-import { muestrasDeMarca } from '../utils/colorMarca';
 
 /*
  * Los apartados de la izquierda. Antes todo era un scroll largo de tarjetas que
  * dejaba media pantalla vacía; ahora cada cosa vive en su pestaña.
  */
+/*
+ * Los tres colores que se enseñan cuando NO hay temporada pintando: son la
+ * marca de la casa, la misma que declara index.css. Antes salían del color
+ * que el dueño hubiera elegido; ese selector ya no existe.
+ */
+const MUESTRAS_DE_MARCA = ['#003049', '#066494', '#DDECF3'];
+
 const SECCIONES = [
   { id: 'identidad', label: 'Identidad', Icono: StoreIcon },
   { id: 'apariencia', label: 'Apariencia', Icono: Palette },
@@ -98,15 +103,6 @@ const Personalizacion = () => {
   const temporada = ajustes.temporada || { modo: 'automatico', tema: '' };
   const porCalendario = temaDeLaFecha();
   const pintandoAhora = temaActivo(temporada);
-  /*
-   * Las muestras de "los colores de siempre" (sin temporada activa) salían
-   * en un café fijo, aunque la tienda ya tuviera otro color de marca
-   * configurado — esta vista previa decía una cosa y la tienda de verdad
-   * mostraba otra. Ahora salen del color de marca real; si nadie eligió
-   * uno todavía, muestrasDeMarca devuelve vacío y ahí sí cae al café de
-   * fábrica, que en ese caso es honesto: es el color de verdad.
-   */
-  const muestrasDeSiempre = muestrasDeMarca(ajustes.colorMarca);
 
   const MODOS = [
     { clave: 'automatico', nombre: 'Automático', ayuda: 'Lo elige la fecha, sin que nadie entre a cambiarlo.' },
@@ -313,8 +309,6 @@ const Personalizacion = () => {
           </form>
             )}
 
-            {/* ── Apariencia: color de la marca (la Temporada va más abajo) ── */}
-            {seccion === 'apariencia' && <ColorMarca />}
 
             {/* ── Envío y cobros ── */}
             {seccion === 'cobros' && (
@@ -447,7 +441,7 @@ const Personalizacion = () => {
               style={{ backgroundColor: 'var(--theme-primary-light)' }}
             >
               <div className="flex gap-1 flex-none">
-                {(pintandoAhora?.muestras || (muestrasDeSiempre.length ? muestrasDeSiempre : ['#B46C30', '#D8A860', '#F3E7D8'])).map((color) => (
+                {(pintandoAhora?.muestras || MUESTRAS_DE_MARCA).map((color) => (
                   <span
                     key={color}
                     className="w-5 h-5 rounded-full border"

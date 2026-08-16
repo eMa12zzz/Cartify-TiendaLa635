@@ -1,6 +1,8 @@
 import { Component } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { AlertTriangle, RotateCcw, Store } from 'lucide-react';
+import { areaDeRuta } from '../../utils/sesion';
 
 /*
  * ============================================================
@@ -26,31 +28,44 @@ import { AlertTriangle, RotateCcw, Store } from 'lucide-react';
  */
 
 /*
- * Café clavado en el propio código, sin variables: este límite envuelve TODA
- * la app —panel incluido— así que un color fijo se veía igual sin importar
- * qué paleta tuviera puesta quien mira. --theme-* está siempre pintada por
- * ThemeContext, en cualquier ruta; el hex que había antes queda de respaldo
- * nada más para el caso extremo de que algo truene ANTES de que el proveedor
- * del tema termine de montar.
+ * DOS PALETAS, SEGÚN DÓNDE REVENTÓ.
+ *
+ * Este límite envuelve TODA la app, y ahí estaba el problema: pintaba siempre
+ * con --theme-*, la paleta del PANEL. Con "Modo Oscuro" puesto, un error en la
+ * TIENDA le mostraba al cliente una pantalla morada sobre fondo negro — los
+ * colores de una herramienta de trabajo que él nunca ha visto, justo en el
+ * momento en que más necesita reconocer dónde está parado.
+ *
+ * Ahora el color lo decide la ruta, igual que los avisos. Los hex de respaldo
+ * se quedan para el caso extremo de que algo truene ANTES de que los
+ * proveedores terminen de montar. Ver useEstiloAvisos.
  */
+/*
+ * Los dos colores que se usan más de una vez, en funciones y no repetidos en
+ * cada regla: el principal (icono, botón sólido, borde del otro botón) y el
+ * de la tarjeta.
+ */
+const colorPrincipal = (p) => (p.$panel ? 'var(--theme-primary, #003049)' : 'var(--marca-600, #003049)');
+const colorTarjeta = (p) => (p.$panel ? 'var(--theme-card-bg, #fff)' : 'var(--papel, #fff)');
+
 const Pantalla = styled.div`
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: var(--theme-main-bg, #FBF6F0);
+  background: ${(p) => (p.$panel ? "var(--theme-main-bg, #F1F6F9)" : "var(--marca-50, #F1F6F9)")};
 `;
 
 const Tarjeta = styled.div`
   width: 100%;
   max-width: 520px;
-  background: var(--theme-card-bg, #fff);
-  border: 1px solid var(--theme-card-border, #EDE7E0);
+  background: ${(p) => (p.$panel ? "var(--theme-card-bg, #fff)" : "var(--papel, #fff)")};
+  border: 1px solid ${(p) => (p.$panel ? "var(--theme-card-border, #ECE7E1)" : "var(--linea, #ECE7E1)")};
   border-radius: 20px;
   padding: 32px 28px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(90,55,25,0.08), 0 12px 28px rgba(90,55,25,0.10);
+  box-shadow: 0 2px 8px rgba(0,48,73,0.08), 0 12px 28px rgba(0,48,73,0.10);
 `;
 
 const Icono = styled.div`
@@ -58,8 +73,8 @@ const Icono = styled.div`
   height: 56px;
   margin: 0 auto 16px;
   border-radius: 50%;
-  background: var(--theme-primary-light, #F3E7D8);
-  color: var(--theme-primary, #B46C30);
+  background: ${(p) => (p.$panel ? "var(--theme-primary-light, #DDECF3)" : "var(--marca-100, #DDECF3)")};
+  color: ${(p) => (p.$panel ? "var(--theme-primary, #003049)" : "var(--marca-600, #003049)")};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,14 +84,14 @@ const Titulo = styled.h1`
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 800;
-  color: var(--theme-text-primary, #2A1A0E);
+  color: ${(p) => (p.$panel ? "var(--theme-text-primary, #1C1614)" : "var(--tinta, #1C1614)")};
 `;
 
 const Texto = styled.p`
   margin: 0 0 22px;
   font-size: 14px;
   line-height: 1.55;
-  color: var(--theme-text-secondary, #6B6560);
+  color: ${(p) => (p.$panel ? "var(--theme-text-secondary, #6B6560)" : "var(--tinta-suave, #6B6560)")};
 `;
 
 const Botones = styled.div`
@@ -99,9 +114,11 @@ const Boton = styled.button`
   transition: background-color var(--dur-press) var(--ease-out),
               transform var(--dur-press) var(--ease-out);
 
-  border: ${(p) => (p.$primario ? 'none' : '1.5px solid var(--theme-primary, #B46C30)')};
-  background: ${(p) => (p.$primario ? 'var(--theme-primary, #B46C30)' : 'var(--theme-card-bg, #fff)')};
-  color: ${(p) => (p.$primario ? 'var(--theme-button-text, #fff)' : 'var(--theme-primary, #B46C30)')};
+  /* Dos decisiones en una: de qué paleta sale el color, y si el botón es el
+     sólido o el de borde. Se resuelven juntas para no anidar interpolaciones. */
+  border: ${(p) => (p.$primario ? 'none' : `1.5px solid ${colorPrincipal(p)}`)};
+  background: ${(p) => (p.$primario ? colorPrincipal(p) : colorTarjeta(p))};
+  color: ${(p) => (p.$primario ? '#fff' : colorPrincipal(p))};
 
   &:active { transform: scale(0.97); }
 
@@ -115,8 +132,8 @@ const Detalle = styled.pre`
   margin: 22px 0 0;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #2A1A0E;
-  color: #FFD9CF;
+  background: #1C1614;
+  color: #F2C9C0;
   font-size: 11.5px;
   line-height: 1.5;
   text-align: left;
@@ -155,20 +172,23 @@ class LimiteDeError extends Component {
     const { error } = this.state;
     if (!error) return this.props.children;
 
+    // Dónde reventó decide con qué paleta se pinta la disculpa.
+    const panel = !!this.props.enPanel;
+
     return (
-      <Pantalla role="alert">
-        <Tarjeta>
-          <Icono><AlertTriangle size={26} strokeWidth={1.9} /></Icono>
-          <Titulo>Algo se nos rompió acá</Titulo>
-          <Texto>
+      <Pantalla role="alert" $panel={panel}>
+        <Tarjeta $panel={panel}>
+          <Icono $panel={panel}><AlertTriangle size={26} strokeWidth={1.9} /></Icono>
+          <Titulo $panel={panel}>Algo se nos rompió acá</Titulo>
+          <Texto $panel={panel}>
             No fue culpa suya. Esta pantalla no cargó bien; ya quedó anotado.
             Puede volver a intentarlo o regresar a la tienda.
           </Texto>
           <Botones>
-            <Boton type="button" $primario onClick={this.recargar}>
+            <Boton type="button" $primario $panel={panel} onClick={this.recargar}>
               <RotateCcw size={15} strokeWidth={2.2} /> Volver a intentar
             </Boton>
-            <Boton type="button" onClick={this.irALaTienda}>
+            <Boton type="button" $panel={panel} onClick={this.irALaTienda}>
               <Store size={15} strokeWidth={2.2} /> Ir a la tienda
             </Boton>
           </Botones>
@@ -182,4 +202,24 @@ class LimiteDeError extends Component {
   }
 }
 
-export default LimiteDeError;
+/*
+ * El envoltorio que le dice al límite dónde está parada la persona.
+ *
+ * Va aparte porque componentDidCatch solo existe en clases y las clases no
+ * pueden usar hooks. Así el que se exporta sigue llamándose igual y App.jsx no
+ * se entera del cambio.
+ *
+ * La frontera entre panel y tienda no se vuelve a escribir aquí: es la misma
+ * de utils/sesion.js, la que decide también qué sesión manda en cada ruta y de
+ * qué color salen los avisos. Una ruta nueva del panel se agrega ALLÁ.
+ */
+const LimiteDeErrorConArea = ({ children }) => {
+  const { pathname } = useLocation();
+  return (
+    <LimiteDeError enPanel={areaDeRuta(pathname) === 'personal'}>
+      {children}
+    </LimiteDeError>
+  );
+};
+
+export default LimiteDeErrorConArea;

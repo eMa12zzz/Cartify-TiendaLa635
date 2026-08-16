@@ -10,8 +10,6 @@ import StatCard from '../components/UI/StatCard';
 import { useDashboard } from '../hooks/useDashboard';
 import { useResumenCredito } from '../hooks/useCreditoProveedor';
 import { useTheme } from '../context/ThemeContext';
-import { useAjustesCtx } from '../context/AjustesContext';
-import { derivarMarca, hexAValido } from '../utils/colorMarca';
 import { dashboardService } from '../api/dashboardService';
 import { productService } from '../api/productService';
 import { modalTransition, overlayTransition, modalInitial, modalAnimate } from '../utils/motion';
@@ -111,7 +109,6 @@ const AdminDashboard = () => {
   const { totales: creditoTotales } = useResumenCredito();
   const { palette } = useTheme();
   const c = palette.colors; // las barras y acentos siguen la paleta activa
-  const { ajustes } = useAjustesCtx();
   const [modal, setModal] = useState(null); // 'reponer' | 'caducar' | 'pdf'
   // Periodo elegido DENTRO del modal de descarga — no depende del que esté
   // activo en pantalla, así que se le pone su propio estado (arranca igual al
@@ -131,8 +128,9 @@ const AdminDashboard = () => {
 
   // El café de marca, igual en los dos reportes.
   const coloresDeMarca = () => {
-    const baseMarca = hexAValido(ajustes.colorMarca) ? ajustes.colorMarca : '#B46C30';
-    const escalaMarca = derivarMarca(baseMarca) || {};
+    // El azul de la casa, el mismo que declara index.css. Antes salía del
+    // color que el dueño hubiera elegido; ese ajuste ya no existe.
+    const escalaMarca = { '--marca-600': '#003049', '--marca-700': '#00283D' };
     return {
       brown: hexARgbArr(escalaMarca['--marca-600']),
       brownDark: hexARgbArr(escalaMarca['--marca-700']),
@@ -337,8 +335,8 @@ const AdminDashboard = () => {
       {/* ── Encabezado ── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-bold tracking-wider text-[#C28C5D]">{fechaLarga()}</p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Resumen de hoy</h1>
+          <p className="text-xs font-bold tracking-wider text-[#066494]">{fechaLarga()}</p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#066494]">Resumen de hoy</h1>
         </div>
         <button
           onClick={() => { setPeriodoDescarga(periodo); setModal('pdf'); }}
@@ -364,7 +362,7 @@ const AdminDashboard = () => {
         <StatCard title="Por reponer" value={data.porReponer.total}
           extra={
             data.porReponer.total > 0
-              ? <button onClick={() => setModal('reponer')} className="text-xs font-bold text-[#B47C4D] hover:underline">Ver la lista →</button>
+              ? <button onClick={() => setModal('reponer')} className="text-xs font-bold text-[#003049] hover:underline">Ver la lista →</button>
               : <span className="text-xs text-gray-500">Todo surtido</span>
           } />
       </div>
@@ -428,7 +426,7 @@ const AdminDashboard = () => {
                 <button
                   key={p.id}
                   onClick={() => setPeriodo(p.id)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium border ${periodo === p.id ? 'bg-[#B47C4D] text-white border-[#B47C4D]' : 'bg-white text-gray-600 border-gray-300'}`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium border ${periodo === p.id ? 'bg-[#003049] text-white border-[#003049]' : 'bg-white text-gray-600 border-gray-300'}`}
                 >
                   {p.label}
                 </button>
@@ -507,7 +505,7 @@ const AdminDashboard = () => {
       <div className="min-w-0 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <h3 className="text-xl font-bold text-gray-800">Productos más vendidos</h3>
-          <button onClick={() => navigate('/inventario')} className="text-sm font-medium text-[#B47C4D] hover:underline">Ver todo</button>
+          <button onClick={() => navigate('/inventario')} className="text-sm font-medium text-[#003049] hover:underline">Ver todo</button>
         </div>
         {data.masVendidos.length === 0 ? (
           <p className="text-sm text-gray-500">Aún no hay ventas registradas.</p>
@@ -573,7 +571,7 @@ const AdminDashboard = () => {
                     <span className="text-gray-600 flex-none">{money(m.total)}</span>
                   </div>
                   <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#B47C4D]" style={{ width: `${(m.total / mayorModulo) * 100}%` }} />
+                    <div className="h-full rounded-full bg-[#003049]" style={{ width: `${(m.total / mayorModulo) * 100}%` }} />
                   </div>
                 </div>
               ))}
@@ -609,7 +607,7 @@ const AdminDashboard = () => {
             initial={modalInitial} animate={modalAnimate} exit={modalInitial} transition={modalTransition}
             className="bg-white rounded-2xl shadow-xl w-full max-w-lg relative z-10 max-h-[80vh] flex flex-col"
           >
-            <div className="bg-[#9C6026] text-white p-5 flex items-center justify-between">
+            <div className="bg-[#00283D] text-white p-5 flex items-center justify-between">
               <h2 className="text-xl font-bold">
                 {modal === 'reponer' ? 'Productos por reponer' : 'Lotes que caducan pronto'}
               </h2>
@@ -639,7 +637,7 @@ const AdminDashboard = () => {
             initial={modalInitial} animate={modalAnimate} exit={modalInitial} transition={modalTransition}
             className="bg-white rounded-2xl shadow-xl w-full max-w-md relative z-10 overflow-hidden"
           >
-            <div className="bg-[#9C6026] text-white p-5 flex items-center justify-between">
+            <div className="bg-[#00283D] text-white p-5 flex items-center justify-between">
               <h2 className="text-xl font-bold">Descargar</h2>
               <button onClick={() => setModal(null)}><X className="w-5 h-5" /></button>
             </div>
@@ -652,7 +650,7 @@ const AdminDashboard = () => {
                     <button
                       key={p.id}
                       onClick={() => setPeriodoDescarga(p.id)}
-                      className={`px-4 py-1.5 rounded-full text-sm font-medium border ${periodoDescarga === p.id ? 'bg-[#B47C4D] text-white border-[#B47C4D]' : 'bg-white text-gray-600 border-gray-300'}`}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium border ${periodoDescarga === p.id ? 'bg-[#003049] text-white border-[#003049]' : 'bg-white text-gray-600 border-gray-300'}`}
                     >
                       {p.label}
                     </button>
@@ -661,7 +659,7 @@ const AdminDashboard = () => {
                 <button
                   onClick={handleDescargarResumen}
                   disabled={descargando}
-                  className="w-full bg-[#B47C4D] hover:bg-[#9C6026] disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-full"
+                  className="w-full bg-[#003049] hover:bg-[#00283D] disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-full"
                 >
                   {descargando ? 'Generando…' : 'Descargar resumen'}
                 </button>

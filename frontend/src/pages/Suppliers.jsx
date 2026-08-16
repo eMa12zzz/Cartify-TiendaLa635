@@ -111,7 +111,7 @@ const Suppliers = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
-      <h1 className="text-4xl font-extrabold text-[#C28C5D] mb-6">Proveedores</h1>
+      <h1 className="text-4xl font-extrabold text-[#066494] mb-6">Proveedores</h1>
 
       {/*
         Lo vencido, arriba de todo. Es plata que ya se debía pagar y suele venir
@@ -143,7 +143,7 @@ const Suppliers = () => {
                 placeholder="Buscar proveedor..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] transition-colors w-64 shadow-sm"
               />
             </div>
             <FilterSelect
@@ -156,7 +156,7 @@ const Suppliers = () => {
             />
             <button 
               onClick={handleAddSupplier}
-              className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+              className="px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
             >
               Agregar Proveedor
             </button>
@@ -210,7 +210,7 @@ const Suppliers = () => {
                     */}
                     <button
                       onClick={() => setCuentaAbierta(item)}
-                      className="press p-1.5 rounded-md text-[#B47C4D] hover:text-[#9C6026] hover:bg-gray-100 transition-colors"
+                      className="press p-1.5 rounded-md text-[#003049] hover:text-[#00283D] hover:bg-gray-100 transition-colors"
                       title="Estado de cuenta"
                     >
                       <Wallet size={17} />

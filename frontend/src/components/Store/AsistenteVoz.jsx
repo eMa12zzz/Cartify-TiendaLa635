@@ -230,7 +230,7 @@ const AsistenteVoz = ({
         ) : kiosco.imagenQR ? (
           <div className="p-3 rounded-2xl bg-white shadow-lg text-center" style={{ width: 190 }}>
             <img src={kiosco.imagenQR} alt={`Código ${kiosco.codigo}`} className="w-full rounded-lg" />
-            <p className="text-[11px] mt-1.5 font-semibold" style={{ color: '#2A1A0E' }}>
+            <p className="text-[11px] mt-1.5 font-semibold" style={{ color: '#1C1614' }}>
               Escanee para sumar sus puntos
             </p>
             {/* El código escrito es el plan B: si la cámara no agarra, se

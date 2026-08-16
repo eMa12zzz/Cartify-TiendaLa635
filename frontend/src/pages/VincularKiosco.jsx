@@ -45,7 +45,7 @@ const VincularKiosco = () => {
     <div style={hoja}>
       <div style={tarjeta}>
         <div style={sello}>
-          <QrCode size={26} strokeWidth={2.2} color="#B46C30" />
+          <QrCode size={26} strokeWidth={2.2} color="#003049" />
         </div>
 
         {/* Sin sesión no hay a qué cuenta pegarle la compra */}
@@ -123,7 +123,7 @@ const tarjeta = {
   width: '100%',
   maxWidth: 380,
   textAlign: 'center',
-  border: '1px solid #F0E7DE',
+  border: '1px solid #ECE7E1',
   borderRadius: 22,
   padding: '32px 24px',
   boxShadow: '0 18px 44px rgba(60,40,20,0.10)',
@@ -131,31 +131,31 @@ const tarjeta = {
 
 const sello = {
   width: 54, height: 54, borderRadius: 16,
-  background: '#FAF3EB',
+  background: '#F1F6F9',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   margin: '0 auto 16px',
 };
 
-const titulo = { fontSize: 22, fontWeight: 800, color: '#1d1206', margin: '0 0 8px' };
-const bajada = { fontSize: 14.5, lineHeight: 1.55, color: '#7a7269', margin: '0 0 20px' };
+const titulo = { fontSize: 22, fontWeight: 800, color: '#101820', margin: '0 0 8px' };
+const bajada = { fontSize: 14.5, lineHeight: 1.55, color: '#6B7280', margin: '0 0 20px' };
 
 const codigoChip = {
   display: 'inline-block',
   fontSize: 20, fontWeight: 800, letterSpacing: 4,
-  color: '#B46C30', background: '#FAF3EB',
+  color: '#003049', background: '#F1F6F9',
   padding: '8px 18px', borderRadius: 12, margin: '0 0 22px',
 };
 
 const botonPrincipal = {
   width: '100%', padding: '15px 0', borderRadius: 999, border: 'none',
-  background: '#B46C30', color: '#fff', fontSize: 16, fontWeight: 700,
+  background: '#003049', color: '#fff', fontSize: 16, fontWeight: 700,
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   cursor: 'pointer',
 };
 
 const botonSuave = {
   width: '100%', padding: '13px 0', borderRadius: 999,
-  border: '1px solid #eee', background: '#fff', color: '#B46C30',
+  border: '1px solid #eee', background: '#fff', color: '#003049',
   fontSize: 14.5, fontWeight: 700, marginTop: 10,
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
   cursor: 'pointer',
@@ -163,7 +163,7 @@ const botonSuave = {
 
 const botonTexto = {
   width: '100%', padding: '12px 0', border: 'none', background: 'none',
-  color: '#9a938c', fontSize: 13.5, fontWeight: 600, marginTop: 6, cursor: 'pointer',
+  color: '#9CA3AF', fontSize: 13.5, fontWeight: 600, marginTop: 6, cursor: 'pointer',
 };
 
 export default VincularKiosco;

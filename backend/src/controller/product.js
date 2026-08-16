@@ -1,4 +1,5 @@
 import productModel from "../models/product.js";
+import { anotarProductoNuevo } from "../utils/avisosCliente.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 
@@ -108,6 +109,20 @@ productController.insertProduct = async (req, res) => {
     });
 
     await newProduct.save();
+
+    /*
+     * El aviso a quien pidió enterarse de los productos nuevos.
+     *
+     * No manda nada ahora: apunta el producto en un lote y espera unos minutos
+     * a ver si vienen más. Quien carga inventario sube treinta cosas de
+     * corrido, y treinta correos seguidos de la misma tienda es la receta
+     * exacta para acabar en spam el mismo día. Ver utils/avisosCliente.js.
+     */
+    anotarProductoNuevo({
+      nombre: newProduct.name,
+      precio: newProduct.salePrice,
+      imagen: Array.isArray(newProduct.image) ? newProduct.image[0] : newProduct.image,
+    });
 
     return res.status(201).json({
       message: "Producto creado"

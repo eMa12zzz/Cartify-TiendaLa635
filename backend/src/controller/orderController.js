@@ -1,4 +1,5 @@
 import { isValidObjectId } from "mongoose";
+import { avisarPedidoEnCaminoEnSegundoPlano } from "../utils/avisosCliente.js";
 import orderModel from "../models/order.js";
 import clientModel from "../models/client.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
@@ -463,6 +464,21 @@ orderController.updateOrderStatus = async (req, res) => {
 
     if (!updated) {
       return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    /*
+     * "Su pedido va en camino", a quien lo pidió.
+     *
+     * Solo en el SALTO a en_camino, y por eso se mira el estado anterior: sin
+     * esa comprobación, un empleado que vuelve a tocar el botón —o que corrige
+     * el estado tras un error— le manda el mismo aviso otra vez a alguien que
+     * ya está esperando en la puerta.
+     *
+     * Sin await: el pedido ya se guardó y quien está en el mostrador no tiene
+     * por qué esperar a que salga un correo. Ver utils/avisosCliente.js.
+     */
+    if (status === "en_camino" && actual.status !== "en_camino") {
+      avisarPedidoEnCaminoEnSegundoPlano(updated);
     }
 
     return res.status(200).json({ message: "Estado actualizado", order: updated });

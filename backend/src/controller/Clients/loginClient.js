@@ -1,4 +1,5 @@
 import clientModel from "../../models/client.js";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import adminModel from "../../models/admin.js";
 import employeeModel from "../../models/employee.js";
 import bcryptjs from "bcryptjs";
@@ -53,7 +54,7 @@ const entrarComoPersonal = async (res, { doc, tipo }, password) => {
 
   // Entró por la puerta de la tienda, pero es personal: su sesión va en la
   // cookie del personal, no en la de cliente.
-  res.cookie("authCookie", token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
+  res.cookie("authCookie", token, opcionesCookie(30 * 24 * 60 * 60 * 1000));
 
   return res.status(200).json({
     message: "Sesión iniciada",
@@ -182,10 +183,7 @@ loginClientController.login = async (req, res) => {
      * el dueño es cliente de su propia tienda, con el mismo correo en las dos
      * tablas. Ver también los dos cajones de localStorage en AuthContext.
      */
-    res.cookie("authCookieCliente", token, {
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
-    });
+    res.cookie("authCookieCliente", token, opcionesCookie(30 * 24 * 60 * 60 * 1000)); // 30 días
 
     return res.status(200).json({
       message: "Sesión iniciada",

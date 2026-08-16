@@ -58,7 +58,7 @@ const PromoCard = ({
 
   // Sobre fondos oscuros el texto es blanco; el acento entonces necesita
   // letra oscura para que se lea (y al revés en el tema claro).
-  const textoSobreAcento = colores.texto === '#FFFFFF' ? '#3D2B1A' : colores.texto;
+  const textoSobreAcento = colores.texto === '#FFFFFF' ? '#101820' : colores.texto;
 
   const Icono = iconoDePromo(icono);
   /*
@@ -76,7 +76,7 @@ const PromoCard = ({
         aspectRatio: PROPORCION,
         borderRadius: 20,
         overflow: 'hidden',
-        background: aSangre ? '#EDE7E0' : colores.fondo,
+        background: aSangre ? '#ECE7E1' : colores.fondo,
         /*
          * Sombra en dos capas y bajita.
          *
@@ -273,7 +273,7 @@ const PromoCard = ({
             height: 'clamp(30px, 4.4%, 44px)',
             borderRadius: '50%',
             background: aSangre ? 'rgba(255,255,255,0.94)' : colores.flecha,
-            color: aSangre ? '#2A1A0E' : textoSobreAcento,
+            color: aSangre ? '#1C1614' : textoSobreAcento,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

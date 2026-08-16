@@ -5,22 +5,17 @@ import toast from 'react-hot-toast';
 import { loginAdminDB, verify2FAAdmin } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import CampoContrasena from '../components/UI/CampoContrasena';
-import { useAjustesCtx } from '../context/AjustesContext';
-import { derivarMarca, hexAValido } from '../utils/colorMarca';
 
 const LoginAdmin = () => {
   const navigate = useNavigate();
   const { login, logout } = useAuth();
   const [loading, setLoading] = useState(false);
-  const { ajustes } = useAjustesCtx();
   /*
    * El color de marca real, inyectado localmente — /admin también está en la
    * lista de rutas del panel, así que useTemporada() apaga --marca-* ahí a
    * propósito (ver SinPermiso.jsx). Con esto puesto en el envoltorio, el
    * login sigue el color de marca de verdad y no el café de fábrica.
    */
-  const baseMarca = hexAValido(ajustes.colorMarca) ? ajustes.colorMarca : '#B46C30';
-  const escalaMarca = derivarMarca(baseMarca) || {};
 
   /*
    * El login es de DOS pasos por el 2FA:
@@ -111,7 +106,7 @@ const LoginAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-white" style={escalaMarca}>
+    <div className="min-h-screen flex bg-white">
       {/* Columna izquierda - Imagen */}
       <div className="hidden lg:block lg:w-1/2 relative bg-gray-100">
         <img

@@ -42,5 +42,19 @@ export const config = {
     secretKey: process.env.apisecretmail,
     fromEmail: process.env.MAILJET_FROM_EMAIL,
     fromName: process.env.MAILJET_FROM_NAME
+  },
+  /*
+   * La tienda vista desde afuera. Hace falta para los correos: un aviso de
+   * promoción sin un enlace en el que se pueda dar clic es un volante que no
+   * lleva a ninguna parte, y el servidor no tiene forma de adivinar en qué
+   * dirección la abrió el cliente.
+   *
+   * TIENDA_URL va SIN barra al final (ej. https://la635.com); si alguien la
+   * escribe con barra, la quitamos aquí y no en cada plantilla. En local no
+   * hace falta configurarla: el valor por defecto es el puerto de Vite.
+   */
+  tienda: {
+    url: (process.env.TIENDA_URL || "http://localhost:5173").replace(/\/+$/, ""),
+    nombre: process.env.TIENDA_NOMBRE || "Tienda la 635"
   }
 };

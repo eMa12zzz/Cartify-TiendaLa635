@@ -44,7 +44,7 @@ const ConfirmActionModal = ({ isOpen, onClose, onConfirm, product, actionType, b
             className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden relative z-10"
           >
             
-            <div className="bg-[#8B5A2B] text-white p-4">
+            <div className="bg-[#003049] text-white p-4">
               <h2 className="text-xl font-bold text-center flex justify-center items-center gap-2">
                 {isDelete && <AlertTriangle className="w-6 h-6 text-yellow-300" />}
                 {title}
@@ -84,7 +84,7 @@ const ConfirmActionModal = ({ isOpen, onClose, onConfirm, product, actionType, b
                 <p className="text-xs font-medium text-gray-700 mb-1">Stock</p>
                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
                   <div 
-                    className="h-full bg-[#E07A2B]" 
+                    className="h-full bg-[#009AEB]" 
                     style={{ width: `${quantityPercentage}%` }}
                   ></div>
                 </div>

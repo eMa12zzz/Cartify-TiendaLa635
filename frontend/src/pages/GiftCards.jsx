@@ -39,7 +39,7 @@ const GiftCards = () => {
   };
 
   const dinero = (n) => `$${(Number(n) || 0).toFixed(2)}`;
-  const inputCls = 'w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]';
+  const inputCls = 'w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]';
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
@@ -50,7 +50,7 @@ const GiftCards = () => {
         </div>
         <button
           onClick={() => setModalOpen(true)}
-          className="hover-scale press flex items-center gap-2 px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+          className="hover-scale press flex items-center gap-2 px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
         >
           <Plus size={16} /> Crear tarjetas
         </button>
@@ -66,7 +66,7 @@ const GiftCards = () => {
         ].map((c) => (
           <div key={c.l} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
             <div className="text-xs text-gray-500 mb-1">{c.l}</div>
-            <div className={`text-2xl font-bold ${c.destacar ? 'text-[#B47C4D]' : 'text-gray-800'}`}>{c.v}</div>
+            <div className={`text-2xl font-bold ${c.destacar ? 'text-[#003049]' : 'text-gray-800'}`}>{c.v}</div>
           </div>
         ))}
       </div>
@@ -78,7 +78,7 @@ const GiftCards = () => {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="bg-[#FBF6F0] border border-[#E4D5C3] rounded-2xl p-5"
+            className="bg-[#F1F6F9] border border-[#E4D5C3] rounded-2xl p-5"
           >
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-bold text-gray-700">
@@ -94,10 +94,10 @@ const GiftCards = () => {
                   key={t._id}
                   onClick={() => copiar(t.code)}
                   title="Copiar código"
-                  className="press flex items-center gap-2 bg-white border border-[#E4D5C3] rounded-xl px-4 py-2.5 hover:border-[#B47C4D] transition-colors"
+                  className="press flex items-center gap-2 bg-white border border-[#E4D5C3] rounded-xl px-4 py-2.5 hover:border-[#003049] transition-colors"
                 >
                   <span className="font-mono font-bold tracking-wider text-gray-800">{t.code}</span>
-                  <span className="text-sm font-bold text-[#B47C4D]">{dinero(t.amount)}</span>
+                  <span className="text-sm font-bold text-[#003049]">{dinero(t.amount)}</span>
                   <Copy size={14} className="text-gray-400" />
                 </button>
               ))}
@@ -145,7 +145,7 @@ const GiftCards = () => {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Código, cliente, monto…"
-              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] w-60"
+              className="pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] w-60"
             />
           </div>
 
@@ -183,7 +183,7 @@ const GiftCards = () => {
                 <td className="py-4 px-4">
                   <button
                     onClick={() => copiar(t.code)}
-                    className="font-mono font-bold tracking-wider text-sm text-gray-800 hover:text-[#B47C4D] transition-colors flex items-center gap-2"
+                    className="font-mono font-bold tracking-wider text-sm text-gray-800 hover:text-[#003049] transition-colors flex items-center gap-2"
                     title="Copiar código"
                   >
                     {t.code} <Copy size={13} className="text-gray-300" />
@@ -231,10 +231,10 @@ const GiftCards = () => {
               initial={modalInitial} animate={modalAnimate} exit={modalInitial} transition={modalTransition}
               className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
             >
-              <div className="bg-[#9C6026] text-white p-5">
+              <div className="bg-[#00283D] text-white p-5">
                 <h2 className="text-2xl font-bold text-center">Crear tarjetas</h2>
               </div>
-              <form onSubmit={guardar} className="p-6 bg-[#FAF9F6] space-y-4">
+              <form onSubmit={guardar} className="p-6 bg-[#F1F6F9] space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Monto de cada tarjeta</label>
                   <input type="number" min="0.01" step="0.01" onKeyDown={bloquearTeclasNumero}
@@ -265,7 +265,7 @@ const GiftCards = () => {
                     Cancelar
                   </button>
                   <button type="submit" disabled={creando}
-                    className="bg-[#B47C4D] hover:bg-[#9C6026] text-white font-medium px-8 py-2 rounded-full transition-colors disabled:opacity-60">
+                    className="bg-[#003049] hover:bg-[#00283D] text-white font-medium px-8 py-2 rounded-full transition-colors disabled:opacity-60">
                     {creando ? 'Creando…' : 'Crear'}
                   </button>
                 </div>

@@ -30,8 +30,25 @@
  */
 
 // 1- Paso 1 del login de empleados (2FA): envía correo/usuario para recibir OTP
+/*
+ * A DÓNDE SE LE HABLA AL SERVIDOR.
+ *
+ * Aquí estaban las seis direcciones escritas a mano con "localhost:4000".
+ * api.js ya usaba la variable de entorno, pero este archivo no — y son justo
+ * las llamadas de ENTRAR: el login del cliente, el del admin, el 2FA y Google.
+ *
+ * Desplegado, eso significaba que el navegador de cada cliente le hablaría a
+ * SU PROPIA máquina en vez de al servidor de la tienda: la tienda cargaba
+ * bien y nadie podía iniciar sesión.
+ *
+ * El respaldo sigue siendo localhost para que en local no haya que configurar
+ * nada. Es la misma variable que usa api.js, así que las dos mitades apuntan
+ * siempre al mismo sitio.
+ */
+const API = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+
 export const loginStep1 = async (data) => {
-  const response = await fetch('http://localhost:4000/api/authFlow/login-step-1', {
+  const response = await fetch(`${API}/authFlow/login-step-1`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -46,7 +63,7 @@ export const loginStep1 = async (data) => {
 
 // 2- Paso 2 del login de empleados (2FA): valida el código OTP y devuelve el token final
 export const loginStep2 = async (data) => {
-  const response = await fetch('http://localhost:4000/api/authFlow/login-step-2', {
+  const response = await fetch(`${API}/authFlow/login-step-2`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -63,7 +80,7 @@ export const loginStep2 = async (data) => {
 // bien, el backend manda un código al correo y responde { needs2FA: true }; la
 // sesión todavía NO se abre.
 export const loginAdminDB = async (data) => {
-  const response = await fetch('http://localhost:4000/api/loginAdmin/login', {
+  const response = await fetch(`${API}/loginAdmin/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -79,7 +96,7 @@ export const loginAdminDB = async (data) => {
 // 3b- Login de administradores, PASO 2: verifica el código del correo. Si
 // coincide, el backend abre la sesión y devuelve el token y los datos del admin.
 export const verify2FAAdmin = async (data) => {
-  const response = await fetch('http://localhost:4000/api/loginAdmin/verify-2fa', {
+  const response = await fetch(`${API}/loginAdmin/verify-2fa`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -94,7 +111,7 @@ export const verify2FAAdmin = async (data) => {
 
 // 4- Login de clientes: valida correo y contraseña. Requiere cuenta verificada y activa.
 export const loginClientDB = async (data) => {
-  const response = await fetch('http://localhost:4000/api/loginClient/login', {
+  const response = await fetch(`${API}/loginClient/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -117,7 +134,7 @@ export const loginClientDB = async (data) => {
  * aceptado los términos. Ver googleAuthClient.js en el backend.
  */
 export const googleLoginDB = async (credential, extra = {}) => {
-  const response = await fetch('http://localhost:4000/api/loginClient/google', {
+  const response = await fetch(`${API}/loginClient/google`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

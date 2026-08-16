@@ -6,6 +6,17 @@ import { soloAdmin, duenoOPersonal } from "../middlewares/validarSesion.js";
 const router = express.Router();
 
 /*
+ * SIN middleware de sesión, y es correcto: es el enlace "dejar de recibirlos"
+ * del pie de los correos, que tiene que funcionar de un clic desde el teléfono
+ * de alguien que quizá nunca inició sesión en este navegador. La puerta la hace
+ * el token firmado que viene en el cuerpo. Ver utils/tokenBaja.js.
+ *
+ * Va ARRIBA de las rutas con /:id para que Express no lea "notificaciones"
+ * como si fuera el id de un cliente.
+ */
+router.post("/notificaciones/baja", clientController.bajaNotificacion);
+
+/*
  * Todo este router estaba abierto. Con el id en la URL —que se adivina o se
  * copia— cualquiera leía y EDITABA la cuenta de otro: sus direcciones con
  * coordenadas, sus métodos de pago, sus favoritos.
