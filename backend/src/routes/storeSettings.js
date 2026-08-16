@@ -2,7 +2,7 @@ import express from "express";
 import storeSettingsController from "../controller/storeSettingsController.js";
 import upload from "../utils/cloudinaryConfig.js";
 
-import { soloPersonal } from "../middlewares/validarSesion.js";
+import { soloAdmin } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ const router = express.Router();
 router
   .route("/")
   .get(storeSettingsController.getSettings)                   // GET  /api/storeSettings -> ajustes actuales
-  .put(soloPersonal, storeSettingsController.updateSettings); // PUT  /api/storeSettings -> nombre, lema, portada, temporada
+  .put(soloAdmin, storeSettingsController.updateSettings); // PUT  /api/storeSettings -> nombre, lema, portada, temporada
 
 /*
  * El logo va por su propia puerta: cambiarlo es una acción sola y no tiene por
@@ -25,7 +25,7 @@ router
  */
 router
   .route("/logo")
-  .put(soloPersonal, upload.single("logo"), storeSettingsController.updateLogo)
-  .delete(soloPersonal, storeSettingsController.deleteLogo);
+  .put(soloAdmin, upload.single("logo"), storeSettingsController.updateLogo)
+  .delete(soloAdmin, storeSettingsController.deleteLogo);
 
 export default router;

@@ -26,7 +26,7 @@ import styled from 'styled-components';
  */
 
 const Tarjeta = styled.div`
-  border: 1px solid var(--linea, #EDE7E0);
+  border: 1px solid var(--linea, #ECE7E1);
   border-radius: 14px;
   overflow: hidden;
   background: var(--papel, #fff);

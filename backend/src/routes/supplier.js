@@ -1,12 +1,12 @@
 import express from 'express';
 import supplierController from '../controller/supplier.js';
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
 // Los proveedores de la tienda, con sus contactos. Cosa del personal.
-router.use(soloPersonal);
+router.use(soloAdmin);
 
 router.route("/")
     .get(supplierController.getSupplier)

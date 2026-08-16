@@ -31,6 +31,8 @@ import { config } from "../../config.js";
 // Los tipos que firma el login. Ver loginClient.js y loginAdmin.js.
 export const PERSONAL = ["Admin", "Employee"];
 export const CLIENTE = ["Client"];
+// Solo el dueño. Un empleado con sesión válida de personal NO entra aquí.
+export const ADMIN = ["Admin"];
 
 /*
  * `permitidos` vacío = basta con tener sesión, de la clase que sea.
@@ -97,6 +99,13 @@ export const validarSesion =
 export const soloPersonal = validarSesion(PERSONAL);
 export const soloCliente = validarSesion(CLIENTE);
 export const conSesion = validarSesion();
+/*
+ * `soloAdmin` — lo que un empleado NO debe poder tocar: inventario, precios,
+ * proveedores, promociones, empleados, clientes, ajustes de la tienda. Un
+ * empleado con sesión de personal perfectamente válida recibe 403 aquí, no
+ * 401 — sí inició sesión, solo que esta puerta no es la suya.
+ */
+export const soloAdmin = validarSesion(ADMIN);
 
 /*
  * "Tiene que ser SUYO."

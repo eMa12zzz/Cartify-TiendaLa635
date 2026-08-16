@@ -24,18 +24,30 @@
   Los colores salieron de medir los píxeles del diseño, no a ojo. Si algún día
   cambia la identidad de la tienda, se toca AQUÍ y cambia toda la app.
 
-  Ojo: --marca-600 es el café anaranjado del diseño (#B46C30), más saturado que
-  el que traía la app antes (#9C6026). El negro de --tinta es el de los botones
+  Ojo: --marca-600 es el café anaranjado del diseño (#003049), más saturado que
+  el que traía la app antes (#00283D). El negro de --tinta es el de los botones
   "+" de las tarjetas de producto: en el diseño el acento es café, pero la
   acción principal de cada tarjeta es negra.
 */
 :root {
-  --marca-700: #8A5222;  /* presionado / textos sobre claro */
-  --marca-600: #B46C30;  /* PRIMARIO: botones, pills activas, iconos */
-  --marca-400: #D8A860;  /* hover suave, bordes, estados intermedios */
-  --marca-100: #F3E7D8;  /* fondos de chip y realces */
-  --marca-50:  #FBF6F0;  /* fondos de sección tenues */
-  --acento:    #F08400;  /* enlaces de acción: "Editar", activos */
+  /*
+   * EL AZUL DE LA CASA. Fijo, no configurable.
+   *
+   * Antes esto era café y el dueño podía repintarlo desde Personalización con
+   * un selector de color. Se quitó: una tienda tiene UN color, no un ajuste
+   * que cambia de mes en mes, y ese selector era la puerta a que la tienda
+   * amaneciera de un color que nadie revisó contra el contraste del texto.
+   *
+   * La escala es la que calculaba derivarMarca() a partir de #003049, ya
+   * resuelta aquí: mismo tono, mismos saltos de luminosidad. Cambiar la marca
+   * hoy es cambiar estas seis líneas.
+   */
+  --marca-700: #00283D;  /* presionado / textos sobre claro */
+  --marca-600: #003049;  /* PRIMARIO: botones, pills activas, iconos */
+  --marca-400: #066494;  /* hover suave, bordes, estados intermedios */
+  --marca-100: #DDECF3;  /* fondos de chip y realces */
+  --marca-50:  #F1F6F9;  /* fondos de sección tenues */
+  --acento:    #009AEB;  /* enlaces de acción: "Editar", activos */
 
   --tinta:       #1C1614; /* texto principal y botones "+" */
   --tinta-suave: #6B6560; /* texto secundario */
@@ -296,57 +308,71 @@ input:disabled {
   & .text-gray-500 { color: var(--theme-text-secondary) !important; }
   
   /* Text Accents */
-  & .text-\[\#C28C5D\],
-  & .text-\[\#B47C4D\],
-  & .text-\[\#8B5A2B\],
-  & .text-\[\#E07A2B\] { color: var(--theme-accent) !important; }
+  & .text-\[\#066494\],
+  & .text-\[\#003049\],
+  & .text-\[\#003049\],
+  & .text-\[\#009AEB\] { color: var(--theme-accent) !important; }
 
   /* Primary button bg + readable text */
-  & .bg-\[\#B47C4D\],
-  & .bg-\[\#C28C5D\],
-  & .bg-\[\#E07A2B\],
-  & .bg-\[\#8B5A2B\],
+  & .bg-\[\#003049\],
+  & .bg-\[\#066494\],
+  & .bg-\[\#009AEB\],
+  & .bg-\[\#003049\],
   & .bg-\[\#A36B3D\],
-  & .bg-\[\#9C6026\] {
+  & .bg-\[\#00283D\] {
     background-color: var(--theme-primary) !important;
     color: var(--theme-button-text) !important;
   }
 
   /* Bordes con los mismos cafés fijos */
-  & .border-\[\#9C6026\],
-  & .border-\[\#B47C4D\],
-  & .border-\[\#8B5A2B\] { border-color: var(--theme-primary) !important; }
+  & .border-\[\#00283D\],
+  & .border-\[\#003049\],
+  & .border-\[\#003049\] { border-color: var(--theme-primary) !important; }
   
   /* Hover states */
-  & .hover\:bg-\[\#9C6026\]:hover,
-  & .hover\:bg-\[\#A36B3D\]:hover { 
-    background-color: var(--theme-primary-hover) !important; 
-    color: var(--theme-button-text) !important; 
+  & .hover\:bg-\[\#00283D\]:hover,
+  & .hover\:bg-\[\#A36B3D\]:hover {
+    background-color: var(--theme-primary-hover) !important;
+    color: var(--theme-button-text) !important;
   }
 
+  /*
+    Hover de TEXTO: el reposo (text-[#003049] o text-gray-500, etc.) ya
+    queda fijo con !important arriba, así que el :hover:text-[#00283D] de
+    Tailwind — sin !important — nunca ganaba la pelea y el botón se veía
+    "muerto" al pasar el mouse (Proveedores, Recuperar contraseña, login del
+    panel, estado de cuenta, Materiales de impresión). El pseudo-clase le da
+    más especificidad que el reposo, así que con !important esta sí gana.
+  */
+  & .hover\:text-\[\#00283D\]:hover,
+  & .hover\:text-\[\#003049\]:hover { color: var(--theme-primary-hover) !important; }
+
+  /* Mismo problema, con el borde: hover:border-[#003049] sobre un reposo ya fijado. */
+  & .hover\:border-\[\#003049\]:hover { border-color: var(--theme-primary-hover) !important; }
+
   /* Focus borders */
-  & .focus\:border-\[\#B47C4D\]:focus,
-  & .focus\:border-\[\#9C6026\]:focus,
-  & .focus\:border-\[\#C28C5D\]:focus { border-color: var(--theme-primary) !important; }
+  & .focus\:border-\[\#003049\]:focus,
+  & .focus\:border-\[\#00283D\]:focus,
+  & .focus\:border-\[\#066494\]:focus { border-color: var(--theme-primary) !important; }
 
   /* bg-orange-50 variants */
   & .bg-orange-50, 
   & .bg-orange-50\/50,
-  & .bg-\[\#FAF9F6\] { background-color: var(--theme-primary-light) !important; }
+  & .bg-\[\#F1F6F9\] { background-color: var(--theme-primary-light) !important; }
 
   /* Buttons with explicit white text */
-  & button.bg-\[\#B47C4D\],
-  & button[class*="bg-\[\#B47C4D\]"] {
+  & button.bg-\[\#003049\],
+  & button[class*="bg-\[\#003049\]"] {
     background-color: var(--theme-primary) !important;
     color: var(--theme-button-text) !important;
   }
   
   /* Keep white text on primary backgrounds */
-  & .bg-\[\#B47C4D\] .text-white,
-  & .bg-\[\#9C6026\] .text-white,
-  & .bg-\[\#9C6026\] h2,
-  & .bg-\[\#9C6026\] p,
-  & .bg-\[\#9C6026\] label {
+  & .bg-\[\#003049\] .text-white,
+  & .bg-\[\#00283D\] .text-white,
+  & .bg-\[\#00283D\] h2,
+  & .bg-\[\#00283D\] p,
+  & .bg-\[\#00283D\] label {
     color: var(--theme-button-text) !important;
   }
 
@@ -390,8 +416,8 @@ input:disabled {
   }
 
   /* Border color on account tab */
-  & .border-\[\#C28C5D\] { border-color: var(--theme-accent) !important; }
-  & .ring-\[\#C28C5D\]\/20 { --tw-ring-color: var(--theme-accent) !important; }
+  & .border-\[\#066494\] { border-color: var(--theme-accent) !important; }
+  & .ring-\[\#066494\]\/20 { --tw-ring-color: var(--theme-accent) !important; }
 
   /* Table rows */
   & .bg-gray-50, 
@@ -416,9 +442,9 @@ input:disabled {
     cambiar de paleta: el fondo crema de los bloques de ayuda, su borde, el
     café oscuro de los iconos y el hover de los botones de acción.
   */
-  & .bg-\[\#FBF6F0\] { background-color: var(--theme-primary-light) !important; }
+  & .bg-\[\#F1F6F9\] { background-color: var(--theme-primary-light) !important; }
   & .border-\[\#E4D5C3\] { border-color: var(--theme-card-border) !important; }
-  & .text-\[\#9C6026\] { color: var(--theme-primary) !important; }
+  & .text-\[\#00283D\] { color: var(--theme-primary) !important; }
   & .hover\:bg-\[\#6B4423\]:hover {
     background-color: var(--theme-primary-hover) !important;
     color: var(--theme-button-text) !important;

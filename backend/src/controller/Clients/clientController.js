@@ -1,4 +1,5 @@
 import clientModel from "../../models/client.js";
+import { leerTokenBaja } from "../../utils/tokenBaja.js";
 import { v2 as cloudinary } from "cloudinary";
 import bcryptjs from "bcryptjs";
 
@@ -393,6 +394,50 @@ clientController.updateNotifications = async (req, res) => {
     return res.status(500).json({
       message: "Error interno del servidor",
     });
+  }
+};
+
+/*
+ * DARSE DE BAJA DE UN AVISO, SIN INICIAR SESIÓN.
+ *
+ * El enlace del pie de los correos cae aquí. NO lleva middleware de sesión a
+ * propósito: pedirle a alguien que se loguee para dejar de recibir correos que
+ * no pidió es la forma elegante de no dejarlo salir. Quien no se acuerda de su
+ * contraseña se da de baja marcando el correo como spam, y eso le cuesta a la
+ * tienda mucho más caro que perder un suscriptor.
+ *
+ * Lo que hace de puerta es el token firmado: solo el servidor puede fabricarlo
+ * y nadie puede fabricar el de otra persona. Ver utils/tokenBaja.js.
+ */
+clientController.bajaNotificacion = async (req, res) => {
+  try {
+    const datos = leerTokenBaja(req.body?.token);
+    if (!datos) {
+      return res.status(400).json({
+        message: "Este enlace ya no sirve. Puede apagar los avisos desde Mi Cuenta > Notificaciones.",
+      });
+    }
+
+    /*
+     * Solo se apaga lo que traía ese correo. Quien se cansó de las promociones
+     * no está pidiendo que dejen de avisarle cuando su pedido va en camino — y
+     * apagárselo todo de una sería decidir por él.
+     */
+    const PERMITIDAS = ["promociones", "nuevosProductos", "pedidoCerca"];
+    const clave = PERMITIDAS.includes(datos.clave) ? datos.clave : "promociones";
+
+    const actualizado = await clientModel
+      .findByIdAndUpdate(datos.id, { $set: { [`notificationPrefs.${clave}`]: false } }, { new: true })
+      .select("email notificationPrefs");
+
+    if (!actualizado) {
+      return res.status(404).json({ message: "Esa cuenta ya no existe" });
+    }
+
+    return res.status(200).json({ message: "Listo, ya no le llegarán esos correos", clave });
+  } catch (error) {
+    console.log("error bajaNotificacion: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

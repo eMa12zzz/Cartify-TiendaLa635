@@ -69,7 +69,7 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
             <ShieldAlert size={26} />
           </div>
 
-          <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: '#2A1A0E' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: '#1C1614' }}>
             Producto para mayores de {EDAD_MINIMA}
           </h3>
           <p style={{ margin: '0 0 18px', fontSize: 14, color: '#666', lineHeight: 1.5 }}>
@@ -109,7 +109,7 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
             </button>
           </form>
 
-          <p style={{ margin: '14px 0 0', fontSize: 11.5, color: '#9a938c', lineHeight: 1.45 }}>
+          <p style={{ margin: '14px 0 0', fontSize: 11.5, color: '#9CA3AF', lineHeight: 1.45 }}>
             Solo se usa para habilitar la compra de productos restringidos. No se comparte.
           </p>
         </div>

@@ -389,7 +389,7 @@ const flecha = {
   width: 44,
   height: 44,
   borderRadius: '50%',
-  border: '1px solid #E4D5C3',
+  border: '1px solid var(--linea)',
   background: '#fff',
   color: 'var(--marca-700)',
   fontSize: 20,

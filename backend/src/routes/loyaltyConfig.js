@@ -1,7 +1,7 @@
 import express from "express";
 import loyaltyConfigController from "../controller/loyaltyConfigController.js";
 
-import { soloPersonal } from "../middlewares/validarSesion.js";
+import { soloAdmin } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
 
@@ -14,6 +14,6 @@ const router = express.Router();
 router
   .route("/")
   .get(loyaltyConfigController.getConfig)                    // GET /api/loyaltyConfig -> config actual
-  .put(soloPersonal, loyaltyConfigController.updateConfig);  // PUT /api/loyaltyConfig -> editar tasa/vencimiento
+  .put(soloAdmin, loyaltyConfigController.updateConfig);  // PUT /api/loyaltyConfig -> editar tasa/vencimiento
 
 export default router;

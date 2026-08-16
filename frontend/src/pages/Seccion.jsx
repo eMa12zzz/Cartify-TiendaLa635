@@ -43,9 +43,15 @@ const Contenedor = styled.div`
  * arriba a la vez se montan una encima de la otra. Esta se queda quieta y se
  * va con el scroll — es un botón de volver, no una barra de navegación.
  */
+/*
+ * Y sin línea abajo. Con la del encabezado justo encima, esta franja quedaba
+ * encerrada entre dos rayas paralelas a 56px: se anunciaba como una sección
+ * cuando es solo el camino de vuelta. La del encabezado ya separa la barra
+ * pegajosa de lo que se desplaza; el respiro hasta los productos lo pone el
+ * padding del contenido.
+ */
 const Barra = styled.header`
   background: var(--papel);
-  border-bottom: 1px solid var(--linea);
   height: 56px;
   display: flex;
   align-items: center;
@@ -140,7 +146,7 @@ const Seccion = () => {
   const { clave } = useParams();
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
-  const { productos, productosDelPasillo, agregarAlCarrito, cargando } = useStore({});
+  const { productos, productosDelPasillo, agregarAlCarrito, cantidadItems, cargando } = useStore({});
   const { orders } = useMyOrders();
   const secciones = useSeccionesTienda({
     productos: productosDelPasillo,
@@ -171,7 +177,14 @@ const Seccion = () => {
         perdían de vista el buscador, los pasillos y el carrito — y para
         volver a comprar había que retroceder primero.
       */}
-      <HeaderTienda />
+      {/*
+        El globo del carrito también aquí. Sin la cuenta, quien venía cargado
+        desde la portada entraba a una sección y veía el carrito vacío: el
+        pedido estaba intacto, pero el encabezado decía lo contrario. Los demás
+        mandos siguen sin pasarse a propósito — esta pantalla no monta el
+        carrito, así que tocarlo lleva a la tienda, que es donde sí se abre.
+      */}
+      <HeaderTienda cantidadItems={cantidadItems} />
 
       <Barra>
         <BarraInterior>
@@ -249,6 +262,7 @@ const Seccion = () => {
           onAgregarAlCarrito={agregarAlCarrito}
           onVerProducto={setProductoSeleccionado}
           todosLosProductos={productos}
+          header={{ cantidadItems }}
         />
       )}
     </Contenedor>

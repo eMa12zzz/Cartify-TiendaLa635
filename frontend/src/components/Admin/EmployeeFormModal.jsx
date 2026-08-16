@@ -102,7 +102,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
         transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex overflow-hidden relative z-10"
       >
-        <div className="w-1/3 bg-[#9C6026] text-white p-6 flex flex-col">
+        <div className="w-1/3 bg-[#00283D] text-white p-6 flex flex-col">
           <h2 className="text-2xl font-bold mb-6">
             {isEditing ? 'Editar Empleado' : 'Nuevo Empleado'}
           </h2>
@@ -147,7 +147,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           </div>
         </div>
 
-        <div className="w-2/3 p-6 flex flex-col relative bg-[#FAF9F6]">
+        <div className="w-2/3 p-6 flex flex-col relative bg-[#F1F6F9]">
           <form id="employee-form" onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6 flex-1">
             <div className="grid grid-cols-2 gap-6">
               <div>
@@ -161,7 +161,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                   // El guion se pone solo mientras escribe: si lo deja a mano,
                   // la base termina con tres formatos distintos del mismo DUI.
                   onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="00000000-0"
                 />
               </div>
@@ -175,7 +175,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                   {...register('phoneNumber', reglaTelefono)}
                   onKeyDown={bloquearNoDigitos}
                   onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="Ej. 7777-7777"
                 />
               </div>
@@ -186,7 +186,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
               <input 
                 type="email" 
                 {...register('email', { required: true })}
-                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                 placeholder="empleado@correo.com"
               />
             </div>
@@ -197,7 +197,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                 <input 
                   type="text" 
                   {...register('userName', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="juanp"
                 />
               </div>
@@ -208,7 +208,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                 </label>
                 <CampoContrasena
                   {...register('password', { required: !isEditing })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder={isEditing ? 'Dejalo vacío si no la vas a cambiar' : 'Contraseña segura'}
                 />
               </div>

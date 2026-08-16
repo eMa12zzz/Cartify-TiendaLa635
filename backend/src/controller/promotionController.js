@@ -1,5 +1,6 @@
 import promotionModel from "../models/promotion.js";
 import { v2 as cloudinary } from "cloudinary";
+import { avisarPromoNuevaEnSegundoPlano } from "../utils/avisoPromo.js";
 
 const promotionController = {};
 
@@ -99,6 +100,19 @@ promotionController.insertPromotion = async (req, res) => {
     });
 
     await newPromotion.save();
+
+    /*
+     * El volante por correo a quien pidió enterarse de las promociones.
+     *
+     * SIN await, y no por descuido: escribirle a toda la lista tarda, y la
+     * promoción YA está guardada. Esperar aquí dejaría al gerente mirando una
+     * rueda girando, y —peor— un correo que rebota devolvería un 500 sobre una
+     * promo que sí se creó. El propio aviso decide si toca mandarlo (apagada,
+     * sin banner o ya vencida no se anuncia) y se traga sus propios errores.
+     * Ver utils/avisoPromo.js.
+     */
+    avisarPromoNuevaEnSegundoPlano(newPromotion._id);
+
     return res.status(201).json({ message: "Promoción creada" });
   } catch (error) {
     console.log("error " + error);
@@ -165,6 +179,20 @@ promotionController.updatePromotion = async (req, res) => {
     }
 
     await promotionModel.findByIdAndUpdate(req.params.id, updatedData, { new: true });
+
+    /*
+     * La promo que se armó apagada —o sin banner— y se publica hoy.
+     *
+     * Es un camino normal: se deja lista el jueves y se enciende el viernes a
+     * primera hora. Sin esto, esa promo no se anunciaba nunca, porque el aviso
+     * solo salía al crearla. Se dispara únicamente si NUNCA se avisó de ella
+     * (avisoEnviadoEn vacío); el propio aviso vuelve a comprobar el estado y no
+     * manda nada dos veces.
+     */
+    if (!found.avisoEnviadoEn) {
+      avisarPromoNuevaEnSegundoPlano(req.params.id);
+    }
+
     return res.status(200).json({ message: "Promoción actualizada" });
   } catch (error) {
     console.log("error " + error);

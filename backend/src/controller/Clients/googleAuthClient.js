@@ -31,7 +31,7 @@ googleAuthClientController.login = async (req, res) => {
    * se usa para registrarse (el botón de la pantalla de Registro). Entrar con
    * una cuenta que ya existe no vuelve a pedir nada.
    */
-  const { credential, aceptaTerminos, promociones, phoneNumber } = req.body;
+  const { credential, aceptaTerminos, promociones, phoneNumber, fechaNacimiento, dui } = req.body;
 
   if (!credential) {
     return res.status(400).json({ message: "Falta el token de Google" });
@@ -119,9 +119,18 @@ googleAuthClientController.login = async (req, res) => {
         email,
         userName: (email.split("@")[0] || "").toLowerCase(),
         image: payload.picture || "",
-        // El teléfono es de la tienda, no de Google: sin él no hay a quién
-        // llamar cuando el repartidor no encuentra la casa.
+        /*
+         * Lo que Google NO da y la tienda sí necesita.
+         *
+         * El teléfono es de la tienda: sin él no hay a quién llamar cuando el
+         * repartidor no encuentra la casa. La fecha de nacimiento destapa los
+         * productos +18. El DUI es opcional de verdad — mucha gente del barrio
+         * no lo anda a mano— y se guarda como undefined y NUNCA como cadena
+         * vacía: el índice del modelo choca entre dos vacíos. Ver models/client.
+         */
         ...(phoneNumber ? { phoneNumber: String(phoneNumber).trim() } : {}),
+        ...(fechaNacimiento ? { fechaNacimiento: new Date(fechaNacimiento) } : {}),
+        ...(String(dui || '').trim() ? { dui: String(dui).trim() } : {}),
         googleId: payload.sub,
         authProvider: "google",
         isVerified: true,

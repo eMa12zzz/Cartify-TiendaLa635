@@ -21,7 +21,11 @@ const employeeSchema = new Schema({
     email: { type:"String"},
     userName: { type:"String"},
     password: { type:"String"},
-    isActive: { type:"Boolean", default:true}
+    isActive: { type:"Boolean", default:true},
+
+    // Bloqueo por intentos fallidos al iniciar sesión — igual que el admin.
+    loginAttemps: { type: Number, default: 0 },
+    timeOut: { type: Date, default: null },
 },
 {
     timestamps: true,

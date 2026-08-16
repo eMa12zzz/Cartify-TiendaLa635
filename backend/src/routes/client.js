@@ -1,9 +1,20 @@
 import express from "express";
 import clientController from "../controller/Clients/clientController.js";
 import upload from "../utils/cloudinaryConfig.js";
-import { soloPersonal, duenoOPersonal } from "../middlewares/validarSesion.js";
+import { soloAdmin, duenoOPersonal } from "../middlewares/validarSesion.js";
 
 const router = express.Router();
+
+/*
+ * SIN middleware de sesión, y es correcto: es el enlace "dejar de recibirlos"
+ * del pie de los correos, que tiene que funcionar de un clic desde el teléfono
+ * de alguien que quizá nunca inició sesión en este navegador. La puerta la hace
+ * el token firmado que viene en el cuerpo. Ver utils/tokenBaja.js.
+ *
+ * Va ARRIBA de las rutas con /:id para que Express no lea "notificaciones"
+ * como si fuera el id de un cliente.
+ */
+router.post("/notificaciones/baja", clientController.bajaNotificacion);
 
 /*
  * Todo este router estaba abierto. Con el id en la URL —que se adivina o se
@@ -20,7 +31,7 @@ const router = express.Router();
  */
 router
   .route("/")
-  .get(soloPersonal, clientController.getClients);
+  .get(soloAdmin, clientController.getClients);
 
 /*
  * Borrar una cuenta es irreversible y hasta hace poco estaba abierto: con un
@@ -30,7 +41,7 @@ router
   .route("/:id")
   .get(duenoOPersonal("id"), clientController.getClientById)
   .put(duenoOPersonal("id"), upload.single("image"), clientController.updateClient)
-  .delete(soloPersonal, clientController.deleteClient);
+  .delete(soloAdmin, clientController.deleteClient);
 
 // El cliente edita su propio perfil (datos básicos, y opcionalmente su foto).
 router

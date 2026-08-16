@@ -26,14 +26,14 @@ const GenericConfirmModal = ({ isOpen, onClose, onConfirm, data, actionType, ent
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
       >
         
-        <div className={`p-4 text-white flex justify-center items-center gap-2 ${isDelete ? 'bg-red-500' : 'bg-[#9C6026]'}`}>
+        <div className={`p-4 text-white flex justify-center items-center gap-2 ${isDelete ? 'bg-red-500' : 'bg-[#00283D]'}`}>
           {isDelete ? <AlertTriangle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
           <h2 className="text-xl font-bold text-center">
             {title}
           </h2>
         </div>
 
-        <div className="p-6 flex flex-col bg-[#FAF9F6]">
+        <div className="p-6 flex flex-col bg-[#F1F6F9]">
           <p className="text-gray-700 text-center mb-8">
             {isDelete 
               ? `Estás a punto de eliminar permanentemente este registro. Esta acción no se puede deshacer.`

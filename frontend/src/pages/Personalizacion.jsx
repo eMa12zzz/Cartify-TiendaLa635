@@ -3,7 +3,6 @@ import { Palette, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Lock, Check, Store as
 import { useAjustesCtx } from '../context/AjustesContext';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
-import ColorMarca from '../components/Admin/ColorMarca';
 import ServicioTarifa from '../components/Admin/ServicioTarifa';
 import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo } from '../utils/temporadas';
 
@@ -11,6 +10,13 @@ import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo } from '../utils/temporad
  * Los apartados de la izquierda. Antes todo era un scroll largo de tarjetas que
  * dejaba media pantalla vacía; ahora cada cosa vive en su pestaña.
  */
+/*
+ * Los tres colores que se enseñan cuando NO hay temporada pintando: son la
+ * marca de la casa, la misma que declara index.css. Antes salían del color
+ * que el dueño hubiera elegido; ese selector ya no existe.
+ */
+const MUESTRAS_DE_MARCA = ['#003049', '#066494', '#DDECF3'];
+
 const SECCIONES = [
   { id: 'identidad', label: 'Identidad', Icono: StoreIcon },
   { id: 'apariencia', label: 'Apariencia', Icono: Palette },
@@ -165,6 +171,7 @@ const Personalizacion = () => {
                 maxMB={8}
                 valorInicial={ajustes.logoUrl || null}
                 onArchivo={(archivo) => { if (archivo) subirLogo(archivo); }}
+                variante="panel"
                 alto={140}
                 titulo="Arrastre el logo o haga clic para elegirlo"
                 ayuda="PNG con fondo transparente se ve mejor. Se muestra a 38 px de alto."
@@ -302,8 +309,6 @@ const Personalizacion = () => {
           </form>
             )}
 
-            {/* ── Apariencia: color de la marca (la Temporada va más abajo) ── */}
-            {seccion === 'apariencia' && <ColorMarca />}
 
             {/* ── Envío y cobros ── */}
             {seccion === 'cobros' && (
@@ -436,7 +441,7 @@ const Personalizacion = () => {
               style={{ backgroundColor: 'var(--theme-primary-light)' }}
             >
               <div className="flex gap-1 flex-none">
-                {(pintandoAhora?.muestras || ['#B46C30', '#D8A860', '#F3E7D8']).map((color) => (
+                {(pintandoAhora?.muestras || MUESTRAS_DE_MARCA).map((color) => (
                   <span
                     key={color}
                     className="w-5 h-5 rounded-full border"

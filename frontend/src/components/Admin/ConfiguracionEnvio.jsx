@@ -26,9 +26,16 @@ import { useAjustesCtx } from '../../context/AjustesContext';
 // San Salvador, por si la tienda todavía no tiene ubicación fijada.
 const CENTRO_POR_DEFECTO = [13.6989, -89.1914];
 
+/*
+ * var(--theme-primary) y no var(--marca-*): el resto de esta pantalla ya
+ * sigue la paleta del panel (ver el MapPin de abajo), y este pin es lo
+ * mismo, un marcador de ubicación — no una vitrina del color de marca como
+ * sí lo es ColorMarca.jsx. --theme-primary está pintada siempre, sin
+ * importar la ruta, así que no hace falta el truco de inyectarla a mano.
+ */
 const pinTienda = divIcon({
   className: '',
-  html: `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:#B46C30;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.35);"></div>`,
+  html: `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:var(--theme-primary,#003049);transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.35);"></div>`,
   iconSize: [22, 22],
   iconAnchor: [11, 22],
 });

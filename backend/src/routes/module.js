@@ -1,7 +1,7 @@
 import express from 'express';
 import moduleController from '../controller/module.js';
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
@@ -10,11 +10,11 @@ const router = express.Router();
 
 router.route("/")
     .get(moduleController.getModule)
-    .post(soloPersonal, moduleController.insertModule);
+    .post(soloAdmin, moduleController.insertModule);
 
 router.route("/:id")
-    .put(soloPersonal, moduleController.updateModule)
+    .put(soloAdmin, moduleController.updateModule)
     .get(moduleController.getModule)
-    .delete(soloPersonal, moduleController.deleteModule);
+    .delete(soloAdmin, moduleController.deleteModule);
 
 export default router;

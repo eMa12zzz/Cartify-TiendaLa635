@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FileUp, LayoutGrid } from 'lucide-react';
+import { FileUp, LayoutGrid, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { printServiceService } from '../api/printServiceService';
 import { orderService } from '../api/orderService';
 import { useAuth } from '../hooks/useAuth';
 import { usePrintComposer } from '../hooks/usePrintComposer';
 import { useMaterialesImpresion } from '../hooks/useMaterialesImpresion';
+import { useCalceImpresion } from '../hooks/useCalceImpresion';
 import PrintComposer from '../components/Store/PrintComposer';
 import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
@@ -48,7 +49,13 @@ const PriceBox = styled.div`display: flex; align-items: baseline; justify-conten
 const PriceLabel = styled.span`font-size: 15px; color: #555;`;
 const PriceValue = styled.span`font-size: 28px; font-weight: 800; color: ${BROWN_DARK};`;
 const ErrorMsg = styled.div`color: #ef4444; font-size: 13px; margin-bottom: 16px;`;
-const ContinueBtn = styled.button`width: 100%; padding: 15px; background: ${BROWN}; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; &:hover { background: ${BROWN_DARK}; } &:disabled { background: #d8c5af; cursor: not-allowed; }`;
+/*
+ * Distinto del ErrorMsg rojo a propósito: esto no bloquea nada, es un
+ * "ojo con esto" — mismo tono ámbar que usan los avisos de advertencia en
+ * el resto de la web, no la alarma roja de "esto no se puede enviar".
+ */
+const Advertencia = styled.div`display: flex; align-items: flex-start; gap: 8px; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.4; margin-top: 10px;`;
+const ContinueBtn = styled.button`width: 100%; padding: 15px; background: ${BROWN}; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; &:hover { background: ${BROWN_DARK}; } &:disabled { background: #C9D4DB; cursor: not-allowed; }`;
 const Bloque = styled.div`margin-bottom: 32px;`;
 
 const Impresiones = () => {
@@ -120,6 +127,14 @@ const Impresiones = () => {
   // El subidor se encarga de la preview y las validaciones; aquí solo guardamos
   // el archivo, que es lo que va a viajar en el FormData.
   const seleccionarArchivo = (file) => { setArchivo(file); setError(''); };
+
+  /*
+   * En modo "archivo" nadie ajusta la imagen a la medida elegida — se manda
+   * tal cual a la impresora (ver el comentario largo en calceImpresion.js).
+   * Esto solo avisa cuando la proporción o la resolución no calzan; en modo
+   * editor el lienzo YA fuerza la medida real, así que no hace falta.
+   */
+  const advertenciaCalce = useCalceImpresion(modo === 'archivo' ? archivo : null, servicio);
 
   const enviar = async () => {
     if (!servicioId) { setError('Selecciona un formato de impresión.'); return; }
@@ -206,23 +221,31 @@ const Impresiones = () => {
 
         <Bloque>
           {modo === 'archivo' ? (
-            /*
-             * Aquí la preview no es un lujo: el cliente PAGA por imprimir esto.
-             * Ver el PDF completo antes de mandarlo es lo que evita el clásico
-             * "imprimí el archivo equivocado" pagado y ya impreso.
-             */
-            <SubidorArchivo
-              accept=".pdf,.jpg,.jpeg,.png"
-              maxMB={10}
-              onArchivo={seleccionarArchivo}
-              reinicio={enviosHechos}
-              alto={150}
-              altoPreview={340}
-              ajuste="contain"
-              titulo="Arrastra tu archivo o haz clic para elegirlo"
-              ayuda="PDF, JPG o PNG"
-              etiquetaAria="Subir el archivo a imprimir"
-            />
+            <>
+              {/*
+                Aquí la preview no es un lujo: el cliente PAGA por imprimir esto.
+                Ver el PDF completo antes de mandarlo es lo que evita el clásico
+                "imprimí el archivo equivocado" pagado y ya impreso.
+              */}
+              <SubidorArchivo
+                accept=".pdf,.jpg,.jpeg,.png"
+                maxMB={10}
+                onArchivo={seleccionarArchivo}
+                reinicio={enviosHechos}
+                alto={150}
+                altoPreview={340}
+                ajuste="contain"
+                titulo="Arrastra tu archivo o haz clic para elegirlo"
+                ayuda="PDF, JPG o PNG"
+                etiquetaAria="Subir el archivo a imprimir"
+              />
+              {advertenciaCalce && (
+                <Advertencia role="status">
+                  <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>{advertenciaCalce}</span>
+                </Advertencia>
+              )}
+            </>
           ) : !servicio ? (
             <p style={{ color: '#999', fontSize: 14 }}>Primero elige un formato para armar tu hoja.</p>
           ) : (

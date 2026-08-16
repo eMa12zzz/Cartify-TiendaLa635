@@ -33,10 +33,10 @@ const Contenedor = styled.div`
 `;
 
 /* Igual que en Seccion: la barra de volver NO es pegajosa —el encabezado de la
-   tienda ya lo es— y se va con el scroll. */
+   tienda ya lo es— y se va con el scroll. Tampoco lleva línea abajo: con la del
+   encabezado encima, esta franja quedaba entre dos rayas paralelas. */
 const Barra = styled.header`
   background: var(--papel);
-  border-bottom: 1px solid var(--linea);
   height: 56px;
   display: flex;
   align-items: center;

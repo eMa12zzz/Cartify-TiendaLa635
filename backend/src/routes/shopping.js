@@ -1,12 +1,12 @@
 import express from 'express';
 import shoppingController from '../controller/shoppingController.js';
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
 // Las compras a proveedor: lo que le cuesta la mercadería a la tienda.
-router.use(soloPersonal);
+router.use(soloAdmin);
 
 router.route("/")
     .get(shoppingController.getShoppings)

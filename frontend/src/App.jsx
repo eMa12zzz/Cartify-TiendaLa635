@@ -6,7 +6,9 @@ import { EdadProvider } from './context/EdadContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
 import { AjustesProvider } from './context/AjustesContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { useTemporada } from './hooks/useTemporada';
+import { useEstiloAvisos } from './hooks/useEstiloAvisos';
 import DecoracionTemporada from './components/Store/DecoracionTemporada';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import LimiteDeError from './components/UI/LimiteDeError';
@@ -30,6 +32,8 @@ import Register from './pages/Register';          // Registro de nuevos clientes
 import Verification from './pages/Verification'; // Verificación de código (registro, 2FA, recuperación)
 import CreatePassword from './pages/CreatePassword'; // Paso final de recuperación de contraseña
 import LoginPassword from './pages/LoginPassword';
+import CompletarGoogle from './pages/CompletarGoogle'; // Último paso de quien entra por primera vez con Google
+import BajaNotificaciones from './pages/BajaNotificaciones'; // Donde cae el "dejar de recibirlos" de los correos
 import ForgotPassword from './pages/ForgotPassword'; // Solicitar recuperación de contraseña
 
 // --- Tienda pública ---
@@ -89,6 +93,19 @@ const PinturaDeTemporada = () => {
 };
 
 /*
+ * El Toaster es UNO SOLO para toda la app —panel y tienda por igual—, pero no
+ * se pinta igual en las dos mitades: la tienda va con el color de marca y el
+ * panel con la paleta de accesibilidad que alguien eligió porque la necesita.
+ *
+ * Es un componente y no un <Toaster> suelto porque para saber en cuál de las
+ * dos está parada la persona hay que mirar la ruta, y eso solo se puede hacer
+ * DENTRO del router. Lo que decide el color vive en useEstiloAvisos; aquí solo
+ * se monta.
+ */
+const Avisos = () => <Toaster position="top-right" gutter={10} toastOptions={useEstiloAvisos()} />;
+
+
+/*
  * El router va POR FUERA de la sesión, al revés que antes.
  * AuthProvider ahora necesita saber en qué área está parada la persona —el
  * panel o la tienda— para decidir cuál de los dos cajones de sesión manda, y
@@ -102,9 +119,17 @@ const PinturaDeTemporada = () => {
  */
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
+/*
+ * El `locale` de Google va en el PROVEEDOR y no en el botón, aunque el botón
+ * también lo acepte. El de allá solo elige qué texto dibuja Google después; el
+ * idioma real lo fija el script de Google al cargarse, y ese script lo pide el
+ * proveedor. Con el locale solo en el botón, el script salía sin `hl=` y
+ * Google caía en el idioma de la cuenta de quien mirara: el botón decía
+ * "Continue with Google" en medio de una tienda entera en español.
+ */
 function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} locale="es">
     <BrowserRouter>
       <AuthProvider>
         {/*
@@ -114,6 +139,12 @@ function App() {
           Ver AjustesContext.
         */}
         <AjustesProvider>
+        {/*
+          ThemeProvider (paletas del PANEL, no de la tienda) va aquí adentro
+          porque las pantallas de adentro leen los ajustes de la tienda. Ver
+          ThemeContext.jsx — antes vivía en main.jsx, arriba de todo.
+        */}
+        <ThemeProvider>
         <PinturaDeTemporada />
         {/*
           El candado de los productos +18: vive alto para que la tarjeta, el
@@ -134,34 +165,17 @@ function App() {
         */}
         <DireccionProvider>
         {/*
-          Los avisos van ABAJO a la derecha: arriba tapaban el carrito y "Mi
-          Cuenta" justo cuando la persona acababa de tocarlos, que es el peor
-          momento posible para taparle el botón.
+          Arriba a la derecha. Abajo también viven el botón de WhatsApp y la
+          burbuja de seguimiento del pedido: con varios avisos apilados a la
+          vez, la pila llegaba a taparlos (o quedaba ella tapada detrás, según
+          el z-index del momento). Arriba no hay nada con quien pelear la
+          esquina.
 
           Y sin emojis: un 🛒 gigante junto al texto no dice nada que el texto
           no diga ya, y hace que la tienda parezca un chat. Se quedan los
           iconos de la librería, que son marcas discretas de éxito o error.
         */}
-        <Toaster
-          position="bottom-right"
-          gutter={10}
-          toastOptions={{
-            duration: 3500,
-            style: {
-              background: '#fff',
-              color: '#2A1A0E',
-              border: '1px solid #EDE7E0',
-              borderRadius: 14,
-              boxShadow: '0 10px 30px rgba(0,0,0,0.10)',
-              fontSize: 14,
-              fontWeight: 500,
-              padding: '12px 16px',
-              maxWidth: 420,
-            },
-            success: { iconTheme: { primary: '#B46C30', secondary: '#fff' } },
-            error: { duration: 5000, iconTheme: { primary: '#D8542C', secondary: '#fff' } },
-          }}
-        />
+        <Avisos />
         {/* Flotante de WhatsApp: se pinta solo en las pantallas del cliente. */}
         <BotonWhatsApp />
         {/* Seguimiento del pedido en curso; va a la izquierda para no chocar
@@ -198,6 +212,15 @@ function App() {
           <Route path="/verification"    element={<Verification />} />     {/* Código de verificación */}
           <Route path="/create-password" element={<CreatePassword />} />
           <Route path="/login-password"  element={<LoginPassword />} />
+          {/* Entrar con Google no basta para crear la cuenta: falta el teléfono
+              y el consentimiento. Ver CompletarGoogle. */}
+          <Route path="/completar-registro" element={<CompletarGoogle />} />
+          {/*
+            PÚBLICA a propósito: es el "dejar de recibirlos" del pie de los
+            correos, y quien lo toca puede estar en un teléfono donde nunca
+            inició sesión. Ver BajaNotificaciones.
+          */}
+          <Route path="/baja" element={<BajaNotificaciones />} />
           {/* Primera pantalla tras entrar: el saludo con el mapa */}
           <Route path="/bienvenida"      element={<Bienvenida />} />
           <Route path="/tienda-dashboard" element={<Dashboard />} />
@@ -221,22 +244,31 @@ function App() {
               panel. Ver ProtectedRoute. */}
           <Route element={<ProtectedRoute soloPersonal />}>
             <Route element={<AdminLayout />}>
+              {/* Lo que ve TODO el personal, admin o empleado */}
               <Route path="/dashboard"   element={<AdminDashboard />} />
-              <Route path="/inventario"  element={<Inventory />} />
               <Route path="/pedidos"     element={<Orders />} />
-              <Route path="/modulos"     element={<Modules />} />
-              <Route path="/marcas"      element={<Brands />} />
-              <Route path="/empleados"   element={<Employees />} />
-              <Route path="/clientes"    element={<Customers />} />
-              <Route path="/proveedores" element={<Suppliers />} />
-              <Route path="/categorias"  element={<Categories />} />
-              <Route path="/fidelidad"   element={<Fidelidad />} />
-              <Route path="/promociones" element={<Promociones />} />
-              <Route path="/servicios-impresion" element={<ServiciosImpresion />} />
-              <Route path="/tarjetas"    element={<GiftCards />} />
-              {/* Nombre, logo y orden de la portada de la tienda */}
-              <Route path="/personalizacion" element={<Personalizacion />} />
               <Route path="/cuenta"      element={<AccountSettings />} />
+
+              {/*
+                soloAdmin: un empleado con sesión de personal válida no pasa de
+                aquí — precios, proveedores, promociones, empleados, clientes y
+                ajustes de la tienda son cosa del dueño. Ver ProtectedRoute.
+              */}
+              <Route element={<ProtectedRoute soloAdmin />}>
+                <Route path="/inventario"  element={<Inventory />} />
+                <Route path="/modulos"     element={<Modules />} />
+                <Route path="/marcas"      element={<Brands />} />
+                <Route path="/empleados"   element={<Employees />} />
+                <Route path="/clientes"    element={<Customers />} />
+                <Route path="/proveedores" element={<Suppliers />} />
+                <Route path="/categorias"  element={<Categories />} />
+                <Route path="/fidelidad"   element={<Fidelidad />} />
+                <Route path="/promociones" element={<Promociones />} />
+                <Route path="/servicios-impresion" element={<ServiciosImpresion />} />
+                <Route path="/tarjetas"    element={<GiftCards />} />
+                {/* Nombre, logo y orden de la portada de la tienda */}
+                <Route path="/personalizacion" element={<Personalizacion />} />
+              </Route>
             </Route>
           </Route>
 
@@ -281,6 +313,7 @@ function App() {
         </DireccionProvider>
         </FavoritosProvider>
         </EdadProvider>
+        </ThemeProvider>
         </AjustesProvider>
       </AuthProvider>
     </BrowserRouter>

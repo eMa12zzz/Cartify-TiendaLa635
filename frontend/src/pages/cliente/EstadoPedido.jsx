@@ -27,11 +27,15 @@ import ValoracionPedido from '../../components/Store/ValoracionPedido';
 
 const BROWN = 'var(--marca-600)';
 
-// Los tres pasos del pedido, iguales que en la burbuja para que la persona vea
-// lo mismo en los dos lados.
-const PASOS = [
+/*
+ * Los pasos del pedido, iguales que en la burbuja para que la persona vea lo
+ * mismo en los dos lados. "En camino" se filtra abajo para retiro en local
+ * —no hay repartidor que seguirle— así que ese solo ve tres.
+ */
+const PASOS_TODOS = [
   { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package },
   { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat },
+  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike },
   { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check },
 ];
 
@@ -103,7 +107,7 @@ const EstadoPedido = () => {
   }, [id]);
 
   // Seguimiento en vivo: solo tiene sentido mientras el pedido está en curso.
-  const enCurso = pedido && ['pagado', 'preparando'].includes(pedido.status);
+  const enCurso = pedido && ['pagado', 'preparando', 'en_camino'].includes(pedido.status);
   const seguimiento = useSeguimientoEnVivo(pedido?._id, !!enCurso);
 
   if (cargando) {
@@ -130,9 +134,11 @@ const EstadoPedido = () => {
   // guardado del pedido.
   const estado = seguimiento.estado || pedido.status;
   const cancelado = estado === 'cancelado';
-  const pasoActual = PASOS.findIndex((p) => p.id === estado);
   const esDomicilio = pedido.deliveryType === 'delivery';
-  const enCamino = esDomicilio && seguimiento.enVivo;
+  const PASOS = esDomicilio ? PASOS_TODOS : PASOS_TODOS.filter((p) => p.id !== 'en_camino');
+  const pasoActual = PASOS.findIndex((p) => p.id === estado);
+  const estaEnCamino = estado === 'en_camino';
+  const enCamino = estaEnCamino && seguimiento.enVivo;
 
   const numero = String(pedido._id).slice(-6).toUpperCase();
   const infoPago = PAGO[pedido.paymentMethod] || PAGO.efectivo;
@@ -191,7 +197,7 @@ const EstadoPedido = () => {
                     className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
                     style={{ background: estado === 'entregado' ? '#22c55e' : BROWN }}
                   >
-                    {enCamino
+                    {estaEnCamino
                       ? <Bike className="w-7 h-7 text-white" />
                       : (() => { const I = (PASOS[pasoActual] || PASOS[0]).Icono; return <I className="w-7 h-7 text-white" />; })()}
                   </div>
@@ -299,7 +305,7 @@ const EstadoPedido = () => {
           </div>
 
           {/* Valoración: solo cuando el pedido ya se entregó. */}
-          {estado === 'entregado' && <ValoracionPedido items={pedido.items} />}
+          {estado === 'entregado' && <ValoracionPedido items={pedido.items} pedidoId={pedido._id} />}
         </div>
 
         {/* ── Columna derecha: resumen ── */}

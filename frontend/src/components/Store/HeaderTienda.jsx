@@ -37,7 +37,7 @@ const BROWN = 'var(--marca-600)';
 const Barra = styled.header`
   background: white;
   padding: 0 28px;
-  border-bottom: 1px solid #e6e2dd;
+  border-bottom: 1px solid #ECE7E1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -182,8 +182,14 @@ const Pill = styled.button`
               color var(--dur-press) var(--ease-out),
               transform var(--dur-press) var(--ease-out);
 
+  /*
+   * El borde solo se pinta de marca en la pastilla SOLIDA (Asistente, que ya
+   * nace de ese color). Carrito y Mi Cuenta no tienen un estado "activo" que
+   * marcar, así que su borde se queda en la misma línea gris de siempre — solo
+   * el texto se tiñe un poco al pasar el mouse, como aviso de que es clicable.
+   */
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: ${BROWN}; color: ${(p) => (p.$solida ? '#fff' : BROWN)}; }
+    &:hover { border-color: ${(p) => (p.$solida ? BROWN : 'var(--linea)')}; color: ${(p) => (p.$solida ? '#fff' : BROWN)}; }
   }
   &:active { transform: scale(0.97); }
 
@@ -221,6 +227,14 @@ const HeaderTienda = ({
   cantidadItems = 0,
   onAbrirCarrito,
   onAbrirAsistente,
+  /*
+   * Qué hacer cuando le dan Enter al buscador en una pantalla que SÍ maneja la
+   * búsqueda. Normalmente nada: la lista de abajo ya se filtró mientras
+   * escribía. Pero la ficha de un producto está encima de esa lista, así que
+   * ahí "buscar" tiene que apartarse para dejar ver el resultado — y eso solo
+   * lo sabe la pantalla, no el encabezado. Ver ProductDetailModal.
+   */
+  onEnviarBusqueda,
 }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -239,7 +253,8 @@ const HeaderTienda = ({
 
   const enviarBusqueda = (e) => {
     e.preventDefault();
-    if (manejaBusqueda || !textoLocal.trim()) return;
+    if (manejaBusqueda) { onEnviarBusqueda?.(); return; }
+    if (!textoLocal.trim()) return;
     navigate(`/?q=${encodeURIComponent(textoLocal.trim())}`);
   };
 

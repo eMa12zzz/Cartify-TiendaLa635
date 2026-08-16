@@ -66,10 +66,10 @@ const Promociones = () => {
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-4xl font-extrabold text-[#C28C5D]">Promociones</h1>
+        <h1 className="text-4xl font-extrabold text-[#066494]">Promociones</h1>
         <button
           onClick={() => { setCurrent(null); setIsFormOpen(true); }}
-          className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+          className="px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
         >
           Agregar Promoción
         </button>
@@ -107,7 +107,7 @@ const Promociones = () => {
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-1 gap-2">
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FAF9F6] text-[#B47C4D]">{etiquetaPromo(promo)}</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F1F6F9] text-[#003049]">{etiquetaPromo(promo)}</span>
                   <div className="flex items-center gap-2">
                     {/* Promo silenciosa: aplica pero no sale en el carrusel */}
                     {promo.showBanner === false && (

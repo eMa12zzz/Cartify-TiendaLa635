@@ -34,7 +34,7 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
           <X size={20} />
         </button>
 
-        <div className="w-1/3 bg-[#9C6026] text-white p-6 flex flex-col items-center justify-center relative">
+        <div className="w-1/3 bg-[#00283D] text-white p-6 flex flex-col items-center justify-center relative">
           <div className="w-full text-center mb-6">
             <h3 className="text-xl font-bold leading-tight mb-1">{product.name}</h3>
             <p className="text-xs uppercase tracking-wider opacity-80">{product.brandId?.name || 'Sin Marca'}</p>
@@ -60,8 +60,8 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
           </div>
         </div>
 
-        <div className="w-2/3 p-8 flex flex-col bg-[#FAF9F6] relative">
-          <h2 className="text-2xl font-bold text-[#8B5A2B] mb-6 border-b border-gray-200 pb-2">
+        <div className="w-2/3 p-8 flex flex-col bg-[#F1F6F9] relative">
+          <h2 className="text-2xl font-bold text-[#003049] mb-6 border-b border-gray-200 pb-2">
             Detalles del Producto
           </h2>
 
@@ -131,7 +131,7 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
           <div className="mt-auto pt-6 flex justify-end">
             <button 
               onClick={onClose}
-              className="bg-[#9C6026] hover:bg-[#8B5A2B] text-white font-medium px-8 py-2 rounded-full transition-colors"
+              className="bg-[#00283D] hover:bg-[#003049] text-white font-medium px-8 py-2 rounded-full transition-colors"
             >
               Cerrar
             </button>

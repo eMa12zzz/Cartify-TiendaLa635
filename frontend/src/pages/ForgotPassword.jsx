@@ -69,7 +69,7 @@ const ForgotPassword = () => {
               <input
                 type="email"
                 placeholder="Introduce tu correo electrónico"
-                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#B47C4D] focus:ring-1 focus:ring-[#B47C4D] transition-colors text-sm`}
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] transition-colors text-sm`}
                 {...register("email", { 
                   required: "El correo es obligatorio",
                   pattern: {
@@ -88,7 +88,7 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-[#C28C5D] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-[#066494] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : 'Recuperar contraseña'}
             </button>
@@ -97,7 +97,7 @@ const ForgotPassword = () => {
           <div className="mt-8 text-center flex flex-col gap-2">
             <p className="text-xs text-gray-500">
               ¿Ya la recordaste?{' '}
-              <Link to="/iniciar-sesion" className="text-[#B47C4D] hover:text-[#9C6026] font-semibold transition-colors">
+              <Link to="/iniciar-sesion" className="text-[#003049] hover:text-[#00283D] font-semibold transition-colors">
                 Iniciar sesión
               </Link>
             </p>

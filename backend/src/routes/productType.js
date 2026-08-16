@@ -1,7 +1,7 @@
 import express from 'express';
 import productTypeController from '../controller/productType.js';
 
-import { soloPersonal } from '../middlewares/validarSesion.js';
+import { soloAdmin } from '../middlewares/validarSesion.js';
 
 const router = express.Router();
 
@@ -9,11 +9,11 @@ const router = express.Router();
 
 router.route("/")
     .get(productTypeController.getProductTypes)
-    .post(soloPersonal, productTypeController.insertProductType);
+    .post(soloAdmin, productTypeController.insertProductType);
 
 router.route("/:id")
-    .put(soloPersonal, productTypeController.updateProductType)
+    .put(soloAdmin, productTypeController.updateProductType)
     .get(productTypeController.getProductTypes)
-    .delete(soloPersonal, productTypeController.deleteProductType);
+    .delete(soloAdmin, productTypeController.deleteProductType);
 
 export default router;
