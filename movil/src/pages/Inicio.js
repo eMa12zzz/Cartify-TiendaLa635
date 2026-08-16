@@ -34,6 +34,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { COLORES } from '../theme/colores';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
+import { useAuth } from '../hooks/useAuth';
 import BarraTienda from '../components/Tienda/BarraTienda';
 import CintaTemporada from '../components/Tienda/CintaTemporada';
 import DecoracionTemporada from '../components/Tienda/DecoracionTemporada';
@@ -48,6 +49,8 @@ import { Equis, Lupa } from '../components/UI/Iconos';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
+  const { isAuthenticated, user } = useAuth();
+  const nombre = user?.fullName || user?.userName;
   const {
     cargando,
     errorCarga,
@@ -88,6 +91,12 @@ const Inicio = ({ irACarrito, irASeccion }) => {
         para nada.
       */}
       <CintaTemporada />
+
+      {/* Saludo con el nombre real de quien tiene sesión. Sin sesión no hay
+          a quién saludar: la portada se ve igual que para cualquier visita. */}
+      {isAuthenticated && !!nombre && (
+        <Text style={estilos.saludo}>Hola, {nombre} 👋</Text>
+      )}
 
       <PastillasCategoria
         categorias={categorias}
@@ -288,6 +297,13 @@ const estilos = StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
+  },
+  saludo: {
+    fontSize: 15.5,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   centro: {
     flex: 1,
