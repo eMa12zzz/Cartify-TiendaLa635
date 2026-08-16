@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import jsonwebtoken from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import clientModel from "../../models/client.js";
@@ -103,7 +104,7 @@ registerClientController.register = async (req, res) => {
       { expiresIn: "15m" }
     );
 
-    res.cookie("registrationCookie", token, { maxAge: 15 * 60 * 1000 });
+    res.cookie("registrationCookie", token, opcionesCookie(15 * 60 * 1000));
 
     // 4. Enviar el correo con el código
     // Alternativa en texto plano: un correo que es SOLO html es una de las

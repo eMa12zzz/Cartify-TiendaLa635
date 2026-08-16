@@ -1,4 +1,5 @@
 import { OAuth2Client } from "google-auth-library";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import jsonwebtoken from "jsonwebtoken";
 import clientModel from "../../models/client.js";
 import { config } from "../../../config.js";
@@ -157,10 +158,7 @@ googleAuthClientController.login = async (req, res) => {
       { expiresIn: "30d" }
     );
 
-    res.cookie("authCookieCliente", token, {
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
-    });
+    res.cookie("authCookieCliente", token, opcionesCookie(30 * 24 * 60 * 60 * 1000)); // 30 días
 
     return res.status(200).json({
       message: "Sesión iniciada",
