@@ -338,13 +338,65 @@ export const useVoiceAssistant = ({
     window.speechSynthesis.speak(u);
   }, [arrancarReconocimiento]);
 
+  /*
+   * Cuánto se parece lo que dijo la persona al nombre de ESTE producto.
+   *
+   * Antes esto era un .find() que se quedaba con el PRIMER producto que
+   * cumpliera cualquier coincidencia, sin comparar contra los demás. Con
+   * "fresa", la fruta ("Fresas") nunca calificaba —el chequeo pedía que lo
+   * dicho CONTUVIERA el nombre completo, y "fresa" es más corto que
+   * "fresas", así que nunca lo contiene— pero "Jarritos de fresa" sí
+   * colaba, porque una de sus palabras ("fresa") aparecía adentro de lo
+   * dicho. Ganaba lo que sonaba parecido en cualquier rincón del nombre,
+   * no lo que la persona de verdad pidió.
+   *
+   * Ahora se puntúa y se compara contra TODOS los productos, de más a menos
+   * exacto:
+   *   100 — dijo el nombre completo, tal cual.
+   *    90 — el nombre completo aparece dentro de lo que dijo
+   *         ("quiero ver las fresas" trae "fresas" adentro).
+   *    80 — lo que dijo es la palabra que manda en el nombre, en singular
+   *         o en plural ("fresa" ~ "Fresas": la fruta se llama por su
+   *         primera palabra, y ahí es donde importa el singular/plural).
+   *    70 — esa palabra aparece COMPLETA en una frase más larga
+   *         ("una fresa por favor" trae la palabra "fresa" suelta).
+   *    20 — alguna palabra del nombre aparece en cualquier lado, aunque no
+   *         sea la que manda. Es el único nivel que hacía colar a
+   *         "Jarritos de fresa" antes, y ahora es el más débil de todos:
+   *         pierde contra la fruta en el nivel 80.
+   */
+  const puntuarCoincidencia = (nombreProducto, t) => {
+    const nombre = normalizar(nombreProducto);
+    const palabras = nombre.split(' ').filter((w) => w.length > 2);
+    const principal = palabras[0] || nombre;
+    // Quita una "s" del final para comparar singular con plural sin
+    // depender de un diccionario: alcanza para "fresa"/"fresas",
+    // "galleta"/"galletas", que es como la gente pide en la tienda.
+    const singular = (s) => s.replace(/s$/, '');
+
+    if (t === nombre) return 100;
+    if (t.includes(nombre)) return 90;
+    if (singular(t) === singular(principal)) return 80;
+    if (
+      new RegExp(`\\b${principal}\\b`).test(t) ||
+      new RegExp(`\\b${singular(principal)}\\b`).test(t)
+    ) return 70;
+    if (palabras.some((w) => t.includes(w))) return 20;
+    return 0;
+  };
+
   const buscarProducto = (texto) => {
     const t = expandirSinonimos(normalizar(texto));
-    return dataRef.current.productos.find((p) => {
-      const nombre = normalizar(p.nombre);
-      if (t.includes(nombre)) return true;
-      return nombre.split(' ').some((w) => w.length > 2 && t.includes(w));
-    });
+    let mejor = null;
+    let mejorPuntaje = 0;
+    for (const p of dataRef.current.productos) {
+      const puntaje = puntuarCoincidencia(p.nombre, t);
+      if (puntaje > mejorPuntaje) {
+        mejor = p;
+        mejorPuntaje = puntaje;
+      }
+    }
+    return mejor;
   };
 
   /*
@@ -366,9 +418,19 @@ export const useVoiceAssistant = ({
         carrito: carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
       });
 
-      // La IA no pudo: se responde igual que cuando no existía.
+      /*
+       * La IA no pudo —sin llave, sin cuota, o de verdad no entendió—.
+       *
+       * Antes esto decía SIEMPRE "no encontré ese producto", aunque la
+       * pregunta nunca hubiera sido sobre un producto ("¿tienen wifi?",
+       * "¿cuál es la dirección?"). Sonaba a que el asistente ignoraba
+       * cualquier cosa fuera de sus comandos. Este mensaje es el respaldo
+       * de última línea —cuando ni las reglas ni la IA entendieron nada—,
+       * así que tiene que quedar neutro: no inventa que buscó un producto
+       * que nunca se pidió.
+       */
       if (!idea?.entendido) {
-        hablarRef.current?.('No encontré ese producto. ¿Puede repetirlo?');
+        hablarRef.current?.('No le entendí bien. Puedo ayudarle a agregar productos, ver su total o llevarlo a una sección de la tienda.');
         return;
       }
 
