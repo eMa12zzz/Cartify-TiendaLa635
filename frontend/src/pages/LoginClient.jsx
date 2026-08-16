@@ -420,7 +420,7 @@ const LoginClient = () => {
        */
       if (destino) navigate(destino, { replace: true });
       else if (esPersonal) navigate('/mi-cuenta/reparto', { replace: true });
-      else navigate(recienRegistrado ? '/bienvenida' : '/', { replace: true });
+      else navigate(recienRegistrado ? '/bienvenida' : '/store', { replace: true });
     } catch (err) {
       toast.error(err.message || 'Credenciales inválidas');
     } finally {
@@ -431,11 +431,11 @@ const LoginClient = () => {
   return (
     <Container>
       <TopBar>
-        <Marca onClick={() => navigate('/')}>
+        <Marca onClick={() => navigate('/store')}>
           <BrandSmall>Tienda</BrandSmall>
           <BrandName>la 635</BrandName>
         </Marca>
-        <VolverTienda type="button" onClick={() => navigate('/')}>
+        <VolverTienda type="button" onClick={() => navigate('/store')}>
           <StoreIcon size={15} strokeWidth={2.2} /> Seguir viendo la tienda
         </VolverTienda>
       </TopBar>

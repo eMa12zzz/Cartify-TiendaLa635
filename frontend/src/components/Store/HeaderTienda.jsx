@@ -240,13 +240,13 @@ const HeaderTienda = ({
   const enviarBusqueda = (e) => {
     e.preventDefault();
     if (manejaBusqueda || !textoLocal.trim()) return;
-    navigate(`/?q=${encodeURIComponent(textoLocal.trim())}`);
+    navigate(`/store?q=${encodeURIComponent(textoLocal.trim())}`);
   };
 
   const elegirModulo = (id) => {
     if (onElegirModulo) { onElegirModulo(id); return; }
     // Sin manejador local, cambiar de pasillo es volver a la tienda en ese pasillo.
-    navigate(id ? `/?modulo=${encodeURIComponent(id)}` : '/');
+    navigate(id ? `/store?modulo=${encodeURIComponent(id)}` : '/store');
   };
 
   return (
@@ -281,13 +281,13 @@ const HeaderTienda = ({
       <Derecha>
         <Pill
           $solida
-          onClick={() => (onAbrirAsistente ? onAbrirAsistente() : navigate('/'))}
+          onClick={() => (onAbrirAsistente ? onAbrirAsistente() : navigate('/store'))}
           title="Asistente por voz"
         >
           <Mic size={18} strokeWidth={2.2} /> <Etiqueta>Asistente</Etiqueta>
         </Pill>
 
-        <Pill onClick={() => (onAbrirCarrito ? onAbrirCarrito() : navigate('/'))} title="Carrito">
+        <Pill onClick={() => (onAbrirCarrito ? onAbrirCarrito() : navigate('/store'))} title="Carrito">
           <ShoppingBag size={18} strokeWidth={2.2} /> <Etiqueta>Carrito</Etiqueta>
           {cantidadItems > 0 && <Globo>{cantidadItems}</Globo>}
         </Pill>
@@ -302,7 +302,7 @@ const HeaderTienda = ({
             <User size={18} strokeWidth={2.2} /> <Etiqueta>Mi Cuenta</Etiqueta>
           </Pill>
         ) : (
-          <Pill onClick={() => navigate('/iniciar-sesion?volver=/')} title="Iniciar sesión">
+          <Pill onClick={() => navigate('/iniciar-sesion?volver=/store')} title="Iniciar sesión">
             <User size={18} strokeWidth={2.2} /> <Etiqueta>Ingresar</Etiqueta>
           </Pill>
         )}

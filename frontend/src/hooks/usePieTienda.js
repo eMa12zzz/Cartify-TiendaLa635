@@ -46,6 +46,7 @@ const ENLACES_SIN_SESION = [
  * busca cuando lo busca.
  */
 const ENLACES_LEGALES = [
+  { texto: 'Sobre la tienda', ruta: '/inicio' },
   { texto: 'Términos y privacidad', ruta: '/terminos' },
 ];
 
@@ -79,7 +80,7 @@ export const usePieTienda = () => {
         ruta:
           flujoDeModulo(m) === 'impresiones'
             ? '/impresiones'
-            : `/?modulo=${encodeURIComponent(m._id)}`,
+            : `/store?modulo=${encodeURIComponent(m._id)}`,
       })),
     [modulos]
   );

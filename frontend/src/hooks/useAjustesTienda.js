@@ -31,7 +31,7 @@ const DE_RESPALDO = {
   nombreLinea1: NOMBRE_TIENDA.arriba,
   nombreLinea2: NOMBRE_TIENDA.abajo,
   logoUrl: '',
-  lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
+  lema: 'La mejor tienda de la colonia, ahora también en línea. Pida lo de la casa y se lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
   secciones: [],
   temporada: { modo: 'automatico', tema: '' },

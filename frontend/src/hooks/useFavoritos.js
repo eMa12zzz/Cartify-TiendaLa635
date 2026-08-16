@@ -52,7 +52,7 @@ export const useFavoritos = () => {
       toast('Inicie sesión para guardar sus favoritos');
       // Se le devuelve a la tienda después de entrar: estaba viendo un
       // producto, no buscando su cuenta.
-      navigate('/iniciar-sesion?volver=/');
+      navigate('/iniciar-sesion?volver=/store');
       return;
     }
 

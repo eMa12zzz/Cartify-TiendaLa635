@@ -62,8 +62,10 @@ const BotonWhatsApp = () => {
 
   // Sin número configurado no se muestra nada: mejor eso que un botón roto.
   if (!NUMERO) return null;
-  // Login y panel del empleado se quedan sin él (el "/" exacto es el login).
-  if (pathname === '/' || RUTAS_SIN_BOTON.some(r => pathname.startsWith(r))) return null;
+  // Panel del empleado, logins y la portada institucional se quedan sin él: la
+  // portada ya tiene su propio botón de WhatsApp en la sección de ubicación,
+  // uno flotante encima sería el mismo enlace dos veces.
+  if (pathname === '/' || pathname === '/inicio' || RUTAS_SIN_BOTON.some(r => pathname.startsWith(r))) return null;
 
   const enlace = `https://wa.me/${NUMERO}?text=${encodeURIComponent(SALUDO)}`;
 

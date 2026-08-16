@@ -78,7 +78,7 @@ const ClienteLayout = () => {
      * eso deja abierto el panel entero. Ver AuthContext.
      */
     logout(user?.type === 'client' ? 'cliente' : 'personal');
-    navigate('/');
+    navigate('/store');
   };
 
   /*

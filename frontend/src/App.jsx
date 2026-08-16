@@ -32,6 +32,7 @@ import LoginPassword from './pages/LoginPassword';
 import ForgotPassword from './pages/ForgotPassword'; // Solicitar recuperación de contraseña
 
 // --- Tienda pública ---
+import Inicio from './pages/Inicio';              // Portada institucional, la puerta "de vitrina"
 import Dashboard from './pages/Dashboard';        // Panel de la tienda para clientes
 import Store from './pages/Store';
 import Seccion from './pages/Seccion';       // Una sección de la portada, completa
@@ -169,15 +170,20 @@ function App() {
 
           {/* ── Rutas Públicas (sin autenticación) ─────────────────── */}
           {/*
-           * La puerta de la tienda es la TIENDA, no el login.
+           * La puerta de la casa es la PORTADA, no el login ni el catálogo.
            *
-           * Antes lo primero que veía cualquiera era un formulario de inicio
-           * de sesión, y eso es pedirle matrimonio a alguien que solo venía a
-           * ver los precios. Ahora se entra, se mira y se llena el carrito
-           * sin cuenta; la sesión se pide cuando de verdad hace falta (al
-           * pagar, en Mi Cuenta, para guardar favoritos).
+           * Antes "/" abría la tienda de una vez, para no pedirle matrimonio a
+           * quien solo venía a ver precios. Ahora esa misma puerta es la
+           * portada institucional —qué es "Tienda la 635", sus pasillos, cómo
+           * comprar— con un botón grande para entrar. Sigue sin pedir sesión:
+           * de la portada se pasa al catálogo con un click, y de ahí en
+           * adelante todo sigue igual que antes (se compra sin cuenta; la
+           * sesión se pide cuando de verdad hace falta).
            */}
-          <Route path="/"                element={<Store />} />
+          <Route path="/"                element={<Inicio />} />
+          <Route path="/inicio"          element={<Inicio />} />
+          {/* El catálogo de productos, ahora en su propia puerta */}
+          <Route path="/store"           element={<Store />} />
           <Route path="/iniciar-sesion"  element={<LoginClient />} />      {/* Login de clientes */}
           {/* Lo que abre el teléfono al escanear el QR del kiosco */}
           <Route path="/vincular/:codigo" element={<VincularKiosco />} />
@@ -190,7 +196,6 @@ function App() {
           {/* Primera pantalla tras entrar: el saludo con el mapa */}
           <Route path="/bienvenida"      element={<Bienvenida />} />
           <Route path="/tienda-dashboard" element={<Dashboard />} />
-          <Route path="/store"           element={<Store />} />
           {/* "Ver todos" de una fila de la portada: /seccion/familia-quesos */}
           <Route path="/seccion/:clave"  element={<Seccion />} />
           <Route path="/impresiones"     element={<Impresiones />} />

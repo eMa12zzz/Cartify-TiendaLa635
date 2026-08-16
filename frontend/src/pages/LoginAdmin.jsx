@@ -150,7 +150,7 @@ const LoginAdmin = () => {
           <div className="mt-8 text-center">
             <p className="text-xs text-gray-500">
               ¿Eres cliente?{' '}
-              <a href="/" className="text-[#B47C4D] hover:text-[#9C6026] font-semibold transition-colors">
+              <a href="/store" className="text-[#B47C4D] hover:text-[#9C6026] font-semibold transition-colors">
                 Ir a la tienda
               </a>
             </p>

@@ -165,7 +165,7 @@ const Dashboard = () => {
   // direcciones guardadas y la sesión del panel.
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/store');
   };
 
   /*

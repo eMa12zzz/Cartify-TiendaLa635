@@ -29,7 +29,7 @@ export const useVolver = (destinoPorDefecto) => {
   const { isAuthenticated, esCliente } = useAuth();
 
   // Personal = tiene sesión pero no es cliente.
-  const casa = destinoPorDefecto || (isAuthenticated && !esCliente ? '/dashboard' : '/');
+  const casa = destinoPorDefecto || (isAuthenticated && !esCliente ? '/dashboard' : '/store');
 
   /*
    * `key === 'default'` significa que esta es la primera entrada del historial

@@ -160,7 +160,7 @@ const Seccion = () => {
    * Y quien llegó por un enlace compartido no tiene a dónde retroceder, así
    * que ahí sí va a la portada. El hook distingue los dos casos.
    */
-  const { volver } = useVolver('/');
+  const { volver } = useVolver('/store');
 
   return (
     <Contenedor>

@@ -132,7 +132,7 @@ const NoEncontrado = () => {
 
   // Personal = tiene sesión pero no es cliente. Su casa es el panel.
   const esPersonal = isAuthenticated && !esCliente;
-  const casa = esPersonal ? '/dashboard' : '/';
+  const casa = esPersonal ? '/dashboard' : '/store';
 
   return (
     <Fondo>

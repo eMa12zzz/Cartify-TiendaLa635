@@ -141,7 +141,7 @@ class LimiteDeError extends Component {
    */
   recargar = () => window.location.reload();
 
-  irALaTienda = () => { window.location.href = '/'; };
+  irALaTienda = () => { window.location.href = '/store'; };
 
   render() {
     const { error } = this.state;

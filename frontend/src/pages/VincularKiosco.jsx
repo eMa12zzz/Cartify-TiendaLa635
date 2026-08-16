@@ -72,7 +72,7 @@ const VincularKiosco = () => {
               Su compra quedará a su nombre y los puntos le caen solos al pagar.
               Ya puede volver a la pantalla de la tienda.
             </p>
-            <button style={botonSuave} onClick={() => navigate('/')}>
+            <button style={botonSuave} onClick={() => navigate('/store')}>
               <Store size={16} /> Ir a la tienda
             </button>
           </>
@@ -83,7 +83,7 @@ const VincularKiosco = () => {
             </div>
             <h1 style={titulo}>No se pudo vincular</h1>
             <p style={bajada}>{mensaje}</p>
-            <button style={botonSuave} onClick={() => navigate('/')}>Volver a la tienda</button>
+            <button style={botonSuave} onClick={() => navigate('/store')}>Volver a la tienda</button>
           </>
         ) : (
           <>
@@ -99,7 +99,7 @@ const VincularKiosco = () => {
                 ? <><Loader2 size={17} className="animate-spin" /> Vinculando…</>
                 : 'Sí, es mía'}
             </button>
-            <button style={botonTexto} onClick={() => navigate('/')}>
+            <button style={botonTexto} onClick={() => navigate('/store')}>
               No fui yo
             </button>
           </>
