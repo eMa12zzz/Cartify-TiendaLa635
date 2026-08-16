@@ -1,4 +1,5 @@
 import clientModel from "../../models/client.js";
+import { leerTokenBaja } from "../../utils/tokenBaja.js";
 import { v2 as cloudinary } from "cloudinary";
 import bcryptjs from "bcryptjs";
 
@@ -8,15 +9,26 @@ const clientController = {};
 // GET ALL CLIENTS
 clientController.getClients = async (req, res) => {
   try {
-    const clients = await clientModel.find();
+    /*
+     * El `-password` no es un adorno: sin él, esta ruta devolvía el HASH de la
+     * contraseña de todos los clientes de la tienda, y devolvía la lista
+     * entera a quien preguntara, porque hoy ninguna ruta de la API valida a
+     * nadie. Un hash no es una contraseña, pero es material para atacarla sin
+     * apuro y contra nuestro propio servidor nunca más.
+     *
+     * getClientById ya lo hacía bien (más abajo); esta se había quedado atrás.
+     */
+    const clients = await clientModel.find().select("-password");
 
     return res.status(200).json(clients);
 
   } catch (error) {
-    console.log("error " + error);
+    // El nombre de la función se queda en el log, no en la respuesta:
+    // a quien está comprando no le sirve de nada saber que se llama getClients.
+    console.log("error getClients: " + error);
 
     return res.status(500).json({
-      message: "Internal Server Error get Clients",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -28,16 +40,16 @@ clientController.getClientById = async (req, res) => {
     const client = await clientModel.findById(req.params.id).select("-password");
 
     if (!client) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json(client);
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error getClientById: " + error);
 
     return res.status(500).json({
-      message: "Internal Server Error get Client",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -49,7 +61,6 @@ clientController.updateClient = async (req, res) => {
       fullName,
       dui,
       phoneNumber,
-      ClientAddress,
       email,
       userName,
       password,
@@ -58,17 +69,17 @@ clientController.updateClient = async (req, res) => {
     email = email?.trim();
     userName = userName?.trim();
 
-    // La contraseña ya NO es obligatoria
-    if (
-      !fullName ||
-      !dui ||
-      !phoneNumber ||
-      !ClientAddress ||
-      !email ||
-      !userName
-    ) {
+    /*
+     * Obligatorios: nombre, teléfono, correo y usuario.
+     *
+     * El DUI quedó fuera a propósito: es opcional desde el registro y exigirlo
+     * aquí impediría corregirle el teléfono a un cliente que nunca lo dio.
+     * La dirección también salió: las de entrega se editan por su propio
+     * endpoint (updateAddresses), no por este.
+     */
+    if (!fullName || !phoneNumber || !email || !userName) {
       return res.status(400).json({
-        message: "Required fields",
+        message: "Faltan campos obligatorios",
       });
     }
 
@@ -76,18 +87,27 @@ clientController.updateClient = async (req, res) => {
 
     if (!clientFound) {
       return res.status(404).json({
-        message: "Client not found",
+        message: "No se encontró el cliente",
       });
     }
 
     const updatedData = {
       fullName,
-      dui,
       phoneNumber,
-      ClientAddress,
       email,
       userName,
     };
+
+    /*
+     * El DUI es opcional. Si viene con algo se guarda; si viene vacío se
+     * BORRA el campo con $unset en vez de dejar una cadena "". Son veinte
+     * clientes con el mismo "" lo que rompería un índice único el día que
+     * alguien lo agregue; sin el campo, ese índice los ignora a todos.
+     */
+    if (dui !== undefined) {
+      if (dui?.trim()) updatedData.dui = dui.trim();
+      else updatedData.$unset = { ...(updatedData.$unset || {}), dui: 1 };
+    }
 
     // Solo actualizar la contraseña si viene una nueva
     if (password && password.trim() !== "") {
@@ -113,15 +133,15 @@ clientController.updateClient = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Client updated successfully",
+      message: "Cliente actualizado",
       client: updatedClient,
     });
 
   } catch (error) {
-    console.log("error:", error);
+    console.log("error updateClient:", error);
 
     return res.status(500).json({
-      message: "Internal Server Error update Client",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -134,7 +154,7 @@ clientController.deleteClient = async (req, res) => {
 
     if (!clientFound) {
       return res.status(404).json({
-        message: "Client not found",
+        message: "No se encontró el cliente",
       });
     }
 
@@ -146,24 +166,25 @@ clientController.deleteClient = async (req, res) => {
     await clientModel.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
-      message: "Client deleted successfully",
+      message: "Cliente eliminado",
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error deleteClient: " + error);
 
     return res.status(500).json({
-      message: "Internal Server Error delete Client",
+      message: "Error interno del servidor",
     });
   }
 };
 
 // UPDATE PROFILE (self) — el cliente edita SUS datos básicos desde "Mi Cuenta".
-// A diferencia de updateClient (admin, con imagen/multipart y todos los campos
-// obligatorios), este acepta JSON y solo toca los campos que vengan.
+// Acepta tanto JSON (los campos de texto) como multipart con una imagen: el
+// campo "image" es opcional, y cuando llega se sube igual que en updateClient
+// (admin) — se borra la anterior de Cloudinary antes de guardar la nueva.
 clientController.updateClientProfile = async (req, res) => {
   try {
-    const { fullName, userName, email, phoneNumber } = req.body;
+    const { fullName, userName, email, phoneNumber, fechaNacimiento, dui } = req.body;
 
     const updates = {};
     if (fullName !== undefined) updates.fullName = fullName;
@@ -171,26 +192,122 @@ clientController.updateClientProfile = async (req, res) => {
     if (email !== undefined) updates.email = email?.trim();
     if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
 
+    // Fecha de nacimiento: vacío la borra, con valor la guarda (para la edad +18).
+    if (fechaNacimiento !== undefined) {
+      if (fechaNacimiento) updates.fechaNacimiento = fechaNacimiento;
+      else updates.$unset = { ...(updates.$unset || {}), fechaNacimiento: 1 };
+    }
+
+    /*
+     * DUI opcional, mismo criterio que en el registro: vacío BORRA el campo con
+     * $unset en vez de dejar "", para no chocar contra un eventual índice único.
+     */
+    if (dui !== undefined) {
+      if (dui?.trim()) updates.dui = dui.trim();
+      else updates.$unset = { ...(updates.$unset || {}), dui: 1 };
+    }
+
+    if (req.file) {
+      const clientFound = await clientModel.findById(req.params.id);
+      if (!clientFound) {
+        return res.status(404).json({ message: "No se encontró el cliente" });
+      }
+      if (clientFound.public_id) {
+        await cloudinary.uploader.destroy(clientFound.public_id);
+      }
+      updates.image = req.file.path;
+      updates.public_id = req.file.filename;
+    }
+
     const updated = await clientModel
       .findByIdAndUpdate(req.params.id, updates, { new: true })
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Perfil actualizado", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateClientProfile: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update profile",
+      message: "Error interno del servidor",
     });
   }
 };
 
 // El cliente reemplaza su lista de direcciones de entrega (área "Mi Cuenta").
 // clientAddress es un arreglo de strings; aquí lo sobrescribimos completo.
+/*
+ * Los favoritos del cliente, con el producto ya poblado: la pantalla de
+ * "Mis favoritos" necesita nombre, precio e imagen, no una lista de ids.
+ */
+clientController.getFavorites = async (req, res) => {
+  try {
+    const cliente = await clientModel
+      .findById(req.params.id)
+      .populate({
+        path: "favorites",
+        populate: [
+          { path: "brandId", select: "name" },
+          { path: "typeId", select: "type" },
+          { path: "moduleId", select: "name" },
+        ],
+      })
+      .select("favorites");
+
+    if (!cliente) return res.status(404).json({ message: "No se encontró el cliente" });
+
+    /*
+     * Se filtran los nulos: si borraron un producto que alguien tenía en
+     * favoritos, la referencia queda colgando y populate devuelve null. Sin
+     * esto, la pantalla reventaba al leer el nombre de un producto que ya no
+     * existe.
+     */
+    const favoritos = (cliente.favorites || []).filter(Boolean);
+    return res.status(200).json(favoritos);
+  } catch (error) {
+    console.log("error getFavorites: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * Marca o desmarca un producto. Un solo endpoint para los dos casos: el
+ * cliente aprieta el mismo corazón para poner y quitar, y así no hay forma de
+ * que el frontend y la base se desincronicen sobre cuál era el estado.
+ */
+clientController.toggleFavorite = async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ message: "Falta el producto" });
+    }
+
+    const cliente = await clientModel.findById(req.params.id).select("favorites");
+    if (!cliente) return res.status(404).json({ message: "No se encontró el cliente" });
+
+    const actuales = (cliente.favorites || []).map(String);
+    const yaEsta = actuales.includes(String(productId));
+
+    const nuevos = yaEsta
+      ? actuales.filter((id) => id !== String(productId))
+      : [...actuales, productId];
+
+    await clientModel.findByIdAndUpdate(req.params.id, { favorites: nuevos });
+
+    return res.status(200).json({
+      message: yaEsta ? "Quitado de favoritos" : "Agregado a favoritos",
+      esFavorito: !yaEsta,
+      favorites: nuevos,
+    });
+  } catch (error) {
+    console.log("error toggleFavorite: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 clientController.updateAddresses = async (req, res) => {
   try {
     const { addresses } = req.body;
@@ -204,15 +321,15 @@ clientController.updateAddresses = async (req, res) => {
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Direcciones actualizadas", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateAddresses: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update addresses",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -238,15 +355,15 @@ clientController.updatePaymentMethods = async (req, res) => {
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Métodos de pago actualizados", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updatePaymentMethods: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update payment methods",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -267,16 +384,60 @@ clientController.updateNotifications = async (req, res) => {
       .select("-password");
 
     if (!updated) {
-      return res.status(404).json({ message: "Client not found" });
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
     return res.status(200).json({ message: "Preferencias actualizadas", client: updated });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateNotifications: " + error);
     return res.status(500).json({
-      message: "Internal Server Error update notifications",
+      message: "Error interno del servidor",
     });
+  }
+};
+
+/*
+ * DARSE DE BAJA DE UN AVISO, SIN INICIAR SESIÓN.
+ *
+ * El enlace del pie de los correos cae aquí. NO lleva middleware de sesión a
+ * propósito: pedirle a alguien que se loguee para dejar de recibir correos que
+ * no pidió es la forma elegante de no dejarlo salir. Quien no se acuerda de su
+ * contraseña se da de baja marcando el correo como spam, y eso le cuesta a la
+ * tienda mucho más caro que perder un suscriptor.
+ *
+ * Lo que hace de puerta es el token firmado: solo el servidor puede fabricarlo
+ * y nadie puede fabricar el de otra persona. Ver utils/tokenBaja.js.
+ */
+clientController.bajaNotificacion = async (req, res) => {
+  try {
+    const datos = leerTokenBaja(req.body?.token);
+    if (!datos) {
+      return res.status(400).json({
+        message: "Este enlace ya no sirve. Puede apagar los avisos desde Mi Cuenta > Notificaciones.",
+      });
+    }
+
+    /*
+     * Solo se apaga lo que traía ese correo. Quien se cansó de las promociones
+     * no está pidiendo que dejen de avisarle cuando su pedido va en camino — y
+     * apagárselo todo de una sería decidir por él.
+     */
+    const PERMITIDAS = ["promociones", "nuevosProductos", "pedidoCerca"];
+    const clave = PERMITIDAS.includes(datos.clave) ? datos.clave : "promociones";
+
+    const actualizado = await clientModel
+      .findByIdAndUpdate(datos.id, { $set: { [`notificationPrefs.${clave}`]: false } }, { new: true })
+      .select("email notificationPrefs");
+
+    if (!actualizado) {
+      return res.status(404).json({ message: "Esa cuenta ya no existe" });
+    }
+
+    return res.status(200).json({ message: "Listo, ya no le llegarán esos correos", clave });
+  } catch (error) {
+    console.log("error bajaNotificacion: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

@@ -65,6 +65,12 @@ import { Schema, model } from 'mongoose';
    allowsColor:    si se puede imprimir a color
    colorSurcharge: recargo por copia cuando es a color
    isActive:       si se ofrece en la tienda
+   materialId:     en qué papel se imprime este formato. Es lo que permite
+                   apagar el formato solo cuando ese papel se acaba, en vez de
+                   dejar que el cliente pague y se entere en el mostrador.
+                   Puede quedar vacío: un formato sin material declarado se
+                   comporta como antes (siempre disponible), para no romper los
+                   que ya estaban cargados.
 */
 const printServiceSchema = new Schema(
   {
@@ -75,6 +81,7 @@ const printServiceSchema = new Schema(
     allowsColor: { type: Boolean, default: true },
     colorSurcharge: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    materialId: { type: Schema.Types.ObjectId, ref: 'printMaterialModel', default: null },
   },
   { timestamps: true }
 );

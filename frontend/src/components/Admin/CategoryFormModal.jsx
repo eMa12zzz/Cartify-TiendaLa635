@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
 
 const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], suppliers = [] }) => {
   const { register, handleSubmit, reset, watch } = useForm();
@@ -72,16 +73,16 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden relative z-10"
       >
-        <div className="bg-[#9C6026] text-white p-6">
+        <div className="bg-[#00283D] text-white p-6">
           <h2 className="text-2xl font-bold text-center">
             {isEditing ? 'Editar Categoría' : 'Nueva Categoría'}
           </h2>
         </div>
 
-        <div className="p-6 bg-[#FAF9F6] flex-1 flex flex-col max-h-[80vh] overflow-y-auto">
+        <div className="p-6 bg-[#F1F6F9] flex-1 flex flex-col max-h-[80vh] overflow-y-auto">
           <form id="category-form" onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6 flex-1">
             
             <div className="grid grid-cols-2 gap-4">
@@ -90,7 +91,7 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
                 <input 
                   type="text" 
                   {...register('type', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="Ej. Lácteos, Bebidas..."
                 />
               </div>
@@ -99,7 +100,7 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
                 <label className="block text-sm font-bold text-gray-700 mb-2">Módulo Asignado</label>
                 <select 
                   {...register('moduleId', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                 >
                   <option value="">Seleccione un Módulo</option>
                   {modules.map(m => (
@@ -122,7 +123,7 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
                       handleAddSubtype();
                     }
                   }}
-                  className="flex-1 bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="flex-1 bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="Añadir subtipo y presionar Enter..."
                 />
                 <button
@@ -135,7 +136,7 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
               </div>
               <div className="flex flex-wrap gap-2">
                 {subtypes.map(st => (
-                  <span key={st} className="bg-[#B47C4D] text-white px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                  <span key={st} className="bg-[#003049] text-white px-3 py-1 rounded-full text-xs flex items-center gap-2">
                     {st}
                     <button type="button" onClick={() => handleRemoveSubtype(st)} className="hover:text-red-300">
                       &times;
@@ -155,7 +156,7 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
                         type="checkbox" 
                         value={supp._id}
                         {...register('supplierIds')}
-                        className="rounded border-gray-300 text-[#9C6026] focus:ring-[#9C6026]"
+                        className="rounded border-gray-300 text-[#00283D] focus:ring-[#00283D]"
                       />
                       <span className="text-sm text-gray-700">{supp.name}</span>
                     </label>
@@ -195,7 +196,7 @@ const CategoryFormModal = ({ isOpen, onClose, category, onSave, modules = [], su
             <button 
               form="category-form"
               type="submit"
-              className="bg-[#9C6026] hover:bg-[#8B5A2B] text-white font-medium px-8 py-2 rounded-full transition-colors"
+              className="bg-[#00283D] hover:bg-[#003049] text-white font-medium px-8 py-2 rounded-full transition-colors"
             >
               Guardar
             </button>

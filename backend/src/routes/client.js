@@ -1,8 +1,15 @@
 import express from "express";
 import clientController from "../controller/Clients/clientController.js";
 import upload from "../utils/cloudinaryConfig.js";
+import { soloAdmin, duenoOPersonal } from "../middlewares/validarSesion.js";
 
-const router = express.Router();
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -29,9 +36,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
-router
-  .route("/")
-  .get(clientController.getClients);
 
 /**
  * @swagger
@@ -100,11 +104,6 @@ router
  *       500:
  *         description: Error interno del servidor.
  */
-router
-  .route("/:id")
-  .get(clientController.getClientById)
-  .put(upload.single("image"), clientController.updateClient)
-  .delete(clientController.deleteClient);
 
 /**
  * @swagger
@@ -133,10 +132,6 @@ router
  *       500:
  *         description: Error interno del servidor.
  */
-// El cliente edita su propio perfil (datos básicos, JSON).
-router
-  .route("/:id/profile")
-  .patch(clientController.updateClientProfile);
 
 /**
  * @swagger
@@ -167,10 +162,6 @@ router
  *       500:
  *         description: Error interno del servidor.
  */
-// El cliente gestiona su lista de direcciones de entrega.
-router
-  .route("/:id/addresses")
-  .patch(clientController.updateAddresses);
 
 /**
  * @swagger
@@ -199,10 +190,6 @@ router
  *       500:
  *         description: Error interno del servidor.
  */
-// El cliente actualiza sus preferencias de notificación.
-router
-  .route("/:id/notifications")
-  .patch(clientController.updateNotifications);
 
 /**
  * @swagger
@@ -233,9 +220,72 @@ router
  *       500:
  *         description: Error interno del servidor.
  */
+
+
+const router = express.Router();
+
+/*
+ * SIN middleware de sesión, y es correcto: es el enlace "dejar de recibirlos"
+ * del pie de los correos, que tiene que funcionar de un clic desde el teléfono
+ * de alguien que quizá nunca inició sesión en este navegador. La puerta la hace
+ * el token firmado que viene en el cuerpo. Ver utils/tokenBaja.js.
+ *
+ * Va ARRIBA de las rutas con /:id para que Express no lea "notificaciones"
+ * como si fuera el id de un cliente.
+ */
+router.post("/notificaciones/baja", clientController.bajaNotificacion);
+
+/*
+ * Todo este router estaba abierto. Con el id en la URL —que se adivina o se
+ * copia— cualquiera leía y EDITABA la cuenta de otro: sus direcciones con
+ * coordenadas, sus métodos de pago, sus favoritos.
+ *
+ * `duenoOPersonal("id")` es la regla general aquí: el cliente solo con lo
+ * suyo, el personal con lo de todos porque atender es su trabajo.
+ */
+
+/*
+ * La lista de todos los clientes: cosa del personal. Misma razón que
+ * /registerClient/all, que es la gemela que usa el panel.
+ */
+router
+  .route("/")
+  .get(soloAdmin, clientController.getClients);
+
+/*
+ * Borrar una cuenta es irreversible y hasta hace poco estaba abierto: con un
+ * curl y un _id cualquiera podía borrar a un cliente de la tienda.
+ */
+router
+  .route("/:id")
+  .get(duenoOPersonal("id"), clientController.getClientById)
+  .put(duenoOPersonal("id"), upload.single("image"), clientController.updateClient)
+  .delete(soloAdmin, clientController.deleteClient);
+
+// El cliente edita su propio perfil (datos básicos, y opcionalmente su foto).
+router
+  .route("/:id/profile")
+  .patch(duenoOPersonal("id"), upload.single("image"), clientController.updateClientProfile);
+
+// Los productos que el cliente marcó con el corazón.
+router
+  .route("/:id/favorites")
+  .get(duenoOPersonal("id"), clientController.getFavorites)
+  .patch(duenoOPersonal("id"), clientController.toggleFavorite);
+
+// El cliente gestiona su lista de direcciones de entrega.
+router
+  .route("/:id/addresses")
+  .patch(duenoOPersonal("id"), clientController.updateAddresses);
+
+// El cliente actualiza sus preferencias de notificación.
+router
+  .route("/:id/notifications")
+  .patch(duenoOPersonal("id"), clientController.updateNotifications);
+
 // El cliente gestiona sus métodos de pago (datos no sensibles).
 router
   .route("/:id/payment-methods")
-  .patch(clientController.updatePaymentMethods);
+  .patch(duenoOPersonal("id"), clientController.updatePaymentMethods);
 
 export default router;

@@ -5,8 +5,9 @@ import styled from 'styled-components';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import api from '../api/api';
+import { BotonOjo } from '../components/UI/CampoContrasena';
 
-const BROWN = '#8B5A2B';
+const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -122,11 +123,11 @@ const Button = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #7a4e26;
+    background: #00283D;
   }
   
   &:disabled {
-    background: #d8c5af;
+    background: #C9D4DB;
     cursor: not-allowed;
   }
 `;
@@ -134,6 +135,8 @@ const Button = styled.button`
 const CreatePassword = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [verNueva, setVerNueva] = useState(false);
+  const [verConfirma, setVerConfirma] = useState(false);
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
   
   // 1- Observamos el valor de la nueva contraseña para validar la confirmación
@@ -154,7 +157,7 @@ const CreatePassword = () => {
       
       // Limpiamos los rastros y redirigimos a iniciar sesión
       localStorage.removeItem('verificationFlow');
-      navigate('/');
+      navigate('/iniciar-sesion');
 
     } catch (error) {
       console.error(error);
@@ -180,27 +183,37 @@ const CreatePassword = () => {
           <form onSubmit={handleSubmit(onSubmit)}>
             
             <Label>Nueva Contraseña</Label>
-            <Input
-              type="password"
-              placeholder="Nueva Contraseña"
-              $error={!!errors.newPassword}
-              {...register("newPassword", { 
-                required: "La contraseña es obligatoria",
-                minLength: { value: 6, message: "Mínimo 6 caracteres" }
-              })}
-            />
+            {/* Con el ojo se puede revisar antes de mandar: en esta pantalla
+                un dedazo se descubre hasta el próximo inicio de sesión. */}
+            <div style={{ position: 'relative' }}>
+              <Input
+                type={verNueva ? 'text' : 'password'}
+                placeholder="Nueva Contraseña"
+                style={{ paddingRight: 44 }}
+                $error={!!errors.newPassword}
+                {...register("newPassword", {
+                  required: "La contraseña es obligatoria",
+                  minLength: { value: 6, message: "Mínimo 6 caracteres" }
+                })}
+              />
+              <BotonOjo visible={verNueva} onToggle={() => setVerNueva((v) => !v)} />
+            </div>
             {errors.newPassword && <ErrorMsg>{errors.newPassword.message}</ErrorMsg>}
 
             <Label>Confirmar Contraseña</Label>
-            <Input
-              type="password"
-              placeholder="Confirmar Contraseña"
-              $error={!!errors.confirmNewPassword}
-              {...register("confirmNewPassword", { 
-                required: "Debe confirmar la contraseña",
-                validate: value => value === newPassword || "Las contraseñas no coinciden"
-              })}
-            />
+            <div style={{ position: 'relative' }}>
+              <Input
+                type={verConfirma ? 'text' : 'password'}
+                placeholder="Confirmar Contraseña"
+                style={{ paddingRight: 44 }}
+                $error={!!errors.confirmNewPassword}
+                {...register("confirmNewPassword", {
+                  required: "Debe confirmar la contraseña",
+                  validate: value => value === newPassword || "Las contraseñas no coinciden"
+                })}
+              />
+              <BotonOjo visible={verConfirma} onToggle={() => setVerConfirma((v) => !v)} />
+            </div>
             {errors.confirmNewPassword && <ErrorMsg>{errors.confirmNewPassword.message}</ErrorMsg>}
 
             <Button type="submit" disabled={loading}>

@@ -1,7 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from 'react';
 import toast from 'react-hot-toast';
 import { productService } from '../api/productService';
 import { promotionService } from '../api/promotionService';
+import { promoVigente } from '../utils/promos';
+import { familiasQueCoinciden } from '../utils/familias';
+import { familiaDeProducto } from '../utils/similitud';
+import { cantidadConUnidad } from '../utils/unidades';
+import { useAuth } from './useAuth';
 
 /*
  * useStore — estado de la tienda (catálogo real + carrito) con PROMOCIONES.
@@ -12,10 +17,37 @@ import { promotionService } from '../api/promotionService';
  *   - nxm         → precio normal, pero el CARRITO cobra "compra N paga M".
  */
 
-// Mapa productId -> info de promo (nos quedamos con la primera promo activa que lo incluya).
+// Los productos que toca una promo, ya vengan poblados o como puro id.
+export const idsDePromo = (promo) =>
+  (promo?.items || [])
+    .map((it) => (typeof it.productId === 'object' ? it.productId?._id : it.productId))
+    .filter(Boolean);
+
+/*
+ * Mapa productId -> info de promo. "Vigente" incluye la fecha: una promo que
+ * venció anoche no puede seguir bajando precios hoy solo porque nadie recargó
+ * la lista.
+ *
+ * Un producto puede estar en VARIAS promos vigentes a la vez: por ejemplo un
+ * "anuncio" que solo lo destaca (sin tocar el precio) y un "descuento" que sí
+ * se lo baja. Cuando eso pasa gana la que AFECTA EL PRECIO por encima del
+ * anuncio, y entre dos que afectan el precio, la más nueva. Antes ganaba
+ * simplemente la primera de la lista —muchas veces el anuncio, que devuelve el
+ * precio de siempre—, así que el descuento recién creado quedaba tapado y no
+ * se veía en ningún lado.
+ */
+const prioridadPromo = (tipo) => (tipo === 'anuncio' ? 0 : 1);
+
 const construirMapaPromo = (promos) => {
   const mapa = {};
-  (promos || []).filter((pr) => pr.isActive !== false).forEach((pr) => {
+  const ordenadas = (promos || [])
+    .filter(promoVigente)
+    .sort((a, b) =>
+      prioridadPromo(b.type) - prioridadPromo(a.type) ||
+      new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+
+  ordenadas.forEach((pr) => {
     (pr.items || []).forEach((it) => {
       const pid = typeof it.productId === 'object' ? it.productId?._id : it.productId;
       if (!pid || mapa[pid]) return;
@@ -25,6 +57,8 @@ const construirMapaPromo = (promos) => {
         fixedPrice: it.fixedPrice,
         buyQty: pr.buyQty || 2,
         payQty: pr.payQty || 1,
+        // Solo el anuncio la trae: es su sello, ya que no tiene ahorro.
+        etiqueta: pr.etiqueta || '',
       };
     });
   });
@@ -50,6 +84,13 @@ const mapearProducto = (p, mapaPromo = {}) => {
       promoInfo = { type: 'precio_fijo' };
     } else if (promo.type === 'nxm') {
       promoInfo = { type: 'nxm', buyQty: promo.buyQty, payQty: promo.payQty };
+    } else if (promo.type === 'anuncio') {
+      /*
+       * El anuncio NO toca el precio: solo le pone su sello al producto para
+       * que destaque en la tienda. Por eso no se define precioAnterior — si no,
+       * la tarjeta mostraría un precio tachado igual al vigente.
+       */
+      promoInfo = { type: 'anuncio', etiqueta: promo.etiqueta || 'Nuevo' };
     }
   }
 
@@ -59,26 +100,130 @@ const mapearProducto = (p, mapaPromo = {}) => {
     marca: p.brandId?.name || '',
     categoria: p.typeId?.type || 'General',
     modulo: p.moduleId?.name || '',
+    // El id además del nombre: filtrar por pasillo con el nombre se rompía en
+    // cuanto alguien le corregía una tilde al módulo.
+    moduloId: p.moduleId?._id || p.moduleId || null,
     precio,
     precioAnterior,
     promo: promoInfo,
     descripcion: p.description || '',
+    /*
+     * Cómo se vende. Va tal cual en el producto de la tienda porque lo
+     * necesitan la tarjeta (para el "/lb"), el detalle y el carrito (para
+     * moverse de media en media libra). Ver utils/unidades.js.
+     */
+    unidadVenta: p.unidadVenta === 'libra' ? 'libra' : 'unidad',
+    // En cuántas piezas están esas libras, y si la venta es solo para mayores.
+    piezas: p.piezas ?? null,
+    soloAdultos: !!p.soloAdultos,
     stock: Number(p.stock) || 0,
+    // Tope de stock del producto: sirve para saber si "se está acabando"
+    // en relación a lo que normalmente tiene, no contra un número fijo.
+    stockMaximo: Number(p.maxQuantity) || 0,
     imagen: Array.isArray(p.image) ? p.image[0] : p.image,
-    emoji: '📦',
     esMasVendido: false,
     fechaExpiracion: p.expirationDate,
+    creadoEn: p.createdAt,
   };
 };
 
-export const useStore = () => {
+/*
+ * ============================================================
+ * EL CARRITO, GUARDADO — que no se pierda al salir de la tienda
+ * ============================================================
+ * El carrito vivía en un useState y nada más. Bastaba con salir un momento
+ * —a marcar una dirección, a iniciar sesión, o darle sin querer a "atrás"—
+ * para que al volver estuviera vacío. Y no es que se borrara: es que nunca
+ * se había guardado en ningún lado.
+ *
+ * Ahora vive en el teléfono, con una llave POR PERSONA y otra para quien
+ * todavía no entró — igual que la dirección activa (ver useDireccionActiva).
+ * Así al cerrar sesión no queda a la vista el carrito de quien estaba antes:
+ * su llave sencillamente ya no se lee.
+ *
+ * Y se guarda SOLO el id y la cantidad. Nunca el precio.
+ *
+ * Eso último es lo importante: un precio guardado en el navegador es un
+ * precio de ayer, y el día que la tienda sube uno, quien tuviera el producto
+ * en el carrito lo pagaría al viejo. Al no guardarlo no hay nada que
+ * reconciliar — el precio, la promo y el stock salen siempre del catálogo
+ * que se acaba de cargar.
+ * ============================================================
+ */
+const llaveCarrito = (userId) => `kartify:carrito:${userId || 'invitado'}`;
+
+// Aviso propio: `storage` solo lo oyen las OTRAS pestañas, nunca la que
+// escribió. Sin esto, agregar desde la portada no movería el contador de arriba.
+const EVENTO_CARRITO = 'kartify:carrito-cambio';
+
+const suscribirCarrito = (avisar) => {
+  window.addEventListener('storage', avisar);
+  window.addEventListener(EVENTO_CARRITO, avisar);
+  return () => {
+    window.removeEventListener('storage', avisar);
+    window.removeEventListener(EVENTO_CARRITO, avisar);
+  };
+};
+
+// El navegador puede negarse a dar localStorage (modo privado, permisos). Que
+// eso deje la tienda sin memoria es aceptable; que la tumbe, no.
+const leerCrudo = (llave) => {
+  try { return localStorage.getItem(llave); } catch { return null; }
+};
+
+/*
+ * De lo guardado a algo confiable: [{ id, cantidad }] con cantidades enteras y
+ * positivas. Se desconfía a propósito de lo que hay en el navegador — puede
+ * venir de una versión vieja de la tienda o de alguien que lo editó a mano.
+ */
+const normalizarLineas = (crudo) => {
+  try {
+    const datos = JSON.parse(crudo || '[]');
+    if (!Array.isArray(datos)) return [];
+    return datos
+      .map((l) => ({ id: String(l?.id ?? ''), cantidad: Math.floor(Number(l?.cantidad) || 0) }))
+      .filter((l) => l.id && l.cantidad > 0);
+  } catch {
+    return [];
+  }
+};
+
+const escribirLineas = (llave, lista) => {
+  const lineas = (lista || [])
+    .map((i) => ({ id: String(i.id), cantidad: Math.floor(Number(i.cantidad) || 0) }))
+    .filter((l) => l.id && l.cantidad > 0);
+  try {
+    if (lineas.length) localStorage.setItem(llave, JSON.stringify(lineas));
+    else localStorage.removeItem(llave);
+  } catch { /* sin memoria, pero la tienda sigue funcionando */ }
+  window.dispatchEvent(new Event(EVENTO_CARRITO));
+};
+
+/*
+ * `promoInicial` es el id que llega en ?promo= — lo pone el botón "Ver la
+ * promoción" del correo que se le manda a los clientes cuando la tienda
+ * publica una. Sin esto, ese botón dejaba a la persona en la portada a buscar
+ * a mano la oferta que le acababan de anunciar. Ver backend/utils/avisoPromo.js.
+ */
+export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInicial = null } = {}) => {
   const [productos, setProductos] = useState([]);
+  // La lista cruda de promociones. Antes solo se usaba de paso para calcular
+  // los precios y se tiraba; ahora hace falta guardarla para poder abrir una
+  // por su id.
+  const [promociones, setPromociones] = useState([]);
+  /*
+   * El pasillo en el que está parado el cliente. null = toda la tienda.
+   * Viene de la pantalla de servicios (?modulo=) o de las pastillas de arriba.
+   */
+  const [moduloSeleccionado, setModuloSeleccionado] = useState(moduloInicial);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
-  const [terminoBusqueda, setTerminoBusqueda] = useState('');
-  const [carrito, setCarrito] = useState([]);
+  // Arranca con lo que venga en ?q= (ver Store.jsx), o vacío.
+  const [terminoBusqueda, setTerminoBusqueda] = useState(busquedaInicial);
   const [cargando, setCargando] = useState(false);
   const [filtroPrecio, setFiltroPrecio] = useState('todos');
   const [promoSeleccionada, setPromoSeleccionada] = useState(null);
+  // Promo abierta en la ventana de detalle (el click al banner del carrusel).
+  const [promoDetalle, setPromoDetalle] = useState(null);
 
   useEffect(() => {
     const cargar = async () => {
@@ -89,8 +234,10 @@ export const useStore = () => {
           promotionService.getPromotions().catch(() => []),
         ]);
         const activos = (Array.isArray(prods) ? prods : []).filter((p) => p.isActive !== false);
-        const mapaPromo = construirMapaPromo(Array.isArray(promos) ? promos : []);
+        const lista = Array.isArray(promos) ? promos : [];
+        const mapaPromo = construirMapaPromo(lista);
         setProductos(activos.map((p) => mapearProducto(p, mapaPromo)));
+        setPromociones(lista);
       } catch (error) {
         console.error('Error cargando la tienda:', error);
       } finally {
@@ -100,17 +247,63 @@ export const useStore = () => {
     cargar();
   }, []);
 
+  /*
+   * Llegó por el enlace del correo: se le abre la promo que le anunciaron.
+   *
+   * Espera a que las promociones estén cargadas —el id sin la lista no sirve
+   * de nada— y se desarma después de abrirla UNA vez. Sin ese candado, cerrar
+   * el detalle lo volvía a abrir en el siguiente render y la ventana se
+   * quedaba pegada: imposible de cerrar salvo recargando.
+   *
+   * Si la promo ya venció o la borraron, no pasa nada: se queda en la portada,
+   * que es mejor que un error por algo que ya no existe.
+   */
+  const promoDelEnlaceAbierta = useRef(false);
+  useEffect(() => {
+    if (!promoInicial || promoDelEnlaceAbierta.current || !promociones.length) return;
+    const promo = promociones.find((p) => String(p._id) === String(promoInicial));
+    promoDelEnlaceAbierta.current = true;
+    if (promo) setPromoDetalle(promo);
+  }, [promoInicial, promociones]);
+
+  /*
+   * Escape cierra el detalle de la promo. El listener vive acá y no en el
+   * componente porque el estado de apertura también vive acá: la ventana solo
+   * pinta lo que el hook le dice.
+   */
+  useEffect(() => {
+    if (!promoDetalle) return;
+    const alTeclear = (e) => { if (e.key === 'Escape') setPromoDetalle(null); };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [promoDetalle]);
+
+  /*
+   * El pasillo manda sobre todo lo demás: si el cliente entró a la Panadería,
+   * las categorías, los destacados y la búsqueda son de la panadería. Por eso
+   * el filtro de módulo se aplica ANTES que cualquier otro y todo lo demás
+   * cuelga de aquí.
+   */
+  const productosDelPasillo = useMemo(() => {
+    if (!moduloSeleccionado) return productos;
+    return productos.filter((p) => String(p.moduloId) === String(moduloSeleccionado));
+  }, [productos, moduloSeleccionado]);
+
+  // Al cambiar de pasillo se suelta la categoría: la de la panadería no existe
+  // en abarrotes, y la lista quedaría vacía sin explicación.
+  useEffect(() => { setCategoriaSeleccionada(null); }, [moduloSeleccionado]);
+
   const categorias = useMemo(() => {
-    const cats = new Set(productos.map((p) => p.categoria).filter(Boolean));
+    const cats = new Set(productosDelPasillo.map((p) => p.categoria).filter(Boolean));
     return Array.from(cats).sort();
-  }, [productos]);
+  }, [productosDelPasillo]);
 
   const productosFiltrados = useMemo(() => {
-    let filtrados = productos;
+    let filtrados = productosDelPasillo;
 
     // Filtro por promo (banner): solo los productos de esa promo.
     if (promoSeleccionada) {
-      const ids = (promoSeleccionada.items || []).map((it) => (typeof it.productId === 'object' ? it.productId?._id : it.productId));
+      const ids = idsDePromo(promoSeleccionada);
       filtrados = filtrados.filter((p) => ids.includes(p.id));
     }
 
@@ -120,10 +313,23 @@ export const useStore = () => {
 
     if (terminoBusqueda.trim()) {
       const busqueda = terminoBusqueda.toLowerCase().trim();
+      /*
+       * El buscador también entiende ESTANTES, no solo etiquetas.
+       *
+       * Nadie le pone "Bebida energizante" de nombre a una lata de Red Bull, así
+       * que buscar "energizante" no encontraba ni una aunque la tienda tuviera
+       * cinco. Lo mismo con "limpieza", "lácteos" o "papelería": son las
+       * palabras con las que piensa el cliente, no las que trae la etiqueta.
+       *
+       * Suma resultados, nunca los quita: lo que ya se encontraba por nombre,
+       * marca o categoría se sigue encontrando igual.
+       */
+      const familiasBuscadas = familiasQueCoinciden(busqueda);
       filtrados = filtrados.filter((p) =>
         p.nombre?.toLowerCase().includes(busqueda) ||
         p.marca?.toLowerCase().includes(busqueda) ||
-        p.categoria?.toLowerCase().includes(busqueda)
+        p.categoria?.toLowerCase().includes(busqueda) ||
+        (familiasBuscadas && familiasBuscadas.has(familiaDeProducto(p)))
       );
     }
 
@@ -136,32 +342,180 @@ export const useStore = () => {
     }
 
     return filtrados;
-  }, [productos, categoriaSeleccionada, terminoBusqueda, filtroPrecio, promoSeleccionada]);
+  }, [productosDelPasillo, categoriaSeleccionada, terminoBusqueda, filtroPrecio, promoSeleccionada]);
 
-  const productosDestacados = useMemo(() => productos.slice(0, 6), [productos]);
+  const productosDestacados = useMemo(() => productosDelPasillo.slice(0, 6), [productosDelPasillo]);
+
+  /*
+   * Los productos de la promo que se está mirando en detalle. Salen del
+   * catálogo ya mapeado, no de promo.items, para que se vean con su precio de
+   * oferta y su stock real — los mismos que verá en la tienda.
+   */
+  const productosDePromo = useMemo(() => {
+    if (!promoDetalle) return [];
+    const ids = idsDePromo(promoDetalle);
+    return productos.filter((p) => ids.includes(p.id));
+  }, [productos, promoDetalle]);
+
+  // Abrir el detalle de una promo (click al banner) y cerrarlo.
+  const abrirPromo = (promo) => setPromoDetalle(promo);
+  const cerrarPromo = () => setPromoDetalle(null);
+
+  /*
+   * "Ver todos en la tienda": cierra el detalle y deja la lista filtrada a esa
+   * promo, limpiando categoría y búsqueda para que no se peleen entre filtros.
+   */
+  const verPromoEnTienda = (promo) => {
+    setPromoSeleccionada(promo || promoDetalle);
+    setCategoriaSeleccionada(null);
+    setTerminoBusqueda('');
+    setPromoDetalle(null);
+  };
+
+  /* ══════════════ EL CARRITO ══════════════ */
+
+  const { user } = useAuth();
+  const llave = llaveCarrito(user?.id);
+
+  /*
+   * localStorage es estado que vive FUERA de React; leerlo con un efecto que
+   * llama a setState provoca un render de más y el linter lo rechaza con
+   * razón. useSyncExternalStore es la herramienta hecha para esto — y de
+   * regalo, dos pestañas abiertas ven el mismo carrito.
+   */
+  const guardado = useSyncExternalStore(
+    suscribirCarrito,
+    () => leerCrudo(llave),
+    () => null
+  );
+
+  const lineas = useMemo(() => normalizarLineas(guardado), [guardado]);
+
+  /*
+   * El carrito que se ve = lo guardado CASADO con el catálogo de hoy.
+   *
+   * Por eso un producto que la tienda dio de baja o que se quedó sin stock
+   * desaparece solo, y una cantidad guardada mayor a lo que hay se recorta a
+   * lo que hay. Mientras el catálogo no haya cargado no se muestra nada: es
+   * preferible un carrito que tarda un instante a uno que enseña precios que
+   * ya no son.
+   */
+  const carrito = useMemo(() => {
+    if (lineas.length === 0 || productos.length === 0) return [];
+    const porId = new Map(productos.map((p) => [String(p.id), p]));
+    return lineas.reduce((lista, linea) => {
+      const p = porId.get(linea.id);
+      if (!p || p.stock <= 0) return lista;
+      lista.push({ ...p, cantidad: Math.min(linea.cantidad, p.stock) });
+      return lista;
+    }, []);
+  }, [lineas, productos]);
+
+  const guardarCarrito = useCallback((lista) => escribirLineas(llave, lista), [llave]);
+
+  /*
+   * Cuando el catálogo termina de cargar, lo guardado se limpia de una vez:
+   * lo que ya no existe se borra del navegador y lo que se recortó se guarda
+   * recortado. Si no, la corrección se rehacía en cada visita y el aviso
+   * volvía a salir cada vez.
+   *
+   * Se avisa porque callarlo es peor: quien pidió tres y recibe dos merece
+   * enterarse ahora y no en la puerta de su casa.
+   */
+  const yaConciliado = useRef(false);
+  useEffect(() => {
+    if (cargando || yaConciliado.current) return;
+    // Catálogo vacío = la API no respondió. Ahí no se toca nada: borrarle el
+    // carrito a alguien porque se cayó el servidor sería el peor arreglo.
+    if (productos.length === 0 || lineas.length === 0) return;
+    yaConciliado.current = true;
+
+    const fuera = lineas.length - carrito.length;
+    const recortados = carrito.filter((i) => {
+      const guardada = lineas.find((l) => l.id === String(i.id));
+      return guardada && guardada.cantidad > i.cantidad;
+    }).length;
+
+    if (fuera === 0 && recortados === 0) return;
+
+    guardarCarrito(carrito);
+
+    const partes = [];
+    if (fuera > 0) {
+      partes.push(fuera === 1 ? 'un producto ya no está disponible' : `${fuera} productos ya no están disponibles`);
+    }
+    if (recortados > 0) {
+      partes.push(recortados === 1
+        ? 'de otro quedaban menos unidades de las que llevaba'
+        : `de ${recortados} quedaban menos unidades de las que llevaba`);
+    }
+    toast(`De su carrito guardado, ${partes.join(' y ')}. Ya está corregido.`, { duration: 6000 });
+  }, [cargando, productos, lineas, carrito, guardarCarrito]);
+
+  /*
+   * Al iniciar sesión, lo que llenó como invitado se pasa a su cuenta.
+   *
+   * Sin esto el arreglo quedaba a medias justo donde más duele: la tienda se
+   * recorre sin cuenta, el carrito se llena sin cuenta, y al pedir la sesión
+   * para pagar la llave cambiaba y el carrito aparecía vacío. Se toma la
+   * cantidad mayor de las dos, nunca la suma, para no duplicar sin querer.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    const deInvitado = normalizarLineas(leerCrudo(llaveCarrito(null)));
+    if (deInvitado.length === 0) return;
+
+    const suyo = llaveCarrito(user.id);
+    const fusion = [...normalizarLineas(leerCrudo(suyo))];
+    deInvitado.forEach((linea) => {
+      const i = fusion.findIndex((f) => f.id === linea.id);
+      if (i === -1) fusion.push(linea);
+      else fusion[i] = { ...fusion[i], cantidad: Math.max(fusion[i].cantidad, linea.cantidad) };
+    });
+
+    try { localStorage.removeItem(llaveCarrito(null)); } catch { /* ya está */ }
+    escribirLineas(suyo, fusion);
+  }, [user?.id]);
 
   const agregarAlCarrito = (producto, cantidad = 1) => {
-    setCarrito((prev) => {
-      const existe = prev.find((item) => item.id === producto.id);
-      if (existe) {
-        const nuevaCantidad = existe.cantidad + cantidad;
-        if (nuevaCantidad > producto.stock) {
-          toast.error(`Solo hay ${producto.stock} unidades disponibles`);
-          return prev;
-        }
-        return prev.map((item) => (item.id === producto.id ? { ...item, cantidad: nuevaCantidad } : item));
-      }
-      return [...prev, { ...producto, cantidad }];
-    });
-    toast.success(`¡${producto.nombre} agregado al carrito!`, {
-      icon: '🛒',
-      style: { borderRadius: '10px', background: '#333', color: '#fff' },
-    });
+    if (!producto?.id) return;
+    const stock = Number(producto.stock) || 0;
+    if (stock <= 0) {
+      toast.error(`${producto.nombre} se quedó sin existencias`);
+      return;
+    }
+
+    const enCarrito = carrito.find((i) => i.id === producto.id)?.cantidad || 0;
+    const nuevaCantidad = enCarrito + cantidad;
+    if (nuevaCantidad > stock) {
+      // "Solo hay 3 unidades" de un queso que se vende por peso confunde:
+      // se dice en la unidad en que se vende. Ver utils/unidades.js.
+      toast.error(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`);
+      return;
+    }
+
+    guardarCarrito(
+      enCarrito
+        ? carrito.map((item) => (item.id === producto.id ? { ...item, cantidad: nuevaCantidad } : item))
+        : [...carrito, { id: producto.id, cantidad }]
+    );
+
+    /*
+     * El aviso dice cuántos lleva, no solo que se agregó: al segundo click el
+     * texto era idéntico y no había forma de saber si el toque contó.
+     * El estilo sale del <Toaster> de App: aquí no se pisa nada.
+     */
+    toast.success(
+      nuevaCantidad > 1
+        ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
+        : `${producto.nombre} agregado al carrito`
+    );
   };
 
   const eliminarDelCarrito = (productoId) => {
-    setCarrito((prev) => prev.filter((item) => item.id !== productoId));
-    toast('Producto eliminado', { icon: '🗑️' });
+    const fuera = carrito.find((i) => i.id === productoId);
+    guardarCarrito(carrito.filter((item) => item.id !== productoId));
+    toast(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
   };
 
   const actualizarCantidad = (productoId, nuevaCantidad) => {
@@ -169,12 +523,19 @@ export const useStore = () => {
       eliminarDelCarrito(productoId);
       return;
     }
-    setCarrito((prev) => prev.map((item) => (item.id === productoId ? { ...item, cantidad: nuevaCantidad } : item)));
+    const item = carrito.find((i) => i.id === productoId);
+    if (!item) return;
+    // El tope se respeta también aquí, no solo en el botón: en el teléfono el
+    // "+" se pulsa más rápido de lo que el render alcanza a deshabilitarlo.
+    const cantidad = Math.min(nuevaCantidad, item.stock);
+    if (cantidad === item.cantidad) return;
+    guardarCarrito(carrito.map((i) => (i.id === productoId ? { ...i, cantidad } : i)));
   };
 
   const limpiarCarrito = () => {
-    setCarrito([]);
-    toast('Carrito vaciado', { icon: '🗑️' });
+    const cuantos = carrito.length;
+    guardarCarrito([]);
+    if (cuantos) toast(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
   };
 
   // Total del carrito, aplicando el NxM (cada N unidades, se pagan M).
@@ -199,6 +560,9 @@ export const useStore = () => {
 
   return {
     productos,
+    productosDelPasillo,
+    moduloSeleccionado,
+    setModuloSeleccionado,
     categorias,
     categoriaSeleccionada,
     setCategoriaSeleccionada,
@@ -218,5 +582,10 @@ export const useStore = () => {
     setFiltroPrecio,
     promoSeleccionada,
     setPromoSeleccionada,
+    promoDetalle,
+    productosDePromo,
+    abrirPromo,
+    cerrarPromo,
+    verPromoEnTienda,
   };
 };

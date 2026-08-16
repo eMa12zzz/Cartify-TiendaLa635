@@ -1,7 +1,13 @@
 import express from "express";
 import loginAdminController from "../controller/Admin/loginAdmin.js";
 
-const router = express.Router();
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -55,6 +61,11 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
+
+
+const router = express.Router();
+
 router.post("/login", loginAdminController.login);
+router.post("/verify-2fa", loginAdminController.verify2FA);
 
 export default router;

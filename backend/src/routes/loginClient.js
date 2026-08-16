@@ -1,7 +1,14 @@
 import express from "express";
 import loginClientController from "../controller/Clients/loginClient.js";
+import googleAuthClientController from "../controller/Clients/googleAuthClient.js";
 
-const router = express.Router();
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -57,6 +64,12 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
+
+
+const router = express.Router();
+
 router.post("/login", loginClientController.login);
+// Inicio de sesión con Google. Recibe el ID token del botón del frontend.
+router.post("/google", googleAuthClientController.login);
 
 export default router;

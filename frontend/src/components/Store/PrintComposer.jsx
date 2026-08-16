@@ -9,7 +9,7 @@ import { ImagePlus, ZoomIn, ZoomOut, RotateCcw, RotateCw, Copy, Trash2, ArrowUp,
  * así lo que el cliente ve es lo que se imprime. Botones grandes y toolbar
  * al seleccionar (nada de manijitas diminutas) para que sirva con el dedo.
  */
-const BROWN = '#8B5A2B';
+const BROWN = 'var(--marca-600)';
 
 const PrintComposer = ({ composer }) => {
   const {
@@ -75,7 +75,7 @@ const PrintComposer = ({ composer }) => {
             <button type="button" onClick={() => { setPaginaActiva(i); setSeleccionado(null); }}
               style={{
                 ...btn, padding: '6px 12px', fontSize: 12,
-                background: i === paginaActiva ? '#f5ede4' : '#fff',
+                background: i === paginaActiva ? 'var(--marca-100)' : '#fff',
                 borderColor: i === paginaActiva ? BROWN : '#e0e0e0',
                 color: i === paginaActiva ? BROWN : '#555',
               }}>

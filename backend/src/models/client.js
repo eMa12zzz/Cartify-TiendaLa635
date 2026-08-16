@@ -1,9 +1,9 @@
 /*
 Campos:
     fullName: String,
-    dui: String,
+    dui: String,          // OPCIONAL
     phoneNumber: String,
-    ClientAddress: Array,
+    clientAddress: Array, // direcciones de entrega
     image: String,
     email: String,
     userName: String,
@@ -272,25 +272,89 @@ import{ Schema, model } from 'mongoose';
 
 const clientSchema = new Schema({
     fullName: { type:"String"},
+    /*
+     * DUI opcional, y a propósito SIN `unique`.
+     *
+     * Mucha gente del barrio no lo anda a mano y no vale la pena perder el
+     * registro por eso. Si algún día se quiere impedir DUI repetidos, el
+     * índice tiene que ser `unique` + `sparse`: sin sparse, el segundo cliente
+     * que se registre sin DUI choca contra el primero por duplicado. Por eso
+     * los controladores guardan undefined y nunca cadena vacía.
+     */
     dui: { type:"String"},
+    /*
+     * Fecha de nacimiento (opcional). Con ella se calcula la edad para destapar
+     * los productos +18 en la tienda. Es una barrera blanda —se puede mentir—,
+     * así que la verificación de verdad sigue siendo el DUI físico en la entrega.
+     */
+    fechaNacimiento: { type: Date },
     phoneNumber: { type:"String"},
-    clientAddress: { type:["String"]},
+    /*
+     * Direcciones de entrega: { nombre, direccion, referencia, lat, lng }.
+     *
+     * Va como Mixed y no como subesquema porque los clientes que ya existen
+     * las tienen guardadas como texto suelto. Con un esquema estricto,
+     * Mongoose intentaría convertir esas cadenas en objetos al leerlas y la
+     * pantalla de direcciones se caería para todos ellos. El frontend
+     * normaliza las dos formas.
+     */
+    clientAddress: { type: [Schema.Types.Mixed], default: [] },
     image: { type:"String"},
     public_id: { type:"String"},
     email: { type:"String"},
     userName: { type:"String"},
     password: { type:"String"},
+    /*
+     * Inicio de sesión con Google. `googleId` es el "sub" (identificador
+     * estable) que devuelve Google; con él se reconoce a quien vuelve a entrar
+     * aunque cambie el correo. `authProvider` distingue 'local' (correo y
+     * contraseña) de 'google' — quien entró por Google no tiene contraseña, así
+     * que el login normal no debe pedírsela.
+     */
+    googleId: { type:"String"},
+    authProvider: { type:"String", default: "local"},
     // Campo viejo (con typo y tipo String). Se mantiene por compatibilidad con
     // los datos que ya existen en la base; la lógica nueva NO lo usa.
     lolayitypoints: { type:"String", default: 0},
     // Puntos de fidelidad reales (Number). Este es el que usa toda la lógica
     // nueva de loyalty: se suma al crear un pedido y se muestra en el admin.
     loyaltyPoints: { type: Number, default: 0 },
+    /*
+     * Saldo digital en dólares, cargado canjeando gift cards.
+     * Solo lo mueve el servidor: al canjear una tarjeta sube, al pagar con
+     * saldo baja. Nunca se toca con un valor que venga del navegador.
+     */
+    balance: { type: Number, default: 0, min: 0 },
     // Preferencias de notificación del cliente (área "Mi Cuenta").
+    /*
+     * Ojo con `promociones`: el default es true por los clientes que ya
+     * existían antes de que hubiera dónde elegir. Los que se registran DESDE
+     * el consentimiento traen el valor explícito de su casilla —que llega
+     * desmarcada—, así que ese default ya no los toca. Ver `consentimiento`.
+     */
     notificationPrefs: {
       promociones:     { type: Boolean, default: true },
       nuevosProductos: { type: Boolean, default: true },
       pedidoCerca:     { type: Boolean, default: false },
+    },
+    /*
+     * El consentimiento, tal como se dio: qué versión de los términos aceptó y
+     * cuándo.
+     *
+     * Guardar solo "aceptó: sí" no sirve de nada. El día que cambie el texto,
+     * sin la versión no hay forma de saber a quién hay que volver a
+     * preguntarle, y sin la fecha no hay forma de demostrar que aceptó — que es
+     * justo lo que le van a pedir a la tienda si alguien reclama.
+     *
+     * `promociones` se guarda aparte de notificationPrefs a propósito: aquello
+     * es una preferencia que la persona cambia diez veces desde su cuenta, y
+     * esto es el registro de lo que eligió al entrar. Uno se sobreescribe, el
+     * otro es historia.
+     */
+    consentimiento: {
+      terminosVersion:  { type: String },
+      aceptadoEn:       { type: Date },
+      promociones:      { type: Boolean, default: false },
     },
     // Métodos de pago guardados. SOLO datos NO sensibles: tipo, alias y los
     // últimos 4 dígitos. NUNCA el número completo ni el CVV — el cobro real
@@ -302,7 +366,13 @@ const clientSchema = new Schema({
         last4: { type: String },
       },
     ],
-    favorites: { type: Schema.Types.ObjectId, ref: "productModel"},
+    /*
+     * Los productos que el cliente marcó con el corazón.
+     *
+     * Era UN solo ObjectId: cabía un favorito por persona, así que el segundo
+     * corazón habría borrado el primero. Ahora es una lista.
+     */
+    favorites: [{ type: Schema.Types.ObjectId, ref: "productModel" }],
     isVerified: { type:"Boolean", default: false},
     isActive: { type:"Boolean", default: true}
 },

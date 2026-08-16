@@ -1,5 +1,6 @@
 import employeeModel from '../../models/employee.js';
 import mongoose from "mongoose";
+import bcryptjs from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
 
 
@@ -8,24 +9,50 @@ const employeeController = {};
 //Select
 employeeController.getEmployees = async (req, res) => {
     try {
-        const employee = await employeeModel.find();
+        // Mismo arreglo que en clientes: sin el `-password` esta ruta devolvía
+        // el hash de la contraseña de todo el personal de la tienda.
+        const employee = await employeeModel.find().select("-password");
         res.status(200).json(employee);
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error get Employee' });
+        // El nombre de la función se queda en el log, que es donde sirve.
+        console.log("error getEmployees: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
 //Insert
 employeeController.insertEmployee = async (req, res) => {
     
+  try {
     //1- Pedimos los datos para insertar
-    const { fullName, dui, phoneNumber, image, email, userName, password } = req.body;
+    const { fullName, dui, phoneNumber, email, userName, password } = req.body;
+
     //2- Lleno una instancia de mi Schema
-    const newEmployee = new employeeModel({ fullName, dui, phoneNumber, image: req.file.path, public_id: req.file.filename, email, userName, password });
+    /*
+     * La foto es opcional: antes esto hacía req.file.path a secas y, si el
+     * empleado se registraba sin foto, reventaba con un 500 sin explicar nada.
+     * Sin foto, la ficha muestra las iniciales.
+     *
+     * La contraseña se guarda HASHEADA. Antes se guardaba tal cual llegaba del
+     * formulario — un curl a la base la dejaba leíble, y de paso el login del
+     * empleado (que compara con bcrypt) nunca iba a coincidir contra texto
+     * plano.
+     */
+    const passwordHasheada = await bcryptjs.hash(password, 10);
+
+    const newEmployee = new employeeModel({
+      fullName, dui, phoneNumber, email, userName, password: passwordHasheada,
+      image: req.file ? req.file.path : undefined,
+      public_id: req.file ? req.file.filename : undefined,
+    });
+
     //3- Guardamos en la base de datos
     await newEmployee.save();
-    res.status(201).json({ message: 'Employee created successfully' });
+    res.status(201).json({ message: 'Empleado creado' });
+  } catch (error) {
+    console.log("error insertEmployee: " + error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 
 
 };
@@ -40,7 +67,7 @@ employeeController.updateEmployee = async (req, res) => {
 
     if (!email || !userName || !password || !fullName || !dui || !phoneNumber) {
       return res.status(400).json({
-        message: "Required fields"
+        message: "Faltan campos obligatorios"
       });
     }
 
@@ -48,17 +75,19 @@ employeeController.updateEmployee = async (req, res) => {
 
     if (!employeeFound) {
       return res.status(404).json({
-        message: "Employee not found"
+        message: "No se encontró el empleado"
       });
     }
 
+    // Misma razón que en insertEmployee: la contraseña nunca se guarda tal
+    // cual llega, se hashea antes de tocar la base.
     const updatedData = {
       fullName,
       dui,
       phoneNumber,
       email,
       userName,
-      password
+      password: await bcryptjs.hash(password, 10),
     };
 
     //Si viene una nueva imagen
@@ -77,14 +106,14 @@ employeeController.updateEmployee = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Employee updated successfully"
+      message: "Empleado actualizado"
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error updateEmployee: " + error);
 
     return res.status(500).json({
-      message: "Internal server error update Employee"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -94,12 +123,13 @@ employeeController.deleteEmployee = async (req, res) => {
     try {
         const deleteEmployee = await employeeModel.findByIdAndDelete(req.params.id);
         if (!deleteEmployee) {
-            return res.status(404).json({ message: 'Employee not found' });
+            return res.status(404).json({ message: 'No se encontró el empleado' });
         }
-        return res.status(200).json({ message: 'Employee deleted successfully' });
+        return res.status(200).json({ message: 'Empleado eliminado' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error deleteAdmin' });
+        // El log decía "deleteAdmin" por copiar y pegar; aquí se borran empleados.
+        console.log("error deleteEmployee: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 

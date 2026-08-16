@@ -9,14 +9,15 @@ import { useAuth } from './useAuth';
  * aquí; la página MetodoPago solo pinta la lista y el formulario.
  */
 export const usePaymentMethods = () => {
-  const { user } = useAuth();
+  const { user, esCliente } = useAuth();
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
-      if (!user?.id) { setLoading(false); return; }
+      // Con sesión de personal esto daría 404: ver useAuth.
+      if (!esCliente) { setLoading(false); return; }
       try {
         setLoading(true);
         const cliente = await clientService.getClientById(user.id);
@@ -28,10 +29,10 @@ export const usePaymentMethods = () => {
       }
     };
     cargar();
-  }, [user?.id]);
+  }, [user?.id, esCliente]);
 
   const guardar = async (nuevos) => {
-    if (!user?.id) return;
+    if (!esCliente) return;
     try {
       setSaving(true);
       await clientService.updatePaymentMethods(user.id, nuevos);

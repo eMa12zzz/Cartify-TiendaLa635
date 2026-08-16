@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import EmployeeFormModal from '../components/Admin/EmployeeFormModal';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
 import TableActions from '../components/UI/TableActions';
+import { formatearDui, formatearTelefono } from '../utils/mascaras';
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -102,7 +103,7 @@ const Employees = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
-      <h1 className="text-4xl font-extrabold text-[#C28C5D] mb-6">Empleados</h1>
+      <h1 className="text-4xl font-extrabold text-[#066494] mb-6">Empleados</h1>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -115,7 +116,7 @@ const Employees = () => {
                 placeholder="Buscar empleado..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] transition-colors w-64 shadow-sm"
               />
             </div>
             <FilterSelect
@@ -131,7 +132,7 @@ const Employees = () => {
             </button>
             <button 
               onClick={handleAddEmployee}
-              className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+              className="px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
             >
               Añadir Empleados
             </button>
@@ -156,9 +157,11 @@ const Employees = () => {
                     {item.fullName || item.name}
                   </div>
                 </td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.phoneNumber}</td>
+                {/* Mismo criterio que en Clientes: lo que se guardó sin formato
+                    se muestra formateado, para que la columna se lea pareja. */}
+                <td className="py-4 px-4 text-sm text-gray-600">{formatearTelefono(item.phoneNumber)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.email}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.dui}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{formatearDui(item.dui)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.userName}</td>
                 <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>
                   {item.isActive ? 'Activo' : 'Inactivo'}

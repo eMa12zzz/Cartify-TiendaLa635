@@ -9,8 +9,10 @@ brandController.getBrand = async (req, res) => {
         const brands = await brandsModel.find();
         res.status(200).json(brands);
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error getBrands' });
+        // El nombre de la función se queda en el log, que es donde sirve:
+        // a quien está comprando no le dice nada llamarse "getBrands".
+        console.log("error getBrands: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -32,10 +34,10 @@ brandController.insertBrand = async (req, res) => {
 
         const newBrand = new brandsModel({ name: name.trim(), isActive: isActive !== undefined ? isActive : true });
         await newBrand.save();
-        res.status(201).json({ message: 'Brand created successfully' });
+        res.status(201).json({ message: 'Marca creada' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error insertBrand' });
+        console.log("error insertBrand: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -47,7 +49,7 @@ brandController.updateBrand = async (req, res) => {
 
         //Valores requeridos
         if (!name) {
-            return res.status(400).json({ message: 'required fields' });
+            return res.status(400).json({ message: 'Faltan campos obligatorios' });
         }
 
         const updateBrand = await brandsModel.findByIdAndUpdate(
@@ -57,13 +59,13 @@ brandController.updateBrand = async (req, res) => {
         );
         
         if (!updateBrand) {
-            return res.status(404).json({ message: 'Brand not found' });
+            return res.status(404).json({ message: 'No se encontró la marca' });
         }
-        return res.status(200).json({ message: 'Brand updated successfully' });
+        return res.status(200).json({ message: 'Marca actualizada' });
 
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error updateBrand' });
+        console.log("error updateBrand: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -72,12 +74,14 @@ brandController.deleteBrand = async (req, res) => {
     try {
         const deleteBrand = await brandsModel.findByIdAndDelete(req.params.id);
         if (!deleteBrand) {
-            return res.status(404).json({ message: 'Admin not found' });
+            // Decía "Admin not found": copiar y pegar de otro controlador.
+            // Aquí lo que no aparece es la marca.
+            return res.status(404).json({ message: 'No se encontró la marca' });
         }
-        return res.status(200).json({ message: 'Brand deleted successfully' });
+        return res.status(200).json({ message: 'Marca eliminada' });
     } catch (error) {
-        console.log("error" + error);
-        res.status(500).json({ message: 'Internal Server Error deleteBrand' });
+        console.log("error deleteBrand: " + error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 

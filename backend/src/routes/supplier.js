@@ -1,7 +1,15 @@
 import express from 'express';
 import supplierController from '../controller/supplier.js';
 
-const router = express.Router();
+import { soloAdmin } from '../middlewares/validarSesion.js';
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -44,9 +52,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/")
-    .get(supplierController.getSupplier)
-    .post(supplierController.insertSupplier);
 
 /**
  * @swagger
@@ -115,6 +120,17 @@ router.route("/")
  *       500:
  *         description: Error interno del servidor.
  */
+
+
+const router = express.Router();
+
+// Los proveedores de la tienda, con sus contactos. Cosa del personal.
+router.use(soloAdmin);
+
+router.route("/")
+    .get(supplierController.getSupplier)
+    .post(supplierController.insertSupplier);
+
 router.route("/:id")
     .put(supplierController.updateSupplier)
     .get(supplierController.getSupplier)

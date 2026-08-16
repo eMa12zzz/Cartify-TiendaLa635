@@ -8,19 +8,44 @@ import { useAuth } from './useAuth';
  * Carga la lista, y expone agregar/eliminar (que guardan la lista completa en
  * la base). La lógica vive aquí; la página Direcciones solo pinta.
  */
+
+/*
+ * Una dirección es { nombre, direccion, referencia, lat, lng }, pero las de
+ * los clientes que ya existían son texto suelto. En vez de migrar la base, se
+ * normaliza al leer: lo viejo sigue funcionando y lo nuevo trae sus datos.
+ */
+export const normalizarDireccion = (item) => {
+  if (typeof item === 'string') return { nombre: '', direccion: item, referencia: '', lat: null, lng: null };
+  return {
+    nombre: item?.nombre || '',
+    direccion: item?.direccion || '',
+    referencia: item?.referencia || '',
+    lat: item?.lat ?? null,
+    lng: item?.lng ?? null,
+  };
+};
+
 export const useAddresses = () => {
-  const { user } = useAuth();
+  const { user, esCliente } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
-      if (!user?.id) { setLoading(false); return; }
+      /*
+       * Este hook cuelga del DireccionProvider, que envuelve TODA la app en
+       * App.jsx —incluido el panel—. Sin el filtro por tipo, entrar al panel
+       * con sesión de administrador disparaba una consulta de cliente con un
+       * id que no es de cliente, y el 404 se convertía en un aviso rojo
+       * flotando sobre la pantalla de Clientes. El filtro sale de useAuth.
+       */
+      if (!esCliente) { setLoading(false); return; }
       try {
         setLoading(true);
         const cliente = await clientService.getClientById(user.id);
-        setAddresses(Array.isArray(cliente?.clientAddress) ? cliente.clientAddress : []);
+        const lista = Array.isArray(cliente?.clientAddress) ? cliente.clientAddress : [];
+        setAddresses(lista.map(normalizarDireccion));
       } catch (error) {
         console.error('Error cargando direcciones:', error);
       } finally {
@@ -28,11 +53,11 @@ export const useAddresses = () => {
       }
     };
     cargar();
-  }, [user?.id]);
+  }, [user?.id, esCliente]);
 
   // Guarda la lista completa en la base y actualiza el estado local.
   const guardar = async (nuevas) => {
-    if (!user?.id) return;
+    if (!esCliente) return;
     try {
       setSaving(true);
       await clientService.updateAddresses(user.id, nuevas);
@@ -46,9 +71,9 @@ export const useAddresses = () => {
   };
 
   const agregar = (direccion) => {
-    const limpia = direccion.trim();
-    if (!limpia) return;
-    guardar([...addresses, limpia]);
+    const dir = normalizarDireccion(direccion);
+    if (!dir.direccion.trim()) return;
+    guardar([...addresses, dir]);
   };
 
   const eliminar = (indice) => {

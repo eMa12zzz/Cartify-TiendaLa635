@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { CreditCard, Wallet, Trash2, Plus } from 'lucide-react';
+import { CreditCard, Wallet, Trash2, Plus, Gift } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
+import { useSaldo } from '../../hooks/useSaldo';
 
 /*
  * MetodoPago — el cliente gestiona sus métodos de pago (área "Mi Cuenta").
@@ -13,6 +14,17 @@ const MetodoPago = () => {
   const c = palette.colors;
   const { methods, loading, saving, agregar, eliminar } = usePaymentMethods();
   const [form, setForm] = useState({ type: 'tarjeta', alias: '', last4: '' });
+
+  // Saldo digital cargado con tarjetas de regalo.
+  const { saldo, cargando: cargandoSaldo, canjeando, canjear } = useSaldo();
+  const [codigo, setCodigo] = useState('');
+
+  const onCanjear = async (e) => {
+    e.preventDefault();
+    // Solo limpiamos el campo si el canje funcionó: si el código estaba mal,
+    // que no tenga que escribirlo de nuevo entero.
+    if (await canjear(codigo)) setCodigo('');
+  };
 
   const onAgregar = (e) => {
     e.preventDefault();
@@ -34,6 +46,51 @@ const MetodoPago = () => {
       <p className="text-xs mb-6" style={{ color: c.textMuted }}>
         Por seguridad solo guardamos los últimos 4 dígitos. Nunca el número completo ni el CVV.
       </p>
+
+      {/* ── Saldo digital ── */}
+      <div
+        className="rounded-2xl p-5 mb-6"
+        style={{ backgroundColor: c.primaryLight, border: `1px solid ${c.cardBorder}` }}
+      >
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-1" style={{ color: c.textSecondary }}>
+              <Gift className="w-4 h-4" />
+              <span className="text-sm font-medium">Saldo disponible</span>
+            </div>
+            <div className="text-3xl font-extrabold" style={{ color: c.primary }}>
+              {cargandoSaldo ? '—' : `$${saldo.toFixed(2)}`}
+            </div>
+            <p className="text-xs mt-1" style={{ color: c.textMuted }}>
+              Puede pagar sus compras con este saldo al finalizar el pedido.
+            </p>
+          </div>
+
+          <form onSubmit={onCanjear} className="flex gap-2 items-start">
+            <div>
+              <input
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+                placeholder="635-XXXX-XXXX"
+                aria-label="Código de la tarjeta"
+                className="px-3 py-2.5 rounded-xl border outline-none font-mono tracking-wider w-48"
+                style={inputStyle}
+              />
+              <p className="text-xs mt-1" style={{ color: c.textMuted }}>
+                Escriba el código de su tarjeta
+              </p>
+            </div>
+            <button
+              type="submit"
+              disabled={canjeando}
+              className="press px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+              style={{ backgroundColor: c.primary }}
+            >
+              {canjeando ? 'Canjeando…' : 'Canjear'}
+            </button>
+          </form>
+        </div>
+      </div>
 
       {/* Formulario para agregar un método */}
       <form onSubmit={onAgregar} className="flex flex-col sm:flex-row gap-2 mb-6">

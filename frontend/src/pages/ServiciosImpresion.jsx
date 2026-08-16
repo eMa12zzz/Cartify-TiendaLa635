@@ -4,13 +4,16 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/UI/DataTable';
 import TableActions from '../components/UI/TableActions';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
+import MaterialesImpresion from '../components/Admin/MaterialesImpresion';
 import { printServiceService } from '../api/printServiceService';
+import { useMaterialesImpresion } from '../hooks/useMaterialesImpresion';
+import { numeroEnRango, bloquearTeclasNumero } from '../utils/validaciones';
 
 /*
  * ServiciosImpresion (Admin) — catálogo de formatos de impresión con precio.
  * El cliente elige estos formatos en /impresiones.
  */
-const emptyForm = { name: '', widthCm: 21.6, heightCm: 27.9, pricePerCopy: '', allowsColor: true, colorSurcharge: '', isActive: true };
+const emptyForm = { name: '', widthCm: 21.6, heightCm: 27.9, pricePerCopy: '', allowsColor: true, colorSurcharge: '', isActive: true, materialId: '' };
 
 const ServiciosImpresion = () => {
   const [servicios, setServicios] = useState([]);
@@ -20,6 +23,9 @@ const ServiciosImpresion = () => {
   const [form, setForm] = useState(emptyForm);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState(null);
+
+  // Los papeles cargados, para poder decir en qué se imprime cada formato.
+  const { papeles } = useMaterialesImpresion();
 
   const cargar = async () => {
     setLoading(true);
@@ -36,6 +42,8 @@ const ServiciosImpresion = () => {
       name: s.name || '', widthCm: s.widthCm ?? 21.6, heightCm: s.heightCm ?? 27.9,
       pricePerCopy: s.pricePerCopy ?? '', allowsColor: s.allowsColor !== false,
       colorSurcharge: s.colorSurcharge ?? '', isActive: s.isActive !== false,
+      // Puede venir poblado (objeto) o como puro id, según cómo lo traiga la API.
+      materialId: (typeof s.materialId === 'object' ? s.materialId?._id : s.materialId) || '',
     });
     setModalOpen(true);
   };
@@ -43,9 +51,26 @@ const ServiciosImpresion = () => {
   const guardar = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || form.pricePerCopy === '') { toast.error('Nombre y precio por copia son requeridos'); return; }
+
+    // Las medidas se usan para calcular la hoja en el editor: si vienen en 0
+    // o con letras, el canvas quedaría sin tamaño.
+    const ancho = numeroEnRango(form.widthCm, { min: 1, max: 200 });
+    if (ancho === null) { toast.error('El ancho debe estar entre 1 y 200 cm'); return; }
+
+    const alto = numeroEnRango(form.heightCm, { min: 1, max: 200 });
+    if (alto === null) { toast.error('El alto debe estar entre 1 y 200 cm'); return; }
+
+    const precio = numeroEnRango(form.pricePerCopy, { min: 0, max: 1000 });
+    if (precio === null) { toast.error('El precio por copia debe ser un número de 0 o más'); return; }
+
+    const recargo = numeroEnRango(form.colorSurcharge === '' ? 0 : form.colorSurcharge, { min: 0, max: 1000 });
+    if (recargo === null) { toast.error('El recargo de color debe ser un número de 0 o más'); return; }
+
+    const datos = { ...form, widthCm: ancho, heightCm: alto, pricePerCopy: precio, colorSurcharge: recargo };
+
     try {
-      if (editId) { await printServiceService.updateService(editId, form); toast.success('Formato actualizado'); }
-      else { await printServiceService.createService(form); toast.success('Formato creado'); }
+      if (editId) { await printServiceService.updateService(editId, datos); toast.success('Formato actualizado'); }
+      else { await printServiceService.createService(datos); toast.success('Formato creado'); }
       setModalOpen(false); cargar();
     } catch (e) { console.error(e); }
   };
@@ -57,13 +82,13 @@ const ServiciosImpresion = () => {
     finally { setConfirmOpen(false); setToDelete(null); cargar(); }
   };
 
-  const inputSm = 'w-40 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]';
+  const inputSm = 'w-40 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]';
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-4xl font-extrabold text-[#C28C5D]">Impresiones</h1>
-        <button onClick={abrirNuevo} className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm">Agregar formato</button>
+        <h1 className="text-4xl font-extrabold text-[#066494]">Impresiones</h1>
+        <button onClick={abrirNuevo} className="px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm">Agregar formato</button>
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -90,6 +115,12 @@ const ServiciosImpresion = () => {
         )}
       </div>
 
+      {/* El papel y la tinta. Va DEBAJO de los formatos porque se consulta
+          menos seguido, pero en la misma pantalla: son la misma conversación
+          —qué puedo imprimir hoy— y separarlas obligaría a saltar de pantalla
+          para entender por qué un formato está apagado. */}
+      <MaterialesImpresion />
+
       {/* Modal crear/editar */}
       <AnimatePresence>
         {modalOpen && (
@@ -98,22 +129,22 @@ const ServiciosImpresion = () => {
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
               className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative z-10">
-              <div className="bg-[#9C6026] text-white p-5"><h2 className="text-2xl font-bold text-center">{editId ? 'Editar formato' : 'Nuevo formato'}</h2></div>
-              <form onSubmit={guardar} className="p-6 bg-[#FAF9F6] space-y-4">
+              <div className="bg-[#00283D] text-white p-5"><h2 className="text-2xl font-bold text-center">{editId ? 'Editar formato' : 'Nuevo formato'}</h2></div>
+              <form onSubmit={guardar} className="p-6 bg-[#F1F6F9] space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Nombre del formato</label>
                   <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]" placeholder="Ej. Carta, A4, Póster, DUI" />
+                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]" placeholder="Ej. Carta, A4, Póster, DUI" />
                 </div>
                 {/* Medidas de la plantilla: definen la hoja del editor del cliente */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Tamaño de la plantilla (cm)</label>
                   <div className="flex items-center gap-2">
-                    <input type="number" min="1" step="0.1" value={form.widthCm} onChange={(e) => setForm({ ...form, widthCm: e.target.value })}
-                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]" placeholder="Ancho" />
+                    <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.widthCm} onChange={(e) => setForm({ ...form, widthCm: e.target.value })}
+                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#00283D]" placeholder="Ancho" />
                     <span className="text-gray-500">×</span>
-                    <input type="number" min="1" step="0.1" value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
-                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]" placeholder="Alto" />
+                    <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
+                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#00283D]" placeholder="Alto" />
                     <span className="text-xs text-gray-400">cm</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Ej. DUI 8.5 × 5.4 · Carta 21.6 × 27.9 · A4 21 × 29.7</p>
@@ -121,7 +152,7 @@ const ServiciosImpresion = () => {
 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Precio por copia ($)</label>
-                  <input type="number" min="0" step="0.01" value={form.pricePerCopy} onChange={(e) => setForm({ ...form, pricePerCopy: e.target.value })} className={inputSm} placeholder="0.00" />
+                  <input type="number" min="0" step="0.01" onKeyDown={bloquearTeclasNumero} value={form.pricePerCopy} onChange={(e) => setForm({ ...form, pricePerCopy: e.target.value })} className={inputSm} placeholder="0.00" />
                 </div>
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input type="checkbox" checked={form.allowsColor} onChange={(e) => setForm({ ...form, allowsColor: e.target.checked })} /> Permite color
@@ -129,15 +160,40 @@ const ServiciosImpresion = () => {
                 {form.allowsColor && (
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Recargo por color ($/copia)</label>
-                    <input type="number" min="0" step="0.01" value={form.colorSurcharge} onChange={(e) => setForm({ ...form, colorSurcharge: e.target.value })} className={inputSm} placeholder="0.00" />
+                    <input type="number" min="0" step="0.01" onKeyDown={bloquearTeclasNumero} value={form.colorSurcharge} onChange={(e) => setForm({ ...form, colorSurcharge: e.target.value })} className={inputSm} placeholder="0.00" />
                   </div>
                 )}
+
+                {/*
+                  En qué papel se imprime. Es opcional a propósito: los formatos
+                  que ya estaban cargados no tienen material y tienen que seguir
+                  ofreciéndose igual. Solo al elegir uno, el formato empieza a
+                  apagarse solo cuando ese papel llega a cero.
+                */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Papel que usa</label>
+                  <select
+                    value={form.materialId}
+                    onChange={(e) => setForm({ ...form, materialId: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]"
+                  >
+                    <option value="">Sin control de material</option>
+                    {papeles.map((p) => (
+                      <option key={p._id} value={p._id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {papeles.length === 0
+                      ? 'Agregue papeles en "Materiales", más abajo, para poder elegir uno.'
+                      : 'Si el papel elegido llega a cero, este formato se apaga solo en la tienda.'}
+                  </p>
+                </div>
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Activo
                 </label>
                 <div className="flex justify-end gap-3 pt-2">
                   <button type="button" onClick={() => setModalOpen(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-6 py-2 rounded-full">Cancelar</button>
-                  <button type="submit" className="bg-[#B47C4D] hover:bg-[#9C6026] text-white font-medium px-8 py-2 rounded-full">Guardar</button>
+                  <button type="submit" className="bg-[#003049] hover:bg-[#00283D] text-white font-medium px-8 py-2 rounded-full">Guardar</button>
                 </div>
               </form>
             </motion.div>

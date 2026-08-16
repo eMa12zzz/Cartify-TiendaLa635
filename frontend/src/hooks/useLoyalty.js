@@ -12,7 +12,9 @@ import { useAuth } from './useAuth';
  * Toda la carga vive aquí; la página de Puntos solo pinta.
  */
 export const useLoyalty = () => {
-  const { user } = useAuth();
+  // Los puntos son de un CLIENTE; la config del programa la puede leer
+  // cualquiera. Por eso solo el resumen va detrás de `esCliente`.
+  const { user, esCliente } = useAuth();
   const [summary, setSummary] = useState({ available: 0, nextExpiry: null, expiringSoon: 0 });
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export const useLoyalty = () => {
         setLoading(true);
         // En paralelo: el resumen de puntos del cliente y la config del programa.
         const [sum, cfg] = await Promise.all([
-          user?.id
+          esCliente
             ? loyaltyService.getSummary(user.id)
             : Promise.resolve({ available: 0, nextExpiry: null, expiringSoon: 0 }),
           loyaltyService.getConfig(),
@@ -37,7 +39,7 @@ export const useLoyalty = () => {
       }
     };
     cargar();
-  }, [user?.id]);
+  }, [user?.id, esCliente]);
 
   return {
     points: summary.available,
@@ -47,5 +49,10 @@ export const useLoyalty = () => {
     loading,
     pointsPerDollar: config?.pointsPerDollar ?? 1,
     expiryMonths: config?.expiryMonths ?? 3,
+    // Canje: cuántos puntos valen $1 y el mínimo para poder usarlos.
+    redeemRate: config?.pointsPerDollarRedeem ?? 100,
+    minRedeem: config?.minRedeemPoints ?? 100,
+    // Cuánto dinero valen los puntos disponibles ahora mismo.
+    valorEnDinero: Number((summary.available / (config?.pointsPerDollarRedeem ?? 100)).toFixed(2)),
   };
 };

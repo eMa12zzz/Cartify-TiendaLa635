@@ -1,13 +1,23 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Phone, User, Hash, MapPin, Lock, Camera, Loader2 } from 'lucide-react';
+import { Mail, Phone, User, Hash, Lock, Loader2, Calendar } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
-import api from '../api/api';
+import { BotonOjo } from '../components/UI/CampoContrasena';
+import SubidorArchivo from '../components/UI/SubidorArchivo';
+import ModalTerminos from '../components/Store/ModalTerminos';
+import { reglaDuiOpcional, reglaTelefono, bloquearNoDigitos } from '../utils/validaciones';
+import { calcularEdad, esMayorDeEdad } from '../utils/edad';
+import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
+import { useRegistro } from '../hooks/useRegistro';
+import { useModalTerminos } from '../hooks/useModalTerminos';
+import { googleLoginDB } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 
-const BROWN = '#8B5A2B';
-const BROWN_HOVER = '#7a4e26';
+const BROWN = 'var(--marca-600)';
+const BROWN_HOVER = 'var(--marca-700)';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -102,7 +112,7 @@ const Input = styled.input`
 
   &:focus {
     border-color: ${BROWN};
-    box-shadow: 0 0 0 3px rgba(139,90,43,0.08);
+    box-shadow: 0 0 0 3px rgba(0,48,73,0.08);
   }
 
   &::placeholder {
@@ -110,20 +120,9 @@ const Input = styled.input`
   }
 `;
 
-const FileInputWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
+// Espacio para que el subidor no quede pegado al botón de continuar.
+const BloqueFoto = styled.div`
   margin-bottom: 16px;
-  padding: 12px;
-  border: 1.5px dashed #e0e0e0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.2s;
-  
-  &:hover {
-    border-color: ${BROWN};
-  }
 `;
 
 const ErrorMsg = styled.span`
@@ -156,9 +155,31 @@ const Button = styled.button`
   }
   
   &:disabled {
-    background: #d8c5af;
+    background: #C9D4DB;
     cursor: not-allowed;
   }
+`;
+
+const Divisor = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: #b7b0a8;
+  font-size: 12.5px;
+  font-weight: 600;
+
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #eee;
+  }
+`;
+
+const GoogleFila = styled.div`
+  display: flex;
+  justify-content: center;
 `;
 
 const FooterText = styled.div`
@@ -175,62 +196,171 @@ const FooterLink = styled.span`
   &:hover { text-decoration: underline; }
 `;
 
+/*
+ * El bloque del consentimiento.
+ *
+ * Va justo antes del botón y no perdido entre los campos: es lo último que se
+ * lee antes de decidir, que es donde tiene que estar. Y son DOS casillas
+ * separadas a propósito — aceptar las condiciones y querer publicidad son dos
+ * decisiones distintas, y meterlas en una sola casilla es cobrarle una con la
+ * otra.
+ */
+const BloqueConsentimiento = styled.div`
+  margin: 24px 0 4px;
+  padding: 16px 18px;
+  background: #fbfaf9;
+  border: 1px solid #eeeae5;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`;
+
+const Casilla = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    flex-shrink: 0;
+    accent-color: ${BROWN};
+    cursor: pointer;
+  }
+
+  label {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #444;
+    cursor: pointer;
+  }
+`;
+
+/*
+ * El enlace a los términos, que es un BOTÓN y no un <a>.
+ *
+ * No navega: abre el documento encima (ver useModalTerminos). Se pinta como
+ * enlace porque eso es lo que la persona espera tocar ahí, pero por dentro no
+ * puede ser un enlace de verdad — el formulario lleno no se puede arriesgar.
+ *
+ * Va FUERA de la <label> a propósito: una etiqueta le reenvía al control todos
+ * los clics que caen adentro, así que un botón anidado ahí abriría el
+ * documento Y desmarcaría la casilla que la persona acaba de marcar.
+ */
+const EnlaceTerminos = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: ${BROWN};
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover { color: ${BROWN_HOVER}; }
+`;
+
+// El renglón de la casilla de términos. Existe porque ahí el texto y el enlace
+// son dos elementos separados y tienen que fluir como una sola frase.
+const TextoCasilla = styled.div`
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #444;
+`;
+
+// La segunda línea de la casilla de promociones: qué significa decir que sí,
+// en letra chica pero presente. "Puede cambiarlo cuando quiera" no es un
+// adorno, es la mitad de la razón por la que alguien se anima a marcarla.
+const Aclaracion = styled.span`
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: #999;
+`;
+
+// El error de la casilla no puede ser el ErrorMsg de los campos: aquel va
+// posicionado en absoluto dentro del InputWrapper y aquí no hay ninguno.
+const ErrorCasilla = styled.span`
+  display: block;
+  margin: -6px 0 0 29px;
+  color: #ff4d4f;
+  font-size: 12px;
+`;
+
 const Register = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-  const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [verPass, setVerPass] = useState(false);
 
-  // 1- Manejar la selección de archivo de imagen
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+  // Armar el envío, subir la foto y llevar a la verificación: todo eso vive en
+  // el hook. Aquí solo se pinta el formulario. Ver useRegistro.
+  const { cargando, elegirArchivo, registrar } = useRegistro();
+
+  /*
+   * Los términos se leen ENCIMA del formulario, sin navegar. Se probó con un
+   * enlace a pestaña nueva y no basta: hay navegadores —el de adentro de
+   * WhatsApp, por donde entra media tienda— que abren encima y se llevan todo
+   * lo escrito. Ver useModalTerminos.
+   */
+  const { abierto: terminosAbiertos, abrir: abrirTerminos, cerrar: cerrarTerminos } =
+    useModalTerminos();
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+
+  const { login } = useAuth();
+  const [entrandoGoogle, setEntrandoGoogle] = useState(false);
+
+  /*
+   * Registrarse con Google. No pasa por el flujo de verificación por código: el
+   * correo ya viene confirmado por Google, así que la cuenta queda lista y se
+   * entra directo a la tienda. Si el correo ya existía, simplemente inicia esa
+   * sesión (el backend lo enlaza).
+   */
+  const onGoogle = async (credentialResponse) => {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      toast.error('No se recibió la respuesta de Google');
+      return;
     }
-  };
+    /*
+     * El consentimiento viaja TAMBIÉN por el camino de Google.
+     *
+     * Antes no: entrar con Google creaba la cuenta de una y se saltaba las
+     * casillas de esta misma pantalla, así que quedaba un cliente sin
+     * constancia de haber aceptado los términos y —peor— inscrito en
+     * promociones por el valor por defecto del modelo, sin haberlo pedido.
+     *
+     * Se revisa aquí antes de molestar al servidor, y el servidor lo vuelve a
+     * exigir por su cuenta: la casilla del navegador no le prueba nada a nadie.
+     */
+    if (!watch('aceptaTerminos')) {
+      toast.error('Marque primero que acepta los términos y el aviso de privacidad');
+      return;
+    }
 
-  // 2- Enviar datos al backend
-  const onSubmit = async (data) => {
     try {
-      setLoading(true);
-      
-      const formData = new FormData();
-      formData.append('fullName', data.fullName); // El backend espera 'fullName'
-      formData.append('dui', data.dui);
-      formData.append('phoneNumber', data.phoneNumber);
-      formData.append('ClientAddress', data.clientAddress);
-      formData.append('email', data.email);
-      formData.append('userName', data.userName);
-      formData.append('password', data.password);
-      
-      if (selectedFile) {
-        formData.append('image', selectedFile);
-      }
-
-      // 3- Llamada a la API de registro
-      const response = await api.post('/registerClient', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      setEntrandoGoogle(true);
+      const res = await googleLoginDB(credential, {
+        aceptaTerminos: true,
+        promociones: !!watch('promociones'),
+        // Google no da teléfono. Si ya lo escribió arriba, se aprovecha; sin
+        // él la cuenta queda sin a quién llamar cuando no encuentren la casa.
+        phoneNumber: watch('phoneNumber') || '',
       });
-
-      toast.success(`¡Código enviado a ${data.email}! Revisa tu bandeja de entrada.`, {
-        duration: 5000,
-      });
-      
-      // Guardar el flujo y el correo para que Verification sepa qué mostrar y qué endpoint llamar
-      localStorage.setItem('verificationFlow', 'register');
-      localStorage.setItem('tempIdentifier', data.email);
-      navigate('/verification');
-
-    } catch (error) {
-      console.error(error);
-      // El toast de error lo maneja el interceptor en api.js
+      login(res.token, res.userType || 'client', res.client);
+      navigate('/', { replace: true });
+    } catch (err) {
+      toast.error(err.message || 'No se pudo registrar con Google');
     } finally {
-      setLoading(false);
+      setEntrandoGoogle(false);
     }
   };
+
+  // El DUI solo se pide cuando la fecha de nacimiento ya dice que es mayor: en
+  // El Salvador el DUI se emite a los 18, así que antes no hay ninguno que dar.
+  const puedeDui = esMayorDeEdad(watch('fechaNacimiento'));
 
   return (
     <Container>
@@ -243,7 +373,7 @@ const Register = () => {
         <Card>
           <SectionTitle>Regístrate</SectionTitle>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(registrar)}>
             
             <InputContainer>
               <Label>Nombre Completo</Label>
@@ -271,18 +401,58 @@ const Register = () => {
               </InputWrapper>
             </InputContainer>
 
+            {/*
+              Fecha de nacimiento: para calcular la edad de los productos +18.
+              Es obligatoria, pero NO bloquea a los menores de tener cuenta —
+              pueden comprar lo demás; solo no verán los productos restringidos.
+              Va ANTES que el DUI porque es la que decide si el DUI se pide.
+            */}
             <InputContainer>
-              <Label>DUI</Label>
+              <Label>Fecha de nacimiento</Label>
               <InputWrapper>
-                <IconWrapper><Hash size={18} /></IconWrapper>
+                <IconWrapper><Calendar size={18} /></IconWrapper>
                 <Input
-                  type="text"
-                  placeholder="00000000-0"
-                  {...register("dui", { required: "El DUI es obligatorio" })}
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  {...register("fechaNacimiento", {
+                    required: "La fecha de nacimiento es obligatoria",
+                    validate: (v) => {
+                      const edad = calcularEdad(v);
+                      if (edad == null) return "Esa fecha no es válida";
+                      if (edad < 0 || edad > 120) return "Revisá la fecha";
+                      return true;
+                    },
+                  })}
                 />
-                {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
+                {errors.fechaNacimiento && <ErrorMsg>{errors.fechaNacimiento.message}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
+
+            {/*
+              El DUI solo aparece cuando la fecha ya dice que es mayor de edad:
+              es opcional, y a un menor no tendría por qué pedírsele. Se revisa
+              solo si escribió algo (ver reglaDuiOpcional).
+            */}
+            {puedeDui && (
+              <InputContainer>
+                <Label>DUI (opcional)</Label>
+                <InputWrapper>
+                  <IconWrapper><Hash size={18} /></IconWrapper>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={LARGO_DUI}
+                    placeholder="00000000-0"
+                    {...register("dui", reglaDuiOpcional)}
+                    onKeyDown={bloquearNoDigitos}
+                    // El guion se pone solo: si cada quien lo escribe a su manera,
+                    // el mismo DUI termina guardado de tres formas distintas.
+                    onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
+                  />
+                  {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
+                </InputWrapper>
+              </InputContainer>
+            )}
 
             <InputContainer>
               <Label>Teléfono</Label>
@@ -290,25 +460,24 @@ const Register = () => {
                 <IconWrapper><Phone size={18} /></IconWrapper>
                 <Input
                   type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_TELEFONO}
                   placeholder="7000-0000"
-                  {...register("phoneNumber", { required: "El teléfono es obligatorio" })}
+                  {...register("phoneNumber", reglaTelefono)}
+                  onKeyDown={bloquearNoDigitos}
+                  onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
                 />
                 {errors.phoneNumber && <ErrorMsg>{errors.phoneNumber.message}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
-            <InputContainer>
-              <Label>Dirección</Label>
-              <InputWrapper>
-                <IconWrapper><MapPin size={18} /></IconWrapper>
-                <Input
-                  type="text"
-                  placeholder="San Salvador, El Salvador"
-                  {...register("clientAddress", { required: "La dirección es obligatoria" })}
-                />
-                {errors.clientAddress && <ErrorMsg>{errors.clientAddress.message}</ErrorMsg>}
-              </InputWrapper>
-            </InputContainer>
+            {/*
+              Aquí había un campo de "Dirección" en texto plano. Se quitó: lo
+              que escribía la persona se guardaba aparte y NUNCA se usaba para
+              entregar nada. Las direcciones de verdad se agregan en
+              "Mi cuenta > Direcciones", con referencia y punto en el mapa, y de
+              ahí las toman el encabezado de la tienda y el checkout.
+            */}
 
             <InputContainer>
               <Label>Correo Electrónico</Label>
@@ -334,44 +503,111 @@ const Register = () => {
               <InputWrapper>
                 <IconWrapper><Lock size={18} /></IconWrapper>
                 <Input
-                  type="password"
+                  type={verPass ? 'text' : 'password'}
                   placeholder="********"
-                  {...register("password", { 
+                  style={{ paddingRight: 44 }}
+                  {...register("password", {
                     required: "La contraseña es obligatoria",
                     minLength: { value: 6, message: "Mínimo 6 caracteres" }
                   })}
                 />
+                <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} />
                 {errors.password && <ErrorMsg>{errors.password.message}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
             <Label>Foto de Perfil (Opcional)</Label>
-            <FileInputWrapper onClick={() => fileInputRef.current?.click()}>
-              <Camera size={20} color={BROWN} />
-              <span style={{ fontSize: 14, color: '#555' }}>
-                {selectedFile ? selectedFile.name : 'Haz clic para subir una imagen...'}
-              </span>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
+            <BloqueFoto>
+              {/* Recorte "cover": es una foto de perfil, se ve como se verá después. */}
+              <SubidorArchivo
                 accept="image/*"
-                onChange={handleFileChange}
+                maxMB={8}
+                onArchivo={elegirArchivo}
+                ajuste="cover"
+                alto={140}
+                altoPreview={180}
+                radio={8}
+                titulo="Arrastra tu foto o haz clic para elegirla"
+                ayuda="JPG o PNG, hasta 8 MB"
+                etiquetaAria="Subir foto de perfil"
               />
-            </FileInputWrapper>
+            </BloqueFoto>
 
-            <Button type="submit" disabled={loading}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Continuar'}
+            <BloqueConsentimiento>
+              <Casilla>
+                <input
+                  type="checkbox"
+                  id="aceptaTerminos"
+                  /*
+                    El nombre completo para quien no ve la pantalla. La etiqueta
+                    visible se corta en "los" porque la frase sigue en el botón,
+                    y un lector de pantalla anunciaría "acepto los" a secas —
+                    una casilla que no dice qué se está aceptando.
+                  */
+                  aria-label="He leído y acepto los términos y el aviso de privacidad"
+                  {...register('aceptaTerminos', {
+                    required: 'Hay que aceptar los términos para crear la cuenta',
+                  })}
+                />
+                <TextoCasilla>
+                  <label htmlFor="aceptaTerminos">He leído y acepto los </label>
+                  <EnlaceTerminos type="button" onClick={abrirTerminos}>
+                    términos y el aviso de privacidad
+                  </EnlaceTerminos>
+                  .
+                </TextoCasilla>
+              </Casilla>
+              {errors.aceptaTerminos && (
+                <ErrorCasilla>{errors.aceptaTerminos.message}</ErrorCasilla>
+              )}
+
+              {/*
+                Desmarcada por defecto y sin `required`. Es opcional de verdad:
+                se puede crear la cuenta sin tocarla, y no se pierde nada de la
+                tienda por no querer publicidad.
+              */}
+              <Casilla>
+                <input type="checkbox" id="promociones" {...register('promociones')} />
+                <label htmlFor="promociones">
+                  Quiero recibir promociones y novedades por correo.
+                  <Aclaracion>
+                    Opcional. Puede desactivarlo cuando quiera desde Mi cuenta.
+                  </Aclaracion>
+                </label>
+              </Casilla>
+            </BloqueConsentimiento>
+
+            <Button type="submit" disabled={cargando}>
+              {cargando ? <Loader2 size={18} className="animate-spin" /> : 'Continuar'}
             </Button>
 
           </form>
 
+          <Divisor>o</Divisor>
+
+          <GoogleFila>
+            {entrandoGoogle ? (
+              <Loader2 size={22} className="animate-spin" style={{ color: BROWN }} />
+            ) : (
+              <GoogleLogin
+                onSuccess={onGoogle}
+                onError={() => toast.error('No se pudo registrar con Google')}
+                text="signup_with"
+                shape="pill"
+                locale="es"
+                width="320"
+              />
+            )}
+          </GoogleFila>
+
           <FooterText>
             ¿Ya tienes una cuenta?{' '}
-            <FooterLink onClick={() => navigate('/')}>Iniciar Sesión</FooterLink>
+            <FooterLink onClick={() => navigate('/iniciar-sesion')}>Iniciar Sesión</FooterLink>
           </FooterText>
         </Card>
       </Body>
+
+      <ModalTerminos abierto={terminosAbiertos} onCerrar={cerrarTerminos} />
     </Container>
   );
 };

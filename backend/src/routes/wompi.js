@@ -1,7 +1,15 @@
 import express from "express";
 import wompiController from "../controller/wompiController.js";
 
-const router = express.Router()
+import { conSesion } from "../middlewares/validarSesion.js";
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -81,7 +89,6 @@ const router = express.Router()
  *       500:
  *         description: Error interno del servidor, o error devuelto por el servidor de identidad de Wompi.
  */
-router.route("/token").post(wompiController.generarToken)
 
 /**
  * @swagger
@@ -108,7 +115,6 @@ router.route("/token").post(wompiController.generarToken)
  *       500:
  *         description: Error interno del servidor, o error devuelto por la API de Wompi.
  */
-router.route("/paymentTest").post(wompiController.paymentTest)
 
 /**
  * @swagger
@@ -135,7 +141,18 @@ router.route("/paymentTest").post(wompiController.paymentTest)
  *       500:
  *         description: Error interno del servidor, o error devuelto por la API de Wompi.
  */
-router.route("/payment3DS").post(wompiController.payment3DS)
+
+
+const router = express.Router()
+
+/*
+ * La pasarela de pago. Todavía no cobra de verdad, pero estas rutas hablan con
+ * un servicio externo con las credenciales de la tienda: abiertas, cualquiera
+ * las dispara desde afuera. Como mínimo, hay que ser alguien.
+ */
+router.route("/token").post(conSesion, wompiController.generarToken)
+router.route("/paymentTest").post(conSesion, wompiController.paymentTest)
+router.route("/payment3DS").post(conSesion, wompiController.payment3DS)
 
 export default router
 

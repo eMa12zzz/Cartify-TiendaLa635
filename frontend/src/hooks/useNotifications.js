@@ -10,13 +10,14 @@ import { useAuth } from './useAuth';
 const DEFAULTS = { promociones: true, nuevosProductos: true, pedidoCerca: false };
 
 export const useNotifications = () => {
-  const { user } = useAuth();
+  const { user, esCliente } = useAuth();
   const [prefs, setPrefs] = useState(DEFAULTS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const cargar = async () => {
-      if (!user?.id) { setLoading(false); return; }
+      // Con sesión de personal esto daría 404: ver useAuth.
+      if (!esCliente) { setLoading(false); return; }
       try {
         setLoading(true);
         const cliente = await clientService.getClientById(user.id);
@@ -28,11 +29,11 @@ export const useNotifications = () => {
       }
     };
     cargar();
-  }, [user?.id]);
+  }, [user?.id, esCliente]);
 
   // Cambia un interruptor: actualiza la UI al instante y persiste en la base.
   const toggle = async (clave) => {
-    if (!user?.id) return;
+    if (!esCliente) return;
     const siguiente = { ...prefs, [clave]: !prefs[clave] };
     setPrefs(siguiente); // optimista: se ve el cambio de inmediato
     try {

@@ -1,11 +1,18 @@
 import express from "express";
 
 // 1. IMPORTAMOS TU CONFIGURACIÓN DE CLOUDINARY QUE YA TIENES CREADA
-import upload from "../utils/cloudinaryConfig.js";
+import upload from "../utils/cloudinaryConfig.js"; 
 
 import registerclients from "../controller/Clients/registerClient.js";
+import { soloAdmin } from "../middlewares/validarSesion.js";
 
-const router = express.Router();
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -34,11 +41,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor o error al enviar el correo.
  */
-// 2. AGREGAMOS EL UPLOAD EN LA RUTA
-router.route("/").post(
-  upload.single("image"), // ¡Esto usa tu propia configuración para subir la foto!
-  registerclients.register
-);
 
 /**
  * @swagger
@@ -60,7 +62,6 @@ router.route("/").post(
  *       500:
  *         description: Error interno del servidor o token inválido/expirado.
  */
-router.route("/verifyCodeEmail").post(registerclients.verifyCode);
 
 /**
  * @swagger
@@ -80,6 +81,24 @@ router.route("/verifyCodeEmail").post(registerclients.verifyCode);
  *       500:
  *         description: Error al obtener los clientes.
  */
-router.route("/all").get(registerclients.getAll);
+
+
+const router = express.Router();
+
+// 2. AGREGAMOS EL UPLOAD EN LA RUTA
+router.route("/").post(
+  upload.single("image"), // ¡Esto usa tu propia configuración para subir la foto!
+  registerclients.register
+);
+
+router.route("/verifyCodeEmail").post(registerclients.verifyCode);
+
+/*
+ * La lista completa de clientes. Es la que consume la pantalla de Clientes del
+ * panel, así que es de PERSONAL y de nadie más: aquí van nombres, teléfonos,
+ * DUI, saldos y direcciones con coordenadas de toda la clientela de la tienda.
+ * Estaba abierta a internet. Ver middlewares/validarSesion.js.
+ */
+router.route("/all").get(soloAdmin, registerclients.getAll);
 
 export default router;

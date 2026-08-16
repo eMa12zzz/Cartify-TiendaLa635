@@ -1,7 +1,15 @@
 import express from 'express';
 import productTypeController from '../controller/productType.js';
 
-const router = express.Router();
+import { soloAdmin } from '../middlewares/validarSesion.js';
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -44,9 +52,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/")
-    .get(productTypeController.getProductTypes)
-    .post(productTypeController.insertProductType);
 
 /**
  * @swagger
@@ -115,9 +120,19 @@ router.route("/")
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/:id")
-    .put(productTypeController.updateProductType)
+
+
+const router = express.Router();
+
+// Las categorías se leen desde la tienda; se editan desde el panel.
+
+router.route("/")
     .get(productTypeController.getProductTypes)
-    .delete(productTypeController.deleteProductType);
+    .post(soloAdmin, productTypeController.insertProductType);
+
+router.route("/:id")
+    .put(soloAdmin, productTypeController.updateProductType)
+    .get(productTypeController.getProductTypes)
+    .delete(soloAdmin, productTypeController.deleteProductType);
 
 export default router;

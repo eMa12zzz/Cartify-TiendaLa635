@@ -9,6 +9,7 @@
  Campos:
    clientId:  de quién son los puntos
    points:    cuántos puntos otorgó esta compra
+   used:      cuántos de esos puntos ya se canjearon (disponible = points - used)
    earnedAt:  cuándo se ganaron
    expiresAt: cuándo vencen (earnedAt + meses de la config)
    orderId:   el pedido que los generó
@@ -19,6 +20,7 @@ import { Schema, model } from 'mongoose';
 const loyaltyLedgerSchema = new Schema({
     clientId: { type: Schema.Types.ObjectId, ref: 'clientModel', required: true },
     points: { type: Number, required: true },
+    used: { type: Number, default: 0 },
     earnedAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },
     orderId: { type: Schema.Types.ObjectId, ref: 'orderModel' },

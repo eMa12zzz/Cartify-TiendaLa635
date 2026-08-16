@@ -2,7 +2,15 @@ import express from 'express';
 import promotionController from '../controller/promotionController.js';
 import upload from '../utils/cloudinaryConfig.js';
 
-const router = express.Router();
+import { soloAdmin } from '../middlewares/validarSesion.js';
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -45,9 +53,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/")
-    .get(promotionController.getPromotions)
-    .post(upload.single("image"), promotionController.insertPromotion);
 
 /**
  * @swagger
@@ -95,8 +100,18 @@ router.route("/")
  *       500:
  *         description: Error interno del servidor.
  */
+
+
+const router = express.Router();
+
+// Las promociones se ven en la portada sin cuenta; crearlas y borrarlas no.
+
+router.route("/")
+    .get(promotionController.getPromotions)
+    .post(soloAdmin, upload.single("image"), promotionController.insertPromotion);
+
 router.route("/:id")
-    .put(upload.single("image"), promotionController.updatePromotion)
-    .delete(promotionController.deletePromotion);
+    .put(soloAdmin, upload.single("image"), promotionController.updatePromotion)
+    .delete(soloAdmin, promotionController.deletePromotion);
 
 export default router;

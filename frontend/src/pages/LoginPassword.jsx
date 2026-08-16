@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { BotonOjo } from '../components/UI/CampoContrasena';
+import { useAuth } from '../hooks/useAuth';
 
-const BROWN = '#8B5A2B';
+const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -108,7 +110,7 @@ const Button = styled.button`
   margin-bottom: 16px;
   transition: background 0.2s;
 
-  &:hover { background: #7a4e26; }
+  &:hover { background: #00283D; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
@@ -133,7 +135,10 @@ const ForgotLink = styled.div`
 
 const LoginPassword = () => {
   const navigate = useNavigate();
+  // La sesión se guarda por el contexto, nunca escribiendo localStorage a mano.
+  const { login } = useAuth();
   const [password, setPassword] = useState('');
+  const [verPass, setVerPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -164,10 +169,19 @@ const LoginPassword = () => {
         return;
       }
 
-      // ✅ Guardar sesión y redirigir al dashboard de la tienda
-      localStorage.setItem('token', 'authenticated');
+      /*
+       * Guardar la sesión y saludar con el mapa de bienvenida.
+       *
+       * Va por el contexto y marcada como CLIENTE. Escribiendo la llave
+       * 'token' a mano —como estaba— la sesión caía en el cajón del personal
+       * al arrancar la app, así que quien entrara por aquí terminaba con
+       * permisos del panel sin haber pasado por su puerta. Ver AuthContext.
+       */
+      login('authenticated', 'client', user);
       localStorage.setItem('currentUser', JSON.stringify(user));
-      navigate('/tienda-dashboard');
+      // `replace`: el login queda fuera del historial, para que el "atrás" del
+      // navegador no regrese a pedir la contraseña otra vez.
+      navigate('/bienvenida', { replace: true });
     }, 600);
   };
 
@@ -184,20 +198,24 @@ const LoginPassword = () => {
 
       <Body>
         <Card>
-          <BackButton onClick={() => navigate('/')}>←</BackButton>
+          <BackButton onClick={() => navigate('/iniciar-sesion')}>←</BackButton>
 
           <SectionTitle>Bienvenido de vuelta</SectionTitle>
           <Subtitle>Ingresa tu contraseña para continuar</Subtitle>
 
           <Label>Contraseña</Label>
-          <Input
-            type="password"
-            placeholder="Tu contraseña"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-            autoFocus
-          />
+          <div style={{ position: 'relative' }}>
+            <Input
+              type={verPass ? 'text' : 'password'}
+              placeholder="Tu contraseña"
+              style={{ paddingRight: 44 }}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus
+            />
+            <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} />
+          </div>
 
           {error && <ErrorMsg>{error}</ErrorMsg>}
 

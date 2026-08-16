@@ -1,7 +1,15 @@
 import express from 'express';
 import brandController from '../controller/brand.js';
 
-const router = express.Router();
+import { soloAdmin } from '../middlewares/validarSesion.js';
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -44,9 +52,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/")
-    .get(brandController.getBrand)
-    .post(brandController.insertBrand);
 
 /**
  * @swagger
@@ -115,9 +120,20 @@ router.route("/")
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/:id")
-    .put(brandController.updateBrand)
+
+
+const router = express.Router();
+
+// Las marcas se leen desde la tienda (filtros, ficha del producto); se editan
+// desde el panel.
+
+router.route("/")
     .get(brandController.getBrand)
-    .delete(brandController.deleteBrand);
+    .post(soloAdmin, brandController.insertBrand);
+
+router.route("/:id")
+    .put(soloAdmin, brandController.updateBrand)
+    .get(brandController.getBrand)
+    .delete(soloAdmin, brandController.deleteBrand);
 
 export default router;

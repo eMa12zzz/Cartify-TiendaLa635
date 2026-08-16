@@ -1,7 +1,13 @@
 import express from "express";
 import logoutController from "../controller/Clients/logoutClient.js";
 
-const router = express.Router();
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -23,6 +29,10 @@ const router = express.Router();
  *                   type: string
  *                   example: Sesión cerrada
  */
+
+
+const router = express.Router();
+
 router.route("/").post(logoutController.logout);
 
 export default router;

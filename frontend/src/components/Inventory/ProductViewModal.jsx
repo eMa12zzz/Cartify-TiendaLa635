@@ -1,5 +1,7 @@
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
+import { formatearFecha } from '../../utils/fechas';
 
 const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
 
@@ -22,7 +24,7 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex overflow-hidden relative z-10"
       >
         <button 
@@ -32,7 +34,7 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
           <X size={20} />
         </button>
 
-        <div className="w-1/3 bg-[#9C6026] text-white p-6 flex flex-col items-center justify-center relative">
+        <div className="w-1/3 bg-[#00283D] text-white p-6 flex flex-col items-center justify-center relative">
           <div className="w-full text-center mb-6">
             <h3 className="text-xl font-bold leading-tight mb-1">{product.name}</h3>
             <p className="text-xs uppercase tracking-wider opacity-80">{product.brandId?.name || 'Sin Marca'}</p>
@@ -58,8 +60,8 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
           </div>
         </div>
 
-        <div className="w-2/3 p-8 flex flex-col bg-[#FAF9F6] relative">
-          <h2 className="text-2xl font-bold text-[#8B5A2B] mb-6 border-b border-gray-200 pb-2">
+        <div className="w-2/3 p-8 flex flex-col bg-[#F1F6F9] relative">
+          <h2 className="text-2xl font-bold text-[#003049] mb-6 border-b border-gray-200 pb-2">
             Detalles del Producto
           </h2>
 
@@ -102,8 +104,9 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Fecha de Expiración</p>
+                {/* Mismo criterio que la tarjeta: sin fecha válida no se pinta una. */}
                 <p className="text-sm text-gray-900 font-medium">
-                  {product.expirationDate ? new Date(product.expirationDate).toLocaleDateString() : 'No definida'}
+                  {formatearFecha(product.expirationDate) || 'Sin fecha de vencimiento'}
                 </p>
               </div>
               <div>
@@ -116,7 +119,10 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
 
             <div>
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Descripción</p>
-              <div className="bg-white p-3 rounded-lg border border-gray-200 text-sm text-gray-700 min-h-[60px]">
+              {/* whitespace-pre-line: los enter que escribió el empleado se
+                  ven como enter. Sin esto, una ficha escrita en renglones
+                  salía toda en un párrafo pegado. */}
+              <div className="bg-white p-3 rounded-lg border border-gray-200 text-sm text-gray-700 min-h-[60px] whitespace-pre-line">
                 {product.description || 'Sin descripción...'}
               </div>
             </div>
@@ -125,7 +131,7 @@ const ProductViewModal = ({ isOpen, onClose, product, modules = [] }) => {
           <div className="mt-auto pt-6 flex justify-end">
             <button 
               onClick={onClose}
-              className="bg-[#9C6026] hover:bg-[#8B5A2B] text-white font-medium px-8 py-2 rounded-full transition-colors"
+              className="bg-[#00283D] hover:bg-[#003049] text-white font-medium px-8 py-2 rounded-full transition-colors"
             >
               Cerrar
             </button>

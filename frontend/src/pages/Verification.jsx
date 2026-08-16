@@ -5,8 +5,9 @@ import { useAuth } from '../hooks/useAuth';
 import styled from 'styled-components';
 import toast from 'react-hot-toast';
 import api from '../api/api';
+import { marcarRecienRegistrado } from '../utils/primerIngreso';
 
-const BROWN = '#8B5A2B';
+const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -133,11 +134,11 @@ const Button = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #7a4e26;
+    background: #00283D;
   }
   
   &:disabled {
-    background: #d8c5af;
+    background: #C9D4DB;
     cursor: not-allowed;
   }
 `;
@@ -209,7 +210,15 @@ const Verification = () => {
         });
         toast.success('¡Registro exitoso! Ya puedes iniciar sesión.');
         localStorage.removeItem('verificationFlow');
-        navigate('/');
+        /*
+         * Este es EL punto donde consta que la persona es nueva: acaba de
+         * verificar el código de su registro. En ningún otro lugar del sistema
+         * se sabe con esta certeza. La marca hace que el mapa de bienvenida le
+         * salga en el login que viene a continuación —y solo en ese—.
+         * Ver utils/primerIngreso.js.
+         */
+        marcarRecienRegistrado();
+        navigate('/iniciar-sesion');
       } 
       else if (flow === 'recovery') {
         // 2- Verificamos el código para Recuperación de contraseña
@@ -223,7 +232,7 @@ const Verification = () => {
         // 3- Flujo 2FA de Empleado (Por defecto)
         if (!pendingToken) {
           setError('Sesión inválida, vuelve a iniciar sesión');
-          setTimeout(() => navigate('/'), 2000);
+          setTimeout(() => navigate('/iniciar-sesion'), 2000);
           return;
         }
         

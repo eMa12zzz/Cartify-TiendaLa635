@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
 
 const BrandFormModal = ({ isOpen, onClose, brand, onSave }) => {
   const { register, handleSubmit, reset, watch } = useForm();
@@ -42,16 +43,16 @@ const BrandFormModal = ({ isOpen, onClose, brand, onSave }) => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
       >
-        <div className="bg-[#9C6026] text-white p-6">
+        <div className="bg-[#00283D] text-white p-6">
           <h2 className="text-2xl font-bold text-center">
             {isEditing ? 'Editar Marca' : 'Nueva Marca'}
           </h2>
         </div>
 
-        <div className="p-6 bg-[#FAF9F6] flex-1 flex flex-col">
+        <div className="p-6 bg-[#F1F6F9] flex-1 flex flex-col">
           <form id="brand-form" onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6 flex-1">
             
             <div>
@@ -59,7 +60,7 @@ const BrandFormModal = ({ isOpen, onClose, brand, onSave }) => {
               <input 
                 type="text" 
                 {...register('name', { required: true })}
-                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                 placeholder="Ej. Nike, Adidas..."
               />
             </div>
@@ -92,7 +93,7 @@ const BrandFormModal = ({ isOpen, onClose, brand, onSave }) => {
             <button 
               form="brand-form"
               type="submit"
-              className="bg-[#9C6026] hover:bg-[#8B5A2B] text-white font-medium px-8 py-2 rounded-full transition-colors"
+              className="bg-[#00283D] hover:bg-[#003049] text-white font-medium px-8 py-2 rounded-full transition-colors"
             >
               Guardar
             </button>

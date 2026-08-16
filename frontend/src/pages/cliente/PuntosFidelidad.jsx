@@ -12,7 +12,8 @@ const PuntosFidelidad = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { user } = useAuth();
-  const { points, pointsPerDollar, expiryMonths, nextExpiry, expiringSoon, loading } = useLoyalty();
+  const { points, pointsPerDollar, expiryMonths, nextExpiry, expiringSoon, loading,
+          redeemRate, minRedeem, valorEnDinero } = useLoyalty();
 
   // Próximo vencimiento REAL (del lote que vence primero). Si no hay puntos, "—".
   const venceStr = nextExpiry
@@ -46,7 +47,11 @@ const PuntosFidelidad = () => {
         </div>
 
         <div className="relative z-10 mt-6">
-          <div className="text-sm opacity-90">
+          {/* Lo que de verdad le importa al cliente: cuánto valen sus puntos */}
+          <div className="text-lg font-bold">
+            Valen ${valorEnDinero.toFixed(2)} en tu próxima compra
+          </div>
+          <div className="text-sm opacity-90 mt-1">
             Ganas {pointsPerDollar} punto{plural} por cada $1 que gastas.
           </div>
           <div className="text-sm opacity-80 mt-1">
@@ -73,6 +78,13 @@ const PuntosFidelidad = () => {
           <div className="text-sm leading-relaxed" style={{ color: c.textSecondary }}>
             Por cada $1 que gastas en la tienda ganas {pointsPerDollar} punto{plural}. Se acumulan
             automáticamente con cada compra que realizas.
+          </div>
+        </div>
+        <div>
+          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>¿Cómo los uso?</div>
+          <div className="text-sm leading-relaxed" style={{ color: c.textSecondary }}>
+            Cada {redeemRate} puntos equivalen a $1 de descuento. Al pagar tu compra en la tienda
+            podrás elegir usarlos (necesitas al menos {minRedeem} puntos).
           </div>
         </div>
         <div>

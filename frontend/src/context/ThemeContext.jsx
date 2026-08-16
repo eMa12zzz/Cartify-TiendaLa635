@@ -1,39 +1,23 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 /**
- * 5 accessibility-oriented palettes designed for neurological conditions:
+ * 4 accessibility-oriented palettes designed for neurological conditions,
+ * más "Mi marca" (ver armarPaletaDeMarca más abajo), que es la que arranca
+ * por defecto:
  *
- * 1. Default        — original warm brown/gold (baseline)
- * 2. High Contrast  — black/yellow for low-vision & ADHD focus
- * 3. Deuteranopia   — blue/orange safe for red-green color blindness
- * 4. Tritanopia     — red/cyan safe for blue-yellow color blindness
- * 5. Dark Mode      — low-light, reduced stimulation for migraines & photosensitivity
+ * 1. High Contrast  — black/yellow for low-vision & ADHD focus
+ * 2. Deuteranopia   — blue/orange safe for red-green color blindness
+ * 3. Tritanopia     — red/cyan safe for blue-yellow color blindness
+ * 4. Dark Mode      — low-light, reduced stimulation for migraines & photosensitivity
+ *
+ * Antes había una 5ta, "Predeterminado" (café fijo, #003049): se quitó
+ * porque duplicaba lo que ya hace "Mi marca" — un café que nadie podía
+ * cambiar, cuando el color de marca YA es configurable. Un admin que
+ * tenía 'default' guardado en su localStorage simplemente no encuentra ese
+ * id en la lista y cae al respaldo (ver el `|| paletaDeMarca` de abajo).
  */
 
 export const palettes = [
-  {
-    id: 'default',
-    name: 'Predeterminado',
-    description: 'Paleta original cálida',
-    colors: {
-      primary: '#B47C4D',
-      primaryHover: '#9C6026',
-      primaryLight: 'rgba(180, 124, 77, 0.1)',
-      accent: '#C28C5D',
-      buttonText: '#FFFFFF',
-      sidebarBg: '#FFFFFF',
-      sidebarText: '#374151',
-      sidebarBorder: '#E5E7EB',
-      topbarBg: '#FFFFFF',
-      mainBg: '#F8F9FA',
-      cardBg: '#FFFFFF',
-      cardBorder: '#F3F4F6',
-      textPrimary: '#1F2937',
-      textSecondary: '#6B7280',
-      textMuted: '#9CA3AF',
-    },
-    swatches: ['#B47C4D', '#C28C5D', '#F8F9FA', '#FFFFFF', '#1F2937'],
-  },
   {
     id: 'high-contrast',
     name: 'Alto Contraste',
@@ -132,12 +116,62 @@ const ThemeContext = createContext();
 
 export const useTheme = () => useContext(ThemeContext);
 
+/*
+ * "Mi marca" — la paleta por defecto del panel. Va con el azul de la casa, el
+ * mismo que viste la cara de la tienda. Ya no sale de ningún ajuste: la marca
+ * es fija (ver index.css). Las 4 paletas de
+ * accesibilidad de arriba siguen intactas, con sus colores pensados a
+ * propósito para cada condición, para quien las necesite.
+ */
+/*
+ * Los mismos seis tonos que declara index.css. Se repiten aquí porque este
+ * archivo arma un objeto de JavaScript, no CSS, y no puede leer variables del
+ * documento. Si la marca cambia, cambian los dos sitios.
+ */
+const ESCALA_DE_MARCA = {
+  '--marca-600': '#003049',
+  '--marca-700': '#00283D',
+  '--marca-100': '#DDECF3',
+  '--acento': '#009AEB',
+};
+
+const armarPaletaDeMarca = () => {
+  const escala = ESCALA_DE_MARCA;
+  return {
+    id: 'marca',
+    name: 'Mi marca',
+    description: 'El color que elegiste para la tienda',
+    colors: {
+      primary: escala['--marca-600'],
+      primaryHover: escala['--marca-700'],
+      primaryLight: escala['--marca-100'],
+      accent: escala['--acento'],
+      buttonText: '#FFFFFF',
+      sidebarBg: '#FFFFFF',
+      sidebarText: '#374151',
+      sidebarBorder: '#E5E7EB',
+      topbarBg: '#FFFFFF',
+      mainBg: '#F8F9FA',
+      cardBg: '#FFFFFF',
+      cardBorder: '#F3F4F6',
+      textPrimary: '#1F2937',
+      textSecondary: '#6B7280',
+      textMuted: '#9CA3AF',
+    },
+    swatches: [escala['--marca-600'], escala['--marca-700'], escala['--marca-100'], '#FFFFFF', '#1F2937'],
+  };
+};
+
 export const ThemeProvider = ({ children }) => {
   const [paletteId, setPaletteId] = useState(() => {
-    return localStorage.getItem('theme-palette') || 'default';
+    return localStorage.getItem('theme-palette') || 'marca';
   });
 
-  const palette = palettes.find((p) => p.id === paletteId) || palettes[0];
+  const paletaDeMarca = useMemo(() => armarPaletaDeMarca(), []);
+  // "Mi marca" primero: es la que arranca por defecto, no una opción más al fondo.
+  const todasLasPaletas = useMemo(() => [paletaDeMarca, ...palettes], [paletaDeMarca]);
+
+  const palette = todasLasPaletas.find((p) => p.id === paletteId) || paletaDeMarca;
 
   useEffect(() => {
     localStorage.setItem('theme-palette', paletteId);
@@ -152,7 +186,7 @@ export const ThemeProvider = ({ children }) => {
   }, [paletteId, palette]);
 
   return (
-    <ThemeContext.Provider value={{ palette, paletteId, setPaletteId, palettes }}>
+    <ThemeContext.Provider value={{ palette, paletteId, setPaletteId, palettes: todasLasPaletas }}>
       {children}
     </ThemeContext.Provider>
   );

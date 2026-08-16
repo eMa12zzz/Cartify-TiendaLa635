@@ -1,14 +1,17 @@
 import { useForm } from 'react-hook-form';
-import { UploadCloud } from 'lucide-react';
+import { reglaDui, reglaTelefono, bloquearNoDigitos } from '../../utils/validaciones';
+import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../../utils/mascaras';
+import CampoContrasena from '../UI/CampoContrasena';
+import SubidorArchivo from '../UI/SubidorArchivo';
 import { motion, AnimatePresence } from 'framer-motion';
+import { modalTransition } from '../../utils/motion';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
   const { register, handleSubmit, reset, watch } = useForm();
   const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  
+
   const isEditing = !!employee;
   const watchIsActive = watch('isActive');
 
@@ -24,7 +27,6 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           password: '', // Don't pre-fill password for security
           isActive: employee.isActive !== false
         });
-        setImagePreview(employee.image || null);
         setSelectedImage(null);
       } else {
         reset({
@@ -36,26 +38,20 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           password: '',
           isActive: true
         });
-        setImagePreview(null);
         setSelectedImage(null);
       }
     }
   }, [isOpen, employee, reset]);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
+  // La preview la pinta SubidorArchivo; acá solo guardamos lo que se sube.
+  const handleImageChange = (file) => setSelectedImage(file);
 
   const onSubmit = (data) => {
-    if (!isEditing && !selectedImage) {
-      toast.error('La foto es obligatoria para registrar a un nuevo empleado');
-      return;
-    }
-    
+    /*
+     * La foto es opcional a propósito: alguien que entra a trabajar hoy tiene
+     * que poder quedar registrado hoy, sin depender de que le tomen una foto
+     * decente. Si no la sube, la ficha muestra sus iniciales.
+     */
     if (!isEditing && !data.password) {
       toast.error('La contraseña es obligatoria para un nuevo empleado');
       return;
@@ -81,7 +77,10 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
     onSave({ formData, id: employee?._id, previewData: data });
   };
 
-  const onError = () => {
+  const onError = (errs) => {
+    // Si una regla dejó mensaje concreto (DUI, teléfono...), mostramos ese.
+    const primero = Object.values(errs || {}).find((e) => e?.message)?.message;
+    if (primero) { toast.error(primero, { duration: 4000 }); return; }
     toast.error('Por favor, completa todos los campos obligatorios', { duration: 4000 });
   };
 
@@ -100,10 +99,10 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex overflow-hidden relative z-10"
       >
-        <div className="w-1/3 bg-[#9C6026] text-white p-6 flex flex-col">
+        <div className="w-1/3 bg-[#00283D] text-white p-6 flex flex-col">
           <h2 className="text-2xl font-bold mb-6">
             {isEditing ? 'Editar Empleado' : 'Nuevo Empleado'}
           </h2>
@@ -119,45 +118,64 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
               />
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/40 rounded-xl bg-white/5 my-4 p-4 text-center cursor-pointer hover:bg-white/10 transition-colors relative overflow-hidden min-h-[200px]">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-              ) : (
-                <>
-                  <UploadCloud className="w-8 h-8 mb-2 opacity-80" />
-                  <p className="text-xs opacity-90">
-                    Foto del Empleado (Requerida)
-                  </p>
-                </>
-              )}
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleImageChange} />
+            {/*
+              "cover" y no "contain": es una foto de carnet, se recorta igual
+              que se va a ver después en la ficha del empleado.
+            */}
+            <div className="my-4">
+              <SubidorArchivo
+                accept="image/*"
+                maxMB={8}
+                valorInicial={employee?.image || null}
+                onArchivo={handleImageChange}
+                variante="oscuro"
+                ajuste="cover"
+                alto={200}
+                radio={12}
+                titulo="Foto del empleado (opcional)"
+                ayuda="Arrastra la imagen o haz clic para elegirla"
+                etiquetaAria="Subir foto del empleado"
+              />
             </div>
             
+            {/* La zona de arriba ya dice cómo subirla; acá solo lo que ella no dice. */}
             <p className="text-xs text-white/70 text-center">
-              Haz clic o arrastra para {isEditing ? 'cambiar' : 'subir'} la foto
+              {isEditing
+                ? 'Toca la foto para cambiarla'
+                : 'Si no la sube ahora, se puede agregar después'}
             </p>
           </div>
         </div>
 
-        <div className="w-2/3 p-6 flex flex-col relative bg-[#FAF9F6]">
+        <div className="w-2/3 p-6 flex flex-col relative bg-[#F1F6F9]">
           <form id="employee-form" onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6 flex-1">
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">DUI</label>
-                <input 
-                  type="text" 
-                  {...register('dui', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_DUI}
+                  {...register('dui', reglaDui)}
+                  onKeyDown={bloquearNoDigitos}
+                  // El guion se pone solo mientras escribe: si lo deja a mano,
+                  // la base termina con tres formatos distintos del mismo DUI.
+                  onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="00000000-0"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
-                <input 
-                  type="text" 
-                  {...register('phoneNumber', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={LARGO_TELEFONO}
+                  {...register('phoneNumber', reglaTelefono)}
+                  onKeyDown={bloquearNoDigitos}
+                  onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="Ej. 7777-7777"
                 />
               </div>
@@ -168,7 +186,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
               <input 
                 type="email" 
                 {...register('email', { required: true })}
-                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                 placeholder="empleado@correo.com"
               />
             </div>
@@ -179,7 +197,7 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                 <input 
                   type="text" 
                   {...register('userName', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="juanp"
                 />
               </div>
@@ -188,11 +206,10 @@ const EmployeeFormModal = ({ isOpen, onClose, employee, onSave }) => {
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Contraseña {isEditing && <span className="text-xs font-normal text-gray-500">(Opcional)</span>}
                 </label>
-                <input 
-                  type="password" 
+                <CampoContrasena
                   {...register('password', { required: !isEditing })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
-                  placeholder={isEditing ? "Dejar en blanco para no cambiar" : "Contraseña segura"}
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
+                  placeholder={isEditing ? 'Dejalo vacío si no la vas a cambiar' : 'Contraseña segura'}
                 />
               </div>
             </div>

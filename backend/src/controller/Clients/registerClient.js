@@ -1,28 +1,54 @@
-import nodemailer from "nodemailer";
 import crypto from "crypto";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import jsonwebtoken from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import clientModel from "../../models/client.js";
 import { config } from "../../../config.js";
+import { VERSION_TERMINOS, esVerdadero } from "../../utils/terminos.js";
+import { sendEmail } from "../../utils/sendMailMailjet.js";
 
 const registerClientController = {};
 
 registerClientController.register = async (req, res) => {
-  // 1. Extraer los datos de texto del body 
-  const { 
-    fullName, 
-    dui, 
-    phoneNumber, 
-    ClientAddress, 
-    email, 
-    userName, 
-    password 
+  // 1. Extraer los datos de texto del body
+  /*
+   * La dirección ya no se pide aquí. El formulario mandaba un texto suelto que
+   * se guardaba en un campo que después no leía nadie: las direcciones de
+   * entrega viven en clientAddress y se administran desde "Mi cuenta".
+   */
+  const {
+    fullName,
+    dui,
+    phoneNumber,
+    email,
+    userName,
+    password,
+    // Fecha de nacimiento (opcional): "YYYY-MM-DD". Para la edad de los +18.
+    fechaNacimiento,
+    // El consentimiento. Llegan como texto: esto entra por multipart.
+    aceptaTerminos,
+    promociones
   } = req.body;
 
   try {
+    /*
+     * Sin aceptación no hay cuenta, y esto se revisa AQUÍ aunque el formulario
+     * ya lo revise.
+     *
+     * La casilla del navegador es una cortesía para la persona, no una
+     * garantía para la tienda: cualquiera puede mandar el registro sin pasar
+     * por el formulario. Si el único control estuviera allá, la tienda tendría
+     * clientes sin consentimiento y ninguna forma de saber cuáles.
+     */
+    if (!esVerdadero(aceptaTerminos)) {
+      return res.status(400).json({
+        message: "Hay que aceptar los términos y el aviso de privacidad"
+      });
+    }
+
     const existsClient = await clientModel.findOne({ email });
     if (existsClient) {
-      return res.status(400).json({ message: "Client already exists with this email" });
+      return res.status(400).json({ message: "Ya existe una cuenta con ese correo" });
     }
 
     // 2. Extraer la imagen directamente de req.file (Igual que en tu CRUD de empleados)
@@ -33,40 +59,59 @@ registerClientController.register = async (req, res) => {
     const passwordHashed = await bcryptjs.hash(password, 10);
     const randomNumber = crypto.randomBytes(3).toString("hex");
 
+    /*
+     * El DUI es OPCIONAL: si no viene, se guarda como undefined y no como "".
+     *
+     * Hoy la colección Clients no tiene índice único sobre dui (revisado
+     * contra la base: solo existe el índice de _id), pero el día que alguien
+     * se lo ponga, veinte clientes compartiendo la cadena vacía harían que el
+     * segundo registro sin DUI reventara con error de duplicado. Con undefined
+     * el campo ni siquiera se crea y un índice único los deja pasar a todos.
+     */
+    const duiLimpio = dui?.trim() ? dui.trim() : undefined;
+
     // 3. Guardar TODO en el token (incluyendo la imagen y el public_id que vienen de req.file)
     const token = jsonwebtoken.sign(
       {
         randomNumber,
         fullName,
-        dui,
+        dui: duiLimpio,
         phoneNumber,
-        ClientAddress,
+        // Solo se lleva si vino algo: vacío queda undefined, no cadena.
+        fechaNacimiento: fechaNacimiento?.trim() ? fechaNacimiento.trim() : undefined,
         image,      // <-- Guardamos la URL de la imagen
         public_id,  // <-- Guardamos el ID de la imagen
         email,
         userName,
-        password: passwordHashed
+        password: passwordHashed,
+        /*
+         * El consentimiento viaja dentro del token junto con lo demás, porque
+         * hasta que no se verifica el código no existe ningún documento donde
+         * guardarlo.
+         *
+         * La versión que se guarda es la del SERVIDOR, no la que mandó el
+         * navegador: si se aceptara la del cliente, bastaría con inventarse un
+         * número para dejar registrado un consentimiento de un texto que nunca
+         * existió. Y la fecha es la de AHORA —cuando de verdad marcó la
+         * casilla— y no la de la verificación, que puede ser quince minutos
+         * después.
+         */
+        terminosVersion: VERSION_TERMINOS,
+        aceptadoEn: new Date().toISOString(),
+        promociones: esVerdadero(promociones)
       },
       config.JWT.secret,
       { expiresIn: "15m" }
     );
 
-    res.cookie("registrationCookie", token, { maxAge: 15 * 60 * 1000 });
+    res.cookie("registrationCookie", token, opcionesCookie(15 * 60 * 1000));
 
     // 4. Enviar el correo con el código
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: config.email.user_email,
-        pass: config.email.user_password,
-      },
-    });
-
-    const mailOptions = {
-      from: `"Tienda la 635" <${config.email.user_email}>`,
-      to: email,
-      subject: "Verificación de cuenta — Tienda la 635",
-      html: `
+    // Alternativa en texto plano: un correo que es SOLO html es una de las
+    // señales que más pesan para que los filtros de spam lo dejen fuera de
+    // la bandeja principal. Mismo contenido, sin el diseño.
+    const textoPlano = `Gracias por registrarte en Tienda la 635. Tu código de verificación es: ${randomNumber}. Expira en 15 minutos. Si no solicitaste esto, ignora este correo.`;
+    const htmlVerificacion = `
         <!DOCTYPE html>
         <html lang="es">
         <head>
@@ -81,8 +126,8 @@ registerClientController.register = async (req, res) => {
                 <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
                   <!-- HEADER -->
                   <tr>
-                    <td style="background:#8B5A2B;padding:32px 40px;text-align:center;">
-                      <p style="margin:0;font-size:12px;color:#f5dfc0;letter-spacing:2px;text-transform:uppercase;">Tienda</p>
+                    <td style="background:#003049;padding:32px 40px;text-align:center;">
+                      <p style="margin:0;font-size:12px;color:#DDECF3;letter-spacing:2px;text-transform:uppercase;">Tienda</p>
                       <h1 style="margin:4px 0 0;font-size:30px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">la 635</h1>
                     </td>
                   </tr>
@@ -94,9 +139,9 @@ registerClientController.register = async (req, res) => {
                         Gracias por registrarte. Usa el siguiente código de 6 caracteres para confirmar tu correo electrónico. <strong>Expira en 15 minutos.</strong>
                       </p>
                       <!-- CÓDIGO -->
-                      <div style="background:#fdf6ee;border:2px dashed #d4a96a;border-radius:10px;padding:24px;text-align:center;margin-bottom:28px;">
+                      <div style="background:#F1F6F9;border:2px dashed #066494;border-radius:10px;padding:24px;text-align:center;margin-bottom:28px;">
                         <p style="margin:0 0 8px;font-size:12px;color:#888;letter-spacing:1px;text-transform:uppercase;">Tu código de verificación</p>
-                        <span style="font-size:36px;font-weight:800;color:#8B5A2B;letter-spacing:10px;">${randomNumber}</span>
+                        <span style="font-size:36px;font-weight:800;color:#003049;letter-spacing:10px;">${randomNumber}</span>
                       </div>
                       <p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
                         Si no solicitaste esta verificación, puedes ignorar este correo con seguridad. Nadie ha accedido a tu cuenta.
@@ -115,19 +160,19 @@ registerClientController.register = async (req, res) => {
           </table>
         </body>
         </html>
-      `,
-    };
+      `;
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log("error " + error);
-        return res.status(500).json({ message: "Error sending email" });
-      }
-      return res.status(200).json({ message: "Email sent" });
-    });
+    try {
+      await sendEmail(email, "Verificación de cuenta — Tienda la 635", htmlVerificacion, textoPlano);
+    } catch (mailError) {
+      console.log("error enviando correo de verificación: " + mailError.message);
+      return res.status(500).json({ message: "No se pudo enviar el correo" });
+    }
+
+    return res.status(200).json({ message: "Le enviamos el código a su correo" });
   } catch (error) {
-    console.log("error" + error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.log("error register cliente: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -137,7 +182,7 @@ registerClientController.verifyCode = async (req, res) => {
     const token = req.cookies.registrationCookie;
 
     if (!token) {
-      return res.status(400).json({ message: "Verification session expired." });
+      return res.status(400).json({ message: "El registro venció. Vuelva a empezar." });
     }
 
     const decoded = jsonwebtoken.verify(token, config.JWT.secret);
@@ -148,50 +193,101 @@ registerClientController.verifyCode = async (req, res) => {
       fullName,
       dui,
       phoneNumber,
-      ClientAddress,
-      image,
-      public_id,
-      email,
-      userName,
-      password
-    } = decoded;
-
-    if (verificationCodeRequest !== storedCode) {
-      return res.status(400).json({ message: "Invalid code" });
-    }
-
-    // 6. Guardamos en la base de datos usando el mismo estilo que tu employeeController
-    const newClient = new clientModel({
-      fullName,
-      dui,
-      phoneNumber,
-      ClientAddress,
+      fechaNacimiento,
       image,
       public_id,
       email,
       userName,
       password,
-      isVerified: true, 
-      isActive: true    
+      terminosVersion,
+      aceptadoEn,
+      promociones
+    } = decoded;
+
+    if (verificationCodeRequest !== storedCode) {
+      return res.status(400).json({ message: "El código no es válido" });
+    }
+
+    // 6. Guardamos en la base de datos usando el mismo estilo que tu employeeController
+    const newClient = new clientModel({
+      fullName,
+      // Sin DUI el campo no se crea (ver el comentario en register): así una
+      // eventual restricción de unicidad no choca entre clientes sin DUI.
+      ...(dui ? { dui } : {}),
+      // La fecha de nacimiento solo se guarda si el cliente la dio.
+      ...(fechaNacimiento ? { fechaNacimiento } : {}),
+      phoneNumber,
+      // La lista de direcciones arranca vacía: la llena el cliente desde
+      // "Mi cuenta > Direcciones", que es de donde salen las entregas.
+      clientAddress: [],
+      image,
+      public_id,
+      email,
+      userName,
+      password,
+      /*
+       * Lo que aceptó, tal cual venía en el token.
+       *
+       * Si el token es de ANTES de que existiera el consentimiento —alguien
+       * que empezó el registro justo cuando se actualizó el servidor— el
+       * bloque no se escribe. Es preferible una cuenta sin registro de
+       * consentimiento, que se ve y se puede arreglar, a una con un "aceptó
+       * la versión 1.0" inventado por el código.
+       */
+      ...(terminosVersion
+        ? {
+            consentimiento: {
+              terminosVersion,
+              aceptadoEn: aceptadoEn || new Date(),
+              promociones: !!promociones,
+            },
+          }
+        : {}),
+      /*
+       * La elección de publicidad se copia a las preferencias de notificación,
+       * que es de donde las lee la pantalla de "Mi cuenta > Notificaciones".
+       * Sin esta línea, alguien que dijo que NO en el registro abriría su
+       * cuenta y encontraría las promociones encendidas por el default del
+       * modelo — o sea, la tienda haciendo caso omiso de lo que acababa de
+       * elegir.
+       */
+      notificationPrefs: {
+        promociones: !!promociones,
+        nuevosProductos: true,
+        pedidoCerca: false,
+      },
+      isVerified: true,
+      isActive: true
     });
 
     await newClient.save();
     res.clearCookie("registrationCookie");
 
-    return res.status(200).json({message: "Client registered successfully"});
+    return res.status(200).json({message: "Cuenta creada"});
 
   } catch (error) {
-    console.log("error"+error);
-    return res.status(500).json({message: "Internal server error or Invalid Token"});
+    // El token vencido o manipulado cae aquí; el detalle va al log.
+    console.log("error verifyCode: "+error);
+    return res.status(500).json({message: "Error interno del servidor"});
   }
 };
 registerClientController.getAll = async (req, res) => {
   try {
-    const clients = await clientModel.find();
+    /*
+     * ESTA es la ruta que de verdad usa la pantalla de Clientes del panel
+     * (customerService.js pega aquí, no a /api/client), así que es la que
+     * estaba filtrando de verdad: devolvía el hash de la contraseña de cada
+     * cliente junto con su saldo, su DUI, su teléfono y sus direcciones con
+     * coordenadas. Sin autenticación, o sea a quien preguntara.
+     *
+     * El panel nunca usó la contraseña para nada; sacarla no le quita nada a
+     * la pantalla. Ver el mismo arreglo en clientController.getClients.
+     */
+    const clients = await clientModel.find().select("-password");
     return res.status(200).json(clients);
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error fetching clients" });
+    return res.status(500).json({ message: "No se pudo cargar la lista de clientes" });
   }
 };
 

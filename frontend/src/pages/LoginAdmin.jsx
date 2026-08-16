@@ -2,17 +2,39 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { loginAdminDB } from '../api/authApi';
+import { loginAdminDB, verify2FAAdmin } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
+import CampoContrasena from '../components/UI/CampoContrasena';
 
 const LoginAdmin = () => {
   const navigate = useNavigate();
   const { login, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  /*
+   * El color de marca real, inyectado localmente — /admin también está en la
+   * lista de rutas del panel, así que useTemporada() apaga --marca-* ahí a
+   * propósito (ver SinPermiso.jsx). Con esto puesto en el envoltorio, el
+   * login sigue el color de marca de verdad y no el café de fábrica.
+   */
 
-  // 1- Limpiar sesión previa al entrar al login de administrador
+  /*
+   * El login es de DOS pasos por el 2FA:
+   *   'credenciales' → correo + contraseña.
+   *   'codigo'       → el código que llegó al correo.
+   */
+  const [paso, setPaso] = useState('credenciales');
+  const [correoEnm, setCorreoEnm] = useState(''); // correo enmascarado, para el aviso
+  const [codigo, setCodigo] = useState('');
+
+  /*
+   * 1- Limpiar la sesión previa DEL PERSONAL al entrar a su login.
+   *
+   * El área va dicha a la letra y no se deduce de la ruta: así queda claro
+   * que entrar por esta puerta no roza la sesión de cliente que la misma
+   * persona tenga abierta en la tienda. Ver AuthContext.
+   */
   useEffect(() => {
-    logout();
+    logout('personal');
   }, [logout]);
 
   const {
@@ -27,22 +49,57 @@ const LoginAdmin = () => {
     }
   });
 
-  // 2- Enviar credenciales al backend de administradores (SELECT y VERIFY)
+  /*
+   * Lo que pasa una vez que la sesión SÍ se abrió (tras verificar el código).
+   * De vuelta a donde iba, no siempre al Dashboard: ProtectedRoute manda aquí
+   * con ?volver=/inventario. `replace` para que el login no quede en el
+   * historial y el "atrás" no regrese a esta pantalla.
+   */
+  const entrar = (res) => {
+    // El rol lo decide el backend (en cuál de las dos cuentas encontró el
+    // correo), no esta pantalla: por eso res.tipo y no 'admin' fijo. Con esto
+    // un empleado entra por la misma puerta y el panel le muestra lo suyo.
+    login(res.token, res.tipo || 'admin', res.admin);
+    // Sin `style` propio: así hereda el diseño y el color de marca que ya
+    // trae el Toaster global (AvisosConMarca en App.jsx). Un estilo fijo
+    // aquí encima lo tapaba por completo, café incluido.
+    toast.success('¡Bienvenido! Inicio de sesión exitoso');
+    const volver = new URLSearchParams(window.location.search).get('volver');
+    navigate(volver && volver.startsWith('/') ? volver : '/dashboard', { replace: true });
+  };
+
+  // PASO 1 — correo + contraseña. Si están bien, el backend manda el código y
+  // se pasa al paso del código; la sesión todavía no se abre.
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      // 3- Validamos con el backend de administradores
       const res = await loginAdminDB({ email: data.email, password: data.password });
-      // 4- Guardamos el token real y los datos del admin en el contexto
-      login(res.token, 'admin', res.admin);
-      toast.success('¡Bienvenido! Inicio de sesión exitoso', {
-        style: { borderRadius: '10px', background: '#333', color: '#fff' },
-      });
-      navigate('/dashboard');
+      if (res.needs2FA) {
+        setCorreoEnm(res.email || '');
+        setCodigo('');
+        setPaso('codigo');
+        toast.success('Le enviamos un código a su correo');
+      } else if (res.token) {
+        // Respaldo por si el backend algún día devuelve sesión directa.
+        entrar(res);
+      }
     } catch (err) {
-      toast.error(err.message || 'Credenciales inválidas o cuenta bloqueada', {
-        style: { borderRadius: '10px', background: '#ff4d4f', color: '#fff' },
-      });
+      toast.error(err.message || 'Credenciales inválidas o cuenta bloqueada');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // PASO 2 — verificar el código. Si coincide, ahí sí se abre la sesión.
+  const onVerificar = async (e) => {
+    e.preventDefault();
+    if (!codigo.trim()) return;
+    try {
+      setLoading(true);
+      const res = await verify2FAAdmin({ code: codigo.trim() });
+      entrar(res);
+    } catch (err) {
+      toast.error(err.message || 'El código no es correcto');
     } finally {
       setLoading(false);
     }
@@ -68,12 +125,15 @@ const LoginAdmin = () => {
             <h1 className="text-4xl font-extrabold text-black leading-tight mb-4 tracking-tight">
               Tienda<br />la 635
             </h1>
-            <p className="text-gray-500 text-sm font-medium">Panel Administrativo</p>
+            <p className="text-gray-500 text-sm font-medium">Panel del personal</p>
             <p className="text-gray-400 text-xs mt-2 max-w-xs mx-auto">
-              Ingresa tus credenciales de administrador para continuar.
+              {paso === 'credenciales'
+                ? 'Ingresa tus credenciales para continuar.'
+                : `Escribe el código que enviamos a ${correoEnm || 'tu correo'}.`}
             </p>
           </div>
 
+          {paso === 'credenciales' ? (
           <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5">
 
             <div>
@@ -81,7 +141,7 @@ const LoginAdmin = () => {
               <input
                 type="email"
                 placeholder="Introduce tu correo electrónico"
-                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300 focus:border-[#B47C4D]'} focus:outline-none focus:ring-1 focus:ring-[#B47C4D] transition-colors text-sm`}
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300 focus:border-[var(--marca-600)]'} focus:outline-none focus:ring-1 focus:ring-[var(--marca-600)] transition-colors text-sm`}
                 {...register('email', {
                   required: 'El correo electrónico es requerido',
                   pattern: {
@@ -95,10 +155,9 @@ const LoginAdmin = () => {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña</label>
-              <input
-                type="password"
+              <CampoContrasena
                 placeholder="••••••••"
-                className={`w-full px-4 py-2.5 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[#B47C4D]'} focus:outline-none focus:ring-1 focus:ring-[#B47C4D] transition-colors text-sm tracking-widest`}
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[var(--marca-600)]'} focus:outline-none focus:ring-1 focus:ring-[var(--marca-600)] transition-colors text-sm tracking-widest`}
                 {...register('password', {
                   required: 'La contraseña es requerida',
                   minLength: { value: 6, message: 'La contraseña debe tener al menos 6 caracteres' }
@@ -111,7 +170,7 @@ const LoginAdmin = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded border-gray-300 text-[#B47C4D] focus:ring-[#B47C4D]"
+                  className="w-4 h-4 rounded border-gray-300 text-[var(--marca-600)] focus:ring-[var(--marca-600)]"
                   {...register('rememberMe')}
                 />
                 <span className="text-xs text-gray-600">Recuerda durante 30 días</span>
@@ -121,16 +180,51 @@ const LoginAdmin = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-[#C28C5D] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-[var(--marca-600)] hover:bg-[var(--marca-700)] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Cargando...' : 'Iniciar sesión'}
             </button>
           </form>
+          ) : (
+          <form onSubmit={onVerificar} className="w-full space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Código del correo</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                maxLength={6}
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+                placeholder="6 dígitos"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[var(--marca-600)] focus:outline-none focus:ring-1 focus:ring-[var(--marca-600)] transition-colors text-center text-lg tracking-[6px] font-bold"
+              />
+              <p className="text-xs text-gray-400 mt-2">El código vence en 10 minutos.</p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || codigo.length < 6}
+              className="w-full py-3 px-4 bg-[var(--marca-600)] hover:bg-[var(--marca-700)] text-white rounded-lg text-sm font-semibold transition-colors mt-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Verificando...' : 'Verificar y entrar'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setPaso('credenciales'); setCodigo(''); }}
+              className="w-full text-xs text-gray-500 hover:text-gray-700 font-semibold"
+            >
+              ← Volver e intentar con otra cuenta
+            </button>
+          </form>
+          )}
 
           <div className="mt-8 text-center">
             <p className="text-xs text-gray-500">
               ¿Eres cliente?{' '}
-              <a href="/" className="text-[#B47C4D] hover:text-[#9C6026] font-semibold transition-colors">
+              <a href="/" className="text-[var(--marca-600)] hover:text-[var(--marca-700)] font-semibold transition-colors">
                 Ir a la tienda
               </a>
             </p>

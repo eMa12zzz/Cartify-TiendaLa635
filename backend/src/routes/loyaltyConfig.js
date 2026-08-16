@@ -1,7 +1,15 @@
 import express from "express";
 import loyaltyConfigController from "../controller/loyaltyConfigController.js";
 
-const router = express.Router();
+import { soloAdmin } from "../middlewares/validarSesion.js";
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -50,9 +58,19 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
+
+
+const router = express.Router();
+
+/*
+ * Leer la configuración es público: el cliente ve en su cuenta cuántos puntos
+ * gana por dólar y cuándo se le vencen, y eso tiene que poder consultarlo.
+ * Cambiar la tasa es otra cosa — con esto abierto, cualquiera se regalaba
+ * puntos ajustando el multiplicador.
+ */
 router
   .route("/")
-  .get(loyaltyConfigController.getConfig)     // GET /api/loyaltyConfig -> config actual
-  .put(loyaltyConfigController.updateConfig); // PUT /api/loyaltyConfig -> editar tasa/vencimiento
+  .get(loyaltyConfigController.getConfig)                    // GET /api/loyaltyConfig -> config actual
+  .put(soloAdmin, loyaltyConfigController.updateConfig);  // PUT /api/loyaltyConfig -> editar tasa/vencimiento
 
 export default router;

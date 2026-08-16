@@ -1,772 +1,743 @@
-import { useState } from 'react';
+import { Fragment } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { X, ShoppingBag, Star, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingBag, Package, Heart } from 'lucide-react';
+import HeaderTienda from './HeaderTienda';
+import PieTienda from './PieTienda';
+import ProductCard from './ProductCard';
+import { useDetalleProducto } from '../../hooks/useDetalleProducto';
+import { unidadDe, piezasEnTexto } from '../../utils/unidades';
 
-const BROWN = '#8B5A2B';
-const BROWN_LIGHT = '#f5ede4';
-const BROWN_DARK = '#5a3a1a';
+/*
+ * ============================================================
+ * FICHA DE UN PRODUCTO — ProductDetailModal.jsx
+ * ============================================================
+ * La pantalla de UN producto: su foto, su precio y el botón de agregarlo.
+ *
+ * QUÉ SE ARREGLÓ AQUÍ
+ *
+ * 1. La barra de arriba era OTRA. Tenía su propio "Volver", unas migas de pan
+ *    y un botón de "Ayuda" que no hacía nada: ni buscador, ni pasillos, ni
+ *    dirección de entrega, ni carrito. Abrir un producto era salirse de la
+ *    tienda. Ahora arriba va el MISMO HeaderTienda de la portada, igual que en
+ *    Seccion e Impresiones, y esta pantalla deja de ser una isla.
+ *
+ * 2. La foto flotaba en un rectángulo gris enorme. La columna de la izquierda
+ *    era `1fr` —unos 800px en un monitor— con la imagen limitada a 340px de
+ *    alto: quedaba un cuadro gris del ancho de media pantalla con el producto
+ *    perdido en el centro. Ahora la galería es un cuadrado acotado y centrado.
+ *
+ * 3. Las recomendaciones vivían DENTRO de la columna izquierda, debajo de la
+ *    foto, mientras la ficha de la derecha era pegajosa. Al bajar a verlas, la
+ *    mitad derecha de la pantalla quedaba vacía con un precio flotando solo.
+ *    Ahora son una franja a todo el ancho, debajo de las dos columnas.
+ *
+ * 4. Los colores estaban a mano (#111, #F5F5F5, #888). Se pintaban igual en
+ *    Navidad que en agosto, porque no pasaban por las variables de marca.
+ *
+ * La lógica —el candado del scroll, el "atrás", los recomendados, el +18 y el
+ * corazón— vive en useDetalleProducto. Aquí solo se pinta.
+ * ============================================================
+ */
 
-const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
-const slideUp = keyframes`from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; }`;
+const aparecer = keyframes`from { opacity: 0; } to { opacity: 1; }`;
+const subir = keyframes`from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; }`;
 
-const Overlay = styled.div`
+/*
+ * La capa que tapa la tienda. Ella es la que scrollea —por eso el hook le
+ * congela el scroll al body— y por eso recibe el ref: al saltar de un producto
+ * a otro hay que devolverla arriba.
+ */
+const Capa = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
   z-index: 1000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
   overflow-y: auto;
-  padding: 0;
-  animation: ${fadeIn} 0.2s ease;
+  overscroll-behavior: contain;
+  background: var(--papel);
+  animation: ${aparecer} 0.18s var(--ease-out);
 `;
 
-/* Full-page modal like the design */
-const Page = styled.div`
-  background: white;
-  width: 100%;
+const Pagina = styled.div`
   min-height: 100vh;
-  animation: ${slideUp} 0.25s ease;
-`;
-
-/* ── Top bar ── */
-const TopBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 28px;
-  border-bottom: 1px solid #f0f0f0;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
-`;
-
-const Breadcrumb = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #888;
-
-  span.active { color: ${BROWN}; font-weight: 600; }
-  span.sep { color: #ccc; }
-`;
-
-const BackBtn = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  color: #555;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  &:hover { color: ${BROWN}; }
-`;
-
-const HelpBtn = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 30px;
-  background: white;
-  font-size: 13px;
-  color: #444;
-  cursor: pointer;
-  font-weight: 500;
-  &:hover { border-color: ${BROWN}; color: ${BROWN}; }
-`;
-
-/* ── Main layout ── */
-const Main = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 28px;
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 48px;
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-`;
-
-/* ── Left: image + reviews ── */
-const LeftCol = styled.div``;
-
-const ImageArea = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-  }
-`;
-
-const Thumbnails = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  flex-shrink: 0;
+  background: var(--papel);
 `;
 
-const Thumb = styled.div`
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
-  overflow: hidden;
+/* ── Migas de pan ─────────────────────────────────────────── */
+
+/*
+ * La franja del "Volver". Va por FUERA del encabezado y no es pegajosa: el
+ * encabezado ya lo es, y dos barras clavadas arriba se montan una sobre otra
+ * —que es exactamente lo que pasaba antes—. Esta se va con el scroll, como en
+ * Seccion.
+ */
+/*
+ * Sin línea abajo. La tenía, y entre ella y la del encabezado las migas
+ * quedaban metidas en un sándwich de dos rayas paralelas a 56px de distancia
+ * —una franja que se anunciaba como si fuera una sección, cuando es solo el
+ * camino de vuelta—. Con la del encabezado basta para separar la barra
+ * pegajosa de lo que se desplaza; el respiro hasta la foto lo pone el padding
+ * del contenido.
+ */
+const Franja = styled.div`
+  background: var(--papel);
+`;
+
+const FranjaInterior = styled.div`
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 620px) { padding: 0 16px; gap: 10px; }
+`;
+
+/*
+ * El botón de volver vive DENTRO de la página, no se deja a la flecha del
+ * navegador. En el teléfono esa flecha queda lejos del pulgar, y en el kiosco
+ * directamente no existe.
+ */
+const Volver = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-pill);
+  padding: 8px 15px 8px 11px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tinta);
   cursor: pointer;
-  border: 2px solid ${props => props.$active ? BROWN : '#e8e8e8'};
-  transition: border-color 0.2s;
-  background: #f7f3ef;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
+  flex-shrink: 0;
+  transition: border-color var(--dur-press) var(--ease-out),
+              color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
 
-  img { width: 100%; height: 100%; object-fit: cover; }
-  &:hover { border-color: ${BROWN}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { border-color: var(--marca-600); color: var(--marca-700); }
+  }
+  &:active { transform: scale(0.97); }
 `;
 
-const MainImageWrapper = styled.div`
+/*
+ * Dónde estoy parado. En el teléfono se esconde: con el nombre del producto
+ * completo ocupaba dos renglones y empujaba la foto fuera de la pantalla, que
+ * es lo único que la persona vino a ver.
+ */
+const Migas = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--tinta-tenue);
+
+  svg { flex-shrink: 0; opacity: 0.55; }
+
+  @media (max-width: 780px) { display: none; }
+`;
+
+const MigaEnlace = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--tinta-suave);
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: var(--marca-600); text-decoration: underline; }
+  }
+`;
+
+/* El último escalón: se corta con puntos suspensivos en vez de partir la fila. */
+const MigaActual = styled.span`
+  color: var(--marca-700);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+/* ── El cuerpo ────────────────────────────────────────────── */
+
+const Contenido = styled.main`
   flex: 1;
-  background: #f7f3ef;
-  border-radius: 20px;
-  min-height: 380px;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 34px 28px 48px;
+  animation: ${subir} 0.24s var(--ease-out);
+
+  @media (max-width: 620px) { padding: 22px 16px 36px; }
+`;
+
+/*
+ * Las dos columnas de la ficha: la foto y lo que se puede hacer con ella.
+ *
+ * La segunda columna es FIJA en 420px y la primera se estira, pero con
+ * minmax(0, 1fr) para que un nombre larguísimo sin espacios no le gane el
+ * ancho a la otra. Debajo de 980px se apilan: a esa altura 420px de ficha
+ * dejan a la foto en menos de la mitad de la pantalla.
+ */
+const Ficha = styled.section`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 56px;
+  align-items: start;
+
+  @media (max-width: 1080px) { grid-template-columns: minmax(0, 1fr) 360px; gap: 36px; }
+  @media (max-width: 980px)  { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+`;
+
+/*
+ * La foto, en un cuadrado acotado y centrado.
+ *
+ * El `max-width` es lo que arregla el rectángulo gris gigante: sin él, con
+ * `1fr` de columna, el marco medía 800px de ancho por 380 de alto y el
+ * producto quedaba flotando en medio de la nada.
+ */
+const Galeria = styled.div`
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  /*
+   * Pegada a la IZQUIERDA, no centrada en su columna.
+   *
+   * Centrada dejaba unos 70px de aire a su izquierda, y en pantalla ancha eso
+   * la desalineaba de todo lo demás: "Volver", las migas y "Del mismo pasillo"
+   * arrancan en el borde del contenido y la foto arrancaba más adentro, como
+   * si fuera de otra página. Al apilarse en pantalla angosta sí se centra —
+   * ahí no hay borde con quien alinearse.
+   */
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  background: var(--papel-gris);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  position: relative;
+
+  @media (max-width: 980px) { max-width: 440px; margin: 0 auto; }
+  /* En el teléfono se achata: un cuadrado de 375px de lado se come la pantalla
+     entera y el precio queda debajo del pliegue. */
+  @media (max-width: 620px) { aspect-ratio: 4 / 3; max-width: none; }
 `;
 
-const MainImage = styled.img`
-  max-width: 85%;
-  max-height: 340px;
+const Foto = styled.img`
+  max-width: 78%;
+  max-height: 78%;
   object-fit: contain;
-  filter: drop-shadow(0 12px 28px rgba(0,0,0,0.14));
+  filter: drop-shadow(0 14px 30px rgba(28, 22, 20, 0.16));
 `;
 
-const ImageFallback = styled.div`
-  font-size: 120px;
-  user-select: none;
+const SinFoto = styled.div`
+  color: var(--tinta-tenue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
-const BestBadge = styled.div`
+/* Los sellos de la esquina: cuánto se ahorra y si es de los que más se venden. */
+const Sellos = styled.div`
   position: absolute;
   top: 16px;
   left: 16px;
-  background: ${BROWN};
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-`;
-
-/* ── Reviews block ── */
-const ReviewsBlock = styled.div`
-  margin-top: 32px;
-`;
-
-const ReviewsHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-`;
-
-const ReviewsTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 700;
-  color: #111;
-  margin: 0;
-`;
-
-const SeeAllLink = styled.button`
-  background: none;
-  border: none;
-  color: ${BROWN};
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  &:hover { text-decoration: underline; }
-`;
-
-const RatingSummary = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 20px;
-`;
-
-const BigRating = styled.div`
-  text-align: center;
-`;
-
-const BigNumber = styled.div`
-  font-size: 40px;
-  font-weight: 800;
-  color: #111;
-  line-height: 1;
-`;
-
-const BigLabel = styled.div`
-  font-size: 12px;
-  color: #888;
-  margin-top: 2px;
-`;
-
-const RatingBars = styled.div`
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 7px;
 `;
 
-const RatingBarRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #666;
+const Sello = styled.span`
+  background: ${(p) => (p.$oferta ? 'var(--alerta)' : 'var(--marca-600)')};
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: var(--radio-pill);
 `;
 
-const BarBg = styled.div`
-  flex: 1;
-  height: 6px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  overflow: hidden;
-`;
-
-const BarFill = styled.div`
-  height: 100%;
-  background: #f59e0b;
-  border-radius: 3px;
-  width: ${props => props.$pct}%;
-`;
-
-const BarCount = styled.span`
-  min-width: 32px;
-  text-align: right;
-  color: #aaa;
-`;
-
-const ReviewCard = styled.div`
-  padding: 16px 0;
-  border-bottom: 1px solid #f5f5f5;
-`;
-
-const ReviewerRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-`;
-
-const Avatar = styled.div`
-  width: 32px;
-  height: 32px;
-  background: ${BROWN_LIGHT};
+/*
+ * El corazón. Se podía guardar un producto desde su tarjeta pero no desde su
+ * ficha, que es justo donde uno termina de decidir si lo quiere.
+ */
+const Corazon = styled.button`
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
+  border: 1px solid var(--linea);
+  background: var(--papel);
+  color: ${(p) => (p.$activo ? 'var(--alerta)' : 'var(--tinta-tenue)')};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: ${BROWN};
-  flex-shrink: 0;
-`;
-
-const ReviewerName = styled.div`
-  font-size: 13px;
-  font-weight: 600;
-  color: #111;
-`;
-
-const ReviewDate = styled.div`
-  font-size: 11px;
-  color: #aaa;
-`;
-
-const ReviewStars = styled.div`
-  display: flex;
-  gap: 2px;
-  color: #f59e0b;
-  margin-bottom: 6px;
-`;
-
-const ReviewText = styled.p`
-  font-size: 13px;
-  color: #555;
-  line-height: 1.6;
-  margin: 0;
-`;
-
-/* ── Accordion ── */
-const AccordionItem = styled.div`
-  border-top: 1px solid #f0f0f0;
-`;
-
-const AccordionBtn = styled.button`
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
   cursor: pointer;
-  text-align: left;
-`;
+  box-shadow: var(--sombra-tarjeta);
+  transition: color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
 
-const AccordionBody = styled.div`
-  padding-bottom: 16px;
-  font-size: 13px;
-  color: #666;
-  line-height: 1.65;
-`;
+  svg { fill: ${(p) => (p.$activo ? 'var(--alerta)' : 'none')}; }
 
-/* ── Recommendations ── */
-const RecsSection = styled.div`
-  margin-top: 40px;
-`;
-
-const RecsTitle = styled.h3`
-  font-size: 18px;
-  font-weight: 700;
-  color: #111;
-  margin: 0 0 16px;
-`;
-
-const RecsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
-`;
-
-const RecCard = styled.div`
-  background: #fafafa;
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  border: 1px solid #f0f0f0;
-  transition: box-shadow 0.2s, transform 0.2s;
-
-  &:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: var(--alerta); border-color: var(--alerta); }
   }
+  &:active { transform: scale(0.92); }
 `;
 
-const RecImgBox = styled.div`
-  height: 110px;
-  background: #f7f3ef;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40px;
+/* ── La ficha de la derecha ───────────────────────────────── */
 
-  img { width: 100%; height: 100%; object-fit: cover; }
+const Panel = styled.div`
+  min-width: 0;
 `;
 
-const RecInfo = styled.div`
-  padding: 10px 12px 12px;
-`;
-
-const RecName = styled.div`
-  font-size: 12px;
-  font-weight: 600;
-  color: #111;
-  margin-bottom: 2px;
-`;
-
-const RecUnit = styled.div`
-  font-size: 11px;
-  color: #aaa;
-  margin-bottom: 4px;
-`;
-
-const RecPrice = styled.div`
-  font-size: 15px;
-  font-weight: 700;
-  color: #111;
-`;
-
-const RecOldPrice = styled.span`
-  font-size: 11px;
-  color: #bbb;
-  text-decoration: line-through;
-  margin-left: 4px;
-`;
-
-const RecStock = styled.div`
-  font-size: 10px;
-  color: ${BROWN};
-  margin-top: 2px;
-`;
-
-/* ── Right: product info sticky panel ── */
-const RightCol = styled.div`
-  position: sticky;
-  top: 80px;
-  align-self: start;
-`;
-
-const BrandTag = styled.div`
+const Marca = styled.div`
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: ${BROWN};
-  letter-spacing: 1px;
-  margin-bottom: 6px;
+  letter-spacing: 1.1px;
+  color: var(--marca-600);
+  margin-bottom: 7px;
 `;
 
-const ProductName = styled.h1`
-  font-size: 26px;
+const Nombre = styled.h1`
+  font-size: 28px;
   font-weight: 800;
-  color: #111;
-  margin: 0 0 8px;
-  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+  margin: 0 0 14px;
+  line-height: 1.22;
+
+  @media (max-width: 620px) { font-size: 23px; }
 `;
 
-const PriceLine = styled.div`
+const Precios = styled.div`
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 6px;
-`;
-
-const UnitLabel = styled.div`
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 14px;
-`;
-
-const OldPrice = styled.span`
-  font-size: 16px;
-  color: #bbb;
-  text-decoration: line-through;
-`;
-
-const NewPrice = styled.span`
-  font-size: 34px;
-  font-weight: 800;
-  color: #111;
-`;
-
-const StockBadge = styled.span`
-  font-size: 12px;
-  color: ${props => props.$low ? '#ef4444' : '#22c55e'};
-  background: ${props => props.$low ? '#fee2e2' : '#dcfce7'};
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: 600;
-`;
-
-const AddBtn = styled.button`
-  width: 100%;
-  padding: 16px;
-  background: ${BROWN};
-  color: white;
-  border: none;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: background 0.2s;
-  margin-bottom: 10px;
-
-  &:hover { background: ${BROWN_DARK}; }
-  &:disabled { background: #d1d5db; cursor: not-allowed; }
-`;
-
-const AboutSection = styled.div`
-  margin-top: 20px;
-`;
-
-const AboutTitle = styled.div`
-  font-size: 13px;
-  font-weight: 700;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   margin-bottom: 12px;
 `;
 
-const FeatureRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: #444;
+const PrecioHoy = styled.span`
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+  line-height: 1;
+
+  small { font-size: 14px; font-weight: 600; color: var(--tinta-tenue); }
 `;
 
-const FeatureIcon = styled.span`
-  width: 28px;
-  height: 28px;
-  background: ${BROWN_LIGHT};
-  border-radius: 8px;
+const PrecioAntes = styled.span`
+  font-size: 16px;
+  color: var(--tinta-tenue);
+  text-decoration: line-through;
+`;
+
+/*
+ * Hay o no hay. El cliente NO ve cuántas quedan: el inventario es asunto de la
+ * tienda.
+ */
+const Existencia = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 13px;
+  border-radius: var(--radio-pill);
+  color: ${(p) => (p.$agotado ? 'var(--alerta)' : 'var(--exito)')};
+  background: ${(p) => (p.$agotado
+    ? 'color-mix(in srgb, var(--alerta) 12%, transparent)'
+    : 'color-mix(in srgb, var(--exito) 12%, transparent)')};
+`;
+
+/*
+ * El aviso de venta restringida. Rojo tenue y con borde: tiene que leerse como
+ * una condición, no como una promoción más.
+ */
+const AvisoAdultos = styled.div`
+  background: color-mix(in srgb, var(--alerta) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--alerta) 32%, transparent);
+  color: #8A2B12;
+  border-radius: var(--radio-tarjeta);
+  padding: 11px 14px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: 4px 0 14px;
+`;
+
+const Agregar = styled.button`
+  width: 100%;
+  padding: 16px;
+  background: var(--marca-600);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-tarjeta);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  flex-shrink: 0;
+  gap: 10px;
+  transition: background-color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: var(--marca-700); }
+  }
+  &:active { transform: scale(0.985); }
+  &:disabled {
+    background: var(--banda);
+    color: var(--tinta-tenue);
+    cursor: not-allowed;
+    transform: none;
+  }
 `;
 
-/* ── Helper: fake reviews ── */
-const fakeReviews = [
-  { id: 1, name: 'Carlos M.', rating: 5, date: 'hace 2 días', text: '¡Increíble producto! Esta reseña se recibió como parte de una promoción. Los precios son excelentes y la calidad es justo lo que esperaba. Lo recomiendo totalmente a cualquier usuario.' },
-  { id: 2, name: 'Ana R.', rating: 4, date: 'hace 1 semana', text: 'Muy buen producto, llegó en perfecto estado. El empaque es cuidadoso y el sabor es auténtico. Definitivamente volvería a comprar.' },
-];
+const Descripcion = styled.div`
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--linea);
 
-const fakeRatingBars = [
-  { stars: 5, pct: 62, count: '4.2k' },
-  { stars: 4, pct: 20, count: '1.3k' },
-  { stars: 3, pct: 10, count: '4.2k' },
-  { stars: 2, pct: 5,  count: '4.2k' },
-  { stars: 1, pct: 3,  count: '4.2k' },
-];
+  h2 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--tinta-tenue);
+    margin: 0 0 10px;
+  }
 
-/* ── Component ── */
-const ProductDetailModal = ({ producto, onClose, onAgregarAlCarrito, todosLosProductos = [] }) => {
-  const [imgError, setImgError] = useState(false);
-  const [activeThumb, setActiveThumb] = useState(0);
-  const [openAccordion, setOpenAccordion] = useState(null);
+  /*
+   * pre-line respeta los enter que escribió quien cargó el producto. HTML
+   * colapsa los saltos de línea por defecto, así que una descripción escrita
+   * en renglones —"Peso: 500g" en uno, "Origen: nacional" en otro— salía toda
+   * pegada en un párrafo. Es "pre-line" y no "pre" a propósito: respeta los
+   * enter pero sigue acomodando el texto al ancho.
+   */
+  p {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--tinta-suave);
+    white-space: pre-line;
+  }
+`;
 
-  const bajoStock = producto.stock < 10;
-  const rating = 4.3;
-  const reviewCount = 5961;
+/* Categoría y unidad de venta, en dos renglones sobrios. */
+const Datos = styled.dl`
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  font-size: 13px;
 
-  // fake thumbnails using same emoji/image
-  const thumbs = [0, 1, 2];
+  dt { color: var(--tinta-tenue); }
+  dd { margin: 0; color: var(--tinta); font-weight: 600; }
+`;
 
-  const recomendados = todosLosProductos
-    .filter(p => p.id !== producto.id && p.categoria === producto.categoria)
-    .slice(0, 5);
+/* ── Recomendaciones ──────────────────────────────────────── */
 
-  const handleAgregar = () => {
-    onAgregarAlCarrito(producto, 1);
-    onClose();
-  };
+/*
+ * A TODO el ancho y debajo de las dos columnas. Antes vivían dentro de la
+ * columna de la foto, así que se veían en media pantalla mientras la otra
+ * mitad quedaba en blanco.
+ */
+const Recomendados = styled.section`
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--linea);
+`;
 
-  const toggleAccordion = (key) => setOpenAccordion(prev => prev === key ? null : key);
+const TituloRecs = styled.h2`
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
+  margin: 0 0 4px;
+`;
+
+const PieRecs = styled.p`
+  font-size: 13.5px;
+  color: var(--tinta-suave);
+  margin: 0 0 20px;
+`;
+
+/* La misma cuadrícula de la tienda, para que las tarjetas se lean igual. */
+const CuadriculaRecs = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 16px;
+
+  @media (max-width: 620px) { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+`;
+
+/* ── Componente ───────────────────────────────────────────── */
+
+const ProductDetailModal = ({
+  producto,
+  onClose,
+  onAgregarAlCarrito,
+  onVerProducto,
+  todosLosProductos = [],
+  /*
+   * Por dónde pasó para llegar aquí: [{ etiqueta, alTocar }].
+   *
+   * Lo arma la PANTALLA, no la ficha. Solo ella sabe qué filtros tiene
+   * puestos y cómo deshacerlos — el producto por sí solo no distingue "llegué
+   * buscando fruta" de "me apareció en la portada". Si llega vacío, la ficha
+   * dibuja un camino de un solo escalón hasta el producto, que es la verdad
+   * cuando no hay nada más que contar. Ver useRastroTienda.
+   */
+  rastro = [],
+  /*
+   * Lo que el encabezado necesita de la pantalla que abrió esta ficha: el
+   * pasillo, la búsqueda y el carrito. Es opcional a propósito — HeaderTienda
+   * sabe arreglárselas sin ello (navega a la tienda, que es donde esas
+   * acciones existen), igual que en Impresiones. Ver HeaderTienda.
+   */
+  header = {},
+}) => {
+  const {
+    contenedor,
+    imgError,
+    marcarImagenRota,
+    porLibra,
+    soloAdultos,
+    agotado,
+    ahorro,
+    recomendados,
+    agregar,
+    cerrar,
+    esFavorito,
+    alternarFavorito,
+  } = useDetalleProducto({ producto, onClose, onAgregarAlCarrito, todosLosProductos });
+
+  /*
+   * A dónde cae al cerrar: el último sitio por el que pasó. Si el rastro es
+   * solo "Inicio" —o viene vacío— el botón se queda en "Volver" a secas, que
+   * es lo honesto: prometer "Volver a Inicio" cuando cerrar puede devolver a
+   * media portada scrolleada sería vender otra cosa.
+   */
+  const ultimoEscalon = rastro.length > 1 ? rastro[rastro.length - 1].etiqueta : null;
 
   return (
-    <Overlay onClick={onClose}>
-      <Page onClick={e => e.stopPropagation()}>
-        {/* Top bar */}
-        <TopBar>
-          <BackBtn onClick={onClose}>
-            <ChevronLeft size={18} /> Volver
-          </BackBtn>
-          <Breadcrumb>
-            <span>Inicio</span>
-            <span className="sep">›</span>
-            <span>{producto.categoria}</span>
-            <span className="sep">›</span>
-            <span className="active">{producto.nombre}</span>
-          </Breadcrumb>
-          <HelpBtn>
-            💬 Ayuda
-          </HelpBtn>
-        </TopBar>
+    <Capa ref={contenedor}>
+      <Pagina>
+        {/*
+          El MISMO encabezado de la tienda. Aquí había una barra propia con un
+          "Volver", unas migas y un botón de "Ayuda" que no estaba conectado a
+          nada: quien abría un producto perdía de vista el buscador, los
+          pasillos, su dirección y el carrito.
+        */}
+        <HeaderTienda {...header} />
 
-        <Main>
-          {/* ── Left column ── */}
-          <LeftCol>
-            <ImageArea>
-              {/* Thumbnails */}
-              <Thumbnails>
-                {thumbs.map(i => (
-                  <Thumb key={i} $active={activeThumb === i} onClick={() => setActiveThumb(i)}>
-                    {producto.imagen && !imgError
-                      ? <img src={producto.imagen} alt="" onError={() => setImgError(true)} />
-                      : (producto.emoji || '📦')
-                    }
-                  </Thumb>
-                ))}
-              </Thumbnails>
+        <Franja>
+          <FranjaInterior>
+            {/*
+              El botón dice A DÓNDE vuelve. Cerrar la ficha no devuelve a la
+              tienda entera: devuelve a la lista tal como estaba, y si venía
+              filtrada, ahí cae. Un "Volver" a secas escondía eso — la persona
+              apretaba sin saber si perdía el filtro que acababa de poner.
+              El destino es el último escalón del camino, el mismo que se lee
+              a la derecha.
+            */}
+            <Volver onClick={cerrar}>
+              <ChevronLeft size={17} strokeWidth={2.4} />
+              {ultimoEscalon ? `Volver a ${ultimoEscalon}` : 'Volver'}
+            </Volver>
 
-              {/* Main image */}
-              <MainImageWrapper>
-                {producto.esMasVendido && <BestBadge>Los más vendidos</BestBadge>}
-                {producto.imagen && !imgError
-                  ? <MainImage src={producto.imagen} alt={producto.nombre} onError={() => setImgError(true)} />
-                  : <ImageFallback>{producto.emoji || '📦'}</ImageFallback>
-                }
-              </MainImageWrapper>
-            </ImageArea>
+            {/*
+              El camino de verdad, y no una frase fija.
 
-            {/* Reviews summary */}
-            <ReviewsBlock>
-              <ReviewsHeader>
-                <ReviewsTitle>Reseñas de clientes</ReviewsTitle>
-                <SeeAllLink>Recientes <ChevronRight size={13} /></SeeAllLink>
-              </ReviewsHeader>
-
-              <RatingSummary>
-                <BigRating>
-                  <BigNumber>{rating}</BigNumber>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 2, margin: '4px 0 2px' }}>
-                    {[1,2,3,4,5].map(i => (
-                      <Star key={i} size={12} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
-                    ))}
-                  </div>
-                  <BigLabel>({reviewCount.toLocaleString()})</BigLabel>
-                </BigRating>
-                <RatingBars>
-                  {fakeRatingBars.map(row => (
-                    <RatingBarRow key={row.stars}>
-                      <span style={{ minWidth: 8 }}>{row.stars}</span>
-                      <Star size={10} fill="#f59e0b" stroke="#f59e0b" />
-                      <BarBg><BarFill $pct={row.pct} /></BarBg>
-                      <BarCount>+ {row.count}</BarCount>
-                    </RatingBarRow>
-                  ))}
-                </RatingBars>
-              </RatingSummary>
-
-              <ReviewsHeader style={{ marginBottom: 8 }}>
-                <ReviewsTitle>Reseñas</ReviewsTitle>
-              </ReviewsHeader>
-
-              {fakeReviews.map(r => (
-                <ReviewCard key={r.id}>
-                  <ReviewerRow>
-                    <Avatar>{r.name[0]}</Avatar>
-                    <div>
-                      <ReviewerName>{r.name}</ReviewerName>
-                      <ReviewDate>{r.date}</ReviewDate>
-                    </div>
-                  </ReviewerRow>
-                  <ReviewStars>
-                    {[1,2,3,4,5].map(i => (
-                      <Star key={i} size={12} fill={i <= r.rating ? '#f59e0b' : 'none'} stroke={i <= r.rating ? '#f59e0b' : '#ddd'} />
-                    ))}
-                  </ReviewStars>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: '#888', margin: '0 0 4px' }}>¡Increíble producto!</p>
-                  <ReviewText>{r.text}</ReviewText>
-                </ReviewCard>
+              Antes decía siempre "Inicio › la categoría del producto", aunque
+              la persona hubiera llegado buscando o desde "Más vendidos": le
+              inventaba un paso que nunca dio. Y ninguno de los escalones se
+              podía tocar, así que era un letrero y no un camino. Ahora sale
+              del rastro que arma la pantalla —pasillo, categoría, búsqueda,
+              promo— y cada escalón devuelve a su sitio. Ver useRastroTienda.
+            */}
+            <Migas aria-label="Ruta">
+              {rastro.map((escalon) => (
+                <Fragment key={escalon.etiqueta}>
+                  <MigaEnlace onClick={() => { escalon.alTocar(); cerrar(); }}>{escalon.etiqueta}</MigaEnlace>
+                  <ChevronRight size={13} strokeWidth={2.4} />
+                </Fragment>
               ))}
-            </ReviewsBlock>
+              {/* El producto es el escalón en el que se está parado: no se
+                  pinta como enlace porque no lleva a ningún lado. */}
+              <MigaActual title={producto.nombre}>{producto.nombre}</MigaActual>
+            </Migas>
+          </FranjaInterior>
+        </Franja>
 
-            {/* Accordion: Detalles, Conservación, Ingredientes */}
-            <div style={{ marginTop: 24 }}>
-              {[
-                { key: 'detalles', label: 'Detalles', body: `Categoría: ${producto.categoria} · Marca: ${producto.marca || '—'} · Stock: ${producto.stock} unidades · Vence: ${producto.fechaExpiracion || '—'}` },
-                { key: 'conservacion', label: 'Conservación y almacenamiento', body: 'Conservar en lugar fresco y seco, alejado de la humedad y fuentes de calor. Una vez abierto, consumir preferiblemente en el plazo indicado en el envase.' },
-                { key: 'ingredientes', label: 'Ingredientes o Valor Nutricional', body: 'Consulte la etiqueta del producto para información detallada sobre ingredientes y valores nutricionales.' },
-              ].map(item => (
-                <AccordionItem key={item.key}>
-                  <AccordionBtn onClick={() => toggleAccordion(item.key)}>
-                    {item.label}
-                    <ChevronDown size={16} style={{ transform: openAccordion === item.key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                  </AccordionBtn>
-                  {openAccordion === item.key && <AccordionBody>{item.body}</AccordionBody>}
-                </AccordionItem>
-              ))}
-            </div>
+        <Contenido>
+          <Ficha>
+            <Galeria>
+              <Sellos>
+                {ahorro > 0 && <Sello $oferta>-{ahorro}%</Sello>}
+                {producto.esMasVendido && <Sello>Los más vendidos</Sello>}
+              </Sellos>
 
-            {/* Recommendations */}
-            {recomendados.length > 0 && (
-              <RecsSection>
-                <RecsTitle>Recomendaciones</RecsTitle>
-                <RecsGrid>
-                  {recomendados.map(p => (
-                    <RecCard key={p.id} onClick={() => { /* open detail */ }}>
-                      <RecImgBox>
-                        {p.imagen ? <img src={p.imagen} alt={p.nombre} /> : (p.emoji || '📦')}
-                      </RecImgBox>
-                      <RecInfo>
-                        <RecName>{p.nombre}</RecName>
-                        <RecUnit>{p.marca || 'por unidad'}</RecUnit>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                          <RecPrice>${Number(p.precio).toFixed(2)}</RecPrice>
-                          {p.precioAnterior && <RecOldPrice>${Number(p.precioAnterior).toFixed(2)}</RecOldPrice>}
-                        </div>
-                        <RecStock>{p.stock} Left</RecStock>
-                      </RecInfo>
-                    </RecCard>
-                  ))}
-                </RecsGrid>
-              </RecsSection>
-            )}
-          </LeftCol>
+              <Corazon
+                $activo={esFavorito}
+                onClick={alternarFavorito}
+                title={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+                aria-label={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+                aria-pressed={esFavorito}
+              >
+                <Heart size={19} strokeWidth={2.1} />
+              </Corazon>
 
-          {/* ── Right column: sticky info ── */}
-          <RightCol>
-            <BrandTag>{producto.marca}</BrandTag>
-            <ProductName>{producto.nombre}</ProductName>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <div style={{ display: 'flex', gap: 2 }}>
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} size={14} fill={i <= Math.round(rating) ? '#f59e0b' : 'none'} stroke={i <= Math.round(rating) ? '#f59e0b' : '#ddd'} />
-                ))}
-              </div>
-              <span style={{ fontSize: 13, color: '#888' }}>{rating} ({reviewCount.toLocaleString()} reseñas)</span>
-            </div>
-
-            <PriceLine>
-              {producto.precioAnterior && <OldPrice>${Number(producto.precioAnterior).toFixed(2)}</OldPrice>}
-              <NewPrice>${Number(producto.precio).toFixed(2)}</NewPrice>
-              <StockBadge $low={bajoStock}>
-                {bajoStock ? `⚠️ ${producto.stock} restantes` : '✓ En stock'}
-              </StockBadge>
-            </PriceLine>
-            <UnitLabel>$2.71/lb · {producto.stock} Left</UnitLabel>
-
-            <AddBtn onClick={handleAgregar} disabled={producto.stock === 0}>
-              <ShoppingBag size={18} />
-              Añadir al carrito
-            </AddBtn>
-
-            {/* About section */}
-            <AboutSection>
-              <AboutTitle>Sobre el producto</AboutTitle>
-              {producto.esMasVendido && (
-                <FeatureRow>
-                  <FeatureIcon>⭐</FeatureIcon>
-                  Los más vendidos
-                  <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: BROWN, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Ver más →</button>
-                </FeatureRow>
+              {/*
+                Una sola imagen: el producto tiene UNA foto. Antes había una
+                tira de tres miniaturas que repetían la misma imagen, dando a
+                entender que había varias vistas cuando no las hay.
+              */}
+              {producto.imagen && !imgError ? (
+                <Foto src={producto.imagen} alt={producto.nombre} onError={marcarImagenRota} />
+              ) : (
+                <SinFoto><Package size={84} strokeWidth={1.1} /></SinFoto>
               )}
-              <FeatureRow>
-                <FeatureIcon>🌱</FeatureIcon>
-                100% Natural
-              </FeatureRow>
+            </Galeria>
+
+            <Panel>
+              {producto.marca && <Marca>{producto.marca}</Marca>}
+              <Nombre>{producto.nombre}</Nombre>
+
+              {/*
+                Ojo con el "/lb": aquí hubo una vez un "$2.71/lb" CLAVADO, igual
+                para el queso que para las Pringles, y se quitó por mentiroso.
+                El de ahora sale del propio producto, solo aparece en los que de
+                verdad se venden por peso, y el número es el que se cobra.
+                Ver utils/unidades.js.
+              */}
+              <Precios>
+                <PrecioHoy>
+                  ${Number(producto.precio).toFixed(2)}
+                  {porLibra && <small>/lb</small>}
+                </PrecioHoy>
+                {producto.precioAnterior && (
+                  <PrecioAntes>${Number(producto.precioAnterior).toFixed(2)}</PrecioAntes>
+                )}
+                <Existencia $agotado={agotado}>
+                  {agotado ? 'Agotado' : '✓ En existencia'}
+                </Existencia>
+              </Precios>
+
+              {/*
+                El aviso de +18 va ANTES del botón, no después: enterarse de que
+                le van a pedir documento cuando el repartidor ya está en la
+                puerta es la peor manera de saberlo. Y se dice completo —qué se
+                pide y qué pasa si no lo tiene— porque media advertencia no
+                advierte.
+              */}
+              {soloAdultos && (
+                <AvisoAdultos>
+                  <strong>Solo para mayores de 18 años.</strong> Se le pedirá su documento de
+                  identidad al entregar el pedido. Sin él, este producto no se puede entregar.
+                </AvisoAdultos>
+              )}
+
+              {/*
+                "Añadir al carrito" y punto, también en los que se venden por
+                peso. Decía "Añadir una libra al carrito": era exacto, pero
+                nadie lee un botón, lo reconoce — y un botón que cambia de
+                largo y de texto según el producto hay que volver a leerlo
+                cada vez. Cuánto se lleva ya lo dice el "/lb" del precio, y se
+                ajusta en el carrito.
+              */}
+              <Agregar onClick={agregar} disabled={agotado}>
+                <ShoppingBag size={18} strokeWidth={2.2} />
+                {agotado ? 'Agotado por ahora' : 'Añadir al carrito'}
+              </Agregar>
+
+              {/*
+                Cómo se vende, dicho con todas sus letras. "Por libra" al lado
+                del "/lb" del precio no es repetirse: uno explica al otro, y es
+                la diferencia entre pedir un queso y pedir una libra de queso.
+                El renglón de las piezas solo sale si el producto las declara.
+              */}
+              <Datos>
+                <dt>Categoría</dt>
+                <dd>{producto.categoria}</dd>
+                <dt>Se vende</dt>
+                <dd>{unidadDe(producto).nombre}</dd>
+                {piezasEnTexto(producto) && (
+                  <>
+                    <dt>Presentación</dt>
+                    <dd>{piezasEnTexto(producto)}</dd>
+                  </>
+                )}
+              </Datos>
+
+              {/*
+                Aquí decía "100% Natural" en TODOS los productos, incluidos el
+                cloro y las Pringles. Era una afirmación sobre la mercadería que
+                la tienda nunca hizo y que en varios casos es falsa. Ahora solo
+                se muestra lo que la tienda de verdad escribió.
+              */}
               {producto.descripcion && (
-                <p style={{ fontSize: 13, color: '#666', lineHeight: 1.65, marginTop: 12 }}>
-                  {producto.descripcion}
-                </p>
+                <Descripcion>
+                  <h2>Sobre el producto</h2>
+                  <p>{producto.descripcion}</p>
+                </Descripcion>
               )}
-            </AboutSection>
-          </RightCol>
-        </Main>
-      </Page>
-    </Overlay>
+            </Panel>
+          </Ficha>
+
+          {recomendados.length > 0 && (
+            <Recomendados>
+              <TituloRecs>Del mismo pasillo</TituloRecs>
+              <PieRecs>Más de {(producto.categoria || 'la tienda').toLowerCase()}, por si andaba viendo.</PieRecs>
+              {/*
+                La MISMA tarjeta que la tienda. Antes esto tenía su propio
+                diseño —más chico, con el stock en inglés ("5 Left") y el click
+                vacío, literalmente un comentario donde debía abrirse el
+                producto—. Reusarla arregla las tres cosas de una y evita que
+                dentro de la misma pantalla haya dos formas de mostrar un
+                producto.
+              */}
+              <CuadriculaRecs>
+                {recomendados.map((p, i) => (
+                  <ProductCard
+                    key={p.id}
+                    className="card-in"
+                    style={{ '--i': i }}
+                    producto={p}
+                    onVerDetalle={onVerProducto || (() => {})}
+                    onAgregarAlCarrito={onAgregarAlCarrito}
+                  />
+                ))}
+              </CuadriculaRecs>
+            </Recomendados>
+          )}
+        </Contenido>
+
+        {/* El cierre de la página: sin esto el contenido se acababa y quedaba
+            el blanco, como si la ficha se hubiera cortado a medias. */}
+        <PieTienda />
+      </Pagina>
+    </Capa>
   );
 };
 

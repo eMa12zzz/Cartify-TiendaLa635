@@ -20,21 +20,25 @@ loyaltyController.getSummary = async (req, res) => {
       .find({ clientId: req.params.clientId, expiresAt: { $gt: now } })
       .sort({ expiresAt: 1 });
 
-    const available = lotes.reduce((acc, l) => acc + l.points, 0);
-    const nextExpiry = lotes.length ? lotes[0].expiresAt : null;
+    // Solo cuenta lo que NO se ha canjeado todavía (points - used).
+    const saldo = (l) => l.points - (l.used || 0);
+
+    const available = lotes.reduce((acc, l) => acc + saldo(l), 0);
+    const conSaldo = lotes.filter((l) => saldo(l) > 0);
+    const nextExpiry = conSaldo.length ? conSaldo[0].expiresAt : null;
 
     // Puntos que vencen dentro de 30 días (para avisarle al cliente).
     const en30 = new Date(now);
     en30.setDate(en30.getDate() + 30);
-    const expiringSoon = lotes
+    const expiringSoon = conSaldo
       .filter((l) => l.expiresAt <= en30)
-      .reduce((acc, l) => acc + l.points, 0);
+      .reduce((acc, l) => acc + saldo(l), 0);
 
     return res.status(200).json({ available, nextExpiry, expiringSoon });
 
   } catch (error) {
     console.log("error " + error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

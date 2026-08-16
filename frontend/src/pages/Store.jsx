@@ -1,241 +1,130 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
+import EsqueletoProductos from '../components/Store/EsqueletoProductos';
 import ProductDetailModal from '../components/Store/ProductDetailModal';
 import ShoppingCart from '../components/Store/ShoppingCart';
 import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
+import PromoDetailModal from '../components/Store/PromoDetailModal';
+import FilaProductos from '../components/Store/FilaProductos';
+import HeaderTienda from '../components/Store/HeaderTienda';
+import PieTienda from '../components/Store/PieTienda';
+import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
+import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
+import { useRastroTienda } from '../hooks/useRastroTienda';
+import { useMyOrders } from '../hooks/useMyOrders';
+import { useModulos } from '../hooks/useModulos';
+import { useAjustesCtx } from '../context/AjustesContext';
+import { bloqueDeSeccion } from '../utils/portada';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
-const BROWN = '#8B5A2B';
-const BROWN_DARK = '#5a3a1a';
-const BROWN_LIGHT = '#f5ede4';
+const BROWN = 'var(--marca-600)';
+const BROWN_LIGHT = 'var(--marca-100)';
 
 /* ─── Layout ─── */
 const Container = styled.div`
   min-height: 100vh;
-  background: #f6f6f6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-`;
+  /*
+   * Fondo blanco. El beige de antes competía con las tarjetas —que también
+   * son claras— y hacía ver la página como una hoja vieja; con blanco los
+   * productos y las promociones son lo único con color.
+   */
+  background: #fff;
+  font-family: var(--fuente);
 
-/* ─── Header ─── */
-const Header = styled.header`
-  background: white;
-  padding: 0 28px;
-  border-bottom: 1px solid #ebebeb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  height: 64px;
-  position: sticky;
-  top: 0;
-  z-index: 200;
-`;
-
-const LogoArea = styled.div`
+  /*
+   * Columna flex para que el pie se quede ABAJO cuando la página es corta.
+   *
+   * Con min-height: 100vh a secas, una búsqueda de cinco productos dejaba el
+   * pie flotando a media pantalla y 259 píxeles de blanco debajo: la página
+   * parecía cortada, como si le faltara algo por cargar. Ahora el contenido
+   * empuja (flex: 1) y el pie aterriza en el borde de abajo aunque haya poco
+   * que mostrar.
+   */
   display: flex;
   flex-direction: column;
-  cursor: pointer;
-  flex-shrink: 0;
 `;
 
-const LogoTop = styled.span`
-  font-size: 11px;
-  color: #aaa;
-  line-height: 1;
-`;
-
-const LogoMain = styled.span`
-  font-size: 22px;
-  font-weight: 800;
-  color: #111;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-`;
-
-const SearchBox = styled.div`
+/* Lo que crece para empujar el pie hasta abajo. */
+const Cuerpo = styled.div`
   flex: 1;
-  max-width: 420px;
-  display: flex;
-  align-items: center;
-  background: #f5f5f5;
-  border-radius: 40px;
-  padding: 0 16px;
-  gap: 8px;
-  height: 42px;
-  transition: box-shadow 0.2s;
-
-  &:focus-within {
-    box-shadow: 0 0 0 2px ${BROWN}40;
-    background: white;
-  }
-
-  input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 14px;
-    color: #111;
-    &::placeholder { color: #bbb; }
-  }
-`;
-
-const HeaderRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const IconBtn = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 30px;
-  font-size: 14px;
-  color: #444;
-  transition: background 0.2s;
-  &:hover { background: #f5f5f5; }
-`;
-
-const CartBtn = styled.button`
-  background: ${BROWN};
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 18px;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.2s;
-  &:hover { background: ${BROWN_DARK}; }
-`;
-
-const CartBadge = styled.span`
-  background: white;
-  color: ${BROWN};
-  border-radius: 50%;
-  min-width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 0 4px;
 `;
 
 /* ─── Category Bar ─── */
+/* En el diseño las categorías van CENTRADAS, no pegadas a la izquierda. */
 const CategoryBar = styled.nav`
-  background: white;
+  background: transparent;
   padding: 0 28px;
   display: flex;
-  gap: 4px;
+  justify-content: center;
+  gap: 8px;
   overflow-x: auto;
-  border-bottom: 1px solid #ebebeb;
-  height: 52px;
+  /*
+   * Sin raya abajo. La única línea de la pantalla es la del encabezado, que
+   * sí separa dos cosas distintas; esta partía la tienda en dos por gusto y
+   * competía con el borde de las tarjetas de promoción que van justo abajo.
+   */
+  height: 60px;
   align-items: center;
   &::-webkit-scrollbar { display: none; }
+  scrollbar-width: none;
+
+  /* Con muchas categorías deja de centrar y se vuelve deslizable. */
+  @media (max-width: 900px) { justify-content: flex-start; }
+
+  /*
+   * Deslizable con el dedo, sin arrastrar la página con él: el que se corre es
+   * ESTE renglón, no el cuerpo. El fundido de la orilla derecha es lo que
+   * avisa que hay más categorías — sin él, "Snacks" cortado a filo se lee como
+   * el final de la lista.
+   */
+  @media (max-width: 700px) {
+    padding: 0 16px;
+    height: 54px;
+    scroll-padding-inline: 16px;
+    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
+  }
 `;
 
+/*
+ * La barra de pasillos y sus estilos se eliminaron: los pasillos ahora se
+ * eligen desde el menú del nombre de la tienda (MenuTienda). Tener las dos
+ * cosas era decir lo mismo dos veces, y la barra empujaba los productos media
+ * pantalla hacia abajo antes de que se viera un solo precio.
+ */
+
+/* Pill blanca con borde; la activa es café SÓLIDO con texto blanco. */
 const CatBtn = styled.button`
-  padding: 7px 18px;
-  border: none;
-  background: ${props => props.$active ? BROWN_LIGHT : 'transparent'};
-  color: ${props => props.$active ? BROWN : '#666'};
-  font-weight: ${props => props.$active ? '600' : '400'};
-  border-radius: 30px;
+  padding: 0 18px;
+  height: 38px;
+  border: 1px solid ${props => (props.$active ? BROWN : 'var(--linea)')};
+  background: ${props => (props.$active ? BROWN : 'var(--papel)')};
+  color: ${props => (props.$active ? '#fff' : 'var(--tinta-suave)')};
+  font-weight: ${props => (props.$active ? 600 : 500)};
+  border-radius: var(--radio-pill);
   font-size: 14px;
+  font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   flex-shrink: 0;
-  &:hover { background: ${BROWN_LIGHT}; color: ${BROWN}; }
-`;
 
-/* ─── Hero Banner ─── */
-const BannerSection = styled.div`
-  padding: 20px 28px 0;
-  max-width: 1400px;
-  margin: 0 auto;
-`;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: ${BROWN};
+      color: ${props => (props.$active ? '#fff' : BROWN)};
+    }
+  }
+  &:active { transform: scale(0.97); }
 
-const BannersGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
-  gap: 14px;
-  @media (max-width: 900px) { grid-template-columns: 1fr; }
-`;
-
-const BannerCard = styled.div`
-  border-radius: 16px;
-  overflow: hidden;
-  height: 180px;
-  position: relative;
-  cursor: pointer;
-  background: ${props => props.$bg || '#f0e6d3'};
-  display: flex;
-  align-items: center;
-  padding: 24px;
-  transition: transform 0.2s;
-  &:hover { transform: scale(1.01); }
-`;
-
-const BannerContent = styled.div`z-index: 1; flex: 1;`;
-
-const BannerTag = styled.div`
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: ${props => props.$color || BROWN};
-  margin-bottom: 6px;
-`;
-
-const BannerTitle = styled.h3`
-  font-size: 22px;
-  font-weight: 800;
-  color: ${props => props.$color || '#111'};
-  margin: 0 0 6px;
-  line-height: 1.2;
-`;
-
-const BannerSub = styled.p`
-  font-size: 13px;
-  color: ${props => props.$color || '#666'};
-  margin: 0 0 12px;
-`;
-
-const BannerBtn = styled.button`
-  background: ${props => props.$bg || BROWN};
-  color: ${props => props.$color || 'white'};
-  border: none;
-  padding: 8px 16px;
-  border-radius: 30px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const BannerEmoji = styled.div`
-  font-size: 72px;
-  opacity: 0.85;
-  margin-left: 8px;
-  flex-shrink: 0;
+  /* 44px de alto en pantalla táctil: el pulgar no apunta, aproxima. */
+  @media (pointer: coarse), (max-width: 560px) { height: 44px; }
 `;
 
 /* ─── Content ─── */
@@ -243,6 +132,34 @@ const Content = styled.div`
   padding: 24px 28px 40px;
   max-width: 1400px;
   margin: 0 auto;
+
+  /* Mismo margen lateral que el pie y que la pantalla de sección, para que al
+     pasar de una a otra los productos no se corran de lugar. */
+  @media (max-width: 560px) { padding: 20px 16px 32px; }
+`;
+
+/*
+ * El carril de una fila de la portada.
+ *
+ * Mismo ancho y mismo margen lateral que <Content>, pero por bloque en vez de
+ * envolverlos a todos: las promociones van de orilla a orilla —su carrusel
+ * asoma las tarjetas de los lados— y ahora pueden ir en cualquier posición
+ * del orden, así que ya no se puede meter todo en un solo contenedor con
+ * relleno y dejar las promos fuera.
+ */
+const Franja = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 28px;
+
+  @media (max-width: 560px) { padding: 0 16px; }
+`;
+
+/* El aire de arriba que antes ponía <Content>, ahora para el grupo entero. */
+const Portada = styled.div`
+  padding-top: 24px;
+
+  @media (max-width: 560px) { padding-top: 20px; }
 `;
 
 const SectionHeader = styled.div`
@@ -250,27 +167,76 @@ const SectionHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 18px;
+  gap: 12px;
+
+  /* El título es largo ("Todo en Abarrotes") y Filtros no puede encogerse:
+     arriba el nombre, abajo el botón, en vez de aplastarse mutuamente. */
+  @media (max-width: 560px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 `;
 
+/* En el diseño los títulos de sección son grandes y pesados. */
 const SectionTitle = styled.h2`
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
-  color: #111;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
   margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+
+  @media (max-width: 560px) { font-size: 21px; }
 `;
 
+/* Va pegada al título, así que no hereda su peso ni su tamaño. */
 const SectionCount = styled.span`
   font-size: 13px;
-  color: #aaa;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--tinta-tenue);
+`;
+
+/*
+ * Flechas circulares a la derecha del título, como en el diseño. Por ahora
+ * desplazan la fila de tarjetas; cuando la sección no se pueda mover más,
+ * la flecha se apaga sola.
+ */
+const SectionNav = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+`;
+
+const NavCircle = styled.button`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--linea);
+  background: var(--papel);
+  color: var(--tinta);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out),
+              color var(--dur-press) var(--ease-out);
+  &:hover:not(:disabled) { border-color: ${BROWN}; color: ${BROWN}; background: var(--marca-50); }
+  &:disabled { opacity: 0.35; cursor: default; }
 `;
 
 /* ─── Filter bar with dropdown ─── */
+/* Vive dentro del encabezado, así que ya no necesita empujarse ni separarse. */
 const FilterBar = styled.div`
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 20px;
   position: relative;
+  flex-shrink: 0;
 `;
 
 const FilterBtn = styled.button`
@@ -285,7 +251,7 @@ const FilterBtn = styled.button`
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   &:hover { border-color: ${BROWN}; color: ${BROWN}; background: ${BROWN_LIGHT}; }
 `;
 
@@ -351,11 +317,13 @@ const FilterToggle = styled.div`
 `;
 
 /* ─── Trending Section ─── */
+/*
+ * Sin tarjeta blanca alrededor: el recuadro partía la portada en cajas y se
+ * sentía como secciones separadas en vez de una sola página. Ahora las filas
+ * se distinguen por el aire entre ellas, no por un borde.
+ */
 const TrendingSection = styled.div`
-  background: white;
-  border-radius: 20px;
-  padding: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 34px;
 `;
 
 const TrendingHeader = styled.div`
@@ -385,11 +353,63 @@ const LiveDot = styled.span`
   }
 `;
 
+/*
+ * En el diseño esta fila NO es una grilla: se corre de lado con las flechas.
+ * scroll-snap hace que siempre quede una tarjeta alineada al borde, sin cortes
+ * a media tarjeta.
+ */
 const TrendingGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex;
   gap: 14px;
-  margin-top: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 2px;
+
+  /*
+   * Aire arriba y abajo, comido con márgenes negativos.
+   *
+   * Un contenedor con overflow-x recorta también por ARRIBA y por ABAJO: el
+   * navegador no deja tener un eje recortado y el otro suelto. Sin este
+   * respiro, la tarjeta que crece al pasar el cursor se quedaba con la
+   * sombra cortada a filo, como apoyada sobre una regla.
+   *
+   * Los márgenes negativos devuelven el espacio, así el aire existe para la
+   * sombra pero la fila no se separa del resto de la página.
+   */
+  /*
+   * El respiro sale de la sombra en hover, no de un numero al azar: la
+   * tarjeta sube 4px y su sombra es 0 12px 32px, o sea que se derrama unos
+   * 20px hacia arriba y unos 32px hacia abajo. Con menos que esto se corta
+   * a filo, y el recorte lateral se comia la sombra de la primera y la
+   * ultima tarjeta, que son las pegadas al borde del scroll.
+   *
+   * Los margenes negativos devuelven el espacio; el -4 de arriba conserva
+   * los 16px de separacion con el titulo que tenia esta fila.
+   */
+  padding: 24px 16px 44px;
+  margin: -8px -16px -40px;
+
+  /*
+   * Fundido en las orillas.
+   *
+   * El aire lateral resuelve la sombra de la primera y la última tarjeta,
+   * pero se desplaza CON el contenido: apenas se hace scroll, la tarjeta que
+   * va saliendo vuelve a cortarse a filo contra el borde. El degradado hace
+   * que se desvanezca en vez de cortarse, y de paso avisa que hay más.
+   *
+   * El fundido mide lo mismo que el padding, así que en reposo cae sobre
+   * espacio vacío y no toca la primera tarjeta.
+   */
+  mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+
+  &::-webkit-scrollbar { display: none; }
+  scrollbar-width: none;
+
+  > * {
+    flex: 0 0 clamp(160px, 21%, 214px);
+    scroll-snap-align: start;
+  }
 `;
 
 /* ─── Products Grid ─── */
@@ -397,6 +417,19 @@ const ProductsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
   gap: 16px;
+
+  /*
+   * DOS columnas en el teléfono, no una.
+   *
+   * Con el mínimo en 195px no cabían dos (2×195+16 = 406 en 343 de ancho), así
+   * que la cuadrícula caía a una sola columna y cada producto ocupaba la
+   * pantalla entera: para ver seis había que bajar tres veces. Bajando el
+   * mínimo a 150 entran dos, que es como se compara precio contra precio.
+   */
+  @media (max-width: 560px) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -410,7 +443,17 @@ const EmptyState = styled.div`
 /* ─── Component ─── */
 const Store = () => {
   const navigate = useNavigate();
+  /*
+   * Si vino desde "Servicios" con ?modulo=, la tienda abre parada en ese
+   * pasillo. Se lee una sola vez, al montar: después manda la barra de arriba.
+   */
+  const [searchParams] = useSearchParams();
+  const { pasillos } = useModulos();
+  // La tienda se ve con o sin cuenta; la sesión solo cambia qué botones salen.
+
   const {
+    moduloSeleccionado,
+    setModuloSeleccionado,
     categorias,
     categoriaSeleccionada,
     setCategoriaSeleccionada,
@@ -419,6 +462,9 @@ const Store = () => {
     productosFiltrados,
     productosDestacados,
     productos, // all products for recommendations
+    productosDelPasillo,
+    // Para no confundir "todavía no sé" con "no hay". Ver más abajo.
+    cargando,
     agregarAlCarrito,
     eliminarDelCarrito,
     actualizarCantidad,
@@ -430,7 +476,61 @@ const Store = () => {
     setFiltroPrecio,
     promoSeleccionada,
     setPromoSeleccionada,
-  } = useStore();
+    promoDetalle,
+    productosDePromo,
+    abrirPromo,
+    cerrarPromo,
+    verPromoEnTienda,
+  /*
+   * El `q` lo manda el buscador del encabezado cuando se escribe desde una
+   * pantalla que no maneja la búsqueda —Impresiones—. Así teclear algo allá
+   * hace lo que uno espera: llegar a la tienda con eso ya buscado.
+   */
+  } = useStore({
+    moduloInicial: searchParams.get('modulo'),
+    busquedaInicial: searchParams.get('q') || '',
+    /*
+     * El `promo` lo trae el botón del correo con que se anuncian las
+     * promociones nuevas: abre esa promo en grande al entrar, en vez de dejar
+     * a la persona en la portada buscando lo que le acaban de ofrecer.
+     */
+    promoInicial: searchParams.get('promo'),
+  });
+
+  // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
+  const destacados = useFilaDeslizable();
+
+  // Sus pedidos alimentan la fila "Volver a comprar"; si es cliente nuevo,
+  // esa fila simplemente no se arma.
+  const { orders } = useMyOrders();
+  /*
+   * Las secciones automáticas se arman con lo del pasillo, no con todo el
+   * catálogo: estando en Librería, "Nuevos en la tienda" mostraba las papas
+   * de abarrotes y el filtro parecía roto.
+   */
+  const secciones = useSeccionesTienda({ productos: productosDelPasillo, pedidos: orders });
+
+  /*
+   * El orden y la visibilidad de las filas los decide el panel. Ver
+   * utils/portada.js y la pantalla de Personalización.
+   */
+  const { portadaVisible } = useAjustesCtx();
+
+  /*
+   * Las filas automáticas, agrupadas bajo el bloque que las gobierna. Los
+   * estantes de familia ("Quesos", "Bebidas energizantes") caen todos bajo
+   * 'familias': cuáles aparecen depende del inventario, así que se encienden
+   * y se apagan juntos.
+   */
+  const seccionesPorBloque = useMemo(() => {
+    const mapa = new Map();
+    secciones.forEach((seccion) => {
+      const bloque = bloqueDeSeccion(seccion.clave);
+      if (!mapa.has(bloque)) mapa.set(bloque, []);
+      mapa.get(bloque).push(seccion);
+    });
+    return mapa;
+  }, [secciones]);
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
@@ -449,11 +549,6 @@ const Store = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleCerrarSesion = () => {
-    localStorage.clear();
-    navigate('/');
-  };
-
   const handleAbrirDetalle = (producto) => setProductoSeleccionado(producto);
   const handleCerrarDetalle = () => setProductoSeleccionado(null);
 
@@ -465,14 +560,23 @@ const Store = () => {
   ];
 
   // Display labels matching design
-  const filterLabels = {
-    'todos': 'Todos',
-    '0-4': '$4 - 12$',
-    '4-12': '$4 - 12$',
-    '12+': 'Arriba de $4',
-  };
 
   const showTrending = !categoriaSeleccionada && !terminoBusqueda && !promoSeleccionada;
+
+  // Nombre del pasillo donde está parado el cliente, para los títulos y avisos.
+  const nombrePasillo = pasillos.find((m) => String(m._id) === String(moduloSeleccionado))?.name || '';
+
+  /*
+   * El camino que hizo hasta el producto que abra, para las migas de la ficha.
+   * Se arma aquí y no dentro de la ficha porque los filtros —y las funciones
+   * para deshacerlos— viven en esta pantalla. Ver useRastroTienda.
+   */
+  const rastro = useRastroTienda({
+    moduloSeleccionado, setModuloSeleccionado, nombrePasillo,
+    categoriaSeleccionada, setCategoriaSeleccionada,
+    terminoBusqueda, setTerminoBusqueda,
+    promoSeleccionada, setPromoSeleccionada,
+  });
 
   return (
     <Container>
@@ -490,49 +594,48 @@ const Store = () => {
             limpiarCarrito={limpiarCarrito}
             carrito={carrito}
             totalCarrito={totalCarrito}
+            /*
+              A dónde puede llevar la voz. La tienda es la que sabe abrir un
+              producto o cambiar de pasillo sin recargar la página, así que
+              el asistente pide y ella mueve.
+            */
+            categorias={categorias}
+            irAProducto={handleAbrirDetalle}
+            irACategoria={(cat) => {
+              setCategoriaSeleccionada(cat);
+              // Que el pasillo elegido quede a la vista: si la persona está
+              // abajo mirando otra fila, cambiar el filtro sin subir no se
+              // nota y parece que el asistente no hizo nada.
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            irARuta={(ruta) => navigate(ruta)}
           />
         )}
       </AnimatePresence>
 
-      {/* ── Header ── */}
-      <Header>
-        <LogoArea onClick={() => navigate('/tienda-dashboard')}>
-          <LogoTop>Tienda</LogoTop>
-          <LogoMain>la 635</LogoMain>
-        </LogoArea>
+      {/* ── Header ──
+          Es el mismo componente que usa Impresiones. Vivía escrito aquí
+          adentro, y por eso Impresiones había terminado con una barra propia
+          de dos botones, sin pasillos ni carrito. Ver HeaderTienda. */}
+      <HeaderTienda
+        moduloSeleccionado={moduloSeleccionado}
+        onElegirModulo={setModuloSeleccionado}
+        terminoBusqueda={terminoBusqueda}
+        onBuscar={setTerminoBusqueda}
+        cantidadItems={cantidadItems}
+        onAbrirCarrito={() => setMostrarCarrito(true)}
+        onAbrirAsistente={() => setMostrarAsistente(true)}
+      />
 
-        <SearchBox>
-          <span style={{ fontSize: 16 }}>🔍</span>
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            value={terminoBusqueda}
-            onChange={(e) => setTerminoBusqueda(e.target.value)}
-          />
-          {terminoBusqueda && (
-            <button
-              onClick={() => setTerminoBusqueda('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 16 }}
-            >✕</button>
-          )}
-        </SearchBox>
+      {/*
+        La barra de pasillos se fue: ahora los pasillos viven en el menú del
+        nombre de la tienda. Tener las dos era decir lo mismo dos veces y
+        empujaba los productos media pantalla hacia abajo.
+      */}
 
-        <HeaderRight>
-          <IconBtn
-            onClick={() => setMostrarAsistente(true)}
-            title="Asistente por voz"
-            style={{ background: BROWN_LIGHT, color: BROWN, fontWeight: 600 }}
-          >
-            🎤 Asistente
-          </IconBtn>
-          <CartBtn onClick={() => setMostrarCarrito(true)}>
-            🛒 Carrito
-            {cantidadItems > 0 && <CartBadge>{cantidadItems}</CartBadge>}
-          </CartBtn>
-          <IconBtn onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">👤 Mi Cuenta</IconBtn>
-          <IconBtn onClick={handleCerrarSesion} title="Cerrar sesión">🚪</IconBtn>
-        </HeaderRight>
-      </Header>
+      {/* Todo lo que va entre el encabezado y el pie: es lo que crece y empuja
+          el pie hasta abajo cuando hay pocos productos que mostrar. */}
+      <Cuerpo>
 
       {/* ── Category Bar ── */}
       <CategoryBar>
@@ -550,13 +653,10 @@ const Store = () => {
         ))}
       </CategoryBar>
 
-      {/* Banners de promociones — click → filtra a los productos de la promo */}
-      <PromoBanners onSelectPromo={(promo) => { setPromoSeleccionada(promo); setCategoriaSeleccionada(null); setTerminoBusqueda(''); }} />
-
       {/* Chip para limpiar el filtro de promo */}
       {promoSeleccionada && (
         <div style={{ padding: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 14, color: '#8B5A2B', fontWeight: 600 }}>
+          <span style={{ fontSize: 14, color: 'var(--marca-600)', fontWeight: 600 }}>
             Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
           </span>
           <button
@@ -568,115 +668,173 @@ const Store = () => {
         </div>
       )}
 
-      {/* ── Hero Banners ── */}
+      {/*
+        ── La portada, en el orden que decidió el panel ──
+
+        Antes esto era una secuencia fija escrita aquí: promociones, más
+        vendidos, y después las filas automáticas. Ahora el orden y qué se
+        muestra salen de los ajustes de la tienda, porque no todas las tiendas
+        se ven igual: una que vende casi solo abarrotes quiere "Volver a
+        comprar" de primero, y una que estrena catálogo quiere "Nuevos".
+
+        Lo que NO cambió: el contenido de cada fila lo sigue armando el
+        sistema con el inventario. Aquí se acomodan bloques, no se eligen
+        productos a mano. Ver utils/portada.js.
+      */}
       {showTrending && (
-        <BannerSection>
-          <BannersGrid>
-            <BannerCard $bg="linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)">
-              <BannerContent>
-                <BannerTag $color={BROWN}>🔥 Oferta especial</BannerTag>
-                <BannerTitle $color="#111">Frutas frescas<br/>del día</BannerTitle>
-                <BannerSub $color="#666">Directo del mercado a tu mesa</BannerSub>
-                <BannerBtn $bg={BROWN} onClick={() => setCategoriaSeleccionada('Frutas')}>
-                  Ver frutas →
-                </BannerBtn>
-              </BannerContent>
-              <BannerEmoji>🍊</BannerEmoji>
-            </BannerCard>
+        <Portada>
+          {portadaVisible.map((bloque) => {
+            if (bloque.clave === 'promos') {
+              // De orilla a orilla y sin carril: su carrusel asoma las
+              // tarjetas de los lados y con relleno se le cortarían.
+              return <PromoBanners key={bloque.clave} moduloId={moduloSeleccionado} onSelectPromo={abrirPromo} />;
+            }
 
-            <BannerCard $bg="linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)">
-              <BannerContent>
-                <BannerTag $color="#2e7d32">🥛 Lácteos</BannerTag>
-                <BannerTitle $color="#1b5e20" style={{ fontSize: 18 }}>Lácteos<br/>frescos</BannerTitle>
-                <BannerBtn $bg="#2e7d32" onClick={() => setCategoriaSeleccionada('Lácteos')}>
-                  Ver más →
-                </BannerBtn>
-              </BannerContent>
-              <BannerEmoji style={{ fontSize: 52 }}>🧀</BannerEmoji>
-            </BannerCard>
+            if (bloque.clave === 'mas-vendidos') {
+              if (productosDestacados.length === 0) return null;
+              return (
+                <Franja key={bloque.clave}>
+                  <TrendingSection>
+                    <TrendingHeader>
+                      <TrendingBadge>
+                        <LiveDot />
+                        <SectionTitle>Más vendidos</SectionTitle>
+                      </TrendingBadge>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <SectionCount>{productosDestacados.length} productos</SectionCount>
+                        <SectionNav>
+                          <NavCircle onClick={destacados.izquierda} disabled={!destacados.puedeIzq} aria-label="Ver anteriores">
+                            <ChevronLeft size={19} strokeWidth={2.2} />
+                          </NavCircle>
+                          <NavCircle onClick={destacados.derecha} disabled={!destacados.puedeDer} aria-label="Ver siguientes">
+                            <ChevronRight size={19} strokeWidth={2.2} />
+                          </NavCircle>
+                        </SectionNav>
+                      </div>
+                    </TrendingHeader>
+                    <TrendingGrid ref={destacados.fila}>
+                      {productosDestacados.map(producto => (
+                        <ProductCard
+                          key={producto.id}
+                          producto={producto}
+                          onVerDetalle={handleAbrirDetalle}
+                          onAgregarAlCarrito={agregarAlCarrito}
+                        />
+                      ))}
+                    </TrendingGrid>
+                  </TrendingSection>
+                </Franja>
+              );
+            }
 
-            <BannerCard $bg="linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%)">
-              <BannerContent>
-                <BannerTag $color="#c62828">🍪 Snacks</BannerTag>
-                <BannerTitle $color="#880e4f" style={{ fontSize: 18 }}>Snacks<br/>favoritos</BannerTitle>
-                <BannerBtn $bg="#c62828" onClick={() => setCategoriaSeleccionada('Snacks')}>
-                  Ver más →
-                </BannerBtn>
-              </BannerContent>
-              <BannerEmoji style={{ fontSize: 52 }}>🍪</BannerEmoji>
-            </BannerCard>
-          </BannersGrid>
-        </BannerSection>
+            /*
+              El resto son filas que se arman solas con el inventario:
+              "Volver a comprar", "Se están acabando", "Nuevos" y los estantes
+              de familia (Quesos, Leches...). Si en este momento no hay datos
+              para armarla —un cliente nuevo no tiene qué volver a comprar—,
+              simplemente no se pinta.
+            */
+            const delBloque = seccionesPorBloque.get(bloque.clave) || [];
+            if (delBloque.length === 0) return null;
+
+            return (
+              <Franja key={bloque.clave}>
+                {delBloque.map((seccion) => (
+                  <FilaProductos
+                    key={seccion.clave}
+                    titulo={seccion.titulo}
+                    subtitulo={seccion.subtitulo}
+                    productos={seccion.productos}
+                    total={seccion.todos?.length}
+                    // El nombre de la sección y "Ver todos" abren la misma
+                    // pantalla: son dos puertas a lo mismo.
+                    onVerTodos={() => navigate(`/seccion/${seccion.clave}`)}
+                    onVerDetalle={handleAbrirDetalle}
+                    onAgregarAlCarrito={agregarAlCarrito}
+                  />
+                ))}
+              </Franja>
+            );
+          })}
+        </Portada>
       )}
 
       <Content>
-        {/* ── Trending ── */}
-        {showTrending && productosDestacados.length > 0 && (
-          <TrendingSection>
-            <TrendingHeader>
-              <TrendingBadge>
-                <LiveDot />
-                <SectionTitle>Más vendidos</SectionTitle>
-              </TrendingBadge>
-              <SectionCount>{productosDestacados.length} productos</SectionCount>
-            </TrendingHeader>
-            <TrendingGrid>
-              {productosDestacados.map(producto => (
-                <ProductCard
-                  key={producto.id}
-                  producto={producto}
-                  onVerDetalle={handleAbrirDetalle}
-                  onAgregarAlCarrito={agregarAlCarrito}
-                />
-              ))}
-            </TrendingGrid>
-          </TrendingSection>
-        )}
-
-        {/* ── All / Filtered Products ── */}
+        {/* ── All / Filtered Products ──
+            El catálogo completo NO es un bloque configurable: es la tienda en
+            sí. Siempre va al final y siempre está. */}
         <div>
+          {/*
+            Título, cantidad y Filtros en UNA sola línea. Antes la cantidad se
+            iba al extremo derecho y el botón caía debajo, así que el encabezado
+            ocupaba dos renglones y quedaba desalineado.
+          */}
           <SectionHeader>
             <SectionTitle>
               {categoriaSeleccionada || terminoBusqueda
                 ? (categoriaSeleccionada || `"${terminoBusqueda}"`)
-                : 'Todos los productos'}
+                : (nombrePasillo ? `Todo en ${nombrePasillo}` : 'Todos los productos')}
+              <SectionCount>{productosFiltrados.length} productos</SectionCount>
             </SectionTitle>
-            <SectionCount>{productosFiltrados.length} productos</SectionCount>
+
+            <FilterBar ref={filterRef}>
+              <FilterBtn $open={filterOpen} onClick={() => setFilterOpen(o => !o)}>
+                <SlidersHorizontal size={15} strokeWidth={2.2} /> Filtros
+              </FilterBtn>
+
+              {filterOpen && (
+                <FilterDropdown>
+                  <FilterDropTitle>Precio</FilterDropTitle>
+                  {precioFiltros.map(f => (
+                    <FilterOption
+                      key={f.key}
+                      $active={filtroPrecio === f.key}
+                      onClick={() => { setFiltroPrecio(f.key); setFilterOpen(false); }}
+                    >
+                      <FilterToggle $active={filtroPrecio === f.key} />
+                      {f.label}
+                    </FilterOption>
+                  ))}
+                </FilterDropdown>
+              )}
+            </FilterBar>
           </SectionHeader>
 
-          {/* ── Filter button + dropdown ── */}
-          <FilterBar ref={filterRef}>
-            <FilterBtn $open={filterOpen} onClick={() => setFilterOpen(o => !o)}>
-              ⚙ Filtros
-            </FilterBtn>
+          {/*
+            CARGANDO Y VACÍO NO SON LO MISMO, y confundirlos costaba caro: si
+            el servidor tardaba en contestar, la tienda anunciaba "Todavía no
+            hay productos en la tienda". Un arranque lento se leía como un
+            negocio sin nada que vender.
 
-            {filterOpen && (
-              <FilterDropdown>
-                <FilterDropTitle>Price</FilterDropTitle>
-                {precioFiltros.map(f => (
-                  <FilterOption
-                    key={f.key}
-                    $active={filtroPrecio === f.key}
-                    onClick={() => { setFiltroPrecio(f.key); setFilterOpen(false); }}
-                  >
-                    <FilterToggle $active={filtroPrecio === f.key} />
-                    {f.label}
-                  </FilterOption>
-                ))}
-              </FilterDropdown>
-            )}
-          </FilterBar>
-
-          {productosFiltrados.length === 0 ? (
+            Ahora, mientras no se sepa, se dibujan los huecos donde van a caer
+            los productos; el aviso de vacío se guarda para cuando de verdad
+            conste que no hay nada.
+          */}
+          {cargando ? (
+            <ProductsGrid>
+              <EsqueletoProductos />
+            </ProductsGrid>
+          ) : productosFiltrados.length === 0 ? (
             <EmptyState>
-              <div className="icon">🔍</div>
-              No hay productos para "{terminoBusqueda || categoriaSeleccionada}"
+              <div className="icon"><Search size={34} strokeWidth={1.6} /></div>
+              {/*
+                Un pasillo recién creado está vacío hasta que le carguen
+                productos. Decir 'No hay productos para ""' hacía parecer que
+                la tienda estaba rota.
+              */}
+              {terminoBusqueda || categoriaSeleccionada
+                ? `No hay productos para "${terminoBusqueda || categoriaSeleccionada}"`
+                : nombrePasillo
+                  ? `${nombrePasillo} todavía no tiene productos`
+                  : 'Todavía no hay productos en la tienda'}
             </EmptyState>
           ) : (
             <ProductsGrid>
-              {productosFiltrados.map(producto => (
+              {productosFiltrados.map((producto, i) => (
                 <ProductCard
                   key={producto.id}
+                  className="card-in"
+                  style={{ '--i': i }}
                   producto={producto}
                   onVerDetalle={handleAbrirDetalle}
                   onAgregarAlCarrito={agregarAlCarrito}
@@ -687,13 +845,55 @@ const Store = () => {
         </div>
       </Content>
 
+      </Cuerpo>
+
+      {/* El cierre de la página: sin esto los productos se acababan y quedaba
+          el blanco, como si la tienda se hubiera cortado a medias. */}
+      <PieTienda />
+
       {/* ── Modals ── */}
+      {/*
+        Detalle de la promo. Se abre con la misma animación que un producto,
+        así el click al banner se siente igual de vivo que el click a una
+        tarjeta; antes solo filtraba la lista de abajo, sin aviso.
+      */}
+      {promoDetalle && (
+        <PromoDetailModal
+          promo={promoDetalle}
+          productos={productosDePromo}
+          onCerrar={cerrarPromo}
+          onVerEnTienda={() => verPromoEnTienda(promoDetalle)}
+          onVerProducto={handleAbrirDetalle}
+          onAgregarAlCarrito={agregarAlCarrito}
+        />
+      )}
+
       {productoSeleccionado && (
         <ProductDetailModal
           producto={productoSeleccionado}
           onClose={handleCerrarDetalle}
           onAgregarAlCarrito={agregarAlCarrito}
-          todosLosProductos={productos || productosFiltrados}
+          // Click en una recomendación: cambia el producto del mismo modal.
+          onVerProducto={handleAbrirDetalle}
+          todosLosProductos={productosDelPasillo?.length ? productosDelPasillo : productos}
+          // Por dónde pasó hasta llegar aquí, con cada escalón pisable.
+          rastro={rastro}
+          /*
+            La ficha lleva el MISMO encabezado de la tienda, así que necesita
+            los mismos mandos: el pasillo, la búsqueda y el carrito. Y al dar
+            Enter en el buscador la ficha se cierra sola — de nada sirve
+            filtrar una lista que está tapada por la foto de un producto.
+          */
+          header={{
+            moduloSeleccionado,
+            onElegirModulo: setModuloSeleccionado,
+            terminoBusqueda,
+            onBuscar: setTerminoBusqueda,
+            onEnviarBusqueda: handleCerrarDetalle,
+            cantidadItems,
+            onAbrirCarrito: () => setMostrarCarrito(true),
+            onAbrirAsistente: () => setMostrarAsistente(true),
+          }}
         />
       )}
 

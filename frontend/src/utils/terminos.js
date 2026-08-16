@@ -1,0 +1,346 @@
+/*
+ * ============================================================
+ * TÉRMINOS Y AVISO DE PRIVACIDAD — terminos.js
+ * ============================================================
+ * El texto legal de la tienda, escrito como DATOS y no como pantalla.
+ *
+ * Por qué así: el mismo contenido lo tiene que pintar la página `/terminos`, y
+ * mañana quizá un modal o un correo. Si el texto vive metido dentro del JSX,
+ * cada lugar nuevo termina con su propia copia y a la semana dicen cosas
+ * distintas. Aquí está una vez; quien lo muestre solo decide cómo se ve.
+ *
+ * LA VERSIÓN NO ES DECORACIÓN. Cuando alguien acepta, se guarda en su cuenta
+ * cuál versión aceptó y cuándo. Sin eso no se puede demostrar que aceptó, ni
+ * saber a quién hay que repreguntarle el día que este texto cambie. Si edita el
+ * contenido de abajo de forma que cambie lo que se promete, SUBA LA VERSIÓN —
+ * aquí y en `backend/src/utils/terminos.js`, que tiene la suya.
+ *
+ * Y una advertencia honesta: esto es un texto claro y de buena fe, no un
+ * documento revisado por un abogado. Dice lo que la tienda de verdad hace hoy;
+ * si la tienda cambia, hay que venir a cambiarlo. Se apoya en la Ley de
+ * Protección al Consumidor de El Salvador donde corresponde (derecho de
+ * retracto, reversión de pagos), pero explicada en palabras que se entienden.
+ * ============================================================
+ */
+
+export const VERSION_TERMINOS = '2.0';
+
+// Se muestra al pie del documento. Va escrita y no calculada: es la fecha en
+// que se redactó este texto, no la de hoy.
+export const FECHA_TERMINOS = '11 de agosto de 2026';
+
+/*
+ * La tabla de datos: qué se pide, para qué, quién más lo ve y cuánto se guarda.
+ *
+ * Esta tabla es el corazón del aviso. Un muro de párrafos legales lo salta
+ * todo el mundo; cuatro columnas se leen de una pasada, y es exactamente lo
+ * que alguien quiere saber cuando entrega su teléfono a una tienda.
+ */
+export const TABLA_DATOS = [
+  {
+    dato: 'Nombre y nombre de usuario',
+    para: 'Saber quién hizo el pedido y saludarle por su nombre.',
+    quien: 'Solo la tienda.',
+    cuanto: 'Mientras tenga su cuenta.',
+  },
+  {
+    dato: 'Correo electrónico',
+    para: 'Confirmar que la cuenta es suya, recuperar la contraseña y avisarle de su pedido.',
+    quien: 'La tienda y el servicio de correo que envía los mensajes.',
+    cuanto: 'Mientras tenga su cuenta.',
+  },
+  {
+    dato: 'Teléfono',
+    para: 'Llamarle si quien lleva el pedido no encuentra la casa.',
+    quien: 'La tienda y la persona que le lleva ese pedido.',
+    cuanto: 'Mientras tenga su cuenta.',
+  },
+  {
+    dato: 'Fecha de nacimiento (opcional)',
+    para: 'Habilitar la compra de productos para mayores de 18. Sin ella, esos productos quedan tapados; el resto de la tienda funciona igual.',
+    quien: 'Solo la tienda.',
+    cuanto: 'Mientras tenga su cuenta, o hasta que la borre.',
+  },
+  {
+    dato: 'DUI (opcional)',
+    para: 'Confirmar la mayoría de edad para productos restringidos e identificarle si hay un reclamo. Puede dejarlo en blanco: su cuenta funciona igual.',
+    quien: 'Solo la tienda.',
+    cuanto: 'Mientras tenga su cuenta, o hasta que lo borre.',
+  },
+  {
+    dato: 'Direcciones de entrega y su punto en el mapa',
+    para: 'Llegar a su puerta y calcular cuánto tarda el reparto en su zona.',
+    quien: 'La tienda y la persona que le lleva ese pedido.',
+    cuanto: 'Hasta que usted borre la dirección.',
+  },
+  {
+    dato: 'Foto de perfil (opcional)',
+    para: 'Que su cuenta se reconozca de un vistazo. Nada más.',
+    quien: 'La tienda y el servicio donde se guardan las imágenes.',
+    cuanto: 'Hasta que la cambie o la quite.',
+  },
+  {
+    dato: 'Sus pedidos y sus puntos',
+    para: 'Armar sus recibos, sumar sus puntos de fidelidad y llevar la contabilidad de la tienda.',
+    quien: 'Solo la tienda.',
+    cuanto: 'Los pedidos quedan en la contabilidad aunque cierre su cuenta, pero sin su nombre.',
+  },
+  {
+    dato: 'Su contraseña',
+    para: 'Entrar a su cuenta.',
+    quien: 'Nadie. No la guardamos: guardamos una huella cifrada de la que no se puede volver atrás.',
+    cuanto: 'Mientras tenga su cuenta.',
+  },
+];
+
+/*
+ * Los terceros que de verdad tocan algo. Están con nombre y con lo que ven,
+ * porque decir "podemos compartir sus datos con proveedores de servicios" es
+ * la forma elegante de no decir nada.
+ */
+const TERCEROS = [
+  'El servicio donde se guardan las imágenes (Cloudinary): su foto de perfil, si subió una.',
+  'El servicio de correo que manda los mensajes de verificación y recuperación: su correo.',
+  'La base de datos donde vive la tienda (MongoDB Atlas): todo lo de la tabla de arriba.',
+  'El mapa (OpenStreetMap): cuando usted busca una dirección, recibe el texto que escribió para encontrar el punto. Nunca su nombre ni su teléfono.',
+  'El asistente por voz (Google Gemini), y solo cuando la tienda no entiende sola: recibe lo que usted dijo y la lista de productos, sin su nombre, su correo ni su dirección.',
+];
+
+/*
+ * El documento completo.
+ *
+ * Cada sección tiene un `id` porque el índice de la izquierda salta a él, y los
+ * bloques van tipados para que la pantalla sea un solo `switch` en vez de un
+ * archivo con el texto incrustado a mano.
+ */
+export const SECCIONES = [
+  {
+    id: 'resumen',
+    titulo: 'En corto',
+    bloques: [
+      {
+        tipo: 'destacado',
+        texto:
+          'Esta es la tienda del barrio, en línea. Usted compra, nosotros le llevamos. Le pedimos los datos justos para poder entregarle, no los vendemos a nadie, y puede pedir que los borremos cuando quiera.',
+      },
+      {
+        tipo: 'parrafo',
+        texto:
+          'Lo de abajo es lo mismo, explicado con detalle: cómo contactarnos, cómo se paga, qué pasa si quiere devolver algo y qué hacemos con sus datos. Está escrito para leerse, no para cansar: si algo no se entiende, escríbanos y se lo explicamos.',
+      },
+    ],
+  },
+  {
+    id: 'identificacion',
+    titulo: 'Quiénes somos y cómo contactarnos',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Esta tienda en línea la opera el negocio cuyo nombre y dirección aparecen al pie de este documento, ubicado en El Salvador. Nos gusta que nos escriba: para cualquier consulta o reclamo, o para ejercer los derechos que se explican más abajo, use el medio que le quede más cómodo.',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Por WhatsApp: con el botón verde de WhatsApp que ve en la tienda. Es la vía más rápida.',
+          'En persona: pásese por la tienda, en la dirección que está al pie de este documento.',
+          'Al recibir su pedido: quien se lo lleva también puede tomarle un mensaje o una queja.',
+        ],
+      },
+      {
+        tipo: 'nota',
+        texto:
+          'Los datos fiscales de la tienda (NIT y razón social) van en su factura y se los damos cuando los necesite para un trámite; pídalos por cualquiera de los medios de arriba.',
+      },
+    ],
+  },
+  {
+    id: 'cuenta',
+    titulo: 'Su cuenta',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Puede ver la tienda y llenar el carrito sin cuenta. La cuenta hace falta para pagar, guardar direcciones, acumular puntos y ver sus pedidos.',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Los datos que ponga tienen que ser suyos y de verdad. Un teléfono equivocado es un pedido que no llega.',
+          'La cuenta es para mayores de edad, o para menores con el permiso de quien los cuida. Hay productos que solo se le muestran y se le venden a personas mayores de 18.',
+          'Usted responde por lo que se haga desde su cuenta, así que no comparta su contraseña. Nadie de la tienda se la va a pedir nunca, ni por WhatsApp ni por teléfono.',
+          'Si vemos que una cuenta se usa para estafar o para molestar a otras personas, la cerramos.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'pedidos',
+    titulo: 'Pedidos, precios y entregas',
+    bloques: [
+      {
+        tipo: 'lista',
+        puntos: [
+          'El precio que se cobra es el que usted ve al confirmar el pedido. Nuestros precios ya incluyen los impuestos.',
+          'Las existencias se mueven todo el día. Si algo se acabó justo después de su pedido, le avisamos y se le descuenta del total; no se lo cambiamos por otra cosa sin preguntarle.',
+          'Le llevamos el pedido a domicilio o usted lo pasa a traer, como prefiera. Con entrega a domicilio hace falta una dirección con su punto en el mapa.',
+          'El tiempo de entrega que le mostramos sale del promedio real de las entregas anteriores a su zona. Es un estimado honesto, no una promesa: la lluvia y el tráfico existen.',
+          'Cuando su pedido va en camino, puede seguir en el mapa por dónde viene y valorar el servicio de entrega cuando lo reciba.',
+          'Hay productos que solo se le entregan a personas mayores de edad. Quien se los lleve puede pedirle su documento (DUI), y si no lo tiene a mano, ese producto se devuelve.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'pagos',
+    titulo: 'Pagos, puntos y saldo',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Hoy la tienda no cobra con tarjeta en línea. Se paga al recibir el pedido o en la caja de la tienda, en efectivo o con tarjeta en el datáfono. Por eso mismo, en la aplicación nunca se le va a pedir el número completo de una tarjeta ni su código de seguridad.',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Los puntos de fidelidad se ganan comprando y se vencen. Cuánto lleva ganado y cuándo se le vencen lo ve en “Mi Cuenta › Mis puntos”. Si ahí dice una cosa y en otra pantalla dice otra, vale lo que diga ahí.',
+          'El saldo de las tarjetas de regalo se canjea en la tienda, no se vence con el tiempo y no se cambia por efectivo.',
+          'Los puntos y el saldo son de su cuenta: no se pasan a otra persona.',
+          'La transacción debe hacerla el titular de la tarjeta.',
+        ],
+      },
+      {
+        tipo: 'nota',
+        texto:
+          'Si a futuro se habilita el pago con tarjeta en línea, se le avisará antes y estas condiciones se actualizarán con la versión correspondiente.',
+      },
+    ],
+  },
+  {
+    id: 'devoluciones',
+    titulo: 'Cambios, devoluciones y derecho de retracto',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Queremos que quede contento con lo que compra. Si algo no salió bien, escríbanos por WhatsApp o pásese por la tienda y lo resolvemos. Esto es lo que la ley y el sentido común nos piden:',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Si el producto llegó dañado, vencido, o no es el que pidió: se lo cambiamos o le devolvemos su dinero. Avísenos cuando lo reciba, sin usarlo.',
+          'Puede arrepentirse, aunque el producto esté perfecto: tiene ocho días desde que lo recibió para devolverlo, siempre que esté sin usar, completo y en su empaque original. Traiga su comprobante de compra; si lo perdió, díganos su nombre, la fecha, cómo pagó y qué compró. (Esto es el derecho de retracto que da la Ley de Protección al Consumidor de El Salvador.)',
+          'Por salubridad, los productos perecederos —comida, pan, frutas, verduras, lácteos— y los de higiene personal NO se devuelven por retracto una vez entregados, salvo que lleguen en mal estado o vencidos.',
+          'Si el producto ya se usó o se abrió, no lo recibimos de vuelta solo porque cambió de opinión o porque no le gustó.',
+          'El reintegro se hace por el mismo medio con el que pagó. Si pagó en efectivo o al recibir, se le devuelve en la tienda.',
+        ],
+      },
+      {
+        tipo: 'nota',
+        texto:
+          'Arrepentirse vale para lo que compra por este sitio. Lo que compra en persona, en el mostrador, no tiene ese plazo de ocho días — pero igual se lo cambiamos o le devolvemos su dinero si el producto tiene un defecto o está vencido.',
+      },
+    ],
+  },
+  {
+    id: 'advertencias',
+    titulo: 'Uso seguro de los productos',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Nos importa su bienestar, el de los niños, el de los adultos mayores y el de las mascotas. Antes de usar cualquier producto, tenga en cuenta lo siguiente:',
+      },
+      {
+        tipo: 'lista',
+        puntos: [
+          'Lea la etiqueta y la fecha de vencimiento de cada producto antes de consumirlo o usarlo. Ante cualquier duda, pregúntenos.',
+          'Algunos productos y empaques traen piezas pequeñas que pueden causar asfixia: manténgalos fuera del alcance de los niños.',
+          'Los productos de limpieza y los líquidos deben guardarse lejos del alcance de niños y de quien no sepa manejarlos.',
+          'Los productos con alcohol o tabaco son solo para mayores de 18 años, y se le pedirá su documento al entregarlos.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'datos',
+    titulo: 'Qué datos le pedimos y para qué',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Todo lo que la tienda guarda de usted cabe en esta tabla. No hay una lista aparte más larga.',
+      },
+      { tipo: 'tabla' },
+      {
+        tipo: 'nota',
+        texto:
+          'Cuando su pedido va en camino, puede ver por dónde viene. Esa ubicación es la de quien se lo lleva, no la suya, y se borra en cuanto le entregan.',
+      },
+    ],
+  },
+  {
+    id: 'terceros',
+    titulo: 'Quién más ve sus datos',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'No vendemos sus datos ni los prestamos para publicidad de nadie. Los únicos que tocan algo son los servicios que hacen funcionar la tienda, y cada uno ve solo lo suyo:',
+      },
+      { tipo: 'lista', puntos: TERCEROS },
+      {
+        tipo: 'parrafo',
+        texto:
+          'Fuera de eso, solo entregamos algo si nos lo ordena una autoridad competente.',
+      },
+    ],
+  },
+  {
+    id: 'derechos',
+    titulo: 'Qué puede pedirnos',
+    bloques: [
+      {
+        tipo: 'lista',
+        puntos: [
+          'Ver lo que tenemos suyo: está todo en “Mi Cuenta”, sin pedir permiso a nadie.',
+          'Corregirlo: desde “Mi Cuenta › Detalles de la cuenta”.',
+          'Dejar de recibir promociones: desde “Mi Cuenta › Notificaciones”, en cualquier momento y sin dar explicaciones. Los avisos de sus pedidos siguen llegando, porque esos no son publicidad.',
+          'Que borremos su cuenta y sus datos: con el botón de aquí abajo. Le respondemos dentro de los 15 días siguientes.',
+        ],
+      },
+      { tipo: 'borrado' },
+      {
+        tipo: 'nota',
+        texto:
+          'Al borrar su cuenta se van su nombre, su correo, su teléfono, sus direcciones y su foto. Los pedidos que ya hizo se quedan en la contabilidad de la tienda —eso se lo pide la ley a cualquier negocio— pero desligados de usted.',
+      },
+    ],
+  },
+  {
+    id: 'cambios',
+    titulo: 'Si esto cambia',
+    bloques: [
+      {
+        tipo: 'parrafo',
+        texto:
+          'Arriba, junto al título, dice qué versión de este documento está leyendo. Cuando usted aceptó, guardamos cuál era y en qué fecha. No es un trámite: es para que el día que cambiemos algo sepamos a quién avisarle, en vez de dar por hecho que todo el mundo estuvo de acuerdo con algo que nunca leyó.',
+      },
+      {
+        tipo: 'parrafo',
+        texto:
+          'Si solo corregimos una palabra o explicamos algo mejor, el número no se mueve y usted no tiene que hacer nada. Si cambiamos algo de lo que aquí le prometemos —cómo se paga, cuánto tiempo tiene para devolver algo, qué hacemos con sus datos— el número sube y se lo hacemos saber.',
+      },
+    ],
+  },
+];
+
+/*
+ * El mensaje que va escrito de antemano en el WhatsApp de "borren mis datos".
+ *
+ * Va con el texto puesto a propósito: la mitad de la gente que quiere ejercer
+ * este derecho abandona en el momento de tener que redactar la solicitud. Aquí
+ * solo tiene que darle enviar.
+ */
+export const MENSAJE_BORRADO =
+  'Hola, quiero pedir que borren mi cuenta y mis datos personales de la tienda en línea. Mi correo registrado es: ';

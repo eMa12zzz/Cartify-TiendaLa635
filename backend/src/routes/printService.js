@@ -1,7 +1,15 @@
 import express from 'express';
 import printServiceController from '../controller/printServiceController.js';
 
-const router = express.Router();
+import { soloAdmin } from "../middlewares/validarSesion.js";
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -44,9 +52,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/")
-  .get(printServiceController.getServices)
-  .post(printServiceController.insertService);
 
 /**
  * @swagger
@@ -94,8 +99,19 @@ router.route("/")
  *       500:
  *         description: Error interno del servidor.
  */
+
+
+const router = express.Router();
+
+// Los servicios de impresión y sus precios se consultan desde la tienda; el
+// catálogo lo arma el panel.
+
+router.route("/")
+  .get(printServiceController.getServices)
+  .post(soloAdmin, printServiceController.insertService);
+
 router.route("/:id")
-  .put(printServiceController.updateService)
-  .delete(printServiceController.deleteService);
+  .put(soloAdmin, printServiceController.updateService)
+  .delete(soloAdmin, printServiceController.deleteService);
 
 export default router;

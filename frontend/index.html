@@ -1,10 +1,59 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+
+
+    <!--
+      Pinta el color de marca ANTES de que React exista.
+
+      Sin esto, aunque useAjustesTienda.js ya arranque con el color correcto
+      en su estado, la variable CSS de verdad (--marca-600 y compañía) solo
+      se fija dentro de un useEffect — y un efecto corre DESPUÉS del primer
+      pintado del navegador. Ese primer cuadro sale con el café de fábrica
+      que declara index.css, se corrige, y el ojo lo ve como un parpadeo.
+
+      Este script no espera a React ni al servidor: lee la escala ya
+      calculada que useAjustesTienda.js dejó guardada la última vez (la
+      misma tienda, el mismo navegador) y la aplica de una al elemento raíz.
+      Si no hay nada guardado todavía (primerísima visita), no hace nada y
+      se ve el café de siempre — ahí sí no hay forma de adivinar el color
+      antes de preguntarle al servidor.
+    -->
+    <script>
+      (function () {
+        try {
+          var guardado = localStorage.getItem('la635_escala_marca_cache');
+          if (!guardado) return;
+          var escala = JSON.parse(guardado);
+          var raiz = document.documentElement.style;
+          for (var variable in escala) {
+            if (Object.prototype.hasOwnProperty.call(escala, variable)) {
+              raiz.setProperty(variable, escala[variable]);
+            }
+          }
+        } catch (error) {
+          // Caché corrupta o localStorage bloqueado: se sigue con el café
+          // de fábrica, no es motivo para detener la carga de la página.
+        }
+      })();
+    </script>
+
+    <!--
+      Poppins: la sans geométrica del diseño. Se precarga el dominio para que
+      el texto no salte al cargar. display=swap muestra la fuente del sistema
+      mientras baja, en vez de dejar la pantalla en blanco.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Tienda la 635</title>
   </head>
   <body>
     <div id="root"></div>

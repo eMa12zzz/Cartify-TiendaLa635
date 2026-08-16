@@ -1,8 +1,9 @@
 import jsonwebtoken from "jsonwebtoken";
+import { opcionesCookie } from "../../utils/cookieSesion.js";
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 
+import { sendEmail } from "../../utils/sendMailMailjet.js";
 import HTMLRecoveryEmail from "../../utils/sendMailRecovery.js";
 import clientModel from "../../models/client.js";
 
@@ -19,7 +20,7 @@ recoveryPasswordClientController.requestCode = async (req, res) => {
 
     if (!clientFound) {
       return res.status(404).json({
-        message: "Client not found",
+        message: "No hay ninguna cuenta con ese correo",
       });
     }
 
@@ -38,43 +39,30 @@ recoveryPasswordClientController.requestCode = async (req, res) => {
       }
     );
 
-    res.cookie("recoveryCookie", token, {
-      maxAge: 15 * 60 * 1000,
-      httpOnly: true,
-    });
+    res.cookie("recoveryCookie", token, opcionesCookie(15 * 60 * 1000));
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: config.email.user_email,
-        pass: config.email.user_password,
-      },
-    });
-
-    const mailOptions = {
-      from: config.email.user_email,
-      to: email,
-      subject: "Código de recuperación",
-      html: HTMLRecoveryEmail(randomCode),
-    };
-
-    transporter.sendMail(mailOptions, (error) => {
-      if (error) {
-        console.log(error);
-        return res.status(500).json({
-          message: "Error sending email",
-        });
-      }
-    });
+    try {
+      await sendEmail(
+        email,
+        "Código de recuperación — Tienda la 635",
+        HTMLRecoveryEmail(randomCode),
+        `Recibimos una solicitud para restablecer su contraseña en Tienda la 635. Su código es: ${randomCode}. Vale por 15 minutos. Si usted no lo pidió, ignore este correo.`
+      );
+    } catch (mailError) {
+      console.log("No se pudo enviar el código de recuperación:", mailError.message);
+      return res.status(500).json({
+        message: "No se pudo enviar el correo",
+      });
+    }
 
     return res.status(200).json({
-      message: "Recovery code sent successfully",
+      message: "Le enviamos el código a su correo",
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error recuperación de contraseña: " + error);
     return res.status(500).json({
-      message: "Internal server error",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -88,7 +76,7 @@ recoveryPasswordClientController.verifyCode = async (req, res) => {
 
     if (!token) {
       return res.status(400).json({
-        message: "Recovery session expired",
+        message: "La recuperación venció. Pida un código nuevo.",
       });
     }
 
@@ -99,7 +87,7 @@ recoveryPasswordClientController.verifyCode = async (req, res) => {
 
     if (code !== decoded.randomCode) {
       return res.status(400).json({
-        message: "Invalid code",
+        message: "El código no es válido",
       });
     }
 
@@ -115,19 +103,16 @@ recoveryPasswordClientController.verifyCode = async (req, res) => {
       }
     );
 
-    res.cookie("recoveryCookie", newToken, {
-      maxAge: 15 * 60 * 1000,
-      httpOnly: true,
-    });
+    res.cookie("recoveryCookie", newToken, opcionesCookie(15 * 60 * 1000));
 
     return res.status(200).json({
-      message: "Code verified successfully",
+      message: "Código verificado",
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error recuperación de contraseña: " + error);
     return res.status(500).json({
-      message: "Internal server error",
+      message: "Error interno del servidor",
     });
   }
 };
@@ -139,13 +124,13 @@ recoveryPasswordClientController.newPassword = async (req, res) => {
 
     if (!newPassword || !confirmNewPassword) {
       return res.status(400).json({
-        message: "Both password fields are required",
+        message: "Escriba la contraseña nueva y su confirmación",
       });
     }
 
     if (newPassword !== confirmNewPassword) {
       return res.status(400).json({
-        message: "Passwords do not match",
+        message: "Las contraseñas no coinciden",
       });
     }
 
@@ -153,7 +138,7 @@ recoveryPasswordClientController.newPassword = async (req, res) => {
 
     if (!token) {
       return res.status(400).json({
-        message: "Recovery session expired",
+        message: "La recuperación venció. Pida un código nuevo.",
       });
     }
 
@@ -164,7 +149,7 @@ recoveryPasswordClientController.newPassword = async (req, res) => {
 
     if (!decoded.verified) {
       return res.status(400).json({
-        message: "Code not verified",
+        message: "Primero verifique el código",
       });
     }
 
@@ -188,13 +173,13 @@ recoveryPasswordClientController.newPassword = async (req, res) => {
     res.clearCookie("recoveryCookie");
 
     return res.status(200).json({
-      message: "Password updated successfully",
+      message: "Contraseña actualizada",
     });
 
   } catch (error) {
-    console.log("error " + error);
+    console.log("error recuperación de contraseña: " + error);
     return res.status(500).json({
-      message: "Internal server error",
+      message: "Error interno del servidor",
     });
   }
 };

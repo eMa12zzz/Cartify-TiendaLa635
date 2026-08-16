@@ -3,7 +3,15 @@ import productController from '../controller/product.js';
 import upload from '../utils/cloudinaryConfig.js';
 
 
-const router = express.Router();
+import { soloAdmin } from '../middlewares/validarSesion.js';
+
+/*
+ * ── Documentación de la API (Swagger) ──
+ *
+ * Viene de main. Va agrupada aquí y no pegada a cada ruta porque
+ * swagger-jsdoc rastrea el archivo entero: dónde esté no cambia lo que
+ * documenta, y así el código de las rutas se lee sin interrupciones.
+ */
 
 /**
  * @swagger
@@ -46,9 +54,6 @@ const router = express.Router();
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/")
-    .get(productController.getProduct)
-    .post(upload.single('image'), productController.insertProduct);
 
 /**
  * @swagger
@@ -117,9 +122,23 @@ router.route("/")
  *       500:
  *         description: Error interno del servidor.
  */
-router.route("/:id")
-    .put(upload.single('image'), productController.updateProduct)
+
+
+const router = express.Router();
+
+/*
+ * Ver el catálogo es público: la tienda se mira sin cuenta, esa es la puerta.
+ * Tocarlo no. Con el POST/PUT/DELETE abiertos, cualquiera podía cambiarle los
+ * precios a la tienda, vaciar existencias o borrar productos.
+ */
+
+router.route("/")
     .get(productController.getProduct)
-    .delete(productController.deleteProduct);
+    .post(soloAdmin, upload.single('image'), productController.insertProduct);
+
+router.route("/:id")
+    .put(soloAdmin, upload.single('image'), productController.updateProduct)
+    .get(productController.getProduct)
+    .delete(soloAdmin, productController.deleteProduct);
 
 export default router;

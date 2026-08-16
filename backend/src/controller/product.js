@@ -1,4 +1,5 @@
 import productModel from "../models/product.js";
+import { anotarProductoNuevo } from "../utils/avisosCliente.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 
@@ -22,7 +23,7 @@ productController.getProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -46,7 +47,12 @@ productController.insertProduct = async (req, res) => {
       barCode,
       stock,
       moduleId,
-      supplierId
+      supplierId,
+      // 'unidad' o 'libra'. Cambia qué significan salePrice y stock; ver el
+      // modelo y frontend/src/utils/unidades.js.
+      unidadVenta,
+      piezas,
+      soloAdultos
     } = req.body;
 
     // Validación
@@ -64,7 +70,7 @@ productController.insertProduct = async (req, res) => {
       !req.file
     ) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "Faltan campos obligatorios"
       });
     }
 
@@ -88,14 +94,38 @@ productController.insertProduct = async (req, res) => {
       barCode,
       stock,
       maxQuantity: stock,
+      // Solo se acepta lo que el modelo conoce; cualquier otra cosa cae en
+      // 'unidad', que es como se comportaba la tienda antes de que esto
+      // existiera.
+      unidadVenta: unidadVenta === "libra" ? "libra" : "unidad",
+      // Vacío queda como no declarado, no como cero: "0 piezas" diría algo
+      // falso sobre lo que hay en la vitrina.
+      piezas: piezas === "" || piezas === undefined ? undefined : Number(piezas),
+      // Llega como texto desde el FormData: "false" es una cadena con valor
+      // verdadero, así que se compara contra "true" en vez de castear.
+      soloAdultos: String(soloAdultos) === "true",
       moduleId,
       supplierId
     });
 
     await newProduct.save();
 
+    /*
+     * El aviso a quien pidió enterarse de los productos nuevos.
+     *
+     * No manda nada ahora: apunta el producto en un lote y espera unos minutos
+     * a ver si vienen más. Quien carga inventario sube treinta cosas de
+     * corrido, y treinta correos seguidos de la misma tienda es la receta
+     * exacta para acabar en spam el mismo día. Ver utils/avisosCliente.js.
+     */
+    anotarProductoNuevo({
+      nombre: newProduct.name,
+      precio: newProduct.salePrice,
+      imagen: Array.isArray(newProduct.image) ? newProduct.image[0] : newProduct.image,
+    });
+
     return res.status(201).json({
-      message: "Product created successfully"
+      message: "Producto creado"
     });
 
   } catch (error) {
@@ -103,7 +133,7 @@ productController.insertProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -124,7 +154,12 @@ productController.updateProduct = async (req, res) => {
       barCode,
       stock,
       moduleId,
-      supplierId
+      supplierId,
+      // 'unidad' o 'libra'. Cambia qué significan salePrice y stock; ver el
+      // modelo y frontend/src/utils/unidades.js.
+      unidadVenta,
+      piezas,
+      soloAdultos
     } = req.body;
 
     // Validación
@@ -141,7 +176,7 @@ productController.updateProduct = async (req, res) => {
       !supplierId
     ) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "Faltan campos obligatorios"
       });
     }
 
@@ -156,7 +191,7 @@ productController.updateProduct = async (req, res) => {
 
     if (!productFound) {
       return res.status(404).json({
-        message: "Product not found"
+        message: "No se encontró el producto"
       });
     }
 
@@ -174,6 +209,18 @@ productController.updateProduct = async (req, res) => {
       moduleId,
       supplierId
     };
+
+    // Solo se toca si viene: editar el precio no tiene por qué cambiar la
+    // forma en que se vende el producto.
+    if (unidadVenta !== undefined) {
+      updatedData.unidadVenta = unidadVenta === "libra" ? "libra" : "unidad";
+    }
+    if (piezas !== undefined) {
+      updatedData.piezas = piezas === "" ? null : Number(piezas);
+    }
+    if (soloAdultos !== undefined) {
+      updatedData.soloAdultos = String(soloAdultos) === "true";
+    }
 
     // Si viene nueva imagen
     if (req.file) {
@@ -193,7 +240,7 @@ productController.updateProduct = async (req, res) => {
     );
 
     return res.status(200).json({
-      message: "Product updated successfully"
+      message: "Producto actualizado"
     });
 
   } catch (error) {
@@ -201,7 +248,7 @@ productController.updateProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };
@@ -215,7 +262,7 @@ productController.deleteProduct = async (req, res) => {
 
     if (!productFound) {
       return res.status(404).json({
-        message: "Product not found"
+        message: "No se encontró el producto"
       });
     }
 
@@ -226,7 +273,7 @@ productController.deleteProduct = async (req, res) => {
     await productModel.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
-      message: "Product deleted successfully"
+      message: "Producto eliminado"
     });
 
   } catch (error) {
@@ -234,7 +281,7 @@ productController.deleteProduct = async (req, res) => {
     console.log("error " + error);
 
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Error interno del servidor"
     });
   }
 };

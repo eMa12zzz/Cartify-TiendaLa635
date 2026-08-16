@@ -15,9 +15,13 @@ const Toggle = ({ on, onClick, colors }) => (
     className="relative w-11 h-6 rounded-full transition-colors flex-none"
     style={{ backgroundColor: on ? colors.primary : colors.cardBorder }}
   >
+    {/* Movemos con transform (GPU), no con `left` — que obliga a recalcular layout. */}
     <span
-      className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-      style={{ left: on ? '22px' : '2px' }}
+      className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white"
+      style={{
+        transform: on ? 'translateX(20px)' : 'translateX(0)',
+        transition: 'transform var(--dur-press) var(--ease-out)',
+      }}
     />
   </button>
 );
