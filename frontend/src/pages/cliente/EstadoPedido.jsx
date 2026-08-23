@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { orderService } from '../../api/orderService';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import ValoracionPedido from '../../components/Store/ValoracionPedido';
+import CodigoEntrega from '../../components/Store/CodigoEntrega';
 
 /*
  * ============================================================
@@ -239,6 +240,18 @@ const EstadoPedido = () => {
                 </div>
               </>
             )}
+
+            {/*
+              El código con el que recibirá el pedido. Va DEBAJO de la línea de
+              tiempo y encima del mapa a propósito: es lo que hace falta en el
+              momento exacto en que el repartidor toca el timbre, así que tiene
+              que estar donde ya se está mirando y sin tener que bajar.
+            */}
+            <CodigoEntrega
+              codigo={pedido.deliveryCode}
+              deliveryType={pedido.deliveryType}
+              estado={estado}
+            />
 
             {/* Mapa en vivo, solo cuando de verdad hay alguien en camino */}
             {enCamino && seguimiento.punto && (

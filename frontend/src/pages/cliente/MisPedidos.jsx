@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useMyOrders } from '../../hooks/useMyOrders';
 import { orderService } from '../../api/orderService';
+import CodigoEntrega from '../../components/Store/CodigoEntrega';
 
 /*
  * MisPedidos — historial de pedidos del cliente (área "Mi Cuenta").
@@ -151,6 +152,24 @@ const MisPedidos = () => {
                     {estado.label}
                   </span>
                 </div>
+
+                {/*
+                  El código de entrega, en pequeño. En la lista va la versión
+                  compacta y no la tarjeta entera: aquí solo hace falta poder
+                  encontrarlo rápido —el cliente ya está en la puerta con el
+                  teléfono en la mano—, y el componente se calla solo en los
+                  pedidos ya entregados o cancelados.
+                */}
+                {order.deliveryCode && (
+                  <div className="mb-3">
+                    <CodigoEntrega
+                      codigo={order.deliveryCode}
+                      deliveryType={order.deliveryType}
+                      estado={order.status}
+                      compacto
+                    />
+                  </div>
+                )}
 
                 {/* Productos del pedido */}
                 <div className="flex flex-col gap-1 mb-3">

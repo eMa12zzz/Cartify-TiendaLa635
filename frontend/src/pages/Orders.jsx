@@ -6,6 +6,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { EASE_OUT, DUR, stagger } from '../utils/motion';
 import { useOrders } from '../hooks/useOrders';
+import ModalCodigoEntrega from '../components/Admin/ModalCodigoEntrega';
 
 /*
  * Orders (Admin/Empleado) — pantalla de PREPARACIÓN de pedidos.
@@ -79,6 +80,27 @@ const Orders = () => {
   const { orders, loading, cambiarEstado } = useOrders();
   const [filtro, setFiltro] = useState('pagado');
   const [busqueda, setBusqueda] = useState('');
+  /*
+   * El pedido que se está por entregar, esperando que el cliente dicte su
+   * código. `null` = el modal está cerrado. Ver ModalCodigoEntrega.
+   */
+  const [pedidoAEntregar, setPedidoAEntregar] = useState(null);
+
+  /*
+   * Confirmar la entrega. Si el código no coincide, el backend responde 400,
+   * el hook relanza el error y el modal se queda ABIERTO para volver a
+   * intentar — cerrarlo obligaría a buscar el pedido otra vez en la lista con
+   * el cliente esperando en la puerta.
+   */
+  const confirmarEntrega = async (extras) => {
+    try {
+      await cambiarEstado(pedidoAEntregar._id, 'entregado', extras);
+      setPedidoAEntregar(null);
+    } catch {
+      // El aviso ya lo pintó el interceptor de api.js. Aquí solo se decide
+      // no cerrar.
+    }
+  };
 
   // Conteos reales para las tarjetas de resumen (ahora clicables para filtrar).
   const counts = {
@@ -309,7 +331,7 @@ const Orders = () => {
 
                     {order.status === 'pagado' && (
                       <button
-                        onClick={() => cambiarEstado(order._id, 'preparando')}
+                        onClick={() => { cambiarEstado(order._id, 'preparando').catch(() => {}); }}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-[#003049] text-white transition-colors"
                       >
                         <ChefHat className="w-4 h-4" /> Empezar a preparar
@@ -322,7 +344,7 @@ const Orders = () => {
                     */}
                     {order.status === 'preparando' && esDomicilio && (
                       <button
-                        onClick={() => cambiarEstado(order._id, 'en_camino')}
+                        onClick={() => { cambiarEstado(order._id, 'en_camino').catch(() => {}); }}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold text-white transition-colors"
                         style={{ backgroundColor: '#1D4ED8' }}
                       >
@@ -331,7 +353,7 @@ const Orders = () => {
                     )}
                     {order.status === 'preparando' && !esDomicilio && (
                       <button
-                        onClick={() => cambiarEstado(order._id, 'entregado')}
+                        onClick={() => setPedidoAEntregar(order)}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-500 text-white transition-colors"
                       >
                         <CheckCircle2 className="w-4 h-4" /> Marcar entregado
@@ -339,7 +361,7 @@ const Orders = () => {
                     )}
                     {order.status === 'en_camino' && (
                       <button
-                        onClick={() => cambiarEstado(order._id, 'entregado')}
+                        onClick={() => setPedidoAEntregar(order)}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-500 text-white transition-colors"
                       >
                         <CheckCircle2 className="w-4 h-4" /> Marcar entregado
@@ -358,6 +380,23 @@ const Orders = () => {
           </AnimatePresence>
         </motion.div>
       )}
+
+      {/*
+        Se le piden al cliente los cuatro dígitos antes de dar el pedido por
+        entregado.
+
+        El `key` atado al id es lo que reinicia el formulario entre un pedido y
+        el siguiente: sin él, el código del anterior se quedaba escrito y el
+        siguiente se confirmaba con un número que no era suyo. Ver el comentario
+        de ModalCodigoEntrega.
+      */}
+      <ModalCodigoEntrega
+        key={pedidoAEntregar?._id || 'sin-pedido'}
+        isOpen={!!pedidoAEntregar}
+        pedido={pedidoAEntregar}
+        onClose={() => setPedidoAEntregar(null)}
+        onConfirm={confirmarEntrega}
+      />
     </div>
   );
 };
