@@ -4,8 +4,11 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import api from '../api/api';
+import { useAjustesCtx } from '../context/AjustesContext';
 
 const ForgotPassword = () => {
+  // El nombre de la tienda sale de los ajustes, no escrito a mano.
+  const { ajustes } = useAjustesCtx();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -54,8 +57,10 @@ const ForgotPassword = () => {
           
           {/* Logo / Header */}
           <div className="text-center mb-10">
+            {/* El nombre sale de los ajustes, no del codigo. Ver MarcaTienda. */}
             <h1 className="text-4xl font-extrabold text-black leading-tight mb-4 tracking-tight">
-              Tienda<br />la 635
+              {ajustes.nombreLinea1}
+              {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
             </h1>
             <p className="text-gray-500 text-sm font-medium">Recuperar contraseña</p>
             <p className="text-gray-400 text-xs mt-2 max-w-xs mx-auto">

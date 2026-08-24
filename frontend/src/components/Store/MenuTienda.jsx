@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { Menu, Store as StoreIcon, Check } from 'lucide-react';
 import { useDropdown } from '../../hooks/useDropdown';
 import { useModulos } from '../../hooks/useModulos';
-import { useAjustesCtx } from '../../context/AjustesContext';
+import MarcaTienda from './MarcaTienda';
 import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
 
 /*
@@ -59,38 +58,8 @@ const Hamburguesa = styled.span`
   align-items: center;
 `;
 
-// Las dos líneas del nombre, con el MISMO peso y color: "Tienda" no es una
-// etiqueta que acompaña, es parte del nombre del negocio.
-const Nombre = styled.span`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.05;
-`;
-
-const Linea = styled.span`
-  font-size: 19px;
-  font-weight: 800;
-  color: #111;
-  letter-spacing: -0.5px;
-
-  @media (max-width: 700px) { font-size: 15.5px; }
-`;
-
-/*
- * El logo, cuando la tienda subió uno. Se limita por ALTURA y no por ancho:
- * un logo puede ser cuadrado o una banda larga, y lo único que no puede es
- * crecerle al encabezado, que mide 64px y ya está lleno.
- */
-const Logo = styled.img`
-  height: 38px;
-  width: auto;
-  max-width: 168px;
-  object-fit: contain;
-  display: block;
-
-  @media (max-width: 700px) { height: 31px; max-width: 124px; }
-`;
+// Las dos lineas del nombre y el logo se mudaron a MarcaTienda.jsx, que ahora
+// pinta la marca en TODAS las barras. Este archivo solo la coloca.
 
 const Panel = styled.div`
   position: absolute;
@@ -172,10 +141,6 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
   const { isOpen, toggle, close, ref } = useDropdown();
   const { modulos } = useModulos();
   // El nombre y el logo salen de la base, no del código. Ver AjustesContext.
-  const { ajustes } = useAjustesCtx();
-  // Se reinicia si cambian el logo: el nuevo merece su oportunidad de cargar.
-  const [logoFallo, setLogoFallo] = useState(false);
-  useEffect(() => { setLogoFallo(false); }, [ajustes.logoUrl]);
 
   /*
    * A dónde lleva cada módulo. Los pasillos normales NO navegan: cambian el
@@ -227,25 +192,11 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
       <Boton onClick={toggle} aria-expanded={isOpen} aria-haspopup="menu" aria-label="Pasillos de la tienda">
         <Hamburguesa><Menu size={20} strokeWidth={2.2} /></Hamburguesa>
         {/*
-          Con logo se pinta el logo; sin logo, el nombre en dos líneas, que es
-          como estuvo siempre. El `alt` lleva el nombre escrito para que quien
-          usa lector de pantalla oiga la tienda y no "imagen".
+          La marca salió de aquí a MarcaTienda.jsx. Este bloque era el único
+          que pintaba el logo, así que las demás barras enseñaban otra cosa;
+          ahora todas piden lo mismo. Este es el tamaño de referencia.
         */}
-        {ajustes.logoUrl && !logoFallo ? (
-          <Logo
-            src={ajustes.logoUrl}
-            alt={`${ajustes.nombreLinea1} ${ajustes.nombreLinea2}`.trim()}
-            /* Si la imagen no carga —Cloudinary caído, el archivo borrado— se
-               cae al nombre escrito. Sin esto la tienda se quedaba sin nombre
-               en ningún lado: ni logo ni texto, solo la hamburguesa. */
-            onError={() => setLogoFallo(true)}
-          />
-        ) : (
-          <Nombre>
-            <Linea>{ajustes.nombreLinea1}</Linea>
-            {ajustes.nombreLinea2 && <Linea>{ajustes.nombreLinea2}</Linea>}
-          </Nombre>
-        )}
+        <MarcaTienda tamano={19} alto={38} />
       </Boton>
 
       {isOpen && (

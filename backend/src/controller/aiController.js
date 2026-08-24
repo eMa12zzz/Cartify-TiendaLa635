@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import productModel from "../models/product.js";
-import { getIA, MODELO_IA } from "../utils/iaClient.js";
+import { getIA, generarConIA } from "../utils/iaClient.js";
 import { generarCopyPlantilla } from "../utils/plantillasPromo.js";
 import { esFamiliaValida, LISTA_PARA_IA } from "../utils/familias.js";
 
@@ -176,8 +176,12 @@ aiController.generarCopyPromo = async (req, res) => {
     }
 
     try {
-      const respuesta = await ia.models.generateContent({
-        model: MODELO_IA,
+      /*
+       * Tres intentos por modelo: aquí hay alguien mirando un círculo girar y
+       * esperando un texto. Un par de segundos de más valen la pena si a
+       * cambio sale escrito por la IA y no por una plantilla.
+       */
+      const respuesta = await generarConIA({
         contents: armarPrompt(type, items, buyQty, payQty),
         config: {
           systemInstruction: VOZ_DE_LA_TIENDA,
@@ -185,7 +189,7 @@ aiController.generarCopyPromo = async (req, res) => {
           responseSchema: ESQUEMA_COPY,
           temperature: 0.9, // un poco de chispa para que no salga siempre igual
         },
-      });
+      }, { intentos: 3 });
 
       const texto = respuesta.text;
       if (!texto) throw new Error("La IA no devolvió texto");
@@ -313,8 +317,12 @@ aiController.entenderPedido = async (req, res) => {
     ].join("\n");
 
     try {
-      const respuesta = await ia.models.generateContent({
-        model: MODELO_IA,
+      /*
+       * UN solo reintento: acá hay alguien hablándole al teléfono y esperando
+       * respuesta. Callar tres segundos para contestar con IA es peor que
+       * contestar ya con las reglas de siempre.
+       */
+      const respuesta = await generarConIA({
         contents,
         config: {
           systemInstruction: MODO_ASISTENTE,
@@ -324,7 +332,7 @@ aiController.entenderPedido = async (req, res) => {
           // entienda bien y elija de la lista.
           temperature: 0.2,
         },
-      });
+      }, { intentos: 1 });
 
       const texto = respuesta.text;
       if (!texto) throw new Error("La IA no devolvió texto");
@@ -501,8 +509,12 @@ aiController.clasificarProductos = async (req, res) => {
     ].join("\n");
 
     try {
-      const respuesta = await ia.models.generateContent({
-        model: MODELO_IA,
+      /*
+       * Tres intentos: esto corre de fondo mientras el dueño mira su tienda,
+       * así que puede tomarse su tiempo. Lo que resuelve queda guardado en el
+       * producto, y lo que no se reintenta la próxima vez.
+       */
+      const respuesta = await generarConIA({
         contents,
         config: {
           systemInstruction: MODO_ESTANTES,

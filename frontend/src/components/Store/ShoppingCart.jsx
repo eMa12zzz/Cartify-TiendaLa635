@@ -15,6 +15,7 @@ import { calcularServicio } from '../../utils/servicio.js';
 import SeguimientoConfirmacion from './SeguimientoConfirmacion';
 import CodigoEntrega from './CodigoEntrega';
 import MapaDireccion from './MapaDireccion';
+import MarcaTienda from './MarcaTienda';
 // El nombre de la tienda sale de los ajustes; el carrito y el recibo se habían
 // quedado con el escrito a mano. Ver AjustesContext.
 import { useAjustesCtx } from '../../context/AjustesContext';
@@ -121,8 +122,7 @@ const BrandTitle = styled.div`
   flex: 1;
 `;
 
-const BrandSub = styled.div`font-size: 11px; color: #aaa; line-height: 1;`;
-const BrandMain = styled.div`font-size: 18px; font-weight: 800; color: #111; line-height: 1.2;`;
+/* La marca la pinta MarcaTienda.jsx, igual que en el resto de las barras. */
 
 const BackBtn = styled.button`
   background: none;
@@ -1460,9 +1460,10 @@ const ShoppingCart = ({
         <FullPanel $montado={montado} onClick={e => e.stopPropagation()}>
           <PageTopBar>
             <BackBtn onClick={() => setView('cart')}><ChevronLeft size={20} /></BackBtn>
+            {/* La misma marca que el menú. Antes aquí decía "Tienda" en gris
+                a 11px encima de "la 635" a 18px — ni parecido. */}
             <BrandTitle>
-              <BrandSub>{ajustes.nombreLinea1}</BrandSub>
-              <BrandMain>{ajustes.nombreLinea2}</BrandMain>
+              <MarcaTienda tamano={19} alto={38} />
             </BrandTitle>
             <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
@@ -1894,8 +1895,8 @@ const ShoppingCart = ({
           <PageTopBar>
             <BackBtn onClick={handleConfirmClose}><ChevronLeft size={20} /></BackBtn>
             <BrandTitle>
-              <BrandSub>{ajustes.nombreLinea1}</BrandSub>
-              <BrandMain>{ajustes.nombreLinea2}</BrandMain>
+              {/* Igual que el checkout y que el menú. Ver MarcaTienda. */}
+              <MarcaTienda tamano={19} alto={38} />
             </BrandTitle>
             <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
