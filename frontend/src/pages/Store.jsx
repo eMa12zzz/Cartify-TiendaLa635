@@ -906,7 +906,9 @@ const Store = () => {
           onEliminarItem={eliminarDelCarrito}
           onLimpiarCarrito={limpiarCarrito}
           onCheckout={() => {
-            limpiarCarrito();
+            // Sin aviso: a estas alturas el pedido ya se hizo y el carrito ya
+            // se vació solo al confirmarlo. Ver limpiarCarrito en useStore.
+            limpiarCarrito({ avisar: false });
             setMostrarCarrito(false);
           }}
         />

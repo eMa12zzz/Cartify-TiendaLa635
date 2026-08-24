@@ -152,7 +152,7 @@ const Dashboard = () => {
    * llave 'token' aquí dejaba esta pantalla mandando al login para siempre,
    * porque esa llave ya no existe. Ver AuthContext.
    */
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -164,7 +164,20 @@ const Dashboard = () => {
   // de esta área: un localStorage.clear() se llevaba de paso el carrito, las
   // direcciones guardadas y la sesión del panel.
   const handleLogout = () => {
-    logout();
+    /*
+     * Se cierra el cajón de QUIEN está dentro, no el que adivine la ruta.
+     *
+     * /tienda-dashboard es área de CLIENTE, así que un logout() a secas
+     * borraba el cajón de cliente. Cuando quien estaba dentro era personal
+     * —el dueño o un empleado mirando la tienda desde el teléfono, que ahí
+     * entra por el cajón del personal— se borraba un cajón vacío y su token
+     * seguía vivo: tocaba "Cerrar sesión", se le decía que había salido, y
+     * seguía dentro con el panel entero abierto.
+     *
+     * Es la misma fuga que ya se había arreglado en ClienteLayout.jsx; esta
+     * pantalla se quedó con la versión vieja.
+     */
+    logout(user?.type === 'client' ? 'cliente' : 'personal');
     navigate('/');
   };
 

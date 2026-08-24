@@ -10,9 +10,47 @@ import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
 import { calcularEnvio } from "../utils/envio.js";
+import { generarCodigoEntrega, codigoCoincide } from "../utils/codigoEntrega.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 
 const orderController = {};
+
+/*
+ * EL CÓDIGO DE ENTREGA NO SE LO ENSEÑAMOS AL PERSONAL.
+ *
+ * Parece de más —es la tienda, no un extraño— pero es justamente lo que hace
+ * que el código sirva. Si el repartidor lo ve en su pantalla, puede marcar
+ * "entregado" desde la moto sin haberle preguntado nada a nadie, y entonces no
+ * prueba que el pedido llegó a su dueño: prueba que el repartidor sabe leer.
+ *
+ * El código lo tiene UNA sola persona —la que lo pidió, en su pantalla— y el
+ * personal lo recibe dictado en la puerta. Así es como funciona en cualquier
+ * app de reparto, y por la misma razón.
+ *
+ * El campo va con `select: false` en el modelo, así que de la base no sale
+ * solo; esto es para cuando se pide a mano con +deliveryCode y quien pregunta
+ * resulta no ser el dueño.
+ */
+const sinCodigoDeEntrega = (pedido) => {
+  const plano = typeof pedido?.toObject === "function" ? pedido.toObject() : { ...pedido };
+
+  /*
+   * SÍ se le dice al personal si el pedido LLEVA código, aunque no cuál.
+   *
+   * Sin este dato, la pantalla de entrega no puede distinguir un pedido normal
+   * de uno anterior a esta función —los que ya estaban en la calle el día que
+   * se estrenó el código y nunca tuvieron uno—. Les pedía cuatro dígitos que
+   * ese cliente no tiene ni va a tener nunca, y el repartidor se quedaba
+   * trabado en la puerta inventando un número.
+   *
+   * Un booleano no compromete nada: no dice cuál es el código, solo si hay que
+   * preguntarlo. Ver ModalCodigoEntrega.
+   */
+  plano.tieneCodigoEntrega = !!plano.deliveryCode;
+
+  delete plano.deliveryCode;
+  return plano;
+};
 
 // INSERT — Crear un pedido (checkout). Aquí es donde se otorgan los puntos.
 orderController.createOrder = async (req, res) => {
@@ -200,6 +238,12 @@ orderController.createOrder = async (req, res) => {
       deliveryLng: entrega === "delivery" ? deliveryLng : undefined,
       channel: channel || "web",
       pointsEarned,
+      /*
+       * El código con el que se recibirá este pedido. Lo pone el servidor —el
+       * navegador nunca lo propone— y se emite para retiro igual que para
+       * domicilio. Ver utils/codigoEntrega.js.
+       */
+      deliveryCode: generarCodigoEntrega(),
     });
 
     await newOrder.save();
@@ -287,9 +331,16 @@ orderController.getOrdersByClient = async (req, res) => {
     const orders = await orderModel
       .find({ clientId: req.params.clientId })
       .sort({ createdAt: -1 })          // los más recientes primero
+      .select("+deliveryCode")
       .populate("items.productId");
 
-    return res.status(200).json(orders);
+    /*
+     * El código va SOLO si quien pregunta es el cliente dueño. El personal
+     * llega hasta aquí legítimamente (atender es su trabajo) pero se lleva el
+     * pedido sin el código. Ver sinCodigoDeEntrega, arriba.
+     */
+    const esElDueno = req.usuario?.tipo === "Client";
+    return res.status(200).json(esElDueno ? orders : orders.map(sinCodigoDeEntrega));
 
   } catch (error) {
     console.log("error " + error);
@@ -315,17 +366,22 @@ orderController.getOrderById = async (req, res) => {
 
     const pedido = await orderModel
       .findById(req.params.id)
+      .select("+deliveryCode")
       .populate("items.productId");
 
     if (!pedido) {
       return res.status(404).json({ message: "Pedido no encontrado" });
     }
 
-    if (req.usuario?.tipo === "Client" && String(pedido.clientId) !== req.usuario.id) {
+    const esElDueno = req.usuario?.tipo === "Client";
+
+    if (esElDueno && String(pedido.clientId) !== req.usuario.id) {
       return res.status(403).json({ message: "No tiene permiso para esta acción" });
     }
 
-    return res.status(200).json(pedido);
+    // Esta es LA pantalla donde el cliente lee su código para dictarlo en la
+    // puerta. Al personal se le devuelve el mismo pedido, sin el código.
+    return res.status(200).json(esElDueno ? pedido : sinCodigoDeEntrega(pedido));
 
   } catch (error) {
     console.log("error " + error);
@@ -398,9 +454,12 @@ orderController.getOrders = async (req, res) => {
        * "Oreja" de cuál marca — con productos que se llaman igual entre sí
        * (varias "Oreja", "Semita") era imposible saber cuál pidió el cliente.
        */
-      .populate({ path: "items.productId", populate: { path: "brandId" } });
+      .populate({ path: "items.productId", populate: { path: "brandId" } })
+      // +deliveryCode solo para poder decir si LO HAY: sinCodigoDeEntrega lo
+      // convierte en el booleano `tieneCodigoEntrega` y borra el código.
+      .select("+deliveryCode");
 
-    return res.status(200).json(orders);
+    return res.status(200).json(orders.map(sinCodigoDeEntrega));
 
   } catch (error) {
     console.log("error " + error);
@@ -427,12 +486,58 @@ orderController.updateOrderStatus = async (req, res) => {
      * después de un error, la hora original no se pierde.
      */
     const { quien } = req.body;
-    const actual = await orderModel.findById(req.params.id);
+    // +deliveryCode: hace falta para compararlo abajo. No sale de aquí: la
+    // respuesta se arma con el documento ya actualizado, que no lo trae.
+    const actual = await orderModel.findById(req.params.id).select("+deliveryCode");
     if (!actual) {
       return res.status(404).json({ message: "Pedido no encontrado" });
     }
 
     const cambios = { status };
+
+    /*
+     * ── NO SE ENTREGA SIN COMPROBAR A QUIÉN ──
+     *
+     * Este es el único punto del sistema donde el código de entrega sirve para
+     * algo. Todo lo demás —emitirlo, guardarlo, enseñárselo al cliente— existe
+     * para que esta comparación se pueda hacer.
+     *
+     * Se pide solo en el SALTO a entregado: volver a tocar el botón en un
+     * pedido ya entregado no puede exigir el código otra vez, porque el
+     * cliente ya se fue con su bolsa.
+     */
+    if (status === "entregado" && actual.status !== "entregado") {
+      const { codigoEntrega, omitirCodigo, motivoOmision } = req.body;
+
+      if (!actual.deliveryCode) {
+        /*
+         * Pedido anterior a esta función. No lleva código y no se le puede
+         * exigir uno: dejarlo trabado sería castigar al cliente por una
+         * mejora nuestra. Se entrega como se entregaba antes.
+         */
+      } else if (omitirCodigo) {
+        /*
+         * La salida de emergencia. Existe porque sin ella el personal
+         * terminaría marcando los pedidos como entregados ANTES de salir de
+         * la tienda, y ahí el código no valdría nada. Pero cuesta escribir
+         * por qué, y ese por qué queda guardado en el pedido.
+         */
+        const motivo = String(motivoOmision || "").trim();
+        if (motivo.length < 4) {
+          return res.status(400).json({
+            message: "Escriba por qué se entrega sin código.",
+          });
+        }
+        cambios.deliveryCodeOmitido = true;
+        cambios.deliveryCodeMotivo = motivo.slice(0, 200);
+      } else if (!codigoCoincide(actual.deliveryCode, codigoEntrega)) {
+        return res.status(400).json({
+          message: "El código no coincide. Pídale al cliente los 4 dígitos que ve en su pedido.",
+        });
+      } else {
+        cambios.deliveryCodeVerifiedAt = new Date();
+      }
+    }
     if (status === "preparando" && !actual.preparedAt) {
       cambios.preparedAt = new Date();
       cambios.preparedBy = quien || "";
@@ -561,6 +666,9 @@ orderController.createPrintOrder = async (req, res) => {
       paymentMethod: "efectivo",
       channel: "impresion",
       pointsEarned,
+      // Una impresión también se recoge en el mostrador, y ahí hace la misma
+      // falta: son los papeles de alguien.
+      deliveryCode: generarCodigoEntrega(),
       printJob: {
         serviceName: service.name,
         fileUrl: req.file.path,

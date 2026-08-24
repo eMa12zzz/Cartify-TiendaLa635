@@ -532,10 +532,19 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
     guardarCarrito(carrito.map((i) => (i.id === productoId ? { ...i, cantidad } : i)));
   };
 
-  const limpiarCarrito = () => {
+  /*
+   * `avisar` existe porque vaciar el carrito significa DOS cosas distintas.
+   *
+   * Cuando alguien toca "Vaciar", el aviso confirma que se hizo lo que pidió.
+   * Pero al terminar un pedido el carrito también se vacía —lo comprado dejó
+   * de estar pendiente— y ahí el mismo texto se lee como si algo se hubiera
+   * perdido: "Se vació el carrito (3 productos)" justo después de pagar
+   * parece un error, no el final feliz de una compra.
+   */
+  const limpiarCarrito = ({ avisar = true } = {}) => {
     const cuantos = carrito.length;
     guardarCarrito([]);
-    if (cuantos) toast(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
+    if (cuantos && avisar) toast(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
   };
 
   // Total del carrito, aplicando el NxM (cada N unidades, se pagan M).

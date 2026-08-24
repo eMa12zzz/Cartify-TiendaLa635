@@ -34,10 +34,12 @@ const TIENDA = { lat: 13.68514, lng: -89.19836 };
 // La casa del pedido, como a kilómetro y medio.
 const CASA = { lat: 13.69350, lng: -89.20950 };
 
+// Con qué nombre queda firmado el viaje, igual que lo firmaría un repartidor.
+const QUIEN = "Repartidor de prueba";
+
 const PASOS = 18;          // cuántas posiciones manda en el trayecto
 const ESPERA_MS = 10000;   // cada cuánto, igual que el teléfono de verdad
 
-const api = "http://localhost:4000/api/order";
 
 const crear = async (correo) => {
   const cliente = correo
@@ -122,6 +124,19 @@ const simular = async (cerca) => {
   const pasos = cerca ? 8 : PASOS;
   const espera = cerca ? 3000 : ESPERA_MS;
 
+  /*
+   * SALIR A REPARTIR SON DOS COSAS, no una.
+   *
+   * En la app las hace el mismo botón de la pantalla de Reparto: mueve el
+   * pedido a 'en_camino' Y empieza a compartir la ubicación. El script solo
+   * hacía la segunda, así que el pedido se quedaba en 'preparando' y el
+   * cliente no veía ningún seguimiento por más posiciones que llegaran —
+   * la tienda solo dibuja el mapa cuando el pedido va en camino.
+   */
+  await orderModel.findByIdAndUpdate(pedido._id, {
+    $set: { status: "en_camino", enCaminoAt: new Date(), enCaminoBy: QUIEN },
+  });
+
   console.log(cerca ? "Ya viene llegando..." : "Saliendo de la tienda hacia la casa...");
 
   for (let i = 0; i <= pasos; i++) {
@@ -130,21 +145,33 @@ const simular = async (cerca) => {
     const lng = desde.lng + (meta.lng - desde.lng) * avance;
 
     /*
-     * Si un envío se cae, se sigue con el siguiente. Un teléfono en la calle
-     * pierde señal todo el tiempo y el seguimiento tiene que aguantarlo: si
-     * el script reventara aquí estaría probando algo más fácil que la
-     * realidad.
+     * La posición se escribe DIRECTO en la base, no por la API.
+     *
+     * PUT /order/:id/courier es soloPersonal, y esto es un proceso de Node
+     * sin navegador: no tiene cookie de sesión que mandar, así que recibía un
+     * 401 en cada punto y el script "corría bien" sin mover nada. Se veía
+     * como que el seguimiento estaba roto cuando lo roto era la prueba.
+     *
+     * Escribir directo es además lo que ya hacía el comando `crear` de este
+     * mismo archivo, y lo correcto para un script de pruebas: se salta la
+     * puerta en vez de fabricarse una llave.
+     *
+     * Se escribe EXACTAMENTE lo que escribe el endpoint (ver
+     * updateCourierPosition en orderController), para que la prueba no sea
+     * más fácil que la realidad.
      */
     let estado;
     try {
-      const r = await fetch(`${api}/${pedido._id}/courier`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat, lng, quien: "Repartidor de prueba" }),
+      await orderModel.findByIdAndUpdate(pedido._id, {
+        $set: {
+          courier: { active: true, lat, lng, name: QUIEN, updatedAt: new Date() },
+        },
       });
-      estado = r.status;
-    } catch {
-      estado = "sin señal";
+      estado = "ok";
+    } catch (e) {
+      // Si una escritura se cae, se sigue con la siguiente: un teléfono en la
+      // calle pierde señal todo el tiempo y el seguimiento tiene que aguantarlo.
+      estado = "falló: " + e.message;
     }
 
     console.log(`  ${i}/${pasos} → ${lat.toFixed(5)}, ${lng.toFixed(5)}  (${estado})`);
@@ -152,6 +179,7 @@ const simular = async (cerca) => {
   }
 
   console.log("Llegó. El puntito queda encendido hasta que se marque entregado.");
+  console.log("El pedido quedó en 'en_camino': ábralo en Mis pedidos y verá el mapa.");
 };
 
 /*

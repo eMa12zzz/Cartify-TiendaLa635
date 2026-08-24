@@ -34,7 +34,18 @@ brandController.insertBrand = async (req, res) => {
 
         const newBrand = new brandsModel({ name: name.trim(), isActive: isActive !== undefined ? isActive : true });
         await newBrand.save();
-        res.status(201).json({ message: 'Marca creada' });
+        /*
+         * Se devuelve la marca creada, no solo el mensaje.
+         *
+         * Quien la crea suele necesitarla de inmediato: el formulario de
+         * proveedores deja dar de alta una marca sin salirse, y para dejarla
+         * marcada al toque necesita su _id. Sin esto habria que volver a pedir
+         * la lista entera y buscarla por nombre, que ademas es fragil si dos
+         * marcas se llaman parecido.
+         *
+         * Devolver el recurso recien creado es lo que se espera de un POST.
+         */
+        res.status(201).json({ message: 'Marca creada', brand: newBrand });
     } catch (error) {
         console.log("error insertBrand: " + error);
         res.status(500).json({ message: 'Error interno del servidor' });

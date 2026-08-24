@@ -37,10 +37,17 @@ export const orderService = {
     return response.data;
   },
 
-  // Cambiar el estado de un pedido (preparando, entregado, cancelado).
-  // `quien` deja constancia de quién movió el pedido (lo sella el servidor).
-  updateStatus: async (id, status, quien) => {
-    const response = await api.put(`/order/${id}/status`, { status, quien });
+  /*
+   * Cambiar el estado de un pedido (preparando, entregado, cancelado).
+   * `quien` deja constancia de quién movió el pedido (lo sella el servidor).
+   *
+   * `extras` es lo que hace falta SOLO para entregar: el código que el cliente
+   * dictó en la puerta ({ codigoEntrega }), o la omisión razonada cuando no lo
+   * puede mostrar ({ omitirCodigo, motivoOmision }). El backend lo exige en el
+   * salto a "entregado" y responde 400 si no cuadra. Ver ModalCodigoEntrega.
+   */
+  updateStatus: async (id, status, quien, extras = {}) => {
+    const response = await api.put(`/order/${id}/status`, { status, quien, ...extras });
     return response.data;
   },
 

@@ -23,8 +23,19 @@ export const usePromoAI = () => {
       return null;
     }
 
+    /*
+     * NO se lanza un toast de "redactando".
+     *
+     * El aviso salia arriba a la derecha, lejos del boton que se acababa de
+     * tocar, y se iba solo a los pocos segundos: quien miraba el formulario no
+     * tenia como saber si la IA seguia trabajando o si ya habia terminado y no
+     * habia pasado nada. Ahora quien avisa es un circulo girando EN EL BOTON,
+     * que dura exactamente lo que dura el trabajo. Ver PromotionFormModal.
+     *
+     * El error si se queda en toast: es una interrupcion, y tiene que
+     * interrumpir.
+     */
     setGenerando(true);
-    const aviso = toast.loading('Redactando la promoción…');
     try {
       const copy = await aiService.generarCopyPromo({
         type: tipo,
@@ -37,18 +48,16 @@ export const usePromoAI = () => {
         })),
       });
 
-      // Avisamos de dónde salió el texto: si la IA no estaba disponible el
-      // servidor responde con plantillas, y se vale saberlo.
-      toast.success(
-        copy.origen === 'plantilla'
-          ? 'Texto listo (automático, sin IA). Revísalo antes de guardar'
-          : '¡Texto listo! Revísalo antes de guardar',
-        { id: aviso, duration: 4000 }
-      );
+      /*
+       * De donde salio el texto viaja en `copy.origen` y lo pinta el
+       * formulario debajo del boton: si la IA no estaba disponible el servidor
+       * responde con plantillas, y se vale saberlo. Antes eso era un toast que
+       * se iba solo; ahora se queda a la vista mientras se revisa el texto.
+       */
       return copy;
     } catch (error) {
       const mensaje = error?.response?.data?.message || 'No se pudo generar el texto';
-      toast.error(mensaje, { id: aviso, duration: 5000 });
+      toast.error(mensaje, { duration: 5000 });
       return null;
     } finally {
       setGenerando(false);

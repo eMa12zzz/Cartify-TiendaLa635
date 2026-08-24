@@ -1,8 +1,7 @@
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import { divIcon, latLngBounds } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Package, ChefHat, Check, Bike } from 'lucide-react';
+import { Bike, Check } from 'lucide-react';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
+import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
+import MapaSeguimiento from './MapaSeguimiento';
 
 /*
  * ============================================================
@@ -19,46 +18,20 @@ import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 
 const BROWN = 'var(--marca-600)';
 
-const PASOS = [
-  { id: 'pagado',     label: 'Recibido',   Icono: Package },
-  { id: 'preparando', label: 'Preparando', Icono: ChefHat },
-  { id: 'entregado',  label: 'Entregado',  Icono: Check },
-];
+// Esta lista se habia quedado SIN el paso "En camino", asi que un pedido a
+// domicilio que ya iba en la moto se le mostraba al cliente como "Recibido"
+// —justo en la pantalla que mira mientras espera—. Ahora sale de
+// utils/pasosPedido.js, que es la unica lista que existe.
 
-const pinRepartidor = divIcon({
-  className: '',
-  html: `<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 5px rgba(37,99,235,.22),0 2px 6px rgba(0,0,0,.3);"></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
-const pinCasa = divIcon({
-  className: '',
-  html: `<div style="width:20px;height:20px;border-radius:50% 50% 50% 0;background:${BROWN};transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.3);"></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 20],
-});
-
-// Encuadra el mapa: los dos puntos si hay repartidor, o solo la casa si aún no.
-const Encuadre = ({ punto, destino }) => {
-  const mapa = useMap();
-  if (punto && destino) {
-    mapa.fitBounds(latLngBounds([punto.lat, punto.lng], [destino.lat, destino.lng]), {
-      padding: [34, 34], maxZoom: 16, animate: true,
-    });
-  } else if (destino) {
-    mapa.setView([destino.lat, destino.lng], 15);
-  } else if (punto) {
-    mapa.setView([punto.lat, punto.lng], 15);
-  }
-  return null;
-};
+// Los pines y el encuadre del mapa se mudaron a MapaSeguimiento.jsx: estaban
+// copiados en tres pantallas y esta era una de las copias.
 
 const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
   const seg = useSeguimientoEnVivo(orderId, !!orderId);
 
   const estado = seg.estado || 'pagado';
-  const pasoActual = Math.max(0, PASOS.findIndex((p) => p.id === estado));
+  const PASOS = pasosDe(esDomicilio ? 'delivery' : 'retiro');
+  const pasoActual = indiceDePaso(PASOS, estado);
   const enCamino = esDomicilio && seg.enVivo;
   const tieneDestino = esDomicilio && seg.destino?.lat != null && seg.destino?.lng != null;
 
@@ -91,22 +64,12 @@ const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
       {/* Mapa: la dirección siempre; el repartidor cuando sale a la calle. */}
       {tieneDestino && (
         <div style={{ marginTop: 16, borderRadius: 16, overflow: 'hidden', border: '1px solid var(--linea)' }}>
-          <div style={{ height: 200 }}>
-            <MapContainer
-              center={[seg.destino.lat, seg.destino.lng]}
-              zoom={15}
-              zoomControl={false}
-              attributionControl={false}
-              style={{ height: '100%', width: '100%' }}
-            >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[seg.destino.lat, seg.destino.lng]} icon={pinCasa} />
-              {enCamino && seg.punto && (
-                <Marker position={[seg.punto.lat, seg.punto.lng]} icon={pinRepartidor} />
-              )}
-              <Encuadre punto={enCamino ? seg.punto : null} destino={seg.destino} />
-            </MapContainer>
-          </div>
+          <MapaSeguimiento
+            punto={enCamino ? seg.punto : null}
+            destino={seg.destino}
+            alto={200}
+            borde="transparent"
+          />
           <div style={{
             padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6,
             fontSize: 13, fontWeight: 700,

@@ -2,6 +2,7 @@ import { Star, AlertTriangle } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
+import { useAjustesCtx } from '../../context/AjustesContext';
 
 /*
  * PuntosFidelidad — tarjeta de fidelidad del cliente (área "Mi Cuenta").
@@ -9,6 +10,8 @@ import { useLoyalty } from '../../hooks/useLoyalty';
  * vencimiento, ambos del ledger. La lógica vive en useLoyalty; aquí solo pintamos.
  */
 const PuntosFidelidad = () => {
+  // El nombre de la tienda sale de los ajustes, no escrito a mano.
+  const { ajustes } = useAjustesCtx();
   const { palette } = useTheme();
   const c = palette.colors;
   const { user } = useAuth();
@@ -36,7 +39,11 @@ const PuntosFidelidad = () => {
           style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
         >
           <div className="w-2 h-2 rounded-full mb-1" style={{ backgroundColor: 'rgba(255,255,255,0.6)' }} />
-          <div className="font-extrabold text-xs text-center leading-tight">Tienda<br />la 635</div>
+          {/* El nombre sale de los ajustes, no del codigo. Ver MarcaTienda. */}
+          <div className="font-extrabold text-xs text-center leading-tight">
+            {ajustes.nombreLinea1}
+            {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
+          </div>
         </div>
 
         <div className="relative z-10">

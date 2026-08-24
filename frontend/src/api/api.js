@@ -107,6 +107,33 @@ api.interceptors.response.use(
 
     // 3- Error de respuesta: se maneja de forma centralizada
     (error) => {
+        /*
+         * 3.1- LAS PETICIONES DE FONDO NO ECHAN A NADIE.
+         *
+         * Hay llamadas que la tienda hace por su cuenta, sin que nadie las
+         * pidiera: clasificar el catálogo, entender una frase dictada. Son
+         * opcionales por diseño —si fallan, la pantalla se arma igual— y las
+         * dos ya se tragan su propio error en el servicio.
+         *
+         * El problema es que el error igual pasaba por AQUÍ antes de llegar a
+         * ese catch, y aquí un 401 significa "cierre la sesión y váyase al
+         * login". O sea: una petición que el código daba por opcional tenía el
+         * poder de echar de la tienda a un cliente que estaba comprando. Pasó
+         * de verdad, con /ai/clasificar en la portada; ver useClasificacionIA.
+         *
+         * Con esta marca esas llamadas fallan como siempre estuvo previsto: en
+         * silencio, sin aviso rojo y sin tocar la sesión de nadie. Se pide así:
+         *
+         *   api.post('/ai/clasificar', datos, { enSilencio: true })
+         *
+         * Es a propósito una lista corta y explícita. Todo lo que el cliente
+         * pidió a mano —entrar, pagar, guardar una dirección— tiene que seguir
+         * avisando cuando falla.
+         */
+        if (error.config?.enSilencio) {
+            return Promise.reject(error);
+        }
+
         // 4- Si no hay respuesta del servidor, es un error de red o conexión
         if (!error.response) {
             toast.error('Error de conexión. Verifica que el servidor backend esté encendido.');

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Sparkles, Palette, Layers, X, MapPin } from 'lucide-react';
+import { Sparkles, Palette, Layers, X, MapPin, Loader2, Check } from 'lucide-react';
 import { productService } from '../../api/productService';
 import { validarPromocion, avisoVentaBajoCosto, bloquearTeclasNumero } from '../../utils/validaciones';
 import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promos';
@@ -113,6 +113,13 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   const [colorAcento, setColorAcento] = useState('#DDECF3');
   const [colorFlecha, setColorFlecha] = useState('');
   const { generando, generarPromo } = usePromoAI();
+
+  /*
+   * De donde salio el ultimo texto: 'ia', 'plantilla' o null si todavia no se
+   * ha generado. Se pinta debajo del boton en vez de en un toast que se va
+   * solo, para que siga a la vista mientras se revisa lo que escribio.
+   */
+  const [origenTexto, setOrigenTexto] = useState(null);
 
   /*
    * Pasar a "Personalizado" arranca desde el tema que estaba puesto, no desde
@@ -319,12 +326,40 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
   }, [items, productos]);
 
   /*
+   * El precio normal de cada producto, para las reglas del negocio. Vive aquí
+   * arriba porque lo miran DOS cosas: el guard de la IA y el de guardar.
+   */
+  const precios = useMemo(
+    () => Object.fromEntries(productos.map((p) => [p._id, Number(p.salePrice) || 0])),
+    [productos]
+  );
+
+  /*
    * La IA solo escribe el TEXTO. El banner se diseña acá con los colores, así
    * que se puede seguir ajustando después sin regenerar nada.
    */
   const onGenerarIA = async () => {
+    /*
+     * SE VALIDA ANTES DE ESCRIBIR, con las mismas reglas que al guardar.
+     *
+     * Antes solo se validaba al guardar, y en el medio la IA ya había escrito.
+     * Con un descuento en 0 eso producía anuncios absurdos —"Llévese Fresas
+     * con 0% de descuento: de $2.50 a $2.50"— que quedaban puestos en el
+     * título y la descripción; recién al tocar Guardar aparecía el error. O
+     * sea: primero un texto sin sentido y después un regaño por algo que se
+     * podía haber avisado antes de empezar.
+     *
+     * Validar aquí ahorra además la llamada: la cuota de la IA no se gasta en
+     * redactar una promoción que no se va a poder guardar.
+     */
+    const problema = validarPromocion({ tipo: type, items, buyQty, payQty, precios });
+    if (problema) { toast.error(problema); return; }
+
+    setOrigenTexto(null);
     const resultado = await generarPromo({ tipo: type, items, buyQty, payQty });
     if (!resultado) return;
+
+    setOrigenTexto(resultado.origen === 'plantilla' ? 'plantilla' : 'ia');
 
     setForm((prev) => ({
       ...prev,
@@ -341,8 +376,9 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     if (!form.promoDescription.trim()) { toast.error('La descripción es requerida'); return; }
 
     // Reglas del negocio según el tipo (descuentos 0-100, precio de oferta menor
-    // al normal, y que en un NxM se pague menos de lo que se lleva).
-    const precios = Object.fromEntries(productos.map((p) => [p._id, Number(p.salePrice) || 0]));
+    // al normal, y que en un NxM se pague menos de lo que se lleva). Son las
+    // MISMAS que revisa el botón de la IA, arriba: si una promo no se puede
+    // guardar, tampoco vale la pena redactarla.
     const error = validarPromocion({ tipo: type, items, buyQty, payQty, precios });
     if (error) { toast.error(error); return; }
 
@@ -489,26 +525,6 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                     <input type="number" min="1" step="1" value={payQty} onKeyDown={bloquearTeclasNumero} onChange={(e) => setPayQty(e.target.value)} className="w-16 bg-white border border-gray-300 rounded-full px-3 py-1.5 text-center focus:outline-none focus:border-[#00283D]" />
                   </div>
                 )}
-
-                {/* Ayudante de IA: escribe el texto y arma el banner solito */}
-                <div className="rounded-xl border border-[#E4D5C3] bg-[#F1F6F9] p-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={onGenerarIA}
-                      disabled={generando || items.length === 0}
-                      className="hover-scale press flex items-center gap-2 bg-[#00283D] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Sparkles size={16} />
-                      {generando ? 'Generando…' : 'Generar con IA'}
-                    </button>
-                    <p className="text-xs text-gray-600 flex-1">
-                      {items.length === 0
-                        ? 'Agrega los productos más abajo y la IA escribe el anuncio por vos.'
-                        : `Redacta el texto y arma el banner con ${items.length === 1 ? 'el producto' : 'los productos'} que elegiste.`}
-                    </p>
-                  </div>
-                </div>
 
                 {/* Banner: se diseña acá mismo, con vista previa en vivo */}
                 <div>
@@ -686,18 +702,6 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                       ? 'La foto se acomoda a la derecha y se funde con el color; el texto se sigue leyendo.'
                       : 'No hace falta subir imagen: la tarjeta se arma con el texto y los colores que elija.'}
                   </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Título (opcional)</label>
-                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} placeholder="Ej. Fin de semana dulce" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
-                  <textarea value={form.promoDescription} onChange={(e) => setForm({ ...form, promoDescription: e.target.value })} rows={2}
-                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#00283D] resize-none"
-                    placeholder="Ej. Promo de quesos seleccionados" />
                 </div>
 
                 {/*
@@ -884,6 +888,83 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/*
+                  ── EL AYUDANTE DE IA, Y EL TEXTO QUE ESCRIBE ──
+
+                  Este bloque estaba ARRIBA DEL TODO, y los productos abajo.
+                  Como la IA necesita los productos para escribir, el botón
+                  salía apagado hasta que alguien bajara a elegirlos, y después
+                  había que volver a subir a tocarlo. Se leía "agregá los
+                  productos más abajo" en un botón que no se podía usar todavía.
+
+                  Ahora el orden sigue la dependencia real:
+                    productos → IA → el texto que escribió.
+
+                  Todo baja, nada obliga a volver: se eligen los productos, se
+                  toca el botón que está justo debajo, y el título y la
+                  descripción que redactó aparecen a continuación para
+                  revisarlos sin moverse de donde uno está.
+                */}
+                <div className="rounded-xl border border-[#E4D5C3] bg-[#F1F6F9] p-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={onGenerarIA}
+                      disabled={generando || items.length === 0}
+                      className="hover-scale press flex items-center gap-2 bg-[#00283D] hover:bg-[#6B4423] text-white text-sm font-medium px-4 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {/*
+                        EL CÍRCULO QUE GIRA, y no un aviso arriba a la derecha.
+
+                        El toast salía lejos del botón que se acababa de tocar y
+                        se iba solo a los pocos segundos: no había forma de saber
+                        si la IA seguía trabajando. El círculo gira exactamente
+                        mientras dura el trabajo y está donde se está mirando.
+                      */}
+                      {generando ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                      {generando ? 'Redactando…' : 'Generar con IA'}
+                    </button>
+
+                    <p className="text-xs text-gray-600 flex-1">
+                      {generando
+                        ? 'Buscando el gancho y escribiendo el anuncio…'
+                        : items.length === 0
+                          ? 'Elija arriba los productos de la promoción y la IA escribe el anuncio por usted.'
+                          : `Redacta el texto con ${items.length === 1 ? 'el producto' : 'los productos'} que eligió.`}
+                    </p>
+                  </div>
+
+                  {/*
+                    De dónde salió el texto. Se queda a la vista mientras se
+                    revisa —antes era un toast que desaparecía solo— porque si
+                    lo escribió una plantilla y no la IA, eso cambia cuánto hay
+                    que revisarlo.
+                  */}
+                  {!generando && origenTexto && (
+                    <div className="flex items-start gap-2 mt-3 pt-3 border-t border-[#E4D5C3]">
+                      <Check size={14} className="mt-0.5 flex-none text-green-600" />
+                      <p className="text-xs text-gray-600">
+                        {origenTexto === 'plantilla'
+                          ? 'Texto listo, escrito automáticamente (la IA no estaba disponible).'
+                          : 'Texto listo.'}{' '}
+                        <b className="text-gray-800">Revíselo aquí abajo antes de guardar.</b>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Título (opcional)</label>
+                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} placeholder="Ej. Fin de semana dulce" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
+                  <textarea value={form.promoDescription} onChange={(e) => setForm({ ...form, promoDescription: e.target.value })} rows={2}
+                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#00283D] resize-none"
+                    placeholder="Ej. Promo de quesos seleccionados" />
                 </div>
 
                 <div className="pt-1 space-y-2">

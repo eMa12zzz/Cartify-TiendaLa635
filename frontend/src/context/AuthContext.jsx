@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../api/api';
-import { CAJON, areaDeRuta } from '../utils/sesion';
+import { CAJON, areaDeRuta, LLAVE_MODO_TRABAJO, leerModoTrabajo } from '../utils/sesion';
 
 /*
  * ============================================================
@@ -102,6 +102,8 @@ export const AuthProvider = ({ children }) => {
   const { pathname } = useLocation();
 
   const [sesiones, setSesiones] = useState({ personal: null, cliente: null });
+  // "Estoy repartiendo". Ver LLAVE_MODO_TRABAJO en utils/sesion.js.
+  const [trabajando, setTrabajandoEstado] = useState(leerModoTrabajo);
   const [loading, setLoading] = useState(true);
 
   // 1- Al abrir la app se levantan los dos cajones de una vez, después de
@@ -122,7 +124,16 @@ export const AuthProvider = ({ children }) => {
    * repartidor entra a /mi-cuenta/reparto con su cuenta de empleado.
    */
   const area = areaDeRuta(pathname);
-  const activa = area === 'personal' ? sesiones.personal : sesiones.cliente || sesiones.personal;
+  /*
+   * En la tienda manda el cliente… SALVO que la persona haya dicho que está
+   * trabajando. Ahí manda su sesión de personal aunque tenga la de cliente
+   * abierta, que es justamente el caso del repartidor que compra en la tienda
+   * donde reparte. Ver LLAVE_MODO_TRABAJO.
+   */
+  const activa =
+    area === 'personal'
+      ? sesiones.personal
+      : (trabajando && sesiones.personal) || sesiones.cliente || sesiones.personal;
 
   /*
    * El área, también en una referencia.
@@ -154,8 +165,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const alCambiarOtraPestana = (e) => {
       // e.key es null cuando alguien hizo localStorage.clear().
-      if (e.key !== null && e.key !== CAJON.personal && e.key !== CAJON.cliente) return;
+      const llaves = [CAJON.personal, CAJON.cliente, LLAVE_MODO_TRABAJO];
+      if (e.key !== null && !llaves.includes(e.key)) return;
       setSesiones({ personal: leerCajon('personal'), cliente: leerCajon('cliente') });
+      // El modo trabajo también viaja entre pestañas: si lo apagó en una, las
+      // demás no pueden seguir creyendo que sigue en la calle.
+      setTrabajandoEstado(leerModoTrabajo());
     };
     window.addEventListener('storage', alCambiarOtraPestana);
     return () => window.removeEventListener('storage', alCambiarOtraPestana);
@@ -199,6 +214,19 @@ export const AuthProvider = ({ children }) => {
    * cuentas distintas aunque compartan el correo, y cerrar una no dice nada
    * sobre la otra.
    */
+  /*
+   * Encender o apagar el modo trabajo. Se guarda antes de tocar el estado para
+   * que una recarga inmediata —el teléfono que se bloquea justo ahí— encuentre
+   * el valor nuevo y no el viejo.
+   */
+  const setTrabajando = useCallback((valor) => {
+    try {
+      if (valor) localStorage.setItem(LLAVE_MODO_TRABAJO, '1');
+      else localStorage.removeItem(LLAVE_MODO_TRABAJO);
+    } catch { /* sin localStorage vale solo para esta pestaña */ }
+    setTrabajandoEstado(!!valor);
+  }, []);
+
   const logout = useCallback((areaAcerrar) => {
     const cajon = areaAcerrar || areaRef.current;
 
@@ -233,8 +261,14 @@ export const AuthProvider = ({ children }) => {
        */
       haySesionDePersonal: !!sesiones.personal,
       haySesionDeCliente: !!sesiones.cliente,
+      /*
+       * Para el menú de Mi Cuenta, que en modo trabajo se reduce a Reparto.
+       * Solo tiene sentido si de verdad hay una sesión de personal detrás.
+       */
+      trabajando: trabajando && !!sesiones.personal,
+      setTrabajando,
     }),
-    [activa, login, logout, actualizarUsuario, loading, sesiones.personal, sesiones.cliente]
+    [activa, login, logout, actualizarUsuario, loading, sesiones.personal, sesiones.cliente, trabajando, setTrabajando]
   );
 
   // 5- No se pintan los hijos hasta saber si hay sesión, para evitar el
