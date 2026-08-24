@@ -25,7 +25,7 @@
 import promotionModel from "../models/promotion.js";
 import clientModel from "../models/client.js";
 import { identidadDeLaTienda } from "./avisosCliente.js";
-import { enlaceDeBaja } from "./tokenBaja.js";
+import { enlaceDeBaja, enlaceDeBajaUnClic } from "./tokenBaja.js";
 import { sendEmail } from "./sendMailMailjet.js";
 import { plantillaCorreoPromo } from "./plantillaCorreoPromo.js";
 
@@ -162,7 +162,19 @@ export const avisarPromoNueva = async (promoId) => {
         tienda,
         enlaceBaja: enlaceDeBaja(cliente._id, "promociones"),
       });
-      await sendEmail(para, asunto, html, texto);
+      /*
+       * List-Unsubscribe: el botón que Gmail/Outlook/Yahoo ponen junto al
+       * remitente, sin abrir ninguna página. Que esté presente ya es una
+       * señal de confianza para sus filtros de spam — y de un tiempo para
+       * acá, Gmail y Yahoo lo EXIGEN para que un remitente de volumen no
+       * termine directo en la carpeta de spam sin ni siquiera evaluarse. Ver
+       * la ruta /notificaciones/baja/:token.
+       */
+      const headers = {
+        "List-Unsubscribe": `<${enlaceDeBajaUnClic(cliente._id, "promociones")}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      };
+      await sendEmail(para, asunto, html, texto, undefined, headers);
       enviados++;
     } catch (error) {
       // Un correo rebotado no puede frenar a los otros doscientos.

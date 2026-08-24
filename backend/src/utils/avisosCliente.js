@@ -27,7 +27,7 @@ import clientModel from "../models/client.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 import { sendEmail } from "./sendMailMailjet.js";
 import { plantillaProductosNuevos, plantillaPedidoEnCamino } from "./plantillasAviso.js";
-import { enlaceDeBaja } from "./tokenBaja.js";
+import { enlaceDeBaja, enlaceDeBajaUnClic } from "./tokenBaja.js";
 
 /*
  * La identidad de la tienda para el encabezado del correo: su nombre en dos
@@ -85,14 +85,20 @@ const destinatariosDe = async (preferencia) => {
  * `armar` recibe al cliente y devuelve { asunto, html, texto }: así cada quien
  * recibe su propio enlace de baja.
  */
-const enviarEnFila = async (clientes, armar, etiqueta) => {
+/*
+ * `headersDe`, si se pasa, arma el List-Unsubscribe de cada correo — igual
+ * que hace avisoPromo.js. Es opcional porque no todos los avisos tienen un
+ * enlace de baja propio todavía (el de "pedido en camino" no lo pide).
+ */
+const enviarEnFila = async (clientes, armar, etiqueta, headersDe) => {
   let enviados = 0;
   let fallidos = 0;
 
   for (const cliente of clientes) {
     try {
       const { asunto, html, texto } = armar(cliente);
-      await sendEmail(cliente.email, asunto, html, texto);
+      const headers = headersDe ? headersDe(cliente) : undefined;
+      await sendEmail(cliente.email, asunto, html, texto, undefined, headers);
       enviados++;
     } catch (error) {
       // Un correo rebotado no puede frenar a los otros doscientos.
@@ -146,7 +152,11 @@ const soltarLoteDeProductos = async () => {
       tienda,
       enlaceBaja: enlaceDeBaja(cliente._id, "nuevosProductos"),
     }),
-    "aviso de productos nuevos"
+    "aviso de productos nuevos",
+    (cliente) => ({
+      "List-Unsubscribe": `<${enlaceDeBajaUnClic(cliente._id, "nuevosProductos")}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    })
   );
 };
 

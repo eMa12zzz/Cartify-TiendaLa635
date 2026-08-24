@@ -236,6 +236,23 @@ const router = express.Router();
 router.post("/notificaciones/baja", clientController.bajaNotificacion);
 
 /*
+ * LA MISMA BAJA, PERO PARA EL BOTÓN DEL PROPIO CORREO.
+ *
+ * Gmail, Outlook y Yahoo le ponen un botón de "Cancelar suscripción" junto al
+ * nombre del remitente cuando el correo trae el encabezado List-Unsubscribe
+ * con soporte de un clic (RFC 8058). Ese botón NO abre ninguna página: el
+ * cliente de correo manda un POST a esta URL por su cuenta, con el token ya
+ * puesto en el camino — así no depende de que sepa mandar un cuerpo con forma
+ * particular.
+ *
+ * Que exista este encabezado (esté o no encendido para todo el mundo) ya es
+ * una señal de confianza para los filtros de spam: dice "este remitente deja
+ * salir fácil a quien no quiere sus correos", que es lo contrario de un
+ * spammer. Se usa en avisoPromo.js y en el aviso de productos nuevos.
+ */
+router.post("/notificaciones/baja/:token", clientController.bajaNotificacion);
+
+/*
  * Todo este router estaba abierto. Con el id en la URL —que se adivina o se
  * copia— cualquiera leía y EDITABA la cuenta de otro: sus direcciones con
  * coordenadas, sus métodos de pago, sus favoritos.

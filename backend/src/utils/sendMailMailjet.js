@@ -31,8 +31,10 @@ const mailjet = Mailjet.apiConnect(config.mailjet.apiKey, config.mailjet.secretK
  * @param {Array<{ContentType:string, Filename:string, Base64Content:string}>} [attachments] -
  *   adjuntos ya codificados en base64, tal como los pide el campo
  *   "Attachments" de la API v3.1 de Mailjet.
+ * @param {Object<string,string>} [headers] - encabezados de correo sueltos,
+ *   como List-Unsubscribe. Ver avisoPromo.js.
  */
-export const sendEmail = async (to, subject, html, text, attachments) => {
+export const sendEmail = async (to, subject, html, text, attachments, headers) => {
   const result = await mailjet.post("send", { version: "v3.1" }).request({
     Messages: [
       {
@@ -45,6 +47,7 @@ export const sendEmail = async (to, subject, html, text, attachments) => {
         ...(text ? { TextPart: text } : {}),
         HTMLPart: html,
         ...(attachments ? { Attachments: attachments } : {}),
+        ...(headers ? { Headers: headers } : {}),
       },
     ],
   });
