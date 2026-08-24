@@ -411,7 +411,17 @@ clientController.updateNotifications = async (req, res) => {
  */
 clientController.bajaNotificacion = async (req, res) => {
   try {
-    const datos = leerTokenBaja(req.body?.token);
+    /*
+     * El token viene del CUERPO cuando lo manda la pantalla /baja (alguien
+     * leyendo el correo, tocando el enlace) — o de la URL cuando lo manda el
+     * propio cliente de correo (Gmail, Outlook) con el botón "Cancelar
+     * suscripción" que pone junto al remitente. Ese botón NO carga ninguna
+     * pantalla: manda un POST directo a la URL del encabezado List-Unsubscribe
+     * con un cuerpo fijo que no controlamos, así que el token tiene que venir
+     * ya puesto en la URL. Ver la ruta /notificaciones/baja/:token y
+     * utils/tokenBaja.js.
+     */
+    const datos = leerTokenBaja(req.params?.token || req.body?.token);
     if (!datos) {
       return res.status(400).json({
         message: "Este enlace ya no sirve. Puede apagar los avisos desde Mi Cuenta > Notificaciones.",

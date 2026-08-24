@@ -1,41 +1,30 @@
-import { Tag } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import { useAjustesCtx } from '../../context/AjustesContext';
+import logoTienda from '../../assets/logo-tienda.png';
 
 /*
- * LogoMarca — el sello de la tienda: una placa con el tag y el nombre
- * DENTRO de la misma pieza. El fondo usa var(--theme-primary) en vez de un
- * café quemado en una imagen, así que cambia solo según la paleta que el
- * admin tenga activa (incluida "Mi marca", que sigue el color configurado
- * en Personalización).
+ * LogoMarca — el sello de la tienda en el panel: la placa navy con el tag y
+ * "Tienda la 635".
  *
- * Primer intento: un cuadrado rotado 45° detrás del texto, como en el
- * boceto. Centrado, salían los 4 picos parejos —una flor, no un tag— y el
- * texto quedaba montado encima de un pico. Una placa horizontal con el tag
- * y el nombre uno al lado del otro es más robusta: no hay geometría que se
- * pueda romper en ningún tamaño.
+ * ANTES esto se armaba con CSS (un <div> + el ícono Tag de lucide + texto),
+ * y por eso era DINÁMICO: el fondo seguía var(--theme-primary) —la paleta
+ * activa, incluidas las de alto contraste— y el texto leía el nombre de
+ * Personalización, así que si el dueño renombraba su tienda el sello se
+ * actualizaba solo.
  *
- * El texto usa buttonText de la paleta activa, no blanco fijo: en Alto
- * Contraste el fondo es amarillo y buttonText es negro — blanco ahí
- * desaparecería.
+ * Con el archivo real de diseño eso se pierde: es un PNG fijo, con "Tienda
+ * la 635" ya quemado en los píxeles. El fondo no cambia con la paleta y el
+ * nombre no sigue a Personalización — si algún día el dueño renombra la
+ * tienda, hay que exportar un logo nuevo y reemplazar este archivo a mano.
+ * Es una decisión pedida a propósito, no un descuido: la placa CSS de antes
+ * era justamente el primer intento que se había descartado por no lograr la
+ * forma del tag en puro CSS sin que saliera una flor en vez de una etiqueta.
  */
-const LogoMarca = ({ height = 44 }) => {
-  const { palette } = useTheme();
-  const { ajustes } = useAjustesCtx();
-  const textoSobreColor = palette.colors.buttonText;
-
-  return (
-    <div
-      className="flex items-center gap-2.5 rounded-2xl px-3 flex-none"
-      style={{ height, backgroundColor: 'var(--theme-primary)' }}
-    >
-      <Tag className="flex-none" style={{ width: height * 0.42, height: height * 0.42, color: textoSobreColor }} strokeWidth={2.5} />
-      <span className="font-extrabold leading-none" style={{ fontSize: height * 0.26, color: textoSobreColor }}>
-        {ajustes.nombreLinea1}
-        {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
-      </span>
-    </div>
-  );
-};
+const LogoMarca = ({ height = 44 }) => (
+  <img
+    src={logoTienda}
+    alt="Tienda la 635"
+    className="flex-none rounded-2xl"
+    style={{ height, width: 'auto' }}
+  />
+);
 
 export default LogoMarca;
