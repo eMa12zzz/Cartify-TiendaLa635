@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { loginClientDB, googleLoginDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { BotonOjo } from '../components/UI/CampoContrasena';
-import { useAjustesCtx } from '../context/AjustesContext';
+import MarcaTienda from '../components/Store/MarcaTienda';
 import { consumirRecienRegistrado } from '../utils/primerIngreso';
 
 const BROWN = 'var(--marca-600)';
@@ -62,35 +62,8 @@ const TopBar = styled.header`
   @media (max-width: 700px) { padding: 0 16px; }
 `;
 
-const Marca = styled.button`
-  background: none;
-  border: none;
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 4px 8px;
-  border-radius: 12px;
-  transition: background-color var(--dur-press) var(--ease-out),
-              transform var(--dur-press) var(--ease-out);
-
-  @media (hover: hover) and (pointer: fine) {
-    &:hover { background: var(--marca-50); }
-  }
-  &:active { transform: scale(0.97); }
-`;
-
-/* Las dos líneas del nombre, con el mismo peso y color: "Tienda" no es una
-   etiqueta que acompaña a "la 635", es parte del nombre del negocio. */
-const Linea = styled.span`
-  display: block;
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.4px;
-  color: var(--tinta);
-`;
+/* La marca (nombre o logo) se mudo a MarcaTienda.jsx, que la pinta igual en
+   todas las barras de la aplicacion. */
 
 /* La misma pastilla que los botones del encabezado de la tienda. */
 const VolverTienda = styled.button`
@@ -404,8 +377,6 @@ const LoginClient = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { login, logout } = useAuth();
-  // El nombre de la tienda sale de los ajustes, no escrito a mano.
-  const { ajustes } = useAjustesCtx();
   const [loading, setLoading] = useState(false);
   const [verPass, setVerPass] = useState(false);
 
@@ -546,10 +517,8 @@ const LoginClient = () => {
   return (
     <Container>
       <TopBar>
-        <Marca type="button" onClick={() => navigate('/')} title="Ir a la tienda">
-          <Linea>{ajustes.nombreLinea1}</Linea>
-          {ajustes.nombreLinea2 && <Linea>{ajustes.nombreLinea2}</Linea>}
-        </Marca>
+        {/* La misma marca que el menú (antes iba a 17px). Ver MarcaTienda. */}
+        <MarcaTienda tamano={19} alto={38} onClick={() => navigate('/')} titulo="Ir a la tienda" />
         <VolverTienda type="button" onClick={() => navigate('/')}>
           <StoreIcon size={16} strokeWidth={2.2} /> Seguir viendo la tienda
         </VolverTienda>

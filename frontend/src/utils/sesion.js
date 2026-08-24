@@ -21,6 +21,40 @@ export const CAJON = {
 };
 
 /*
+ * ============================================================
+ * EL MODO TRABAJO
+ * ============================================================
+ * "Ahora mismo estoy repartiendo", dicho por quien lo hace.
+ *
+ * EL PROBLEMA QUE RESUELVE
+ * En el área de cliente manda el cajón de cliente si existe. Eso está bien
+ * casi siempre —es la tienda— pero deja fuera un caso real y diario: el
+ * repartidor que ADEMÁS es cliente de la tienda donde trabaja. Con su sesión
+ * de cliente abierta en su propio teléfono, /mi-cuenta/reparto le contestaba
+ * "esta pantalla es para el personal" aunque su sesión de empleado estuviera
+ * ahí al lado. Para poder trabajar tenía que cerrar su cuenta personal.
+ *
+ * Con este interruptor lo dice él: mientras está encendido manda su sesión de
+ * personal y la pantalla se reduce a Reparto —que es lo único que vino a
+ * hacer—; apagado, vuelve a ser un cliente más y ve su cuenta completa.
+ *
+ * Vive en localStorage y no en memoria porque tiene que sobrevivir a que se
+ * bloquee el teléfono y a que se recargue la página, que en la calle pasa
+ * todo el tiempo.
+ * ============================================================
+ */
+export const LLAVE_MODO_TRABAJO = 'sesion:trabajando';
+
+export const leerModoTrabajo = () => {
+  try {
+    return localStorage.getItem(LLAVE_MODO_TRABAJO) === '1';
+  } catch {
+    // Sin localStorage (modo privado), simplemente no está trabajando.
+    return false;
+  }
+};
+
+/*
  * Las rutas del panel. Todo lo demás —la tienda, Mi Cuenta, los logins de
  * cliente— es área de cliente.
  *

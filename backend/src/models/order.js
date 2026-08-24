@@ -220,6 +220,44 @@ const orderSchema = new Schema({
     deliveryLng: { type: Number },
 
     /*
+     * EL CÓDIGO DE ENTREGA — cuatro dígitos que prueban quién recibe.
+     *
+     * Lo emite el servidor al crear el pedido y NUNCA lo manda el navegador:
+     * si el cliente pudiera elegirlo, no probaría nada. Va en todos los
+     * pedidos, sean de domicilio o de retiro en el local — el mostrador
+     * también entrega a quien se presente. Ver utils/codigoEntrega.js.
+     *
+     * `select: false` es la mitad importante: sin eso el código viajaría en
+     * CUALQUIER respuesta que devuelva pedidos, incluida la lista completa del
+     * panel y el seguimiento del repartidor. Solo lo entrega a mano quien
+     * comprobó que el pedido es de quien pregunta. Ver getOrdersByClient y
+     * getOrderById en el controlador.
+     */
+    deliveryCode: { type: String, select: false },
+
+    /*
+     * Cuándo se comprobó el código contra el cliente en la puerta. Vacío en un
+     * pedido ya entregado significa una cosa concreta: se entregó SIN
+     * comprobar, porque el personal usó la salida de emergencia. Ver
+     * deliveryCodeOmitido.
+     */
+    deliveryCodeVerifiedAt: { type: Date },
+
+    /*
+     * La salida de emergencia, y su rastro.
+     *
+     * El código no puede dejar a nadie sin su pedido: se queda sin batería, se
+     * lo recibe la vecina, el correo no llegó. Si no hubiera forma de entregar
+     * sin él, el personal terminaría marcando "entregado" desde la tienda
+     * antes de salir —y entonces el código no valdría nada—.
+     *
+     * Así que se puede omitir, pero queda escrito quién lo omitió y por qué.
+     * Un control que se puede saltar en silencio no es un control.
+     */
+    deliveryCodeOmitido: { type: Boolean, default: false },
+    deliveryCodeMotivo: { type: String, maxlength: 200 },
+
+    /*
      * Cuándo pasó cada cosa y quién la hizo.
      *
      * Antes solo existía `status` y el `updatedAt` de los timestamps, que se

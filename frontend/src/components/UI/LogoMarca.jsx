@@ -1,5 +1,6 @@
 import { Tag } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAjustesCtx } from '../../context/AjustesContext';
 
 /*
  * LogoMarca — el sello de la tienda: una placa con el tag y el nombre
@@ -20,6 +21,7 @@ import { useTheme } from '../../context/ThemeContext';
  */
 const LogoMarca = ({ height = 44 }) => {
   const { palette } = useTheme();
+  const { ajustes } = useAjustesCtx();
   const textoSobreColor = palette.colors.buttonText;
 
   return (
@@ -29,7 +31,8 @@ const LogoMarca = ({ height = 44 }) => {
     >
       <Tag className="flex-none" style={{ width: height * 0.42, height: height * 0.42, color: textoSobreColor }} strokeWidth={2.5} />
       <span className="font-extrabold leading-none" style={{ fontSize: height * 0.26, color: textoSobreColor }}>
-        Tienda<br />la 635
+        {ajustes.nombreLinea1}
+        {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
       </span>
     </div>
   );

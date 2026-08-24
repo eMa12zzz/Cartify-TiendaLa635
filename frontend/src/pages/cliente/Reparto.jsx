@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -6,6 +7,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { useReparto, enlaceDeRuta } from '../../hooks/useReparto';
 import { useViajeEnVivo } from '../../hooks/useViajeEnVivo';
 import { useAjustesCtx } from '../../context/AjustesContext';
+import ModalCodigoEntrega from '../../components/Admin/ModalCodigoEntrega';
 
 /*
  * Reparto — los pedidos a domicilio pendientes, para quien los lleva.
@@ -59,11 +61,41 @@ const Reparto = () => {
   // la ubicación del teléfono que abre el enlace.
   const { ajustes } = useAjustesCtx();
 
-  // Entregar cierra el viaje de ese pedido: nadie tiene que acordarse de
-  // apagar el compartir después de tocar el timbre.
-  const entregar = async (pedido) => {
-    await avanzar(pedido, 'entregado');
+  /*
+   * EL PEDIDO QUE SE ESTÁ POR ENTREGAR, esperando los cuatro dígitos.
+   *
+   * Esta pantalla es la que de verdad importa para el código: es la que el
+   * repartidor tiene en la mano en la puerta, cuando alguien sale a recibir.
+   * Aquí es donde se pregunta "¿me dice su código?" y donde se comprueba que
+   * quien recibe es quien pidió.
+   */
+  const [pedidoAEntregar, setPedidoAEntregar] = useState(null);
+
+  /*
+   * Entregar cierra el viaje de ese pedido: nadie tiene que acordarse de
+   * apagar el compartir después de tocar el timbre.
+   *
+   * El `quitarDelViaje` va DESPUÉS del await y solo si no hubo error: si el
+   * código no coincidió, el pedido sigue en camino y el cliente tiene que
+   * seguir viendo moverse el punto en su mapa.
+   */
+  const entregar = async (pedido, extras) => {
+    await avanzar(pedido, 'entregado', extras);
     if (vaEnViaje(pedido._id)) quitarDelViaje(pedido._id);
+  };
+
+  /*
+   * Si el código no coincide el servidor responde 400, `avanzar` relanza y el
+   * modal se queda ABIERTO. Cerrarlo obligaría a buscar el pedido otra vez en
+   * la lista, con el cliente esperando en la puerta.
+   */
+  const confirmarEntrega = async (extras) => {
+    try {
+      await entregar(pedidoAEntregar, extras);
+      setPedidoAEntregar(null);
+    } catch {
+      // El aviso ya lo pintó el interceptor. Aquí solo se decide no cerrar.
+    }
   };
 
   /*
@@ -256,7 +288,7 @@ const Reparto = () => {
 
                     {p.status === 'pagado' && (
                       <button
-                        onClick={() => avanzar(p, 'preparando')}
+                        onClick={() => { avanzar(p, 'preparando').catch(() => {}); }}
                         disabled={moviendo === p._id}
                         className="press flex-1 py-2.5 rounded-full text-sm font-bold border disabled:opacity-60"
                         style={{ borderColor: c.cardBorder, color: c.textPrimary }}
@@ -266,7 +298,7 @@ const Reparto = () => {
                     )}
                     {p.status === 'preparando' && (
                       <button
-                        onClick={() => salirEnCamino(p)}
+                        onClick={() => { salirEnCamino(p).catch(() => {}); }}
                         disabled={moviendo === p._id}
                         className="press flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold border"
                         style={{ borderColor: '#1D4ED8', color: '#1D4ED8' }}
@@ -276,7 +308,7 @@ const Reparto = () => {
                     )}
                     {p.status === 'en_camino' && (
                       <button
-                        onClick={() => entregar(p)}
+                        onClick={() => setPedidoAEntregar(p)}
                         disabled={moviendo === p._id}
                         className="press flex-1 py-2.5 rounded-full text-sm font-bold border disabled:opacity-60"
                         style={{ borderColor: '#16a34a', color: '#16a34a' }}
@@ -320,6 +352,22 @@ const Reparto = () => {
           })}
         </div>
       )}
+
+      {/*
+        "¿Me dice su código?" — la pregunta de la puerta.
+
+        El `key` atado al id reinicia el formulario entre una entrega y la
+        siguiente: sin él, el código de la casa anterior se quedaba escrito y
+        la próxima se confirmaba con un número que no era suyo. Ver el
+        comentario de ModalCodigoEntrega.
+      */}
+      <ModalCodigoEntrega
+        key={pedidoAEntregar?._id || 'sin-pedido'}
+        isOpen={!!pedidoAEntregar}
+        pedido={pedidoAEntregar}
+        onClose={() => setPedidoAEntregar(null)}
+        onConfirm={confirmarEntrega}
+      />
     </div>
   );
 };
