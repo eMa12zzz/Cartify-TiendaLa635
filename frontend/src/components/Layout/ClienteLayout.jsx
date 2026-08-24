@@ -6,7 +6,7 @@ import {
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
-import { useAjustesCtx } from '../../context/AjustesContext';
+import MarcaTienda from '../Store/MarcaTienda';
 
 /*
  * ClienteLayout — el "marco" compartido del área "Mi Cuenta" del cliente.
@@ -43,7 +43,6 @@ const ClienteLayout = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { user, logout, trabajando, setTrabajando, haySesionDePersonal } = useAuth();
-  const { ajustes } = useAjustesCtx();
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
@@ -126,10 +125,10 @@ const ClienteLayout = () => {
         className="h-16 px-4 sm:px-7 flex items-center justify-between gap-3 sticky top-0 z-30"
         style={{ backgroundColor: c.topbarBg, borderBottom: `1px solid ${c.sidebarBorder}` }}
       >
-        <Link to="/store" className="font-extrabold leading-none text-base tracking-tight flex-none" style={{ color: c.textPrimary }}>
-          {/* El nombre sale de los ajustes, no del código: la Fase 4 lo hizo
-              editable y esta pantalla se había quedado con el de siempre. */}
-          {ajustes.nombreLinea1}<br />{ajustes.nombreLinea2}
+        {/* La misma marca que el menú de la tienda, logo incluido. Antes esta
+            barra pintaba el nombre a 16px y nunca el logo. Ver MarcaTienda. */}
+        <Link to="/store" className="flex-none">
+          <MarcaTienda tamano={19} alto={38} color={c.textPrimary} />
         </Link>
 
         {/* Quién está dentro. Se mudó del menú lateral a aquí: ahora que la

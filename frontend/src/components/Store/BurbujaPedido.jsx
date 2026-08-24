@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import { divIcon, latLngBounds } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Package, ChefHat, Bike, Check, X, ChevronRight, Clock } from 'lucide-react';
+import { Bike, X, ChevronRight, Clock } from 'lucide-react';
 import { useMyOrders } from '../../hooks/useMyOrders';
 import { useAuth } from '../../hooks/useAuth';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
+import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
+import MapaSeguimiento from './MapaSeguimiento';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 
 /*
@@ -28,62 +27,13 @@ import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
  * repartidor que seguir — así que se filtra abajo según el pedido. Mismo
  * orden que el estado real: pagado → preparando → en_camino → entregado.
  */
-const PASOS_TODOS = [
-  { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package },
-  { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat },
-  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike },
-  { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check },
-];
+// Los pasos viven en utils/pasosPedido.js: estaban copiados en tres
+// pantallas y una de las copias se habia quedado sin "En camino".
 
 const BROWN = 'var(--marca-600)';
 
-// Los dos puntos del mapita: quien trae el pedido y la casa a donde va.
-const pinRepartidor = divIcon({
-  className: '',
-  html: `<div style="
-    width:16px;height:16px;border-radius:50%;
-    background:#2563eb;border:3px solid #fff;
-    box-shadow:0 0 0 5px rgba(37,99,235,.22), 0 2px 6px rgba(0,0,0,.3);
-  "></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
-const pinCasa = divIcon({
-  className: '',
-  html: `<div style="
-    width:20px;height:20px;border-radius:50% 50% 50% 0;
-    background:${BROWN};transform:rotate(-45deg);
-    border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.3);
-  "></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 20],
-});
-
-/*
- * Encuadra el mapa para que se vean los dos puntos a la vez.
- *
- * Centrado solo en el repartidor, la casa quedaba fuera y el mapa no
- * respondía la única pregunta que importa: ¿qué tan cerca va de mí? Conforme
- * se acerca, el encuadre se va cerrando solo, y ese apretarse cuenta el
- * avance sin necesidad de una barra de progreso.
- */
-const EncuadreDeViaje = ({ punto, destino }) => {
-  const mapa = useMap();
-
-  if (punto && destino) {
-    mapa.fitBounds(latLngBounds([punto.lat, punto.lng], [destino.lat, destino.lng]), {
-      padding: [34, 34],
-      maxZoom: 16,
-      animate: true,
-    });
-  } else if (punto) {
-    // Pedidos viejos, sin punto de destino guardado: al menos se ve al que viene.
-    mapa.setView([punto.lat, punto.lng], 15);
-  }
-
-  return null;
-};
+// Los pines y el encuadre del mapa se mudaron a MapaSeguimiento.jsx: estaban
+// copiados en tres pantallas y esta era una de las copias.
 
 const BurbujaPedido = () => {
   const navigate = useNavigate();
@@ -136,8 +86,8 @@ const BurbujaPedido = () => {
    */
   const estado = seguimiento.estado || enCurso.status;
   const esDomicilio = enCurso.deliveryType === 'delivery';
-  const PASOS = esDomicilio ? PASOS_TODOS : PASOS_TODOS.filter((p) => p.id !== 'en_camino');
-  const pasoActual = PASOS.findIndex((p) => p.id === estado);
+  const PASOS = pasosDe(enCurso.deliveryType);
+  const pasoActual = indiceDePaso(PASOS, estado);
   const paso = PASOS[pasoActual] || PASOS[0];
   // "En camino" ya es un estado real, no una adivinanza con el GPS — el mapa
   // solo entra a competir con si de verdad hay un punto fresco que mostrar.
@@ -240,25 +190,15 @@ const BurbujaPedido = () => {
           */}
           {enCamino && (
             <div>
-              <div style={{ height: 132 }}>
-                <MapContainer
-                  center={[seguimiento.punto.lat, seguimiento.punto.lng]}
-                  zoom={15}
-                  zoomControl={false}
-                  attributionControl={false}
-                  dragging={false}
-                  scrollWheelZoom={false}
-                  doubleClickZoom={false}
-                  style={{ height: '100%', width: '100%' }}
-                >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <Marker position={[seguimiento.punto.lat, seguimiento.punto.lng]} icon={pinRepartidor} />
-                  {seguimiento.destino && (
-                    <Marker position={[seguimiento.destino.lat, seguimiento.destino.lng]} icon={pinCasa} />
-                  )}
-                  <EncuadreDeViaje punto={seguimiento.punto} destino={seguimiento.destino} />
-                </MapContainer>
-              </div>
+              {/* Sin arrastrar ni zoom: es una miniatura que se mira de reojo,
+                  y arrastrable robaba el desplazamiento de la pagina. */}
+              <MapaSeguimiento
+                punto={seguimiento.punto}
+                destino={seguimiento.destino}
+                alto={132}
+                borde="transparent"
+                interactivo={false}
+              />
               {/*
                 En las últimas cuadras la franja se pone verde y cambia el
                 texto. No es adorno: es la diferencia entre "está en camino"

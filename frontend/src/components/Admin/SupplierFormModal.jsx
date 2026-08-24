@@ -1,13 +1,31 @@
 import { useForm } from 'react-hook-form';
 import { reglaTelefono, bloquearNoDigitos } from '../../utils/validaciones';
 import { formatearTelefono, LARGO_TELEFONO } from '../../utils/mascaras';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Loader2 } from 'lucide-react';
 import { modalTransition } from '../../utils/motion';
+import { brandService } from '../../api/brandService';
 
-const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) => {
-  const { register, handleSubmit, reset, watch } = useForm();
+const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [], onMarcaCreada }) => {
+  const { register, handleSubmit, reset, watch, setValue, getValues } = useForm();
+
+  /*
+   * ── DAR DE ALTA UNA MARCA SIN SALIRSE DE AQUÍ ──
+   *
+   * El caso es de todos los días: se está registrando un proveedor nuevo y una
+   * de las marcas que distribuye todavía no existe en el sistema. Antes había
+   * que cancelar este formulario —perdiendo lo escrito—, ir a Marcas, crearla,
+   * volver a Proveedores y empezar de nuevo.
+   *
+   * `nombreMarca` vacío con `creandoMarca` en falso significa que la cajita
+   * ni siquiera está abierta: no se le muestra un campo de más a quien solo
+   * viene a marcar las marcas que ya existen.
+   */
+  const [creandoMarca, setCreandoMarca] = useState(false);
+  const [nombreMarca, setNombreMarca] = useState('');
+  const [guardandoMarca, setGuardandoMarca] = useState(false);
   
   const isEditing = !!supplier;
   const watchIsActive = watch('isActive');
@@ -35,6 +53,41 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
       }
     }
   }, [isOpen, supplier, reset]);
+
+  const crearMarca = async () => {
+    const nombre = nombreMarca.trim();
+    if (!nombre) { toast.error('Escriba el nombre de la marca'); return; }
+    if (guardandoMarca) return;
+
+    setGuardandoMarca(true);
+    try {
+      const r = await brandService.createBrand({ name: nombre, isActive: true });
+      const nueva = r?.brand;
+      if (!nueva?._id) throw new Error('El servidor no devolvió la marca');
+
+      // La lista de marcas vive en la pantalla de Proveedores; se le avisa para
+      // que la nueva aparezca entre las casillas sin recargar nada.
+      onMarcaCreada?.(nueva);
+
+      /*
+       * Y queda MARCADA. Nadie crea una marca aquí adentro para después no
+       * asociarla: obligar a buscarla y tildarla sería pedir un paso que ya
+       * se dijo con el simple hecho de haberla creado.
+       */
+      setValue('brandIds', [...(getValues('brandIds') || []), nueva._id]);
+
+      toast.success(`Marca "${nueva.name}" creada y asociada`);
+      setNombreMarca('');
+      setCreandoMarca(false);
+    } catch (error) {
+      // El aviso del servidor (nombre repetido, por ejemplo) ya lo pintó el
+      // interceptor de api.js; aquí solo se deja la cajita abierta para
+      // corregir sin volver a escribir todo.
+      if (!error?.response) toast.error('No se pudo crear la marca');
+    } finally {
+      setGuardandoMarca(false);
+    }
+  };
 
   const onSubmit = (data) => {
     onSave({ data, id: supplier?._id });
@@ -120,7 +173,58 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
             </div>
 
             <div className="pt-2">
-              <label className="block text-sm font-bold text-gray-700 mb-2">Marcas Asociadas</label>
+              <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+                <label className="block text-sm font-bold text-gray-700">Marcas Asociadas</label>
+
+                {/* Crear una marca que todavía no existe, sin perder este formulario. */}
+                {!creandoMarca && (
+                  <button
+                    type="button"
+                    onClick={() => setCreandoMarca(true)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#00283D] hover:underline"
+                  >
+                    <Plus size={14} /> Nueva marca
+                  </button>
+                )}
+              </div>
+
+              {creandoMarca && (
+                <div className="flex items-center gap-2 mb-2 p-3 rounded-xl bg-[#F1F6F9] border border-[#E4D5C3]">
+                  <input
+                    autoFocus
+                    value={nombreMarca}
+                    onChange={(e) => setNombreMarca(e.target.value)}
+                    /*
+                      Enter crea la marca y NO envía el formulario del proveedor.
+                      Sin el preventDefault, escribir el nombre y darle Enter
+                      guardaba el proveedor a medio llenar.
+                    */
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); crearMarca(); }
+                      if (e.key === 'Escape') { setCreandoMarca(false); setNombreMarca(''); }
+                    }}
+                    placeholder="Nombre de la marca nueva"
+                    className="flex-1 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#00283D]"
+                  />
+                  <button
+                    type="button"
+                    onClick={crearMarca}
+                    disabled={guardandoMarca || !nombreMarca.trim()}
+                    className="flex items-center gap-1.5 bg-[#00283D] text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {guardandoMarca && <Loader2 size={14} className="animate-spin" />}
+                    {guardandoMarca ? 'Creando…' : 'Crear'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setCreandoMarca(false); setNombreMarca(''); }}
+                    className="text-sm text-gray-500 hover:text-gray-700 px-2"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+
               <div className="bg-white border border-gray-300 rounded-xl p-4 max-h-48 overflow-y-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {brands.map(brand => (
@@ -135,7 +239,9 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
                     </label>
                   ))}
                   {brands.length === 0 && (
-                    <p className="text-sm text-gray-500 italic col-span-3">No hay marcas registradas.</p>
+                    <p className="text-sm text-gray-500 italic col-span-3">
+                      No hay marcas registradas. Use "Nueva marca" aquí arriba para crear la primera.
+                    </p>
                   )}
                 </div>
               </div>

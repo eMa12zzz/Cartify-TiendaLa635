@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../hooks/useUbicacion';
 import { clientService } from '../api/clientService';
+import { useAjustesCtx } from '../context/AjustesContext';
 
 /*
  * ============================================================
@@ -236,6 +237,7 @@ const SeguirPosicion = ({ posicion }) => {
 
 const Bienvenida = () => {
   const navigate = useNavigate();
+  const { ajustes } = useAjustesCtx();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { posicion, direccion, setDireccion, buscando, localizando, marcarEn, localizarme } = useUbicacion();
@@ -329,7 +331,16 @@ const Bienvenida = () => {
           fuera, y de paso funcionan si el nombre no está cargado.
         */}
         <Saludo>
-          <Marca>Tienda la 635</Marca>
+          {/*
+            El nombre sale de los ajustes, no del codigo. Estaba escrito a
+            mano, asi que si el dueno le cambiaba el nombre a su tienda en
+            Personalizacion esta pantalla seguia diciendo el viejo.
+
+            Aqui NO se usa MarcaTienda: esto no es una barra superior sino un
+            rotulo pequeno en versalitas sobre el saludo, y meterle la marca
+            grande le comeria el protagonismo al "!Hola, Fulano!".
+          */}
+          <Marca>{[ajustes.nombreLinea1, ajustes.nombreLinea2].filter(Boolean).join(" ")}</Marca>
           <Titulo>
             {esAgregar
               ? 'Nueva dirección'

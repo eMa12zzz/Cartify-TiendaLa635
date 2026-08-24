@@ -5,10 +5,12 @@ import toast from 'react-hot-toast';
 import { loginAdminDB, verify2FAAdmin } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import CampoContrasena from '../components/UI/CampoContrasena';
+import { useAjustesCtx } from '../context/AjustesContext';
 
 const LoginAdmin = () => {
   const navigate = useNavigate();
   const { login, logout } = useAuth();
+  const { ajustes } = useAjustesCtx();
   const [loading, setLoading] = useState(false);
   /*
    * El color de marca real, inyectado localmente — /admin también está en la
@@ -122,8 +124,18 @@ const LoginAdmin = () => {
 
           {/* Logo / Header */}
           <div className="text-center mb-10">
+            {/*
+              El nombre sale de los ajustes, no del codigo: estaba escrito a
+              mano y se quedaba con el viejo cada vez que se renombraba la
+              tienda en Personalizacion.
+
+              Se mantiene el titulo grande centrado en vez de MarcaTienda
+              porque esto no es una barra superior: es el encabezado de una
+              pantalla de entrada, y ahi la marca manda.
+            */}
             <h1 className="text-4xl font-extrabold text-black leading-tight mb-4 tracking-tight">
-              Tienda<br />la 635
+              {ajustes.nombreLinea1}
+              {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
             </h1>
             <p className="text-gray-500 text-sm font-medium">Panel del personal</p>
             <p className="text-gray-400 text-xs mt-2 max-w-xs mx-auto">
