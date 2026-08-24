@@ -245,12 +245,51 @@ export const AuthProvider = ({ children }) => {
     setSesiones((previas) => ({ ...previas, [cajon]: null }));
   }, []);
 
+  /*
+   * 4.5- Cerrar TODO, a pedido — el botón "Cerrar sesión" del PANEL.
+   *
+   * `logout()` de arriba cierra un solo cajón a propósito: son dos cuentas
+   * distintas aunque compartan el correo, y es lo que hace posible el modo
+   * trabajo (un repartidor sigue conectado como cliente mientras reparte).
+   *
+   * Pero desde el botón del panel eso confundía: alguien tocaba "Cerrar
+   * sesión" en /dashboard, aterrizaba en /admin, y si volvía a la tienda se
+   * encontraba TODAVÍA conectado — como cliente, con otra cuenta, pero
+   * conectado igual. Para quien vino a salir del todo, eso no se sintió como
+   * un cierre de sesión.
+   *
+   * Decisión explícita: el botón del panel cierra los DOS cajones. El costo
+   * es que ya no sirve para salir del modo trabajo sin perder la sesión de
+   * cliente — pero ese botón vive en el PANEL, no en Mi Cuenta, y quien
+   * trabaja no pasa por ahí para dejar de trabajar (usa el interruptor de
+   * ClienteLayout). El "Salir" de Mi Cuenta sigue cerrando solo lo suyo, ver
+   * `logout` arriba.
+   */
+  const logoutTodo = useCallback(() => {
+    api.post('/logoutAdmin').catch(() => {});
+    api.post('/logoutClient').catch(() => {});
+
+    localStorage.removeItem(CAJON.personal);
+    localStorage.removeItem(CAJON.cliente);
+    /*
+     * El modo trabajo también se apaga. Dejarlo prendido sería un cajón
+     * vacío con la bandera puesta: la próxima vez que alguien entre como
+     * personal en este navegador, "modo trabajo" se encendería solo, sin
+     * que nadie lo haya pedido esta vez.
+     */
+    try { localStorage.removeItem(LLAVE_MODO_TRABAJO); } catch { /* nada que limpiar */ }
+
+    setSesiones({ personal: null, cliente: null });
+    setTrabajandoEstado(false);
+  }, []);
+
   const valor = useMemo(
     () => ({
       user: activa ? { type: activa.type, ...activa } : null,
       token: activa?.token || null,
       login,
       logout,
+      logoutTodo,
       actualizarUsuario,
       loading,
       isAuthenticated: !!activa?.token,
@@ -268,7 +307,7 @@ export const AuthProvider = ({ children }) => {
       trabajando: trabajando && !!sesiones.personal,
       setTrabajando,
     }),
-    [activa, login, logout, actualizarUsuario, loading, sesiones.personal, sesiones.cliente, trabajando, setTrabajando]
+    [activa, login, logout, logoutTodo, actualizarUsuario, loading, sesiones.personal, sesiones.cliente, trabajando, setTrabajando]
   );
 
   // 5- No se pintan los hijos hasta saber si hay sesión, para evitar el
