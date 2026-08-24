@@ -57,3 +57,19 @@ export const leerTokenBaja = (token) => {
  */
 export const enlaceDeBaja = (clienteId, clave) =>
   `${config.tienda.url}/baja?t=${encodeURIComponent(firmarTokenBaja(clienteId, clave))}`;
+
+/*
+ * La MISMA baja, pero para el botón del propio correo (List-Unsubscribe, un
+ * clic — ver routes/client.js). Va directo a la API y no a la pantalla del
+ * frontend: el cliente de correo no renderiza nada, solo manda un POST y
+ * espera un 200.
+ *
+ * Se apoya en `config.tienda.url` a propósito y no en una variable aparte:
+ * en producción Vercel reenvía /api/* al backend de Render (ver
+ * frontend/vercel.json), así que el dominio público de la tienda YA sabe
+ * llegar a la API. Inventar una segunda variable de entorno solo para esto
+ * sería un lugar más donde la URL de producción se puede olvidar de
+ * actualizar.
+ */
+export const enlaceDeBajaUnClic = (clienteId, clave) =>
+  `${config.tienda.url}/api/client/notificaciones/baja/${encodeURIComponent(firmarTokenBaja(clienteId, clave))}`;

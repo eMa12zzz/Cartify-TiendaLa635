@@ -82,7 +82,20 @@ const ModalCodigoEntrega = ({ isOpen, onClose, onConfirm, pedido }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        /*
+         * z-[2000] Y NO z-60: este modal tiene que ganarle a Leaflet.
+         *
+         * En el panel no habia mapas y 60 alcanzaba de sobra. Pero ahora el
+         * mismo modal se abre en /mi-cuenta/reparto, que si tiene mapa, y
+         * Leaflet reparte a sus capas z-index propios que llegan hasta 1000
+         * (los controles van en 800 y el contenedor en 1000). Con 60, el mapa
+         * se dibujaba ENCIMA del modal: el repartidor veia el cuadro de
+         * "Confirmar entrega" cortado por el mapa y no podia escribir el
+         * codigo.
+         *
+         * 2000 deja margen sobre Leaflet sin pelearse con nada mas de la app.
+         */
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
