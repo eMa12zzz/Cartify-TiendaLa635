@@ -9,15 +9,18 @@ import ThemeSwitcher from './ThemeSwitcher';
 const TopBar = ({ onAlternarMenu, menuAbierto = false }) => {
   const { palette } = useTheme();
   const c = palette.colors;
-  const { user, logout } = useAuth();
+  const { user, logoutTodo } = useAuth();
   const navigate = useNavigate();
   const { isOpen, toggle, close, ref } = useDropdown();
 
-  // El personal sale por su propia puerta: el panel tiene su login aparte.
-  // Mismo patrón que AccountSettings.jsx.
+  /*
+   * El botón del PANEL cierra las dos sesiones (ver logoutTodo en
+   * AuthContext): quien toca "Cerrar sesión" aquí espera salir del todo, no
+   * encontrarse conectado como cliente al volver a la tienda.
+   */
   const handleLogout = () => {
     close();
-    logout();
+    logoutTodo();
     navigate('/admin');
   };
 
