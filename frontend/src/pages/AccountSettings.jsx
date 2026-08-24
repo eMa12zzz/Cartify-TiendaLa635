@@ -12,7 +12,7 @@ const AccountSettings = () => {
   const { paletteId, setPaletteId, palette } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [verPass, setVerPass] = useState(false);
-  const { user, logout, actualizarUsuario } = useAuth();
+  const { user, logoutTodo, actualizarUsuario } = useAuth();
   const navigate = useNavigate();
 
   // Foto de perfil: el input real vive escondido y lo dispara el avatar.
@@ -65,9 +65,12 @@ const AccountSettings = () => {
 
   const userType = user?.type || 'employee';
 
-  // El personal sale por su propia puerta: el panel tiene su login aparte.
+  /*
+   * El botón del PANEL cierra las dos sesiones (ver logoutTodo en
+   * AuthContext) — mismo criterio que TopBar.jsx.
+   */
   const handleLogout = () => {
-    logout();
+    logoutTodo();
     navigate('/admin');
   };
 
