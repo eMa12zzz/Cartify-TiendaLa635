@@ -54,7 +54,7 @@ const Boton = styled.button`
 `;
 
 const Hamburguesa = styled.span`
-  color: #6b6b6b;
+  color: #6B7280;
   display: flex;
   align-items: center;
 `;
@@ -98,7 +98,7 @@ const Panel = styled.div`
   left: 0;
   width: 268px;
   background: #fff;
-  border: 1px solid #F0E7DE;
+  border: 1px solid #ECE7E1;
   border-radius: 16px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
   padding: 6px;
@@ -137,7 +137,7 @@ const Panel = styled.div`
 
 const Titulo = styled.p`
   font-size: 11px;
-  color: #9a938c;
+  color: #9CA3AF;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -158,7 +158,7 @@ const Opcion = styled.button`
   border-radius: 11px;
   font-size: 14px;
   font-weight: 600;
-  color: #2A1A0E;
+  color: #1C1614;
   min-height: 44px;
 
   @media (hover: hover) and (pointer: fine) {
@@ -253,7 +253,7 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
           <Titulo>Pasillos de la tienda</Titulo>
 
           <Opcion role="menuitem" $activa={todaLaTienda} onClick={verTodo}>
-            <StoreIcon size={17} strokeWidth={2.1} color={todaLaTienda ? BROWN : '#9a938c'} />
+            <StoreIcon size={17} strokeWidth={2.1} color={todaLaTienda ? BROWN : '#9CA3AF'} />
             Toda la tienda
             {todaLaTienda && <Check size={15} strokeWidth={2.6} color={BROWN} style={{ marginLeft: 'auto' }} />}
           </Opcion>
@@ -263,7 +263,7 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
             const activa = estaActiva(m);
             return (
               <Opcion key={m._id} role="menuitem" $activa={activa} onClick={() => abrir(m)}>
-                <Icono size={17} strokeWidth={2.1} color={activa ? BROWN : '#9a938c'} />
+                <Icono size={17} strokeWidth={2.1} color={activa ? BROWN : '#9CA3AF'} />
                 {m.name}
                 {activa && <Check size={15} strokeWidth={2.6} color={BROWN} style={{ marginLeft: 'auto' }} />}
               </Opcion>

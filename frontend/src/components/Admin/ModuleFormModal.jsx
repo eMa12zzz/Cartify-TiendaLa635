@@ -55,13 +55,13 @@ const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
         transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative z-10"
       >
-        <div className="bg-[#9C6026] text-white p-6">
+        <div className="bg-[#00283D] text-white p-6">
           <h2 className="text-2xl font-bold text-center">
             {isEditing ? 'Editar Módulo' : 'Nuevo Módulo'}
           </h2>
         </div>
 
-        <div className="p-6 bg-[#FAF9F6] flex-1 flex flex-col">
+        <div className="p-6 bg-[#F1F6F9] flex-1 flex flex-col">
           <form id="module-form" onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6 flex-1">
             
             <div>
@@ -69,7 +69,7 @@ const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
               <input 
                 type="text" 
                 {...register('name', { required: true })}
-                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                 placeholder="Ej. Panadería, Pupusería, Librería..."
               />
             </div>
@@ -136,7 +136,7 @@ const ModuleFormModal = ({ isOpen, onClose, moduleData, onSave }) => {
               <textarea 
                 {...register('description', { required: true })}
                 rows={4}
-                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#9C6026] resize-none"
+                className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#00283D] resize-none"
                 placeholder="Breve descripción del módulo..."
               ></textarea>
             </div>

@@ -5,6 +5,7 @@ import { Bike, Navigation, Signpost, Phone, Package, MapPin, Radio, Sun, Triangl
 import { useTheme } from '../../hooks/useClientTheme';
 import { useReparto, enlaceDeRuta } from '../../hooks/useReparto';
 import { useViajeEnVivo } from '../../hooks/useViajeEnVivo';
+import { useAjustesCtx } from '../../context/AjustesContext';
 
 /*
  * Reparto — los pedidos a domicilio pendientes, para quien los lleva.
@@ -54,12 +55,28 @@ const Reparto = () => {
     enViaje, posicion, error: errorGPS, pantallaDespierta,
     vaEnViaje, empezarViaje, quitarDelViaje,
   } = useViajeEnVivo();
+  // De dónde sale el reparto: la dirección guardada en Personalización, no
+  // la ubicación del teléfono que abre el enlace.
+  const { ajustes } = useAjustesCtx();
 
   // Entregar cierra el viaje de ese pedido: nadie tiene que acordarse de
   // apagar el compartir después de tocar el timbre.
   const entregar = async (pedido) => {
     await avanzar(pedido, 'entregado');
     if (vaEnViaje(pedido._id)) quitarDelViaje(pedido._id);
+  };
+
+  /*
+   * "Voy en camino" marcaba SOLO el GPS, sin tocar el estado del pedido —
+   * dos acciones separadas que era fácil hacer a medias: si alguien salía a
+   * repartir sin acordarse de este botón aparte, el cliente se quedaba
+   * viendo "Preparando" toda la entrega, sin mapa ni aviso. Ahora un solo
+   * botón hace las dos cosas: marca 'en_camino' y, si el pedido trae punto
+   * en el mapa, empieza a compartir la ubicación de una vez.
+   */
+  const salirEnCamino = async (pedido) => {
+    await avanzar(pedido, 'en_camino');
+    if (pedido.deliveryLat != null && pedido.deliveryLng != null) empezarViaje(pedido._id);
   };
 
   // Un cliente no reparte: si llega aquí de casualidad, se le dice y ya.
@@ -185,11 +202,11 @@ const Reparto = () => {
                     <span
                       className="text-xs font-bold px-2.5 py-1 rounded-full flex-none"
                       style={{
-                        backgroundColor: p.status === 'preparando' ? '#FFF4E5' : '#E8F1FF',
-                        color: p.status === 'preparando' ? '#B4590C' : '#0F47AF',
+                        backgroundColor: p.status === 'en_camino' ? '#EFF5FF' : p.status === 'preparando' ? '#FFF4E5' : '#E8F1FF',
+                        color: p.status === 'en_camino' ? '#1D4ED8' : p.status === 'preparando' ? '#B4590C' : '#0F47AF',
                       }}
                     >
-                      {p.status === 'preparando' ? 'Preparando' : 'Por preparar'}
+                      {p.status === 'en_camino' ? 'En camino' : p.status === 'preparando' ? 'Preparando' : 'Por preparar'}
                     </span>
                   </div>
 
@@ -228,7 +245,7 @@ const Reparto = () => {
                       reconstruir aquí.
                     */}
                     <a
-                      href={enlaceDeRuta(p)}
+                      href={enlaceDeRuta(p, ajustes.direccion)}
                       target="_blank"
                       rel="noreferrer"
                       className="press flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold"
@@ -237,7 +254,7 @@ const Reparto = () => {
                       <Navigation className="w-4 h-4" /> Cómo llegar
                     </a>
 
-                    {p.status === 'pagado' ? (
+                    {p.status === 'pagado' && (
                       <button
                         onClick={() => avanzar(p, 'preparando')}
                         disabled={moviendo === p._id}
@@ -246,7 +263,18 @@ const Reparto = () => {
                       >
                         {moviendo === p._id ? 'Marcando…' : 'Empezar a preparar'}
                       </button>
-                    ) : (
+                    )}
+                    {p.status === 'preparando' && (
+                      <button
+                        onClick={() => salirEnCamino(p)}
+                        disabled={moviendo === p._id}
+                        className="press flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold border"
+                        style={{ borderColor: '#1D4ED8', color: '#1D4ED8' }}
+                      >
+                        <Bike className="w-4 h-4" /> {moviendo === p._id ? 'Marcando…' : 'Salí a repartir'}
+                      </button>
+                    )}
+                    {p.status === 'en_camino' && (
                       <button
                         onClick={() => entregar(p)}
                         disabled={moviendo === p._id}
@@ -258,11 +286,15 @@ const Reparto = () => {
                     )}
 
                     {/*
-                      Compartir el viaje solo tiene sentido si el pedido trae
-                      punto en el mapa: sin destino no hay nada que calcular
-                      del otro lado, y sería pedir la ubicación por gusto.
+                      El interruptor manual de compartir ubicación queda
+                      como respaldo — para cuando el GPS falló al salir y hay
+                      que reactivarlo a mano, o para pausarlo — pero ya no es
+                      la manera de avisar que salió: eso lo hace el botón de
+                      arriba, que marca el estado Y empieza a compartir de una
+                      vez. Por eso solo aparece una vez que el pedido YA está
+                      en camino, no antes.
                     */}
-                    {hayPunto && (
+                    {hayPunto && p.status === 'en_camino' && (
                       compartiendo ? (
                         <button
                           onClick={() => quitarDelViaje(p._id)}
@@ -277,7 +309,7 @@ const Reparto = () => {
                           className="press w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold border"
                           style={{ borderColor: c.cardBorder, color: c.textPrimary }}
                         >
-                          <Bike className="w-4 h-4" /> Voy en camino
+                          <Radio className="w-4 h-4" /> Volver a compartir ubicación
                         </button>
                       )
                     )}

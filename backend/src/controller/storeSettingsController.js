@@ -83,18 +83,6 @@ storeSettingsController.updateSettings = async (req, res) => {
     }
 
     /*
-     * Color base de la marca: un hex válido (#RGB o #RRGGBB), o vacío para
-     * volver al café que declara index.css. Cualquier otra cosa rebota.
-     */
-    if (req.body.colorMarca !== undefined) {
-      const hex = String(req.body.colorMarca).trim();
-      if (hex && !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) {
-        return res.status(400).json({ message: "El color de la marca no es un color válido" });
-      }
-      cambios.colorMarca = hex;
-    }
-
-    /*
      * Números. Se rechaza lo que no sea un número finito y no negativo: un
      * costo de envío en blanco, con letras o negativo no tiene sentido y no
      * debe pisar el valor bueno que ya estaba guardado.

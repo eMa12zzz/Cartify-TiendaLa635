@@ -82,13 +82,13 @@ const ServiciosImpresion = () => {
     finally { setConfirmOpen(false); setToDelete(null); cargar(); }
   };
 
-  const inputSm = 'w-40 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]';
+  const inputSm = 'w-40 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]';
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-4xl font-extrabold text-[#C28C5D]">Impresiones</h1>
-        <button onClick={abrirNuevo} className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm">Agregar formato</button>
+        <h1 className="text-4xl font-extrabold text-[#066494]">Impresiones</h1>
+        <button onClick={abrirNuevo} className="px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm">Agregar formato</button>
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -129,22 +129,22 @@ const ServiciosImpresion = () => {
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
               className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative z-10">
-              <div className="bg-[#9C6026] text-white p-5"><h2 className="text-2xl font-bold text-center">{editId ? 'Editar formato' : 'Nuevo formato'}</h2></div>
-              <form onSubmit={guardar} className="p-6 bg-[#FAF9F6] space-y-4">
+              <div className="bg-[#00283D] text-white p-5"><h2 className="text-2xl font-bold text-center">{editId ? 'Editar formato' : 'Nuevo formato'}</h2></div>
+              <form onSubmit={guardar} className="p-6 bg-[#F1F6F9] space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Nombre del formato</label>
                   <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]" placeholder="Ej. Carta, A4, Póster, DUI" />
+                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]" placeholder="Ej. Carta, A4, Póster, DUI" />
                 </div>
                 {/* Medidas de la plantilla: definen la hoja del editor del cliente */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Tamaño de la plantilla (cm)</label>
                   <div className="flex items-center gap-2">
                     <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.widthCm} onChange={(e) => setForm({ ...form, widthCm: e.target.value })}
-                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]" placeholder="Ancho" />
+                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#00283D]" placeholder="Ancho" />
                     <span className="text-gray-500">×</span>
                     <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
-                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#9C6026]" placeholder="Alto" />
+                      className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#00283D]" placeholder="Alto" />
                     <span className="text-xs text-gray-400">cm</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Ej. DUI 8.5 × 5.4 · Carta 21.6 × 27.9 · A4 21 × 29.7</p>
@@ -175,7 +175,7 @@ const ServiciosImpresion = () => {
                   <select
                     value={form.materialId}
                     onChange={(e) => setForm({ ...form, materialId: e.target.value })}
-                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]"
+                    className="w-full bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]"
                   >
                     <option value="">Sin control de material</option>
                     {papeles.map((p) => (
@@ -193,7 +193,7 @@ const ServiciosImpresion = () => {
                 </label>
                 <div className="flex justify-end gap-3 pt-2">
                   <button type="button" onClick={() => setModalOpen(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-6 py-2 rounded-full">Cancelar</button>
-                  <button type="submit" className="bg-[#B47C4D] hover:bg-[#9C6026] text-white font-medium px-8 py-2 rounded-full">Guardar</button>
+                  <button type="submit" className="bg-[#003049] hover:bg-[#00283D] text-white font-medium px-8 py-2 rounded-full">Guardar</button>
                 </div>
               </form>
             </motion.div>

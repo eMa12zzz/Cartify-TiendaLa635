@@ -97,7 +97,7 @@ const Modules = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
-      <h1 className="text-4xl font-extrabold text-[#C28C5D] mb-6">Módulos</h1>
+      <h1 className="text-4xl font-extrabold text-[#066494] mb-6">Módulos</h1>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -110,7 +110,7 @@ const Modules = () => {
                 placeholder="Buscar módulo..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] transition-colors w-64 shadow-sm"
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] transition-colors w-64 shadow-sm"
               />
             </div>
             <FilterSelect
@@ -123,7 +123,7 @@ const Modules = () => {
             />
             <button 
               onClick={handleAddModule}
-              className="px-4 py-2 bg-[#B47C4D] hover:bg-[#9C6026] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+              className="px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm"
             >
               Agregar Módulo
             </button>

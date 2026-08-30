@@ -82,7 +82,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
     setEditandoLimite(true);
   };
 
-  const inputCls = 'bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-[#9C6026]';
+  const inputCls = 'bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-[#00283D]';
 
   return (
     <AnimatePresence>
@@ -94,7 +94,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
             initial={modalInitial} animate={modalAnimate} exit={modalInitial} transition={modalTransition}
             className="bg-white rounded-2xl shadow-xl w-full max-w-3xl flex flex-col overflow-hidden relative z-10 max-h-[92vh]"
           >
-            <div className="bg-[#9C6026] text-white p-5 flex items-center justify-between">
+            <div className="bg-[#00283D] text-white p-5 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold">{proveedor?.name}</h2>
                 <p className="text-sm opacity-80">Estado de cuenta</p>
@@ -104,7 +104,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
               </button>
             </div>
 
-            <div className="p-6 bg-[#FAF9F6] flex-1 overflow-y-auto">
+            <div className="p-6 bg-[#F1F6F9] flex-1 overflow-y-auto">
               {cargando || !cuenta ? (
                 <p className="text-gray-500">Cargando estado de cuenta…</p>
               ) : (
@@ -138,7 +138,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                     ].map((c) => (
                       <div key={c.l} className="bg-white p-3 rounded-xl border border-gray-100">
                         <div className="text-xs text-gray-500 mb-0.5">{c.l}</div>
-                        <div className={`text-lg font-bold ${c.destacar ? 'text-[#B47C4D]' : 'text-gray-800'}`}>{c.v}</div>
+                        <div className={`text-lg font-bold ${c.destacar ? 'text-[#003049]' : 'text-gray-800'}`}>{c.v}</div>
                       </div>
                     ))}
                   </div>
@@ -164,7 +164,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                         <span className="text-sm text-gray-600">días</span>
                         <button
                           onClick={async () => { if (await guardarLimite(limite)) setEditandoLimite(false); }}
-                          className="press ml-auto bg-[#B47C4D] hover:bg-[#9C6026] text-white text-sm px-4 py-1.5 rounded-full">
+                          className="press ml-auto bg-[#003049] hover:bg-[#00283D] text-white text-sm px-4 py-1.5 rounded-full">
                           Guardar
                         </button>
                         <button onClick={() => setEditandoLimite(false)} className="text-sm text-gray-500 px-2">Cancelar</button>
@@ -176,7 +176,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                           {cuenta.supplier.creditDays > 0 && ` · plazo ${cuenta.supplier.creditDays} días`}
                         </span>
                         <button onClick={abrirLimite}
-                          className="press flex items-center gap-1.5 text-sm text-[#B47C4D] hover:underline">
+                          className="press flex items-center gap-1.5 text-sm text-[#003049] hover:underline">
                           <Settings2 size={14} /> Cambiar
                         </button>
                       </>
@@ -192,7 +192,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                       ].map((t) => (
                         <button type="button" key={t.v} onClick={() => setForm({ ...form, type: t.v })}
                           className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                            form.type === t.v ? 'bg-[#B47C4D] text-white border-[#B47C4D]' : 'bg-white text-gray-600 border-gray-300'
+                            form.type === t.v ? 'bg-[#003049] text-white border-[#003049]' : 'bg-white text-gray-600 border-gray-300'
                           }`}>
                           {t.l}
                         </button>
@@ -219,7 +219,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                           className={`${inputCls} w-32`} placeholder="F-001" />
                       </div>
                       <button type="submit" disabled={guardando}
-                        className="press ml-auto bg-[#B47C4D] hover:bg-[#9C6026] text-white text-sm font-medium px-6 py-2 rounded-full disabled:opacity-60">
+                        className="press ml-auto bg-[#003049] hover:bg-[#00283D] text-white text-sm font-medium px-6 py-2 rounded-full disabled:opacity-60">
                         {guardando ? 'Guardando…' : 'Registrar'}
                       </button>
                     </div>
@@ -260,7 +260,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                                   type="button"
                                   onClick={() => agregarAlCalendario(p)}
                                   title="Descargar el recordatorio (.ics) para su calendario"
-                                  className="press flex items-center gap-1 text-xs font-semibold text-[#B47C4D] hover:text-[#9C6026] border border-[#E4D5C3] hover:border-[#B47C4D] rounded-full px-2.5 py-1 transition-colors"
+                                  className="press flex items-center gap-1 text-xs font-semibold text-[#003049] hover:text-[#00283D] border border-[#E4D5C3] hover:border-[#003049] rounded-full px-2.5 py-1 transition-colors"
                                 >
                                   <CalendarPlus size={13} /> Calendario
                                 </button>
@@ -268,7 +268,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                                   type="button"
                                   onClick={() => mostrarQR(p)}
                                   title="Mostrar un QR para agregarlo desde el teléfono"
-                                  className="press flex items-center gap-1 text-xs font-semibold text-[#B47C4D] hover:text-[#9C6026] border border-[#E4D5C3] hover:border-[#B47C4D] rounded-full px-2.5 py-1 transition-colors"
+                                  className="press flex items-center gap-1 text-xs font-semibold text-[#003049] hover:text-[#00283D] border border-[#E4D5C3] hover:border-[#003049] rounded-full px-2.5 py-1 transition-colors"
                                 >
                                   <QrCode size={13} /> QR
                                 </button>
@@ -336,7 +336,7 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
             <button
               type="button"
               onClick={() => setQr(null)}
-              className="press mt-4 w-full bg-[#B47C4D] hover:bg-[#9C6026] text-white text-sm font-medium py-2 rounded-full"
+              className="press mt-4 w-full bg-[#003049] hover:bg-[#00283D] text-white text-sm font-medium py-2 rounded-full"
             >
               Cerrar
             </button>

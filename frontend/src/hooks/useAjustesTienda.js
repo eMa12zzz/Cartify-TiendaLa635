@@ -33,7 +33,6 @@ const DE_RESPALDO = {
   logoUrl: '',
   lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
-  colorMarca: '', // vacío = el café de siempre que declara index.css
   costoEnvio: 4.78,
   // Envío por distancia (ver utils/envio.js). Sin ubicación de la tienda, el
   // cálculo cae al costoEnvio plano de arriba, así que estos defaults dejan la
@@ -109,7 +108,9 @@ export const useAjustesTienda = () => {
     try {
       setGuardando(true);
       const res = await storeSettingsService.guardarAjustes(cambios);
-      if (res?.ajustes) setAjustes({ ...DE_RESPALDO, ...res.ajustes });
+      if (res?.ajustes) {
+        setAjustes({ ...DE_RESPALDO, ...res.ajustes });
+      }
       toast.success('Ajustes guardados');
       return true;
     } catch (error) {

@@ -199,8 +199,18 @@ const escribirLineas = (llave, lista) => {
   window.dispatchEvent(new Event(EVENTO_CARRITO));
 };
 
-export const useStore = ({ moduloInicial = null, busquedaInicial = '' } = {}) => {
+/*
+ * `promoInicial` es el id que llega en ?promo= — lo pone el botón "Ver la
+ * promoción" del correo que se le manda a los clientes cuando la tienda
+ * publica una. Sin esto, ese botón dejaba a la persona en la portada a buscar
+ * a mano la oferta que le acababan de anunciar. Ver backend/utils/avisoPromo.js.
+ */
+export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInicial = null } = {}) => {
   const [productos, setProductos] = useState([]);
+  // La lista cruda de promociones. Antes solo se usaba de paso para calcular
+  // los precios y se tiraba; ahora hace falta guardarla para poder abrir una
+  // por su id.
+  const [promociones, setPromociones] = useState([]);
   /*
    * El pasillo en el que está parado el cliente. null = toda la tienda.
    * Viene de la pantalla de servicios (?modulo=) o de las pastillas de arriba.
@@ -224,8 +234,10 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '' } = {}) =>
           promotionService.getPromotions().catch(() => []),
         ]);
         const activos = (Array.isArray(prods) ? prods : []).filter((p) => p.isActive !== false);
-        const mapaPromo = construirMapaPromo(Array.isArray(promos) ? promos : []);
+        const lista = Array.isArray(promos) ? promos : [];
+        const mapaPromo = construirMapaPromo(lista);
         setProductos(activos.map((p) => mapearProducto(p, mapaPromo)));
+        setPromociones(lista);
       } catch (error) {
         console.error('Error cargando la tienda:', error);
       } finally {
@@ -234,6 +246,25 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '' } = {}) =>
     };
     cargar();
   }, []);
+
+  /*
+   * Llegó por el enlace del correo: se le abre la promo que le anunciaron.
+   *
+   * Espera a que las promociones estén cargadas —el id sin la lista no sirve
+   * de nada— y se desarma después de abrirla UNA vez. Sin ese candado, cerrar
+   * el detalle lo volvía a abrir en el siguiente render y la ventana se
+   * quedaba pegada: imposible de cerrar salvo recargando.
+   *
+   * Si la promo ya venció o la borraron, no pasa nada: se queda en la portada,
+   * que es mejor que un error por algo que ya no existe.
+   */
+  const promoDelEnlaceAbierta = useRef(false);
+  useEffect(() => {
+    if (!promoInicial || promoDelEnlaceAbierta.current || !promociones.length) return;
+    const promo = promociones.find((p) => String(p._id) === String(promoInicial));
+    promoDelEnlaceAbierta.current = true;
+    if (promo) setPromoDetalle(promo);
+  }, [promoInicial, promociones]);
 
   /*
    * Escape cierra el detalle de la promo. El listener vive acá y no en el

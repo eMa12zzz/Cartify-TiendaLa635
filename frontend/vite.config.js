@@ -4,6 +4,16 @@ import tailwindcss from '@tailwindcss/vite' // Plugin de Tailwind CSS para integ
 
 // https://vite.dev/config/ - documentación oficial de configuración.
 export default defineConfig({
+  /*
+   * Escucha en TODA la red local, no solo en localhost.
+   *
+   * Los correos llevan enlaces a la tienda, y esos correos se abren en el
+   * teléfono. Con Vite atado a localhost, "localhost:5173" en el teléfono
+   * apunta al propio teléfono y el enlace no lleva a ningún lado. Con host
+   * abierto, el teléfono en el mismo wifi entra por la IP de esta máquina —
+   * la misma que va en TIENDA_URL del backend.
+   */
+  server: { host: true },
   plugins: [
     react(), // Activa el soporte React en Vite.
     tailwindcss() // Activa el procesamiento de Tailwind CSS.

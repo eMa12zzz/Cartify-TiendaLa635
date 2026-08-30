@@ -65,13 +65,13 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
         transition={modalTransition}
         className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden relative z-10"
       >
-        <div className="bg-[#9C6026] text-white p-6">
+        <div className="bg-[#00283D] text-white p-6">
           <h2 className="text-2xl font-bold text-center">
             {isEditing ? 'Editar Proveedor' : 'Nuevo Proveedor'}
           </h2>
         </div>
 
-        <div className="p-6 bg-[#FAF9F6] flex-1 flex flex-col">
+        <div className="p-6 bg-[#F1F6F9] flex-1 flex flex-col">
           <form id="supplier-form" onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6 flex-1">
             
             <div className="grid grid-cols-2 gap-4">
@@ -80,7 +80,7 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
                 <input 
                   type="text" 
                   {...register('name', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="Distribuidora XYZ..."
                 />
               </div>
@@ -103,7 +103,7 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
                   {...register('phoneNumber', reglaTelefono)}
                   onKeyDown={bloquearNoDigitos}
                   onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="7777-7777"
                 />
               </div>
@@ -113,7 +113,7 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
                 <input 
                   type="email" 
                   {...register('email', { required: true })}
-                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#9C6026]"
+                  className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-[#00283D]"
                   placeholder="contacto@proveedor.com"
                 />
               </div>
@@ -129,7 +129,7 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
                         type="checkbox" 
                         value={brand._id}
                         {...register('brandIds')}
-                        className="rounded border-gray-300 text-[#9C6026] focus:ring-[#9C6026]"
+                        className="rounded border-gray-300 text-[#00283D] focus:ring-[#00283D]"
                       />
                       <span className="text-sm text-gray-700">{brand.name}</span>
                     </label>
@@ -169,7 +169,7 @@ const SupplierFormModal = ({ isOpen, onClose, supplier, onSave, brands = [] }) =
             <button 
               form="supplier-form"
               type="submit"
-              className="bg-[#9C6026] hover:bg-[#8B5A2B] text-white font-medium px-8 py-2 rounded-full transition-colors"
+              className="bg-[#00283D] hover:bg-[#003049] text-white font-medium px-8 py-2 rounded-full transition-colors"
             >
               Guardar
             </button>

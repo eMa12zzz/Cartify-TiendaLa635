@@ -23,6 +23,7 @@ import { useOrders } from '../hooks/useOrders';
 const estadoInfo = {
   pagado:     { label: 'Por preparar',   corto: 'Por preparar',   Icono: Package,      color: '#3b82f6' },
   preparando: { label: 'En preparación', corto: 'Preparando',     Icono: ChefHat,      color: '#f97316' },
+  en_camino:  { label: 'En camino',      corto: 'En camino',      Icono: Bike,         color: '#1D4ED8' },
   entregado:  { label: 'Entregado',      corto: 'Entregado',      Icono: CheckCircle2, color: '#22c55e' },
   cancelado:  { label: 'Cancelado',      corto: 'Cancelado',      Icono: X,            color: '#ef4444' },
 };
@@ -30,6 +31,7 @@ const estadoInfo = {
 const filtros = [
   { id: 'pagado',     label: 'Por preparar' },
   { id: 'preparando', label: 'En preparación' },
+  { id: 'en_camino',  label: 'En camino' },
   { id: 'entregado',  label: 'Entregados' },
   { id: 'todos',      label: 'Todos' },
 ];
@@ -83,12 +85,14 @@ const Orders = () => {
     total: orders.length,
     pagado: orders.filter((o) => o.status === 'pagado').length,
     preparando: orders.filter((o) => o.status === 'preparando').length,
+    en_camino: orders.filter((o) => o.status === 'en_camino').length,
     entregado: orders.filter((o) => o.status === 'entregado').length,
   };
 
   const resumen = [
     { id: 'pagado',     label: 'Por preparar',   valor: counts.pagado,     color: '#3b82f6' },
     { id: 'preparando', label: 'En preparación', valor: counts.preparando, color: '#f97316' },
+    { id: 'en_camino',  label: 'En camino',      valor: counts.en_camino,  color: '#1D4ED8' },
     { id: 'entregado',  label: 'Entregados',     valor: counts.entregado,  color: '#22c55e' },
     { id: 'todos',      label: 'Total',          valor: counts.total,      color: '#6b7280' },
   ];
@@ -102,10 +106,10 @@ const Orders = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#C28C5D]">Pedidos</h1>
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#066494]">Pedidos</h1>
 
       {/* Resumen: cada número es un botón que filtra la lista. */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
         {resumen.map((r) => {
           const activo = filtro === r.id;
           return (
@@ -138,7 +142,7 @@ const Orders = () => {
               <button
                 key={f.id}
                 onClick={() => setFiltro(f.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${activo ? 'bg-[#B47C4D] text-white border-[#B47C4D]' : 'bg-white text-gray-600 border-gray-300'}`}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${activo ? 'bg-[#003049] text-white border-[#003049]' : 'bg-white text-gray-600 border-gray-300'}`}
               >
                 {f.label}
               </button>
@@ -152,7 +156,7 @@ const Orders = () => {
             placeholder="Buscar por cliente..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#B47C4D] w-full sm:w-56 shadow-sm"
+            className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] w-full sm:w-56 shadow-sm"
           />
         </div>
       </div>
@@ -215,7 +219,7 @@ const Orders = () => {
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span
                       className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
-                      style={{ color: esDomicilio ? '#B47C4D' : 'var(--theme-text-secondary)', backgroundColor: 'var(--theme-primary-light)' }}
+                      style={{ color: esDomicilio ? 'var(--theme-primary)' : 'var(--theme-text-secondary)', backgroundColor: 'var(--theme-primary-light)' }}
                     >
                       {esDomicilio ? <Bike className="w-3.5 h-3.5" /> : <StoreIcon className="w-3.5 h-3.5" />}
                       {esDomicilio ? 'Domicilio' : 'Retiro en local'}
@@ -231,7 +235,7 @@ const Orders = () => {
                   {/* Dirección, solo cuando va a domicilio */}
                   {esDomicilio && order.deliveryAddress && (
                     <div className="flex items-start gap-1.5 text-xs mb-3" style={{ color: 'var(--theme-text-secondary)' }}>
-                      <MapPin className="w-3.5 h-3.5 flex-none mt-0.5" style={{ color: '#B47C4D' }} />
+                      <MapPin className="w-3.5 h-3.5 flex-none mt-0.5" style={{ color: 'var(--theme-primary)' }} />
                       <span className="break-words">{order.deliveryAddress}</span>
                     </div>
                   )}
@@ -240,7 +244,7 @@ const Orders = () => {
                   {order.channel === 'impresion' && order.printJob ? (
                     <div className="rounded-xl p-3 mb-3 text-sm" style={{ backgroundColor: 'var(--theme-primary-light)' }}>
                       <div className="flex items-center gap-2 mb-1 font-medium" style={{ color: 'var(--theme-text-primary)' }}>
-                        <Printer className="w-4 h-4 text-[#B47C4D]" /> Impresión — {order.printJob.serviceName}
+                        <Printer className="w-4 h-4 text-[#003049]" /> Impresión — {order.printJob.serviceName}
                       </div>
                       <div className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
                         {order.printJob.copies} copia(s) · {order.printJob.pages > 1 ? `${order.printJob.pages} págs · ` : ''}
@@ -251,7 +255,7 @@ const Orders = () => {
                         <div className="flex flex-wrap items-center gap-2 mt-3">
                           <button
                             onClick={() => imprimirArchivo(order.printJob.fileUrl)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#B47C4D] text-white transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#003049] text-white transition-colors"
                           >
                             <Printer className="w-3.5 h-3.5" /> Imprimir
                           </button>
@@ -278,9 +282,20 @@ const Orders = () => {
                       {order.items?.map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between gap-3 text-sm py-0.5">
                           <span className="font-medium min-w-0 truncate" style={{ color: 'var(--theme-text-primary)' }}>
-                            <span className="font-bold" style={{ color: '#B47C4D' }}>{item.amount}×</span> {item.name || item.productId?.name || 'Producto'}
+                            <span className="font-bold" style={{ color: 'var(--theme-primary)' }}>{item.amount}×</span> {item.name || item.productId?.name || 'Producto'}
+                            {/*
+                              La marca: sin ella "Oreja" o "Semita" no dicen de
+                              cuál producto se trata cuando hay más de uno con
+                              el mismo nombre. Solo sale si el producto sigue
+                              en el catálogo — uno eliminado no tiene de dónde
+                              sacarla.
+                            */}
+                            {item.productId?.brandId?.name && (
+                              // text-muted se perdía sobre el fondo rosado de la fila; secondary tiene más contraste.
+                              <span className="font-normal" style={{ color: 'var(--theme-text-secondary)' }}> · {item.productId.brandId.name}</span>
+                            )}
                           </span>
-                          <span className="flex-none" style={{ color: 'var(--theme-text-muted)' }}>${(item.price * item.amount).toFixed(2)}</span>
+                          <span className="flex-none" style={{ color: 'var(--theme-text-secondary)' }}>${(item.price * item.amount).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
@@ -295,12 +310,34 @@ const Orders = () => {
                     {order.status === 'pagado' && (
                       <button
                         onClick={() => cambiarEstado(order._id, 'preparando')}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-[#B47C4D] text-white transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-[#003049] text-white transition-colors"
                       >
                         <ChefHat className="w-4 h-4" /> Empezar a preparar
                       </button>
                     )}
-                    {order.status === 'preparando' && (
+                    {/*
+                      "En camino" solo existe para domicilio: un retiro en
+                      local no tiene a quién seguirle el mapa, así que ese
+                      pasa derecho de Preparando a Entregado, como siempre.
+                    */}
+                    {order.status === 'preparando' && esDomicilio && (
+                      <button
+                        onClick={() => cambiarEstado(order._id, 'en_camino')}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold text-white transition-colors"
+                        style={{ backgroundColor: '#1D4ED8' }}
+                      >
+                        <Bike className="w-4 h-4" /> Salió a reparto
+                      </button>
+                    )}
+                    {order.status === 'preparando' && !esDomicilio && (
+                      <button
+                        onClick={() => cambiarEstado(order._id, 'entregado')}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-500 text-white transition-colors"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Marcar entregado
+                      </button>
+                    )}
+                    {order.status === 'en_camino' && (
                       <button
                         onClick={() => cambiarEstado(order._id, 'entregado')}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-500 text-white transition-colors"

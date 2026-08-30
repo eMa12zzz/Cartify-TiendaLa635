@@ -110,7 +110,7 @@ const Button = styled.button`
   margin-bottom: 16px;
   transition: background 0.2s;
 
-  &:hover { background: #8A5222; }
+  &:hover { background: #00283D; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { useTemporada } from '../../hooks/useTemporada';
+import { useTemaCalculado } from '../../hooks/useTemporada';
 
 /*
  * ============================================================
@@ -59,7 +59,7 @@ const Banda = styled.div`
 `;
 
 const CintaTemporada = () => {
-  const { tema, activo, conDecoracion } = useTemporada();
+  const { tema, activo, conDecoracion } = useTemaCalculado();
 
   // Sin temporada, o con la decoración apagada, no se pinta nada. Ni un div
   // vacío: un contenedor invisible sigue empujando el contenido de abajo.

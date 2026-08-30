@@ -36,6 +36,14 @@ const Caja = styled.div`
   text-align: center;
 `;
 
+/*
+ * El color de marca real, inyectado por el propio componente (ver
+ * escalaMarca en SinPermiso, más abajo) en vez de leído de --marca-* en
+ * :root — en las rutas del panel, useTemporada() apaga esa variable a
+ * propósito (es decoración de la tienda, no herramienta del panel), y esta
+ * pantalla SÍ puede aparecer ahí. Con el valor puesto localmente en el
+ * envoltorio, estas reglas se quedan tal cual sin que la ruta les afecte.
+ */
 const Icono = styled.div`
   width: 74px;
   height: 74px;
@@ -100,6 +108,13 @@ const Boton = styled.button`
 const SinPermiso = () => {
   const { esCliente, haySesionDeCliente } = useAuth();
   const { volver, hayAtras, casa } = useVolver();
+  /*
+   * Sin escala derivada. Esta pantalla la calculaba del color que el dueño
+   * hubiera elegido y la pintaba en línea, porque en las rutas del panel
+   * useTemporada() borra las variables de marca. Pero solo borra los estilos EN
+   * LÍNEA; la regla :root de index.css se queda, y ahora la marca vive ahí fija.
+   * Así que var(--marca-*) ya resuelve bien sin ayuda de nadie.
+   */
 
   /*
    * "Viene con cuenta de cliente" es la misma situación de las dos maneras de

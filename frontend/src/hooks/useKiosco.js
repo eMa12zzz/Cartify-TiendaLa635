@@ -58,7 +58,7 @@ export const useKiosco = () => {
         // Alto contraste y corrección de errores media: la pantalla del
         // kiosco tiene reflejos y la cámara de un teléfono viejo no perdona.
         errorCorrectionLevel: 'M',
-        color: { dark: '#2A1A0E', light: '#FFFFFF' },
+        color: { dark: '#1C1614', light: '#FFFFFF' },
       });
       setImagenQR(png);
     } catch {

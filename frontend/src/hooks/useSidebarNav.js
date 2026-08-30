@@ -7,6 +7,7 @@ import {
   UserSquare2, Users, Truck,
   Library, Store, Contact, Palette,
 } from 'lucide-react';
+import { useAuth } from './useAuth';
 
 /*
  * ============================================================
@@ -78,6 +79,18 @@ export const GRUPOS = [
 
 export const useSidebarNav = () => {
   const { pathname } = useLocation();
+  const { user } = useAuth();
+
+  /*
+   * Un empleado ve el menú recortado: nada de precios, proveedores,
+   * promociones, empleados, clientes ni ajustes de la tienda — esas pantallas
+   * ni están en su sidebar (el backend las rechaza igual si las teclea a
+   * mano, ver ProtectedRoute soloAdmin). "Inventario" sale de los accesos
+   * rápidos y los tres grupos desaparecen completos.
+   */
+  const esEmpleado = user?.type === 'employee';
+  const accesos = esEmpleado ? ACCESOS.filter((a) => a.path !== '/inventario') : ACCESOS;
+  const grupos = esEmpleado ? [] : GRUPOS;
 
   // Lo que el usuario abrió o cerró a mano; vale más que el automático.
   const [forzados, setForzados] = useState({});
@@ -95,5 +108,5 @@ export const useSidebarNav = () => {
   const estaAbierto = (grupo) => forzados[grupo.id] ?? tieneActivo(grupo);
   const alternar = (grupo) => setForzados((prev) => ({ ...prev, [grupo.id]: !estaAbierto(grupo) }));
 
-  return { accesos: ACCESOS, grupos: GRUPOS, esActivo, tieneActivo, estaAbierto, alternar };
+  return { accesos, grupos, esActivo, tieneActivo, estaAbierto, alternar };
 };

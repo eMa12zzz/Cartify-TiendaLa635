@@ -307,8 +307,8 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
     });
   };
 
-  const selectCls = 'w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026] disabled:opacity-50 disabled:bg-gray-100';
-  const inputCls = 'w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#9C6026]';
+  const selectCls = 'w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D] disabled:opacity-50 disabled:bg-gray-100';
+  const inputCls = 'w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]';
 
   return (
     <AnimatePresence>
@@ -327,7 +327,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={modalTransition}
             /* bg-white → mapea a --theme-card-bg (opaco). Antes usaba
-               bg-[#FAF9F6], que el admin-theme convierte en --theme-primary-light
+               bg-[#F1F6F9], que el admin-theme convierte en --theme-primary-light
                (un color translúcido) y dejaba ver la tabla a través del modal. */
             className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden relative z-10 max-h-[92vh]"
           >
@@ -355,8 +355,8 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                         <span
                           className="w-7 h-7 flex-none grid place-items-center rounded-full text-xs font-bold border transition-colors"
                           style={{
-                            background: hecho || actual ? 'var(--theme-primary, #9C6026)' : 'transparent',
-                            borderColor: hecho || actual ? 'var(--theme-primary, #9C6026)' : 'var(--theme-card-border, #d1d5db)',
+                            background: hecho || actual ? 'var(--theme-primary, #00283D)' : 'transparent',
+                            borderColor: hecho || actual ? 'var(--theme-primary, #00283D)' : 'var(--theme-card-border, #d1d5db)',
                             color: hecho || actual ? 'var(--theme-button-text, #fff)' : 'var(--theme-text-muted, #9ca3af)',
                           }}
                         >
@@ -508,7 +508,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                       maxMB={8}
                       valorInicial={imagenGuardada}
                       onArchivo={handleImageChange}
-                      variante="claro"
+                      variante="panel"
                       ajuste="contain"
                       alto={180}
                       radio={12}
@@ -524,7 +524,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                       {...register('description', { required: true })}
                       rows={3}
                       placeholder="Qué es, para qué sirve, qué trae…"
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#9C6026] resize-none"
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#00283D] resize-none"
                     ></textarea>
                     <p className="text-xs text-gray-500 mt-1">Los saltos de línea se respetan tal como los escriba.</p>
                   </div>
@@ -632,7 +632,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                         <button
                           type="button"
                           onClick={() => setValue('barCode', Math.floor(1000000000000 + Math.random() * 9000000000000).toString())}
-                          className="text-xs text-[#C28C5D] hover:underline"
+                          className="text-xs text-[#066494] hover:underline"
                         >
                           Generar
                         </button>
@@ -731,7 +731,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                 <button
                   type="button"
                   onClick={siguiente}
-                  className="flex items-center gap-1 bg-[#B47C4D] hover:bg-[#9C6026] text-white font-medium px-6 py-2 rounded-full transition-colors text-sm"
+                  className="flex items-center gap-1 bg-[#003049] hover:bg-[#00283D] text-white font-medium px-6 py-2 rounded-full transition-colors text-sm"
                 >
                   Siguiente <ChevronRight size={16} />
                 </button>
@@ -739,7 +739,7 @@ const ProductFormModal = ({ isOpen, onClose, product, onSave, onDelete, brands =
                 <button
                   form="product-form"
                   type="submit"
-                  className="bg-[#B47C4D] hover:bg-[#9C6026] text-white font-medium px-8 py-2 rounded-full transition-colors text-sm"
+                  className="bg-[#003049] hover:bg-[#00283D] text-white font-medium px-8 py-2 rounded-full transition-colors text-sm"
                 >
                   {isEditing ? 'Guardar cambios' : 'Crear producto'}
                 </button>

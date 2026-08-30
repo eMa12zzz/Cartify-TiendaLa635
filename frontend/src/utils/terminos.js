@@ -102,8 +102,8 @@ const TERCEROS = [
   'El servicio donde se guardan las imágenes (Cloudinary): su foto de perfil, si subió una.',
   'El servicio de correo que manda los mensajes de verificación y recuperación: su correo.',
   'La base de datos donde vive la tienda (MongoDB Atlas): todo lo de la tabla de arriba.',
-  'El mapa (OpenStreetMap): cuando busca una dirección, se le manda el texto que escribió para encontrar el punto. Nunca su nombre ni su teléfono.',
-  'El asistente por voz (Google Gemini), y solo cuando la tienda no entendió sola: se le manda lo que usted dijo y la lista de productos, sin su nombre, su correo ni su dirección.',
+  'El mapa (OpenStreetMap): cuando usted busca una dirección, recibe el texto que escribió para encontrar el punto. Nunca su nombre ni su teléfono.',
+  'El asistente por voz (Google Gemini), y solo cuando la tienda no entiende sola: recibe lo que usted dijo y la lista de productos, sin su nombre, su correo ni su dirección.',
 ];
 
 /*
@@ -137,7 +137,7 @@ export const SECCIONES = [
       {
         tipo: 'parrafo',
         texto:
-          'Esta tienda en línea la opera el negocio cuyo nombre y dirección aparecen al pie de este documento, ubicado en El Salvador. Nos gusta que nos escriban: para cualquier consulta, reclamo o para ejercer los derechos que se explican más abajo, use el medio que le quede más cómodo.',
+          'Esta tienda en línea la opera el negocio cuyo nombre y dirección aparecen al pie de este documento, ubicado en El Salvador. Nos gusta que nos escriba: para cualquier consulta o reclamo, o para ejercer los derechos que se explican más abajo, use el medio que le quede más cómodo.',
       },
       {
         tipo: 'lista',
@@ -181,11 +181,11 @@ export const SECCIONES = [
       {
         tipo: 'lista',
         puntos: [
-          'El precio que vale es el que se ve cuando usted confirma el pedido. Nuestros precios ya incluyen los impuestos.',
+          'El precio que se cobra es el que usted ve al confirmar el pedido. Nuestros precios ya incluyen los impuestos.',
           'Las existencias se mueven todo el día. Si algo se acabó justo después de su pedido, le avisamos y se le descuenta del total; no se lo cambiamos por otra cosa sin preguntarle.',
           'Le llevamos el pedido a domicilio o usted lo pasa a traer, como prefiera. Con entrega a domicilio hace falta una dirección con su punto en el mapa.',
           'El tiempo de entrega que le mostramos sale del promedio real de las entregas anteriores a su zona. Es un estimado honesto, no una promesa: la lluvia y el tráfico existen.',
-          'Cuando su pedido va en camino puede seguir en el mapa por dónde viene, y valorar el servicio de entrega cuando lo reciba.',
+          'Cuando su pedido va en camino, puede seguir en el mapa por dónde viene y valorar el servicio de entrega cuando lo reciba.',
           'Hay productos que solo se le entregan a personas mayores de edad. Quien se los lleve puede pedirle su documento (DUI), y si no lo tiene a mano, ese producto se devuelve.',
         ],
       },
@@ -198,15 +198,15 @@ export const SECCIONES = [
       {
         tipo: 'parrafo',
         texto:
-          'Hoy la tienda no cobra tarjetas en línea. Se paga al recibir el pedido o en la caja de la tienda, en efectivo o con tarjeta en el datáfono. Por eso mismo, en la aplicación nunca se le va a pedir el número completo de una tarjeta ni su código de seguridad.',
+          'Hoy la tienda no cobra con tarjeta en línea. Se paga al recibir el pedido o en la caja de la tienda, en efectivo o con tarjeta en el datáfono. Por eso mismo, en la aplicación nunca se le va a pedir el número completo de una tarjeta ni su código de seguridad.',
       },
       {
         tipo: 'lista',
         puntos: [
-          'Los puntos de fidelidad se ganan comprando y se vencen. Cuánto se gana y cuándo vence se ve en "Mi cuenta > Mis puntos", que siempre manda sobre lo que diga cualquier otro lado.',
-          'El saldo de las tarjetas de regalo se canjea en la tienda, no caduca solo, y no se cambia por efectivo.',
+          'Los puntos de fidelidad se ganan comprando y se vencen. Cuánto lleva ganado y cuándo se le vencen lo ve en “Mi Cuenta › Mis puntos”. Si ahí dice una cosa y en otra pantalla dice otra, vale lo que diga ahí.',
+          'El saldo de las tarjetas de regalo se canjea en la tienda, no se vence con el tiempo y no se cambia por efectivo.',
           'Los puntos y el saldo son de su cuenta: no se pasan a otra persona.',
-          'La transacción con tarjeta debe hacerla el titular de la tarjeta.',
+          'La transacción debe hacerla el titular de la tarjeta.',
         ],
       },
       {
@@ -229,16 +229,16 @@ export const SECCIONES = [
         tipo: 'lista',
         puntos: [
           'Si el producto llegó dañado, vencido, o no es el que pidió: se lo cambiamos o le devolvemos su dinero. Avísenos cuando lo reciba, sin usarlo.',
-          'Derecho de retracto (Ley de Protección al Consumidor de El Salvador): en compras hechas por este sitio, puede arrepentirse dentro de los primeros 8 días de recibido el producto, siempre que esté sin usar, completo y con su empaque original. Presente su comprobante de compra; si lo extravió, díganos su nombre, la fecha, el método de pago y qué compró.',
+          'Puede arrepentirse, aunque el producto esté perfecto: tiene ocho días desde que lo recibió para devolverlo, siempre que esté sin usar, completo y en su empaque original. Traiga su comprobante de compra; si lo perdió, díganos su nombre, la fecha, cómo pagó y qué compró. (Esto es el derecho de retracto que da la Ley de Protección al Consumidor de El Salvador.)',
           'Por salubridad, los productos perecederos —comida, pan, frutas, verduras, lácteos— y los de higiene personal NO se devuelven por retracto una vez entregados, salvo que lleguen en mal estado o vencidos.',
-          'No se aceptan devoluciones por cambio de opinión, gusto personal o insatisfacción subjetiva una vez que el producto fue usado o abierto.',
+          'Si el producto ya se usó o se abrió, no lo recibimos de vuelta solo porque cambió de opinión o porque no le gustó.',
           'El reintegro se hace por el mismo medio con el que pagó. Si pagó en efectivo o al recibir, se le devuelve en la tienda.',
         ],
       },
       {
         tipo: 'nota',
         texto:
-          'El derecho de retracto aplica a las compras hechas de forma remota por este sitio. Las compras presenciales en la tienda no están sujetas a retracto, pero sí a cambio o devolución cuando el producto tenga un defecto o esté vencido.',
+          'Arrepentirse vale para lo que compra por este sitio. Lo que compra en persona, en el mostrador, no tiene ese plazo de ocho días — pero igual se lo cambiamos o le devolvemos su dinero si el producto tiene un defecto o está vencido.',
       },
     ],
   },
@@ -249,7 +249,7 @@ export const SECCIONES = [
       {
         tipo: 'parrafo',
         texto:
-          'Nos importa el bienestar suyo, de los niños, de los adultos mayores y de las mascotas. Antes de usar cualquier producto, tenga en cuenta lo siguiente:',
+          'Nos importa su bienestar, el de los niños, el de los adultos mayores y el de las mascotas. Antes de usar cualquier producto, tenga en cuenta lo siguiente:',
       },
       {
         tipo: 'lista',
@@ -257,7 +257,7 @@ export const SECCIONES = [
           'Lea la etiqueta y la fecha de vencimiento de cada producto antes de consumirlo o usarlo. Ante cualquier duda, pregúntenos.',
           'Algunos productos y empaques traen piezas pequeñas que pueden causar asfixia: manténgalos fuera del alcance de los niños.',
           'Los productos de limpieza y los líquidos deben guardarse lejos del alcance de niños y de quien no sepa manejarlos.',
-          'Los productos con alcohol o tabaco son solo para mayores de 18 años, y se pedirá documento al entregar.',
+          'Los productos con alcohol o tabaco son solo para mayores de 18 años, y se le pedirá su documento al entregarlos.',
         ],
       },
     ],
@@ -275,7 +275,7 @@ export const SECCIONES = [
       {
         tipo: 'nota',
         texto:
-          'Cuando su pedido va en camino puede ver por dónde viene. Esa ubicación es la de quien se lo lleva, no la suya, y se borra en cuanto le entregan.',
+          'Cuando su pedido va en camino, puede ver por dónde viene. Esa ubicación es la de quien se lo lleva, no la suya, y se borra en cuanto le entregan.',
       },
     ],
   },
@@ -292,7 +292,7 @@ export const SECCIONES = [
       {
         tipo: 'parrafo',
         texto:
-          'Fuera de eso, solo entregaríamos algo si nos lo ordena una autoridad competente.',
+          'Fuera de eso, solo entregamos algo si nos lo ordena una autoridad competente.',
       },
     ],
   },
@@ -303,9 +303,9 @@ export const SECCIONES = [
       {
         tipo: 'lista',
         puntos: [
-          'Ver lo que tenemos suyo: está todo en "Mi cuenta", sin pedir permiso a nadie.',
-          'Corregirlo: desde "Mi cuenta > Detalles de la cuenta".',
-          'Dejar de recibir promociones: desde "Mi cuenta > Notificaciones", en cualquier momento y sin dar explicaciones. Los avisos de sus pedidos siguen llegando, porque esos no son publicidad.',
+          'Ver lo que tenemos suyo: está todo en “Mi Cuenta”, sin pedir permiso a nadie.',
+          'Corregirlo: desde “Mi Cuenta › Detalles de la cuenta”.',
+          'Dejar de recibir promociones: desde “Mi Cuenta › Notificaciones”, en cualquier momento y sin dar explicaciones. Los avisos de sus pedidos siguen llegando, porque esos no son publicidad.',
           'Que borremos su cuenta y sus datos: con el botón de aquí abajo. Le respondemos dentro de los 15 días siguientes.',
         ],
       },
@@ -313,7 +313,7 @@ export const SECCIONES = [
       {
         tipo: 'nota',
         texto:
-          'Al borrar su cuenta se van su nombre, su correo, su teléfono, sus direcciones y su foto. Los pedidos que ya hizo se quedan en la contabilidad de la tienda —eso lo pide la ley de cualquier negocio— pero desligados de usted.',
+          'Al borrar su cuenta se van su nombre, su correo, su teléfono, sus direcciones y su foto. Los pedidos que ya hizo se quedan en la contabilidad de la tienda —eso se lo pide la ley a cualquier negocio— pero desligados de usted.',
       },
     ],
   },
@@ -324,12 +324,12 @@ export const SECCIONES = [
       {
         tipo: 'parrafo',
         texto:
-          'Cuando alguien acepta estas condiciones, se guarda en su cuenta cuál versión aceptó y en qué fecha. Sirve para algo concreto: el día que cambiemos el texto sabemos exactamente a quién hay que volver a preguntarle, en vez de dar por sentado que todo el mundo estuvo de acuerdo con algo que nunca leyó.',
+          'Arriba, junto al título, dice qué versión de este documento está leyendo. Cuando usted aceptó, guardamos cuál era y en qué fecha. No es un trámite: es para que el día que cambiemos algo sepamos a quién avisarle, en vez de dar por hecho que todo el mundo estuvo de acuerdo con algo que nunca leyó.',
       },
       {
         tipo: 'parrafo',
         texto:
-          'Los cambios pequeños —arreglar una palabra, aclarar una frase— no cambian la versión. Los que cambien lo que prometemos, sí.',
+          'Si solo corregimos una palabra o explicamos algo mejor, el número no se mueve y usted no tiene que hacer nada. Si cambiamos algo de lo que aquí le prometemos —cómo se paga, cuánto tiempo tiene para devolver algo, qué hacemos con sus datos— el número sube y se lo hacemos saber.',
       },
     ],
   },
@@ -343,4 +343,4 @@ export const SECCIONES = [
  * solo tiene que darle enviar.
  */
 export const MENSAJE_BORRADO =
-  'Hola, quiero pedir que borren mi cuenta y mis datos personales de la tienda en linea. Mi correo registrado es: ';
+  'Hola, quiero pedir que borren mi cuenta y mis datos personales de la tienda en línea. Mi correo registrado es: ';

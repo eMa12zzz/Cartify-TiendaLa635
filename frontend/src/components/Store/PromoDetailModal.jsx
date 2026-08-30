@@ -130,7 +130,7 @@ const Ubicacion = styled.div`
 const Titulo = styled.h3`
   font-size: 17px;
   font-weight: 800;
-  color: #2A1A0E;
+  color: #1C1614;
   margin: 26px 0 14px;
 `;
 
@@ -145,7 +145,7 @@ const Vacio = styled.div`
   text-align: center;
   color: #888;
   font-size: 14px;
-  background: #FAF9F6;
+  background: #F1F6F9;
   border-radius: 16px;
 `;
 

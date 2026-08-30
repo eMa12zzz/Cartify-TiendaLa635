@@ -2,6 +2,8 @@
 //bryan
 import express from "express";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./src/docs/swagger.js";
 import adminRoutes from "./src/routes/admin.js";
 import cookieParser from "cookie-parser";
 import employeeRoutes from "./src/routes/employee.js";
@@ -40,7 +42,16 @@ const app = express();
 
 app.use(
     cors({
-        origin: ["http://localhost:5173", "http://localhost:5174"],
+        /*
+         * Los orígenes salen de una variable, no escritos a mano: al desplegar,
+         * el dominio de la tienda no se sabe hasta que existe. Se separan por
+         * coma. Sin la variable —o sea, en local— se queda con los puertos de
+         * Vite de siempre y nada cambia.
+         */
+        origin: (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:5174")
+          .split(",")
+          .map((o) => o.trim())
+          .filter(Boolean),
         credentials: true,
     })
 );
@@ -51,6 +62,14 @@ app.use(cookieParser());
 
 app.use(express.json());
 //endpoint
+
+app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+        customSiteTitle: "Cartify API Docs",
+    })
+);
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/employee", employeeRoutes);

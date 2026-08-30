@@ -36,7 +36,7 @@ export const useReparto = () => {
        * se reparte, y uno entregado ya no es trabajo pendiente.
        */
       const paraLlevar = (Array.isArray(todos) ? todos : []).filter(
-        (o) => o.deliveryType === 'delivery' && ['pagado', 'preparando'].includes(o.status)
+        (o) => o.deliveryType === 'delivery' && ['pagado', 'preparando', 'en_camino'].includes(o.status)
       );
       setPedidos(paraLlevar);
     } catch (error) {
@@ -56,7 +56,8 @@ export const useReparto = () => {
     setMoviendo(pedido._id);
     try {
       await orderService.updateStatus(pedido._id, estado, user?.fullName || user?.userName || '');
-      toast.success(estado === 'entregado' ? 'Pedido entregado' : 'Pedido en preparación');
+      const etiquetas = { preparando: 'Pedido en preparación', en_camino: 'Pedido en camino', entregado: 'Pedido entregado' };
+      toast.success(etiquetas[estado] || 'Pedido actualizado');
       await cargar();
     } catch (error) {
       console.error(error);
@@ -77,11 +78,18 @@ export const useReparto = () => {
  *
  * Con coordenadas apunta al portón exacto; sin ellas, lo mejor que se puede
  * hacer es buscar el texto de la dirección.
+ *
+ * `origenTienda` es DE DÓNDE sale el reparto — la dirección que se guardó en
+ * Personalización, no "mi ubicación" del teléfono que abre el enlace. Sin
+ * origin, Google Maps arranca la ruta desde donde esté el GPS del celular en
+ * ese momento, que en unas pruebas —o si el repartidor ya anda a medio
+ * camino de otra entrega— no es de dónde sale el reparto de verdad.
  */
-export const enlaceDeRuta = (pedido) => {
+export const enlaceDeRuta = (pedido, origenTienda) => {
+  const origin = origenTienda ? `&origin=${encodeURIComponent(origenTienda)}` : '';
   if (pedido?.deliveryLat != null && pedido?.deliveryLng != null) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${pedido.deliveryLat},${pedido.deliveryLng}`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${pedido.deliveryLat},${pedido.deliveryLng}${origin}`;
   }
   const texto = encodeURIComponent(pedido?.deliveryAddress || '');
-  return `https://www.google.com/maps/search/?api=1&query=${texto}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${texto}${origin}`;
 };

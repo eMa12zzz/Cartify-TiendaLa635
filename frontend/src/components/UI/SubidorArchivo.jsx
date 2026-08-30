@@ -32,16 +32,30 @@ const fundido = keyframes`
 `;
 
 /*
- * Dos paletas, porque el panel izquierdo de los modales del admin es café
- * oscuro con texto blanco y el resto de la app es claro. Es lo único que de
- * verdad cambia entre un lugar y otro.
+ * Tres paletas:
+ *   - claro:  el resto de la app (Registro, Impresiones, de cara al cliente).
+ *   - oscuro: el panel izquierdo café oscuro de EmployeeFormModal, fijo a
+ *             propósito — es un diseño propio del modal, no debe cambiar con
+ *             la paleta de accesibilidad que el admin tenga elegida.
+ *   - panel:  pantallas DENTRO del panel de administración (Personalización,
+ *             el formulario de producto, el de promociones). Sigue las
+ *             variables --theme-* de ThemeContext.jsx, así que se ve igual
+ *             de oscura/clara/alto-contraste que el resto de esa pantalla.
+ *
+ * En claro y panel, el "vivo" (borde y fondo al pasar el mouse, arrastrar o
+ * enfocar) usa var(--theme-primary) con el café de fábrica como respaldo —
+ * no un hex clavado. --theme-primary lo pinta ThemeContext.jsx según la
+ * paleta que el admin tenga elegida en SU navegador (incluida "Mi marca");
+ * para cualquier otra persona que nunca tocó el selector, esa variable cae
+ * sola al mismo color de marca que ya usa el resto de la tienda, así que no
+ * cambia nada de cara al cliente.
  */
 const PALETAS = {
   claro: {
     borde: '#d8d8d8',
-    bordeVivo: '#B46C30',
+    bordeVivo: 'var(--theme-primary, #003049)',
     fondo: '#fafafa',
-    fondoVivo: '#F3E7D8',
+    fondoVivo: 'var(--theme-primary-light, #DDECF3)',
     texto: '#6B6560',
     textoFuerte: '#1C1614',
     lienzo: '#ffffff',
@@ -55,6 +69,16 @@ const PALETAS = {
     texto: 'rgba(255, 255, 255, 0.9)',
     textoFuerte: '#ffffff',
     lienzo: 'rgba(255, 255, 255, 0.08)',
+    chip: 'rgba(0, 0, 0, 0.45)',
+  },
+  panel: {
+    borde: 'var(--theme-card-border, #d8d8d8)',
+    bordeVivo: 'var(--theme-primary, #003049)',
+    fondo: 'var(--theme-card-bg, #fafafa)',
+    fondoVivo: 'var(--theme-primary-light, #DDECF3)',
+    texto: 'var(--theme-text-secondary, #6B6560)',
+    textoFuerte: 'var(--theme-text-primary, #1C1614)',
+    lienzo: 'var(--theme-card-bg, #ffffff)',
     chip: 'rgba(0, 0, 0, 0.45)',
   },
 };
@@ -118,7 +142,11 @@ const Zona = styled.div`
 
   &:focus-visible {
     border-color: ${(p) => p.$c.bordeVivo};
-    box-shadow: 0 0 0 3px rgba(180, 108, 48, 0.3);
+    /* Mismo truco que el aro de foco del buscador (HeaderTienda.jsx): el
+       color base ya es una variable, así que "pegarle" una opacidad fija en
+       hex no sirve — con color-mix el aro sigue siendo del mismo color que
+       el borde, aunque ese color cambie con la paleta. */
+    box-shadow: 0 0 0 3px color-mix(in srgb, ${(p) => p.$c.bordeVivo} 30%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -271,7 +299,7 @@ const SubidorArchivo = ({
   onArchivo,                 // (file, url) — url es la misma que se está viendo
   reinicio,
   ajuste = 'contain',        // 'contain' para producto, 'cover' para foto de perfil
-  variante = 'claro',        // 'oscuro' para el panel café de los modales
+  variante = 'claro',        // 'oscuro' para el panel café de los modales, 'panel' dentro del admin
   alto = 180,                // alto de la zona vacía
   altoPreview,               // alto cuando ya hay algo (por defecto, el mismo)
   crecer = false,            // ocupar el alto que sobre en vez de medir fijo

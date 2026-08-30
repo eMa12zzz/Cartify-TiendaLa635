@@ -23,9 +23,15 @@ import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
  * ============================================================
  */
 
-const PASOS = [
+/*
+ * "En camino" solo aplica a domicilio — un retiro en local no tiene
+ * repartidor que seguir — así que se filtra abajo según el pedido. Mismo
+ * orden que el estado real: pagado → preparando → en_camino → entregado.
+ */
+const PASOS_TODOS = [
   { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package },
   { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat },
+  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike },
   { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check },
 ];
 
@@ -105,7 +111,7 @@ const BurbujaPedido = () => {
    */
   const enCurso = user?.type === 'client'
     ? (orders || [])
-        .filter((o) => ['pagado', 'preparando'].includes(o.status))
+        .filter((o) => ['pagado', 'preparando', 'en_camino'].includes(o.status))
         .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0]
     : null;
 
@@ -129,13 +135,23 @@ const BurbujaPedido = () => {
    * empieza a preparar, ya está vieja.
    */
   const estado = seguimiento.estado || enCurso.status;
+  const esDomicilio = enCurso.deliveryType === 'delivery';
+  const PASOS = esDomicilio ? PASOS_TODOS : PASOS_TODOS.filter((p) => p.id !== 'en_camino');
   const pasoActual = PASOS.findIndex((p) => p.id === estado);
   const paso = PASOS[pasoActual] || PASOS[0];
-  const esDomicilio = enCurso.deliveryType === 'delivery';
-  const enCamino = esDomicilio && seguimiento.enVivo;
+  // "En camino" ya es un estado real, no una adivinanza con el GPS — el mapa
+  // solo entra a competir con si de verdad hay un punto fresco que mostrar.
+  const estaEnCamino = estado === 'en_camino';
+  const enCamino = estaEnCamino && seguimiento.enVivo;
 
-  // Un pedido cancelado no se sigue: la burbuja se va sola.
-  if (estado === 'cancelado') return null;
+  /*
+   * Entregado o cancelado: la burbuja se va sola. Antes solo se checaba
+   * cancelado — un pedido recién entregado se quedaba flotando para
+   * siempre, porque `enCurso` se calculó UNA vez con la lista vieja de
+   * pedidos y nunca se recalculaba con la novedad que sí trae el
+   * seguimiento en vivo.
+   */
+  if (estado === 'cancelado' || estado === 'entregado') return null;
 
   // La "novedad" del pedido: si cambió desde que la encogieron, se reabre.
   const novedad = `${estado}|${enCamino ? 'en-camino' : ''}`;
@@ -172,7 +188,7 @@ const BurbujaPedido = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
-        {enCamino ? <Bike size={19} strokeWidth={2.3} /> : <paso.Icono size={19} strokeWidth={2.3} />}
+        {estaEnCamino ? <Bike size={19} strokeWidth={2.3} /> : <paso.Icono size={19} strokeWidth={2.3} />}
       </button>
     );
   }
@@ -197,7 +213,7 @@ const BurbujaPedido = () => {
             background: '#fff',
             borderRadius: 18,
             boxShadow: '0 18px 44px rgba(0,0,0,0.22)',
-            border: '1px solid #F0E7DE',
+            border: '1px solid #ECE7E1',
             overflow: 'hidden',
             animation: 'cardIn 220ms var(--ease-out)',
           }}
@@ -316,10 +332,10 @@ const BurbujaPedido = () => {
                     )}
                   </div>
                   <div style={{ paddingBottom: i < PASOS.length - 1 ? 12 : 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: actual ? 800 : 600, color: actual ? '#2A1A0E' : '#7a7269' }}>
+                    <div style={{ fontSize: 13, fontWeight: actual ? 800 : 600, color: actual ? '#1C1614' : '#6B7280' }}>
                       {p.label}
                     </div>
-                    <div style={{ fontSize: 11.5, color: '#9a938c' }}>{p.detalle}</div>
+                    <div style={{ fontSize: 11.5, color: '#9CA3AF' }}>{p.detalle}</div>
                   </div>
                 </div>
               );
@@ -331,14 +347,14 @@ const BurbujaPedido = () => {
               novedad), se dice tal cual en vez de disimular.
             */}
             {esDomicilio && seguimiento.senalFria && (
-              <p style={{ fontSize: 11.5, color: '#9a938c', margin: '10px 0 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '10px 0 0', lineHeight: 1.45 }}>
                 Su pedido va en camino. La última novedad del repartidor fue hace{' '}
                 {seguimiento.minutosDesdeUltimoDato || 1} min.
               </p>
             )}
 
             {esDomicilio && enCurso.deliveryAddress && (
-              <p style={{ fontSize: 11.5, color: '#9a938c', margin: '10px 0 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '10px 0 0', lineHeight: 1.45 }}>
                 Se lo llevamos a: {enCurso.deliveryAddress}
               </p>
             )}
@@ -389,7 +405,7 @@ const BurbujaPedido = () => {
           lo dice sin que haya que abrirla: es la información que el cliente
           está esperando, y hacerlo tocar para verla sería mezquino.
         */}
-        {enCamino || (esDomicilio && estado === 'preparando')
+        {estaEnCamino
           ? <Bike size={19} strokeWidth={2.2} />
           : <paso.Icono size={19} strokeWidth={2.2} />}
         {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
