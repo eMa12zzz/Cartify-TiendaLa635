@@ -17,7 +17,9 @@ export const clasificacionService = {
    */
   clasificarProductos: async (productos) => {
     try {
-      const response = await api.post('/ai/clasificar', { productos });
+      // enSilencio: esto corre solo, mientras alguien mira la tienda. Un fallo
+      // aquí no puede pintar un aviso ni cerrarle la sesión. Ver api.js.
+      const response = await api.post('/ai/clasificar', { productos }, { enSilencio: true });
       return response.data;
     } catch {
       return { familias: [], origen: 'sin-red' };

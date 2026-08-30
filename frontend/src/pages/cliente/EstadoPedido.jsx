@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import { divIcon, latLngBounds } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import {
-  ChevronLeft, Package, ChefHat, Check, Bike, MapPin, CreditCard,
+  ChevronLeft, Package, Bike, MapPin, CreditCard,
   Wallet, Banknote, Hash, Store as StoreFront, X,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { orderService } from '../../api/orderService';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
+import MapaSeguimiento from '../../components/Store/MapaSeguimiento';
+import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import ValoracionPedido from '../../components/Store/ValoracionPedido';
+import CodigoEntrega from '../../components/Store/CodigoEntrega';
 
 /*
  * ============================================================
@@ -32,12 +32,8 @@ const BROWN = 'var(--marca-600)';
  * mismo en los dos lados. "En camino" se filtra abajo para retiro en local
  * —no hay repartidor que seguirle— así que ese solo ve tres.
  */
-const PASOS_TODOS = [
-  { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package },
-  { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat },
-  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike },
-  { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check },
-];
+// Los pasos viven en utils/pasosPedido.js: estaban copiados en tres
+// pantallas y una de las copias se habia quedado sin "En camino".
 
 // Cómo se nombra cada forma de pago de cara al cliente.
 const PAGO = {
@@ -46,32 +42,8 @@ const PAGO = {
   saldo: { label: 'Saldo / Gift card', Icono: Wallet },
 };
 
-const pinRepartidor = divIcon({
-  className: '',
-  html: `<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 5px rgba(37,99,235,.22),0 2px 6px rgba(0,0,0,.3);"></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
-const pinCasa = divIcon({
-  className: '',
-  html: `<div style="width:20px;height:20px;border-radius:50% 50% 50% 0;background:${BROWN};transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.3);"></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 20],
-});
-
-// Encuadra el mapa para que se vean el repartidor y la casa a la vez.
-const EncuadreDeViaje = ({ punto, destino }) => {
-  const mapa = useMap();
-  if (punto && destino) {
-    mapa.fitBounds(latLngBounds([punto.lat, punto.lng], [destino.lat, destino.lng]), {
-      padding: [34, 34], maxZoom: 16, animate: true,
-    });
-  } else if (punto) {
-    mapa.setView([punto.lat, punto.lng], 15);
-  }
-  return null;
-};
+// Los pines y el encuadre del mapa se mudaron a MapaSeguimiento.jsx: estaban
+// copiados en tres pantallas y esta era una de las copias.
 
 const formatFechaLarga = (iso) => {
   if (!iso) return '';
@@ -135,8 +107,8 @@ const EstadoPedido = () => {
   const estado = seguimiento.estado || pedido.status;
   const cancelado = estado === 'cancelado';
   const esDomicilio = pedido.deliveryType === 'delivery';
-  const PASOS = esDomicilio ? PASOS_TODOS : PASOS_TODOS.filter((p) => p.id !== 'en_camino');
-  const pasoActual = PASOS.findIndex((p) => p.id === estado);
+  const PASOS = pasosDe(pedido.deliveryType);
+  const pasoActual = indiceDePaso(PASOS, estado);
   const estaEnCamino = estado === 'en_camino';
   const enCamino = estaEnCamino && seguimiento.enVivo;
 
@@ -240,25 +212,29 @@ const EstadoPedido = () => {
               </>
             )}
 
-            {/* Mapa en vivo, solo cuando de verdad hay alguien en camino */}
+            {/*
+              El código con el que recibirá el pedido. Va DEBAJO de la línea de
+              tiempo y encima del mapa a propósito: es lo que hace falta en el
+              momento exacto en que el repartidor toca el timbre, así que tiene
+              que estar donde ya se está mirando y sin tener que bajar.
+            */}
+            <CodigoEntrega
+              codigo={pedido.deliveryCode}
+              deliveryType={pedido.deliveryType}
+              estado={estado}
+            />
+
+            {/* Mapa en vivo, solo cuando de verdad hay alguien en camino.
+                El mapa lo dibuja MapaSeguimiento, que es el mismo de la
+                burbuja, la confirmacion y Mis Pedidos. */}
             {enCamino && seguimiento.punto && (
               <div className="mt-6 rounded-2xl overflow-hidden" style={{ border: `1px solid ${c.cardBorder}` }}>
-                <div style={{ height: 200 }}>
-                  <MapContainer
-                    center={[seguimiento.punto.lat, seguimiento.punto.lng]}
-                    zoom={15}
-                    zoomControl={false}
-                    attributionControl={false}
-                    style={{ height: '100%', width: '100%' }}
-                  >
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <Marker position={[seguimiento.punto.lat, seguimiento.punto.lng]} icon={pinRepartidor} />
-                    {seguimiento.destino && (
-                      <Marker position={[seguimiento.destino.lat, seguimiento.destino.lng]} icon={pinCasa} />
-                    )}
-                    <EncuadreDeViaje punto={seguimiento.punto} destino={seguimiento.destino} />
-                  </MapContainer>
-                </div>
+                <MapaSeguimiento
+                  punto={seguimiento.punto}
+                  destino={seguimiento.destino}
+                  alto={200}
+                  borde="transparent"
+                />
                 <div className="px-4 py-3 flex items-center gap-2 text-sm font-semibold"
                      style={{ color: seguimiento.yaCasi ? '#14663A' : '#173F94', background: c.cardBg }}>
                   <Bike className="w-4 h-4" />

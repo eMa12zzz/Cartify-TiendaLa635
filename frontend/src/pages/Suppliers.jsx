@@ -233,6 +233,12 @@ const Suppliers = () => {
         supplier={currentSupplier}
         onSave={handleSaveForm}
         brands={brands}
+        /*
+          La marca recién creada desde el formulario se suma a la lista de aquí
+          para que aparezca entre las casillas al instante. No se recarga todo:
+          el formulario está abierto y con datos a medio escribir.
+        */
+        onMarcaCreada={(nueva) => setBrands((prev) => [...prev, nueva])}
       />
 
       <GenericConfirmModal 

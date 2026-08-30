@@ -20,7 +20,9 @@ export const aiService = {
    */
   entenderPedido: async ({ frase, productos, carrito }) => {
     try {
-      const response = await api.post('/ai/entender', { frase, productos, carrito });
+      // enSilencio: si la IA no contesta, el asistente pide que le repitan y
+      // ya. Ni aviso rojo ni sesión cerrada. Ver api.js.
+      const response = await api.post('/ai/entender', { frase, productos, carrito }, { enSilencio: true });
       return response.data;
     } catch {
       return { accion: 'ninguna', entendido: false, origen: 'sin-red' };

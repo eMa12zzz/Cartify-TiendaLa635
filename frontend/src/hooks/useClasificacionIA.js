@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { clasificacionService } from '../api/clasificacionService';
 import { clasificarPorReglas, esFamiliaValida } from '../utils/familias';
+import { useAuth } from './useAuth';
 
 /*
  * useClasificacionIA — el PASO 2 del clasificador: lo que las reglas no pudieron.
@@ -58,6 +59,9 @@ const guardarCache = () => {
 leerCache();
 
 export const useClasificacionIA = (productos) => {
+  // QUIÉN puede preguntarle a la IA. Ver el guard del efecto, más abajo.
+  const { haySesionDePersonal } = useAuth();
+
   const [familias, setFamilias] = useState(() => Object.fromEntries(memoria));
   const [clasificando, setClasificando] = useState(false);
   /*
@@ -92,6 +96,29 @@ export const useClasificacionIA = (productos) => {
   }, [productos, vuelta]);
 
   useEffect(() => {
+    /*
+     * SOLO PREGUNTA EL PERSONAL. Este es el guard más importante del archivo.
+     *
+     * POST /ai/clasificar es soloPersonal en el backend —gasta cuota de
+     * Gemini, y abierta cualquiera se la quema con un bucle—. Pero este hook
+     * cuelga de useSeccionesTienda, o sea de la PORTADA PÚBLICA, así que la
+     * petición salía en cada visita y el servidor contestaba 401.
+     *
+     * Y un 401 no se queda quieto: el interceptor de api.js lo lee como "su
+     * sesión venció", borra el cajón y manda al login. El resultado era que un
+     * cliente NO PODÍA MANTENER LA SESIÓN ABIERTA — entraba con su contraseña,
+     * la portada disparaba esta petición y lo devolvía al login antes de que
+     * alcanzara a ver un producto. Y al visitante sin cuenta le saltaba un
+     * aviso rojo de "Inicie sesión para ver esto" nada más entrar a mirar.
+     *
+     * Que pregunte solo el personal no le quita nada al cliente: lo que la IA
+     * resuelve, el backend LO GUARDA en el producto, así que basta con que el
+     * dueño pase por su tienda para que el catálogo quede clasificado para
+     * todo el mundo. Mientras tanto la portada se arma igual con las reglas de
+     * familias.js, que resuelven el 90%.
+     */
+    if (!haySesionDePersonal) return;
+
     if (!pendientes.length || rendido.current) return;
 
     const lote = pendientes.slice(0, MAXIMO_POR_LOTE);
@@ -138,7 +165,7 @@ export const useClasificacionIA = (productos) => {
 
     preguntar();
     return () => { vivo = false; };
-  }, [pendientes]);
+  }, [pendientes, haySesionDePersonal]);
 
   return { familias, clasificando };
 };

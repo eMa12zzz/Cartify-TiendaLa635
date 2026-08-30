@@ -13,6 +13,9 @@ import { esPorLibra, pasoDe, ajustarCantidad, cantidadConUnidad } from '../../ut
 import { calcularEnvio } from '../../utils/envio.js';
 import { calcularServicio } from '../../utils/servicio.js';
 import SeguimientoConfirmacion from './SeguimientoConfirmacion';
+import CodigoEntrega from './CodigoEntrega';
+import MapaDireccion from './MapaDireccion';
+import MarcaTienda from './MarcaTienda';
 // El nombre de la tienda sale de los ajustes; el carrito y el recibo se habían
 // quedado con el escrito a mano. Ver AjustesContext.
 import { useAjustesCtx } from '../../context/AjustesContext';
@@ -23,19 +26,6 @@ const POR_PAGINA = 4;
 const BROWN = 'var(--marca-600)';
 const BROWN_DARK = 'var(--marca-700)';
 const BROWN_LIGHT = 'var(--marca-100)';
-
-// Los tres campos de la dirección nueva se ven igual; el estilo vive aquí
-// para no repetirlo tres veces y que uno se quede distinto el día que cambie.
-const estiloCampoDireccion = {
-  width: '100%',
-  padding: '10px 13px',
-  fontSize: 13,
-  fontFamily: 'inherit',
-  border: '1px solid #e0d3c4',
-  borderRadius: 10,
-  outline: 'none',
-  background: '#fff',
-};
 
 /*
  * El carrito entra con TRANSICIONES, no con @keyframes.
@@ -132,8 +122,7 @@ const BrandTitle = styled.div`
   flex: 1;
 `;
 
-const BrandSub = styled.div`font-size: 11px; color: #aaa; line-height: 1;`;
-const BrandMain = styled.div`font-size: 18px; font-weight: 800; color: #111; line-height: 1.2;`;
+/* La marca la pinta MarcaTienda.jsx, igual que en el resto de las barras. */
 
 const BackBtn = styled.button`
   background: none;
@@ -1090,8 +1079,28 @@ const ShoppingCart = ({
   const [ordenCreada, setOrdenCreada] = useState(null);
   const [imgErrors, setImgErrors] = useState({});
   const [orderPage, setOrderPage] = useState(1);
+
+  /*
+   * LA FOTO DE LO QUE SE PIDIÓ.
+   *
+   * La confirmación se pintaba leyendo el carrito EN VIVO, y por eso el
+   * carrito no se podía vaciar hasta que la persona cerrara el panel con el
+   * botón — si se vaciaba antes, la confirmación se quedaba sin productos.
+   *
+   * El problema es que nadie cierra las cosas con el botón: se va para atrás,
+   * cierra la pestaña, toca un enlace. Y entonces el carrito seguía lleno de
+   * lo YA PAGADO, así que en la siguiente visita se encontraba el mismo pedido
+   * esperando y se podía pagar dos veces.
+   *
+   * Con la foto tomada al confirmar, la confirmación deja de depender del
+   * carrito y el carrito se puede vaciar en el momento en que corresponde: en
+   * cuanto el servidor dice que el pedido existe.
+   */
+  const [itemsPedido, setItemsPedido] = useState([]);
+  const itemsAMostrar = view === 'confirmation' ? itemsPedido : items;
+
   // Páginas reales del resumen de productos del pedido.
-  const totalPaginas = Math.max(1, Math.ceil(items.length / POR_PAGINA));
+  const totalPaginas = Math.max(1, Math.ceil(itemsAMostrar.length / POR_PAGINA));
 
   // Marcamos "montado" en el siguiente frame para que la transición de entrada
   // corra (si pintáramos ya en su posición final, no habría nada que animar).
@@ -1135,16 +1144,21 @@ const ShoppingCart = ({
    * marcar el punto exacto, pero como una opción, no como el único camino.
    */
   const [agregandoDireccion, setAgregandoDireccion] = useState(false);
-  const [nuevaDireccion, setNuevaDireccion] = useState({ nombre: '', direccion: '', referencia: '' });
 
-  const irAMarcarEnElMapa = () => navigate(`/bienvenida?volver=${encodeURIComponent(rutaActual)}`);
-
-  const guardarNuevaDireccion = (e) => {
-    e.preventDefault();
-    if (!nuevaDireccion.direccion.trim()) {
-      toast.error('Escriba la dirección para poder llevarle el pedido');
-      return;
-    }
+  /*
+   * La dirección se marca EN EL MAPA, aquí mismo.
+   *
+   * Antes había dos caminos: escribirla a ciegas en tres cajas de texto, o
+   * irse a otra pantalla a marcarla. El primero dejaba direcciones sin
+   * coordenadas —el repartidor sale con un texto y sin saber a qué portón
+   * tocar, el envío se cobra a tarifa plana en vez de por distancia, y el
+   * cliente no puede seguir su pedido en el mapa— y el segundo sacaba a la
+   * persona del pago para mandarla de viaje.
+   *
+   * Ahora el mapa está incrustado: no se sale de aquí Y la dirección queda
+   * con su punto. Ver MapaDireccion.jsx.
+   */
+  const guardarNuevaDireccion = (dir) => {
     // Las direcciones se guardan en la cuenta: sin sesión no hay dónde ponerlas.
     if (!user?.id) {
       toast('Inicie sesión para guardar su dirección');
@@ -1152,13 +1166,12 @@ const ShoppingCart = ({
       return;
     }
     /*
-     * Se deja elegida la que acaba de escribir: agregarla y que el pedido
+     * Se deja elegida la que acaba de marcar: agregarla y que el pedido
      * siguiera saliendo a la anterior es exactamente el error que se quiso
      * evitar. Va por el índice que ocupará al final de la lista.
      */
     setIndiceDireccion(direcciones.length);
-    agregarDireccion(nuevaDireccion);
-    setNuevaDireccion({ nombre: '', direccion: '', referencia: '' });
+    agregarDireccion(dir);
     setAgregandoDireccion(false);
   };
 
@@ -1289,7 +1302,20 @@ const ShoppingCart = ({
       // Si pagó con saldo, el del servidor ya bajó: lo volvemos a leer para
       // que no se quede mostrando el de antes.
       if (metodoPago === 'saldo') recargarSaldo();
+
+      /*
+       * La foto ANTES de vaciar, y el vaciado justo después.
+       *
+       * El orden importa: la confirmación se pinta de `itemsPedido`, así que
+       * primero se guarda lo que se pidió y recién entonces se suelta el
+       * carrito. A partir de aquí lo comprado ya no está pendiente de pagar,
+       * y el carrito no tiene por qué seguir cargándolo.
+       */
+      setItemsPedido(items);
       setView('confirmation');
+      // Sin aviso: el carrito se vacía porque la compra SALIÓ BIEN, y decirle
+      // "se vació el carrito" a quien acaba de pagar suena a que perdió algo.
+      onLimpiarCarrito?.({ avisar: false });
     } catch (error) {
       console.error(error); // el interceptor de Axios ya avisa al usuario
     } finally {
@@ -1410,8 +1436,14 @@ const ShoppingCart = ({
               </OrderSummaryBox>
               <BtnRow>
                 <ClearBtn onClick={onLimpiarCarrito}>Vaciar</ClearBtn>
+                {/*
+                  "Pagar" y no "Checkout": la tienda entera está en español y
+                  esta era una de las dos últimas palabras en inglés que
+                  quedaban a la vista. Corta a propósito —el botón lleva el
+                  monto al lado y en un teléfono compiten por el mismo renglón.
+                */}
                 <CheckoutBtn onClick={irAlCheckout}>
-                  Checkout · ${totalFinal.toFixed(2)}
+                  Pagar · ${totalFinal.toFixed(2)}
                 </CheckoutBtn>
               </BtnRow>
             </CartFooter>
@@ -1428,9 +1460,10 @@ const ShoppingCart = ({
         <FullPanel $montado={montado} onClick={e => e.stopPropagation()}>
           <PageTopBar>
             <BackBtn onClick={() => setView('cart')}><ChevronLeft size={20} /></BackBtn>
+            {/* La misma marca que el menú. Antes aquí decía "Tienda" en gris
+                a 11px encima de "la 635" a 18px — ni parecido. */}
             <BrandTitle>
-              <BrandSub>{ajustes.nombreLinea1}</BrandSub>
-              <BrandMain>{ajustes.nombreLinea2}</BrandMain>
+              <MarcaTienda tamano={19} alto={38} />
             </BrandTitle>
             <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
@@ -1451,7 +1484,8 @@ const ShoppingCart = ({
                       <ShoppingBag size={20} color={BROWN} />
                     </CheckoutIconBox>
                     <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                      <div style={{ fontSize: 17, fontWeight: 700, color: '#111' }}>Checkout</div>
+                      {/* Antes decía "Checkout". Ver el botón del carrito. */}
+                      <div style={{ fontSize: 17, fontWeight: 700, color: '#111' }}>Finalizar compra</div>
                     </div>
                     {/* Se quitó el badge "Deliver Tomorrow…": era texto en inglés y una
                         franja horaria inventada. La tienda entrega el mismo día contra
@@ -1534,6 +1568,12 @@ const ShoppingCart = ({
                           <p style={{ fontSize: 13, color: '#7a6a5c', margin: '0 0 10px' }}>
                             Todavía no tiene direcciones guardadas.
                           </p>
+                          {/*
+                            UN SOLO CAMINO: el mapa. Ya no se ofrece escribirla
+                            a ciegas —eso daba direcciones sin punto, que el
+                            repartidor no encuentra— y tampoco hay que irse a
+                            otra pantalla. Ver MapaDireccion.jsx.
+                          */}
                           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
                             <button
                               type="button"
@@ -1544,20 +1584,7 @@ const ShoppingCart = ({
                                 fontFamily: 'inherit', cursor: 'pointer',
                               }}
                             >
-                              Escribir mi dirección aquí
-                            </button>
-                            {/* El mapa queda como opción, no como peaje */}
-                            <button
-                              type="button"
-                              onClick={irAMarcarEnElMapa}
-                              style={{
-                                padding: '9px 16px', borderRadius: 999,
-                                border: `1.5px solid ${BROWN}`, background: '#fff',
-                                color: BROWN, fontSize: 13, fontWeight: 700,
-                                fontFamily: 'inherit', cursor: 'pointer',
-                              }}
-                            >
-                              Marcarla en el mapa
+                              Marcar mi dirección en el mapa
                             </button>
                           </div>
                         </div>
@@ -1600,80 +1627,26 @@ const ShoppingCart = ({
                           </div>
                           {agregandoDireccion ? (
                             /*
-                              Tres campos y nada más. La referencia es la que de
-                              verdad usa el repartidor ("portón verde, frente a
-                              la tienda"), así que se pide, pero no se obliga:
-                              nadie se queda sin pedir por no saber describir su
-                              cuadra.
+                              El mapa, aquí mismo. La referencia ("portón verde,
+                              frente a la cancha") sigue siendo opcional: es lo
+                              que de verdad usa el repartidor, pero nadie se
+                              queda sin pedir por no saber describir su cuadra.
+                              El PUNTO sí es obligatorio, y ese es el cambio:
+                              una dirección sin punto no se puede repartir bien
+                              ni cobrar bien. Ver MapaDireccion.jsx.
                             */
-                            <form
-                              onSubmit={guardarNuevaDireccion}
+                            <div
                               style={{
                                 marginTop: 10, padding: 12, borderRadius: 12,
                                 border: '1px solid #e0d3c4', background: 'var(--marca-50)',
-                                display: 'flex', flexDirection: 'column', gap: 8,
                               }}
                             >
-                              <input
-                                value={nuevaDireccion.nombre}
-                                onChange={(e) => setNuevaDireccion((d) => ({ ...d, nombre: e.target.value }))}
-                                placeholder="Nombre (Casa, Trabajo…)"
-                                aria-label="Nombre de la dirección"
-                                style={estiloCampoDireccion}
+                              <MapaDireccion
+                                onGuardar={guardarNuevaDireccion}
+                                onCancelar={() => setAgregandoDireccion(false)}
+                                guardando={guardandoDireccion}
                               />
-                              <input
-                                value={nuevaDireccion.direccion}
-                                onChange={(e) => setNuevaDireccion((d) => ({ ...d, direccion: e.target.value }))}
-                                placeholder="Calle, número y colonia"
-                                aria-label="Dirección"
-                                autoFocus
-                                style={estiloCampoDireccion}
-                              />
-                              <input
-                                value={nuevaDireccion.referencia}
-                                onChange={(e) => setNuevaDireccion((d) => ({ ...d, referencia: e.target.value }))}
-                                placeholder="Referencia para encontrarla (opcional)"
-                                aria-label="Referencia"
-                                style={estiloCampoDireccion}
-                              />
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                                <button
-                                  type="submit"
-                                  disabled={guardandoDireccion}
-                                  className="press"
-                                  style={{
-                                    padding: '9px 18px', borderRadius: 999, border: 'none',
-                                    background: BROWN, color: '#fff', fontSize: 13, fontWeight: 700,
-                                    fontFamily: 'inherit', cursor: 'pointer',
-                                    opacity: guardandoDireccion ? 0.6 : 1,
-                                  }}
-                                >
-                                  {guardandoDireccion ? 'Guardando…' : 'Guardar y usarla'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setAgregandoDireccion(false)}
-                                  style={{
-                                    background: 'none', border: 'none', padding: 0,
-                                    color: '#8a7a6c', fontSize: 12.5, fontWeight: 600,
-                                    fontFamily: 'inherit', cursor: 'pointer',
-                                  }}
-                                >
-                                  Cancelar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={irAMarcarEnElMapa}
-                                  style={{
-                                    marginLeft: 'auto', background: 'none', border: 'none', padding: 0,
-                                    color: BROWN, fontSize: 12, fontWeight: 700,
-                                    fontFamily: 'inherit', cursor: 'pointer',
-                                  }}
-                                >
-                                  Mejor marcarla en el mapa
-                                </button>
-                              </div>
-                            </form>
+                            </div>
                           ) : (
                             <button
                               type="button"
@@ -1922,8 +1895,8 @@ const ShoppingCart = ({
           <PageTopBar>
             <BackBtn onClick={handleConfirmClose}><ChevronLeft size={20} /></BackBtn>
             <BrandTitle>
-              <BrandSub>{ajustes.nombreLinea1}</BrandSub>
-              <BrandMain>{ajustes.nombreLinea2}</BrandMain>
+              {/* Igual que el checkout y que el menú. Ver MarcaTienda. */}
+              <MarcaTienda tamano={19} alto={38} />
             </BrandTitle>
             <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
           </PageTopBar>
@@ -1944,6 +1917,21 @@ const ShoppingCart = ({
                     mapa del repartidor — aquí mismo y actualizándose solo, sin
                     tener que ir a otra pantalla. */}
                 <SeguimientoConfirmacion orderId={ordenCreada?._id} esDomicilio={esDomicilioReal} />
+
+                {/*
+                  El código de entrega, aquí mismo y no solo en "Mis pedidos".
+                  Esta es la pantalla que la gente deja abierta —o de la que
+                  hace captura— justo después de pagar, así que es donde el
+                  código tiene que aparecer sin que haya que ir a buscarlo.
+
+                  Sale del pedido que acaba de devolver el servidor: el código
+                  lo emite él, nunca el navegador. Ver utils/codigoEntrega.js.
+                */}
+                <CodigoEntrega
+                  codigo={ordenCreada?.deliveryCode}
+                  deliveryType={ordenCreada?.deliveryType}
+                  estado={ordenCreada?.status}
+                />
               </ConfirmCard>
 
               {/* Products card */}
@@ -1953,7 +1941,7 @@ const ShoppingCart = ({
                   <span>N.º Items</span>
                 </PTableHeader>
                 <ProductsTable>
-                  {items.slice((orderPage - 1) * POR_PAGINA, orderPage * POR_PAGINA).map(item => (
+                  {itemsAMostrar.slice((orderPage - 1) * POR_PAGINA, orderPage * POR_PAGINA).map(item => (
                     <PTableRow key={item.id}>
                       <PImgBox>
                         {item.imagen && !imgErrors[item.id]
