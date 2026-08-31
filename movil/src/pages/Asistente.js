@@ -8,7 +8,7 @@
  * ============================================================
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Mic, Volume2, VolumeX } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
@@ -16,15 +16,22 @@ import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
 import { useAsistenteVoz } from '../hooks/useAsistenteVoz';
+import { navegarA } from '../navigation/navigationRef';
+import ModalProducto from '../components/Tienda/ModalProducto';
 
 const Asistente = () => {
   const { colores } = useTema();
   const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
+  // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
+  const [productoAbierto, setProductoAbierto] = useState(null);
 
   const {
     activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
     iniciar, detener, toggleMute, interrumpir,
-  } = useAsistenteVoz({ productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito });
+  } = useAsistenteVoz({
+    productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+    mostrarProducto: setProductoAbierto,
+  });
 
   const pulso = useRef(new Animated.Value(1)).current;
   const chatRef = useRef(null);
@@ -107,7 +114,11 @@ const Asistente = () => {
         )}
       </View>
 
-      <View style={[estilos.carritoResumen, { borderColor: colores.marcaSuave, backgroundColor: colores.marcaTenue }]}>
+      <TouchableOpacity
+        activeOpacity={carrito.length === 0 ? 1 : 0.7}
+        onPress={() => carrito.length > 0 && navegarA('Carrito')}
+        style={[estilos.carritoResumen, { borderColor: colores.marcaSuave, backgroundColor: colores.marcaTenue }]}
+      >
         <View style={estilos.carritoFila}>
           <Text style={estilos.carritoTitulo}>Tu carrito ({items})</Text>
           <Text style={[estilos.carritoTotal, { color: colores.marca }]}>${totalCarrito.toFixed(2)}</Text>
@@ -119,7 +130,15 @@ const Asistente = () => {
             {carrito.map((i) => `${i.cantidad}× ${i.nombre}`).join(' · ')}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
+
+      {productoAbierto && (
+        <ModalProducto
+          producto={productoAbierto}
+          alCerrar={() => setProductoAbierto(null)}
+          alAgregar={agregarAlCarrito}
+        />
+      )}
     </View>
   );
 };
