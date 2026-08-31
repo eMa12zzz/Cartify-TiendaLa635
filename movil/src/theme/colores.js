@@ -11,13 +11,15 @@
  */
 
 export const COLORES = {
-  // El café de la marca y su versión oscura (el :hover de la web).
-  marca: '#B46C30',
-  marcaOscuro: '#8A5222',
-  // El café apagado del botón deshabilitado: se ve apretable pero no lo está.
-  marcaApagado: '#D8C5AF',
-  // Fondo tenue para los cuadritos de iconos de las ventajas.
-  marcaSuave: '#FAF3EB',
+  // El azul marino de la marca y su versión oscura (--marca-600/--marca-700
+  // de la web). Antes era café; la tienda se repintó de azul y esto se había
+  // quedado atrás.
+  marca: '#003049',
+  marcaOscuro: '#00283D',
+  // El azul apagado del botón deshabilitado: se ve apretable pero no lo está.
+  marcaApagado: '#A9C2CE',
+  // Fondo tenue para los cuadritos de iconos de las ventajas (--marca-100).
+  marcaSuave: '#DDECF3',
 
   fondo: '#FFFFFF',
   texto: '#000000',

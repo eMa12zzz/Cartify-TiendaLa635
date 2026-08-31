@@ -111,7 +111,7 @@ const puntuarCoincidencia = (nombreProducto, t) => {
   return 0;
 };
 
-export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito }) => {
+export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto }) => {
   const { isAuthenticated } = useAuth();
 
   const [activo, setActivo] = useState(false);
@@ -126,7 +126,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const dataRef = useRef({ productos, carrito, totalCarrito });
   dataRef.current = { productos, carrito, totalCarrito };
   const fnRef = useRef({});
-  fnRef.current = { agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito };
+  fnRef.current = { agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto };
 
   const activoRef = useRef(false);
   const hablandoRef = useRef(false);
@@ -268,7 +268,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     }
 
     if (/\b(ayuda|que puedo decir|comandos|no se|no entiendo)\b/.test(t)) {
-      hablar('Puedes decir: quiero una manzana y dos galletas, quita una manzana, cuánto llevo, vaciar carrito, o comprar.');
+      hablar('Puedes decir: quiero una manzana y dos galletas, muéstrame las manzanas, quita una manzana, cuánto llevo, vaciar carrito, o comprar.');
       return;
     }
     if (/\b(repite|repetir|otra vez|que dijiste)\b/.test(t)) {
@@ -306,7 +306,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       return;
     }
 
-    // ── Llevarlo a un apartado ──
+    // ── Llevarlo a un apartado, o mostrarle un producto ──
     if (PIDE_IR.test(t)) {
       const destino = DESTINOS.find((d) => d.palabras.test(t));
       if (destino) {
@@ -319,6 +319,20 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
         hablar(`Le abro ${destino.nombre}.`);
         return;
       }
+
+      // No es un apartado: ¿es un producto? ("muéstrame las manzanas").
+      const prod = buscarProducto(t);
+      if (prod && fns.mostrarProducto) {
+        fns.mostrarProducto(prod);
+        hablar(`Aquí está ${prod.nombre}, a $${Number(prod.precio).toFixed(2)}.`);
+        return;
+      }
+
+      // Ni apartado ni producto: antes esto se colaba hasta "agregar" de
+      // abajo y terminaba metiendo al carrito algo que solo se quería VER.
+      // Que lo intente la IA, igual que cuando las reglas de agregar fallan.
+      preguntarALaIA(texto);
+      return;
     }
 
     // ── Agregar (varios por frase) ──
