@@ -13,14 +13,22 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Se usa para entender lo que dice y armar su pedido.",
+        "NSMicrophoneUsageDescription": "Se usa para escuchar lo que pide por voz."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.movil"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +47,8 @@
           "microphonePermission": "Se usa para escuchar lo que pide por voz.",
           "speechRecognitionPermission": "Se usa para entender lo que dice y armar su pedido."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }
