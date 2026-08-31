@@ -32,6 +32,13 @@
         {
           "photosPermission": "Se usa para elegir la foto de su perfil."
         }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Se usa para escuchar lo que pide por voz.",
+          "speechRecognitionPermission": "Se usa para entender lo que dice y armar su pedido."
+        }
       ]
     ]
   }
