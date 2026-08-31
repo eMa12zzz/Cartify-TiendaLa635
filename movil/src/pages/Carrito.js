@@ -32,12 +32,14 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Store } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import Boton from '../components/UI/Boton';
-import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete, Tienda } from '../components/UI/Iconos';
+import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete } from '../components/UI/Iconos';
 import { totalDeLinea } from '../utils/catalogo';
 import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
 
@@ -133,6 +135,9 @@ const Carrito = ({ irAInicio, irAPagar }) => {
   const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito } =
     useTienda();
   const { colores } = useTema();
+  // Igual que BarraInferior: sin esto "Ir a pagar" queda debajo de la franja
+  // de gestos de Android, porque app.json trae edgeToEdgeEnabled.
+  const { bottom } = useSafeAreaInsets();
 
   const vacio = carrito.length === 0;
 
@@ -187,7 +192,9 @@ const Carrito = ({ irAInicio, irAPagar }) => {
               <>
                 <View style={estilos.tienda}>
                   <View style={[estilos.iconoTienda, { backgroundColor: colores.marcaSuave }]}>
-                    <Tienda size={17} color={colores.marca} />
+                    {/* Mismo icono que BarraMarca/BarraInferior (lucide Store):
+                        el dibujo a mano de Iconos.js se veía distinto al resto. */}
+                    <Store size={17} color={colores.marca} strokeWidth={2.2} />
                   </View>
                   <View>
                     <Text style={estilos.tiendaNombre}>Tienda la 635</Text>
@@ -212,7 +219,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
             esta pantalla, y al final de una lista de quince productos habría
             que desplazarse hasta abajo para verlo.
           */}
-          <View style={estilos.pie}>
+          <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 26) }]}>
             <View style={estilos.resumen}>
               <Text style={estilos.resumenTitulo}>Resumen de orden</Text>
               <View style={estilos.resumenFila}>
@@ -453,7 +460,7 @@ const estilos = StyleSheet.create({
     borderTopColor: COLORES.linea,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 26,
+    // paddingBottom real se pone en línea, con la franja de gestos sumada.
     backgroundColor: COLORES.fondo,
   },
   resumen: {

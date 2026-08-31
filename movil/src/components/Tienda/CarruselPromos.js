@@ -24,7 +24,15 @@
  */
 
 import { useCallback, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
+
+// El punto activo se alarga con LayoutAnimation en vez de saltar directo al
+// ancho nuevo: es la animación "gratis" de React Native, sin traer
+// react-native-reanimated solo para esto. En Android hace falta encenderla a
+// mano (en iOS ya viene activa).
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useTema } from '../../context/TemaContext';
 import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import TarjetaPromo from './TarjetaPromo';
@@ -57,6 +65,7 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
   const alTerminarDeDeslizar = useCallback(
     (e) => {
       const x = e.nativeEvent.contentOffset.x;
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setActiva(Math.max(0, Math.min(promos.length - 1, Math.round(x / paso))));
     },
     [paso, promos.length]

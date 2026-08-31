@@ -27,6 +27,7 @@
  */
 
 import { StyleSheet, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, Package } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
@@ -57,6 +58,9 @@ const fechaLarga = (iso) => {
 
 const Confirmacion = ({ respuesta, alCerrar }) => {
   const { colores } = useTema();
+  // Mismo caso que Carrito.js: sin esto "Volver a la tienda" queda debajo de
+  // la franja de gestos de Android.
+  const { bottom } = useSafeAreaInsets();
   const { vaciarTrasPedido } = useTienda();
 
   /*
@@ -196,7 +200,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
         )}
       </ScrollView>
 
-      <View style={estilos.pie}>
+      <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 18) }]}>
         <Boton
           texto="Volver a la tienda"
           alPresionar={cerrar}
@@ -406,7 +410,7 @@ const estilos = StyleSheet.create({
   pie: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 18,
+    // paddingBottom real se pone en línea, con la franja de gestos sumada.
     borderTopWidth: 1,
     borderTopColor: COLORES.linea,
   },
