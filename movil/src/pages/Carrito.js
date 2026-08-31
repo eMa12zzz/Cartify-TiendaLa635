@@ -40,40 +40,47 @@ import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import Boton from '../components/UI/Boton';
 import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete } from '../components/UI/Iconos';
+import ModalProducto from '../components/Tienda/ModalProducto';
 import { totalDeLinea } from '../utils/catalogo';
 import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
 
-const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
+const LineaCarrito = ({ item, alActualizar, alEliminar, alAbrir, colores }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
   const paso = pasoDe(item);
 
   return (
     <View style={estilos.linea}>
-      <View style={estilos.miniatura}>
-        {item.imagen && !fallóImagen ? (
-          <Image
-            source={{ uri: item.imagen }}
-            contentFit="contain"
-            style={estilos.miniaturaImagen}
-            onError={() => setFallóImagen(true)}
-          />
-        ) : (
-          <Paquete size={26} />
-        )}
-      </View>
+      {/* Foto, nombre y precio abren la ficha del producto; los controles de
+          cantidad se quedan aparte para que no compitan por el mismo toque. */}
+      <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={`Ver ${item.nombre}`}>
+        <View style={estilos.miniatura}>
+          {item.imagen && !fallóImagen ? (
+            <Image
+              source={{ uri: item.imagen }}
+              contentFit="contain"
+              style={estilos.miniaturaImagen}
+              onError={() => setFallóImagen(true)}
+            />
+          ) : (
+            <Paquete size={26} />
+          )}
+        </View>
+      </Pressable>
 
       <View style={estilos.datos}>
-        <Text style={estilos.nombre} numberOfLines={2}>{item.nombre}</Text>
+        <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={`Ver ${item.nombre}`}>
+          <Text style={estilos.nombre} numberOfLines={2}>{item.nombre}</Text>
 
-        <View style={estilos.filaPrecio}>
-          {!!item.precioAnterior && (
-            <Text style={estilos.precioViejo}>${Number(item.precioAnterior).toFixed(2)}</Text>
-          )}
-          <Text style={estilos.precioUnitario}>
-            ${Number(item.precio).toFixed(2)}
-            {esPorLibra(item) && <Text style={estilos.porUnidad}>/lb</Text>}
-          </Text>
-        </View>
+          <View style={estilos.filaPrecio}>
+            {!!item.precioAnterior && (
+              <Text style={estilos.precioViejo}>${Number(item.precioAnterior).toFixed(2)}</Text>
+            )}
+            <Text style={estilos.precioUnitario}>
+              ${Number(item.precio).toFixed(2)}
+              {esPorLibra(item) && <Text style={estilos.porUnidad}>/lb</Text>}
+            </Text>
+          </View>
+        </Pressable>
 
         {/*
           El "+" y el "−" se mueven al paso de SU unidad: de uno en uno las
@@ -132,12 +139,14 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
 };
 
 const Carrito = ({ irAInicio, irAPagar }) => {
-  const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito } =
+  const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito, agregarAlCarrito } =
     useTienda();
   const { colores } = useTema();
   // Igual que BarraInferior: sin esto "Ir a pagar" queda debajo de la franja
   // de gestos de Android, porque app.json trae edgeToEdgeEnabled.
   const { bottom } = useSafeAreaInsets();
+  // El artículo que se tocó para ver su ficha (no el que se está editando).
+  const [productoAbierto, setProductoAbierto] = useState(null);
 
   const vacio = carrito.length === 0;
 
@@ -209,10 +218,19 @@ const Carrito = ({ irAInicio, irAPagar }) => {
                 item={item}
                 alActualizar={actualizarCantidad}
                 alEliminar={eliminarDelCarrito}
+                alAbrir={setProductoAbierto}
                 colores={colores}
               />
             )}
           />
+
+          {productoAbierto && (
+            <ModalProducto
+              producto={productoAbierto}
+              alCerrar={() => setProductoAbierto(null)}
+              alAgregar={agregarAlCarrito}
+            />
+          )}
 
           {/*
             El resumen vive FUERA de la lista: es el número por el que se abrió
