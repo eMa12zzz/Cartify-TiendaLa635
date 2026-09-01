@@ -43,6 +43,7 @@ import { getCliente, actualizarPerfil, actualizarFotoPerfil } from '../../api/cl
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import CampoTexto from '../../components/UI/CampoTexto';
 import Boton from '../../components/UI/Boton';
+import { useAlturaBarraInferior } from '../../components/UI/BarraInferior';
 import { formatearDui, formatearTelefono, LARGO_TELEFONO } from '../../utils/mascaras';
 import { requerido, validarCorreo, validarTelefono, validarFormulario, sinErrores } from '../../utils/validaciones';
 
@@ -57,6 +58,8 @@ const MisDatos = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
   const { avisar } = useAviso();
+  // Sin esto el botón de guardar queda tapado detrás de la píldora flotante.
+  const alturaBarra = useAlturaBarraInferior();
 
   const [form, setForm] = useState({ fullName: '', userName: '', email: '', phoneNumber: '' });
   const [dui, setDui] = useState('');
@@ -168,7 +171,7 @@ const MisDatos = ({ alVolver }) => {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={estilos.cuerpo}
+          contentContainerStyle={[estilos.cuerpo, { paddingBottom: estilos.cuerpo.paddingBottom + alturaBarra }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >

@@ -29,6 +29,7 @@ import { useTema } from '../context/TemaContext';
 import { getPedidosDeCliente } from '../api/pedidosApi';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
+import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 
 // Los cuatro estados del modelo Order, con el color con el que los pinta la web.
 const ESTADOS = {
@@ -121,6 +122,8 @@ const TarjetaPedido = ({ pedido }) => {
 const Pedidos = () => {
   const { user } = useAuth();
   const { colores } = useTema();
+  // Sin esto el último pedido queda tapado detrás de la píldora flotante.
+  const alturaBarra = useAlturaBarraInferior();
 
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -201,7 +204,7 @@ const Pedidos = () => {
         <FlatList
           data={pedidos}
           keyExtractor={(p) => String(p._id)}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.paddingBottom + alturaBarra }]}
           renderItem={({ item }) => <TarjetaPedido pedido={item} />}
         />
       )}

@@ -46,6 +46,7 @@ import { Image } from 'expo-image';
 import { Bell, ChevronRight, Heart, LogOut, MapPin, Star, User } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
+import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 import { useAuth } from '../hooks/useAuth';
 import { useBotonAtras } from '../hooks/useBotonAtras';
 import { useTema } from '../context/TemaContext';
@@ -79,6 +80,8 @@ const PANTALLAS = {
 const Perfil = () => {
   const { user, logout } = useAuth();
   const { colores } = useTema();
+  // Sin esto el último renglón queda tapado detrás de la píldora flotante.
+  const alturaBarra = useAlturaBarraInferior();
 
   const [seccion, setSeccion] = useState(null);
   const [cliente, setCliente] = useState(null);
@@ -146,7 +149,9 @@ const Perfil = () => {
         <Text style={estilos.tituloBarra}>Mi cuenta</Text>
       </View>
 
-      <ScrollView contentContainerStyle={estilos.cuerpo}>
+      <ScrollView
+        contentContainerStyle={[estilos.cuerpo, { paddingBottom: estilos.cuerpo.paddingBottom + alturaBarra }]}
+      >
         {/* Quién está dentro */}
         <View style={estilos.cabecera}>
           {cliente?.image ? (

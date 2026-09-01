@@ -43,6 +43,7 @@ import { useAviso } from '../../context/AvisoContext';
 import { getCliente, actualizarDirecciones } from '../../api/clienteApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
+import { useAlturaBarraInferior } from '../../components/UI/BarraInferior';
 
 /*
  * Las direcciones viejas son texto suelto y las nuevas son un objeto. Se
@@ -66,6 +67,8 @@ const Direcciones = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
   const { avisar } = useAviso();
+  // Sin esto la última dirección queda tapada detrás de la píldora flotante.
+  const alturaBarra = useAlturaBarraInferior();
 
   const [direcciones, setDirecciones] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -169,7 +172,7 @@ const Direcciones = ({ alVolver }) => {
         <FlatList
           data={direcciones}
           keyExtractor={(_, i) => String(i)}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.padding + alturaBarra }]}
           ListEmptyComponent={
             <View style={estilos.vacio}>
               <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />

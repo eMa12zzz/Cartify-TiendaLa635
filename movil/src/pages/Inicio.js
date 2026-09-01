@@ -36,6 +36,7 @@ import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import { useAuth } from '../hooks/useAuth';
 import BarraTienda from '../components/Tienda/BarraTienda';
+import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 import CintaTemporada from '../components/Tienda/CintaTemporada';
 import DecoracionTemporada from '../components/Tienda/DecoracionTemporada';
 import PastillasCategoria from '../components/Tienda/PastillasCategoria';
@@ -49,6 +50,9 @@ import { Equis, Lupa } from '../components/UI/Iconos';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
+  // La píldora flotante ya no es opaca de punta a punta: sin este relleno la
+  // última fila de la cuadrícula queda tapada detrás de ella. Ver BarraInferior.
+  const alturaBarra = useAlturaBarraInferior();
   const { isAuthenticated, user } = useAuth();
   const nombre = user?.fullName || user?.userName;
   const {
@@ -246,7 +250,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           ListHeaderComponent={encabezado}
           ListEmptyComponent={vacio}
           columnWrapperStyle={estilos.fila}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.paddingBottom + alturaBarra }]}
           renderItem={({ item }) => (
             /*
              * El tope de ancho es lo que arregla la última fila impar. Con

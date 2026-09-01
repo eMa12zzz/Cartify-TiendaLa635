@@ -49,6 +49,26 @@ import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 
 /*
+ * Las medidas de la píldora flotante, en un solo lugar porque las necesitan
+ * DOS cosas: el propio StyleSheet de aquí abajo, y `useAlturaBarraInferior`
+ * — que le dice a cada pantalla del Tab cuánto aire dejar al final de su
+ * lista, para que la última fila no quede tapada detrás de la barra.
+ *
+ * Antes la barra era opaca y de punta a punta, así que lo que hubiera detrás
+ * no se veía nunca. Ahora flota con las esquinas redondeadas y margen: sin
+ * este relleno, la última fila de productos asoma cortada por los costados.
+ */
+const ALTO_ICONO = 52;
+const RELLENO_VERTICAL_BARRA = 6;
+const AIRE_ARRIBA = 10;
+const AIRE_ABAJO_MINIMO = 14;
+
+export const useAlturaBarraInferior = () => {
+  const { bottom } = useSafeAreaInsets();
+  return AIRE_ARRIBA + RELLENO_VERTICAL_BARRA * 2 + ALTO_ICONO + Math.max(bottom, AIRE_ABAJO_MINIMO);
+};
+
+/*
  * El orden importa y no es alfabético: la tienda primero porque es a lo que se
  * viene, y la cuenta al final porque es a lo que se entra de vez en cuando. En
  * medio, lo que se usa mientras se compra.
@@ -110,7 +130,7 @@ const BarraInferior = ({ apartado, alCambiar }) => {
   return (
     // La franja de gestos ya no es padding DENTRO de la barra: es aire AFUERA,
     // para que la píldora quede flotando por encima y no pegada al filo.
-    <View style={[estilos.envoltorio, { paddingBottom: Math.max(bottom, 14) }]}>
+    <View style={[estilos.envoltorio, { paddingBottom: Math.max(bottom, AIRE_ABAJO_MINIMO) }]}>
       <View style={estilos.barra}>
         {APARTADOS.map(({ clave, icono: Icono, nombre }) => {
           const activo = apartado === clave;
@@ -127,14 +147,20 @@ const BarraInferior = ({ apartado, alCambiar }) => {
               {({ pressed }) => (
                 // El fondo encendido va en esta píldora chica, pegada al
                 // icono — no en toda la columna, que es lo que sigue siendo
-                // el área de toque completa.
+                // el área de toque completa. El activo lleva relleno SÓLIDO
+                // (no el tinte pálido de antes): tiene que leerse de reojo
+                // cuál apartado está abierto, no solo notarse de cerca.
                 <View
-                  style={[estilos.pastillaIcono, (activo || pressed) && { backgroundColor: colores.marcaTenue }]}
+                  style={[
+                    estilos.pastillaIcono,
+                    activo && { backgroundColor: colores.marca },
+                    !activo && pressed && { backgroundColor: colores.marcaTenue },
+                  ]}
                 >
                   <Icono
-                    size={24}
-                    color={activo ? colores.marca : COLORES.textoSuave}
-                    strokeWidth={activo ? 2.4 : 1.8}
+                    size={23}
+                    color={activo ? '#FFFFFF' : COLORES.textoSuave}
+                    strokeWidth={activo ? 2.2 : 1.8}
                   />
                 </View>
               )}
@@ -150,14 +176,14 @@ const estilos = StyleSheet.create({
   // Transparente: solo existe para reservarle aire de abajo a la píldora.
   envoltorio: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: AIRE_ARRIBA,
   },
   barra: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORES.fondo,
     borderRadius: 30,
-    paddingVertical: 6,
+    paddingVertical: RELLENO_VERTICAL_BARRA,
     paddingHorizontal: 6,
     // La sombra es lo que la hace leerse como que flota y no como una barra
     // pegada al borde de siempre.
@@ -171,7 +197,7 @@ const estilos = StyleSheet.create({
     // Cada uno se lleva un cuarto del ancho, toque donde toque el dedo: los
     // huecos entre iconos también cambian de apartado.
     flex: 1,
-    height: 52,
+    height: ALTO_ICONO,
     alignItems: 'center',
     justifyContent: 'center',
   },

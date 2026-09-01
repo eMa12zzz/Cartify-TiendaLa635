@@ -35,11 +35,14 @@ import { useFavoritos } from '../../context/FavoritosContext';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import TarjetaProducto from '../../components/Tienda/TarjetaProducto';
 import ModalProducto from '../../components/Tienda/ModalProducto';
+import { useAlturaBarraInferior } from '../../components/UI/BarraInferior';
 
 const Favoritos = ({ alVolver }) => {
   const { colores } = useTema();
   const { productos, cargando, agregarAlCarrito } = useTienda();
   const { esFavorito } = useFavoritos();
+  // Sin esto el último producto queda tapado detrás de la píldora flotante.
+  const alturaBarra = useAlturaBarraInferior();
 
   const [productoAbierto, setProductoAbierto] = useState(null);
 
@@ -70,7 +73,7 @@ const Favoritos = ({ alVolver }) => {
           keyExtractor={(p) => p.id}
           numColumns={2}
           columnWrapperStyle={estilos.fila}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.paddingVertical + alturaBarra }]}
           ListHeaderComponent={
             <Text style={estilos.conteo}>
               {marcados.length} {marcados.length === 1 ? 'producto guardado' : 'productos guardados'}

@@ -18,9 +18,14 @@ import { useTienda } from '../context/TiendaContext';
 import { useAsistenteVoz } from '../hooks/useAsistenteVoz';
 import { navegarA } from '../navigation/navigationRef';
 import ModalProducto from '../components/Tienda/ModalProducto';
+import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 
 const Asistente = () => {
   const { colores } = useTema();
+  // El resumen del carrito es lo último de la pantalla, justo donde antes
+  // llegaba la barra de siempre — ahora que flota, sin este relleno el
+  // renglón de abajo queda tapado detrás de ella.
+  const alturaBarra = useAlturaBarraInferior();
   const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
   // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
   const [productoAbierto, setProductoAbierto] = useState(null);
@@ -117,7 +122,10 @@ const Asistente = () => {
       <TouchableOpacity
         activeOpacity={carrito.length === 0 ? 1 : 0.7}
         onPress={() => carrito.length > 0 && navegarA('Carrito')}
-        style={[estilos.carritoResumen, { borderColor: colores.marcaSuave, backgroundColor: colores.marcaTenue }]}
+        style={[
+          estilos.carritoResumen,
+          { borderColor: colores.marcaSuave, backgroundColor: colores.marcaTenue, paddingBottom: 14 + alturaBarra },
+        ]}
       >
         <View style={estilos.carritoFila}>
           <Text style={estilos.carritoTitulo}>Tu carrito ({items})</Text>
