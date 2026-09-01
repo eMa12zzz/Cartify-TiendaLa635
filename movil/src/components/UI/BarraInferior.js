@@ -202,11 +202,11 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
   },
   pastillaIcono: {
-    width: 48,
-    height: 44,
+    width: 56,
+    height: 50,
     // La mitad del alto: esquinas totalmente redondas (píldora), no la
     // esquina suavizada de antes que se leía como un cuadrado.
-    borderRadius: 22,
+    borderRadius: 25,
     // Sin esto, Android solo recorta bien la esquina la primera vez que se
     // pinta la vista. El apartado que ya nace activo (Tienda) se ve redondo
     // porque su fondo se pintó así desde el primer cuadro; los que se
