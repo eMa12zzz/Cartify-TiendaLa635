@@ -23,7 +23,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
@@ -90,6 +90,58 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
   // El botón de atrás de Android cierra la hoja, no la app. Ver el hook.
   useBotonAtras(cerrarConAnimacion);
 
+  /*
+   * Arrastrar el asa. Se guarda el alto real del panel (varía con el
+   * contenido: un producto con descripción larga mide distinto que uno
+   * sin ella) para poder comparar contra SU mitad, no un número fijo.
+   */
+  const panelAlturaRef = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      // Recién a partir de un arrastre de verdad: un toque corto en el asa
+      // (que ya no hace nada) no debe robarle el gesto a nadie.
+      onMoveShouldSetPanResponder: (_evento, gesto) => Math.abs(gesto.dy) > 4,
+      /*
+       * Sin esto, un arrastre largo terminaba en el ScrollView de abajo
+       * pidiendo (y llevándose) el control a medio camino — el gesto se
+       * "soltaba" ahí (onPanResponderTerminate) y el toque de "pasó la
+       * mitad" nunca llegaba a evaluarse: la hoja SIEMPRE volvía a subir,
+       * sin importar cuánto se hubiera bajado. Rechazar la cesión mantiene
+       * el gesto entero, de principio a fin, en manos de este asa.
+       */
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderMove: (_evento, gesto) => {
+        // Solo baja. Arrastrar hacia arriba no "abre más" — no hay más.
+        if (gesto.dy > 0) panelY.setValue(gesto.dy);
+      },
+      onPanResponderRelease: (_evento, gesto) => {
+        const mitad = (panelAlturaRef.current || 400) / 2;
+        if (gesto.dy > mitad) {
+          cerrarConAnimacion();
+        } else {
+          // No pasó de la mitad: vuelve a su lugar, con el mismo resorte
+          // que la apertura.
+          Animated.timing(panelY, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+      // Si soltó a medio arrastre sin terminar el gesto (una llamada entra,
+      // por ejemplo), que no se quede la hoja a medio bajar.
+      onPanResponderTerminate: () => {
+        Animated.timing(panelY, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      },
+    })
+  ).current;
+
   if (!producto) return null;
 
   const agotado = producto.stock === 0;
@@ -117,12 +169,20 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
         */}
         <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
-        <Animated.View style={[estilos.panel, { transform: [{ translateY: panelY }] }]}>
+        <Animated.View
+          style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
+          onLayout={(e) => { panelAlturaRef.current = e.nativeEvent.layout.height; }}
+        >
           <View style={estilos.encabezado}>
-            {/* El asa vuelve a ser solo un dibujo: se probó que cerrara al
-                tocarla y no respondía bien de forma consistente. Cerrar
-                sigue andando por la "X", tocar fuera, o el botón atrás. */}
-            <View style={estilos.asa} />
+            {/*
+              El asa ahora sí se arrastra: baja con el dedo, y al soltar
+              decide sola — pasó la mitad del panel, cierra; si no, vuelve
+              a subir. La zona de agarre es más grande que el dibujo (38x4)
+              para no repetir el problema de un blanco angosto.
+            */}
+            <View style={estilos.zonaAsa} {...panResponder.panHandlers}>
+              <View style={estilos.asa} />
+            </View>
             <Pressable
               onPress={cerrarConAnimacion}
               hitSlop={12}
@@ -297,7 +357,13 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     minHeight: 44,
   },
-  // El asa de la hoja: dice "esto se puede bajar" sin escribirlo. Solo dibujo.
+  // La zona de agarre del asa: bastante más ancha y alta que el dibujo
+  // (38x4) para que arrastrarla no dependa de acertarle a algo angosto.
+  zonaAsa: {
+    paddingVertical: 14,
+    paddingHorizontal: 60,
+  },
+  // El asa de la hoja: dice "esto se puede bajar" sin escribirlo.
   asa: {
     width: 38,
     height: 4,
