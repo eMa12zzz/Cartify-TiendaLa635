@@ -113,7 +113,13 @@ export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras } = {})
   if (!respuesta.ok) {
     const mensaje =
       datos?.message || RESPALDO_POR_ESTADO[respuesta.status] || 'Ocurrió un error inesperado';
-    throw new ErrorApi(mensaje, respuesta.status);
+    const error = new ErrorApi(mensaje, respuesta.status);
+    // El resto del cuerpo viaja pegado al error (p.ej. `requiereConsentimiento`
+    // y `sugerido` de /loginClient/google): así quien llama puede leerlo sin
+    // que este helper tenga que conocer de antemano los campos de cada ruta,
+    // igual que hace la web con su propio fetch a mano en authApi.js.
+    if (datos && typeof datos === 'object') Object.assign(error, datos);
+    throw error;
   }
 
   return datos;

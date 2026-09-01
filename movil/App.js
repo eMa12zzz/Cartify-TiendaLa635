@@ -34,6 +34,9 @@
 
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+// Solo por su efecto secundario: deja GoogleSignin.configure() hecho desde
+// el arranque. Ver src/config/googleSignIn.js.
+import './src/config/googleSignIn';
 import { AuthProvider } from './src/context/AuthContext';
 import { AvisoProvider } from './src/context/AvisoContext';
 import { EdadProvider } from './src/context/EdadContext';

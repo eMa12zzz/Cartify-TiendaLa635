@@ -48,7 +48,8 @@
           "speechRecognitionPermission": "Se usa para entender lo que dice y armar su pedido."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }

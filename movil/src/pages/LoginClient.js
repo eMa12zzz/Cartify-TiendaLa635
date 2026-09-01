@@ -22,11 +22,18 @@
  * favorito), así que la pantalla tiene que verse como parte de la misma tienda
  * y no como un peaje. De ahí la salida de arriba y el "puede seguir viendo la
  * tienda sin cuenta" bajo el título.
+ *
+ * ── El rediseño de agosto de 2026 ──
+ *
+ * Formulario sin tarjeta con borde: el título grande a la izquierda y los
+ * campos en píldora hacen de contenedor, no hace falta dibujar uno encima.
+ * Y se sumó Google de verdad (antes no existía en móvil, solo en la web).
  * ============================================================
  */
 
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -35,13 +42,15 @@ import {
   Text,
   View,
 } from 'react-native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
+import { LogoGoogle } from '../components/UI/Iconos';
 // Los mismos iconos que la web (lucide): correo `Mail`, contraseña `Lock`.
 import { Lock, Mail } from 'lucide-react-native';
-import { loginClientDB } from '../api/authApi';
+import { googleLoginDB, loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { COLORES } from '../theme/colores';
@@ -57,6 +66,7 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   const [avisoServidor, setAvisoServidor] = useState('');
   const [recordarme, setRecordarme] = useState(false);
   const [cargando, setCargando] = useState(false);
+  const [cargandoGoogle, setCargandoGoogle] = useState(false);
 
   const cambiar = (campo) => (texto) => {
     setValores((v) => ({ ...v, [campo]: texto }));
@@ -100,6 +110,56 @@ const LoginClient = ({ irARegistro, irATienda }) => {
     }
   };
 
+  /*
+   * Entrar con Google. El selector de cuenta nativo entrega un idToken; se
+   * manda al backend (misma ruta y misma verificación que la web) y, si
+   * cuadra, se sigue el mismo camino que el login normal.
+   *
+   * El correo aquí lo da Google, no un campo del formulario propio, así que
+   * un error se avisa en el mismo cartel rojo de siempre — no hay a qué
+   * campo pegárselo.
+   */
+  const conGoogle = async () => {
+    try {
+      setAvisoServidor('');
+      setCargandoGoogle(true);
+
+      await GoogleSignin.hasPlayServices();
+      const respuesta = await GoogleSignin.signIn();
+      // Cerró el selector de cuenta sin elegir ninguna: no es un error, no
+      // hay nada que avisar.
+      if (respuesta.type === 'cancelled') return;
+
+      const idToken = respuesta.data.idToken;
+      if (!idToken) {
+        setAvisoServidor('No se recibió la respuesta de Google');
+        return;
+      }
+
+      const res = await googleLoginDB(idToken);
+      login(res.token, res.userType || 'client', res.client);
+    } catch (err) {
+      /*
+       * Esta pantalla es para ENTRAR, no para registrarse — igual que la web.
+       * Si el correo de Google no tiene cuenta, el backend se niega a
+       * crearla aquí (no hay dónde aceptar los términos ni dejar el
+       * teléfono) y contesta con `requiereConsentimiento`. La web manda a
+       * completar el registro con el token ya en mano; ese formulario
+       * todavía no existe en móvil, así que por ahora se le avisa claro y se
+       * le deja el camino de Registro de siempre.
+       */
+      if (err.requiereConsentimiento) {
+        setAvisoServidor('No tiene una cuenta con ese correo de Google. Regístrese primero.');
+        return;
+      }
+      setAvisoServidor(err.message || 'No se pudo iniciar sesión con Google');
+    } finally {
+      setCargandoGoogle(false);
+    }
+  };
+
+  const otroCargando = cargando || cargandoGoogle;
+
   return (
     <View style={estilos.pantalla}>
       <BarraMarca
@@ -117,69 +177,97 @@ const LoginClient = ({ irARegistro, irATienda }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── El formulario, primero: es a lo que se vino ── */}
-          <View style={estilos.tarjeta}>
-            <Text style={estilos.titulo}>Inicie sesión para comprar</Text>
-            <Text style={estilos.subtitulo}>Puede seguir viendo la tienda sin cuenta.</Text>
+          <Text style={estilos.titulo}>Bienvenido de nuevo</Text>
+          <Text style={estilos.subtitulo}>Inicie sesión para seguir con su compra.</Text>
 
-            <CampoTexto
-              etiqueta="Correo Electrónico"
-              icono={Mail}
-              marcador="juan@ejemplo.com"
-              valor={valores.email}
-              alCambiar={cambiar('email')}
-              error={errores.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
+          <CampoTexto
+            icono={Mail}
+            marcador="Correo electrónico"
+            valor={valores.email}
+            alCambiar={cambiar('email')}
+            error={errores.email}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            accessibilityLabel="Correo electrónico"
+            redondo
+          />
 
-            <CampoTexto
-              etiqueta="Contraseña"
-              icono={Lock}
-              marcador="••••••••"
-              valor={valores.password}
-              alCambiar={cambiar('password')}
-              error={errores.password}
-              esContrasena
-              autoCapitalize="none"
-              autoComplete="password"
-            />
+          <CampoTexto
+            icono={Lock}
+            marcador="Contraseña"
+            valor={valores.password}
+            alCambiar={cambiar('password')}
+            error={errores.password}
+            esContrasena
+            autoCapitalize="none"
+            autoComplete="password"
+            accessibilityLabel="Contraseña"
+            redondo
+          />
 
-            <View style={estilos.fila}>
-              <Casilla marcada={recordarme} alCambiar={setRecordarme} etiqueta="Recordarme 30 días" />
-              {/* Pendiente: la pantalla de recuperar contraseña todavía no existe en móvil. */}
-              <Pressable hitSlop={8}>
-                <Text style={[estilos.enlace, { color: colores.marca }]}>¿Olvidaste tu contraseña?</Text>
-              </Pressable>
-            </View>
-
-            {avisoServidor ? (
-              <View style={estilos.aviso}>
-                <Text style={estilos.avisoTexto}>{avisoServidor}</Text>
-              </View>
-            ) : null}
-
-            <Boton
-              texto="Iniciar sesión"
-              alPresionar={enviar}
-              cargando={cargando}
-              color={colores.marca}
-              colorPresionado={colores.marcaOscuro}
-            />
-
-            {/*
-              La única puerta al registro que queda, y va aquí porque es donde
-              se busca: al final del formulario, después de comprobar que no se
-              tiene con qué entrar.
-            */}
-            <Text style={estilos.pie}>
-              ¿No tiene una cuenta?{' '}
-              <Text style={[estilos.pieEnlace, { color: colores.marca }]} onPress={irARegistro}>
-                Regístrese
-              </Text>
-            </Text>
+          <View style={estilos.fila}>
+            <Casilla marcada={recordarme} alCambiar={setRecordarme} etiqueta="Recordarme 30 días" />
+            {/* Pendiente: la pantalla de recuperar contraseña todavía no existe en móvil. */}
+            <Pressable hitSlop={8}>
+              <Text style={[estilos.enlace, { color: colores.marca }]}>¿Olvidó su contraseña?</Text>
+            </Pressable>
           </View>
+
+          {avisoServidor ? (
+            <View style={estilos.aviso}>
+              <Text style={estilos.avisoTexto}>{avisoServidor}</Text>
+            </View>
+          ) : null}
+
+          <Boton
+            texto="Iniciar sesión"
+            alPresionar={enviar}
+            cargando={cargando}
+            deshabilitado={cargandoGoogle}
+            color={colores.marca}
+            colorPresionado={colores.marcaOscuro}
+            estilo={estilos.botonRedondo}
+          />
+
+          <View style={estilos.divisor}>
+            <View style={estilos.linea} />
+            <Text style={estilos.divisorTexto}>O continúa con</Text>
+            <View style={estilos.linea} />
+          </View>
+
+          <Pressable
+            onPress={conGoogle}
+            disabled={otroCargando}
+            accessibilityRole="button"
+            accessibilityLabel="Continuar con Google"
+            style={({ pressed }) => [
+              estilos.botonGoogle,
+              otroCargando && estilos.botonGoogleInactivo,
+              pressed && !otroCargando && estilos.botonGooglePresionado,
+            ]}
+          >
+            {cargandoGoogle ? (
+              <ActivityIndicator size="small" color={COLORES.textoTenue} />
+            ) : (
+              <>
+                <LogoGoogle size={18} />
+                <Text style={estilos.botonGoogleTexto}>Continuar con Google</Text>
+              </>
+            )}
+          </Pressable>
+
+          {/*
+            La única puerta al registro que queda, y va aquí porque es donde
+            se busca: al final del formulario, después de comprobar que no se
+            tiene con qué entrar.
+          */}
+          <Text style={estilos.pie}>
+            ¿No tiene una cuenta?{' '}
+            <Text style={[estilos.pieEnlace, { color: colores.marca }]} onPress={irARegistro}>
+              Regístrese
+            </Text>
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -195,37 +283,21 @@ const estilos = StyleSheet.create({
     flex: 1,
   },
   cuerpo: {
-    padding: 20,
+    padding: 24,
+    paddingTop: 28,
     paddingBottom: 48,
   },
 
-  // ── Tarjeta del formulario ──
-  tarjeta: {
-    backgroundColor: COLORES.fondo,
-    borderWidth: 1,
-    borderColor: COLORES.lineaCard,
-    borderRadius: 20,
-    padding: 22,
-    // La sombra suave de la web. En Android la da `elevation`; en iOS, las
-    // tres propiedades de shadow.
-    elevation: 3,
-    shadowColor: '#3C2814',
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-  },
   titulo: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '800',
     color: COLORES.tituloFuerte,
-    textAlign: 'center',
     marginBottom: 6,
   },
   subtitulo: {
-    fontSize: 13.5,
+    fontSize: 14,
     color: COLORES.subtitulo,
-    textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 26,
   },
   fila: {
     flexDirection: 'row',
@@ -253,11 +325,57 @@ const estilos = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
+  botonRedondo: {
+    borderRadius: 28,
+  },
+
+  // ── Divisor "O continúa con" ──
+  divisor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 22,
+  },
+  linea: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORES.linea,
+  },
+  divisorTexto: {
+    fontSize: 12.5,
+    color: COLORES.textoTenue,
+  },
+
+  // ── Botón de Google: outline, no relleno como el de iniciar sesión ──
+  botonGoogle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
+    minHeight: 50,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: COLORES.borde,
+    backgroundColor: COLORES.fondo,
+  },
+  botonGooglePresionado: {
+    backgroundColor: '#F5F5F5',
+  },
+  botonGoogleInactivo: {
+    opacity: 0.6,
+  },
+  botonGoogleTexto: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORES.texto,
+  },
+
   pie: {
     textAlign: 'center',
     fontSize: 13,
     color: COLORES.textoTenue,
-    marginTop: 20,
+    marginTop: 22,
   },
   pieEnlace: {
     color: COLORES.marca,
