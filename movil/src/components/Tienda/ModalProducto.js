@@ -40,14 +40,11 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
   const paso = pasoDe(producto);
   const [cantidad, setCantidad] = useState(paso);
 
-  /*
-   * La hoja entra deslizándose desde abajo mientras el fondo se oscurece,
-   * en vez de aparecer de golpe. Solo la ENTRADA: se pidió animar la
-   * apertura, no el cierre, así que alCerrar sigue quitando la vista al
-   * toque, tal como ya lo esperan zonaCierre y useBotonAtras.
-   */
+  // La hoja entra deslizándose desde abajo mientras el fondo se oscurece,
+  // y sale al revés al cerrar — nunca desaparece de golpe.
   const fondoOpacidad = useRef(new Animated.Value(0)).current;
   const panelY = useRef(new Animated.Value(300)).current;
+  const cerrandoRef = useRef(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -65,8 +62,33 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
     ]).start();
   }, [fondoOpacidad, panelY]);
 
+  /*
+   * Todo lo que cierra —tocar fuera, la "X", el asa, el botón atrás de
+   * Android, o agregar y salir— pasa por aquí: primero la hoja baja y el
+   * fondo se aclara, y solo CUANDO terminan de verdad se avisa al que
+   * llama (alCerrar), que es quien de verdad la quita de pantalla.
+   * `cerrandoRef` evita relanzar la animación si tocan dos veces seguidas.
+   */
+  const cerrarConAnimacion = () => {
+    if (cerrandoRef.current) return;
+    cerrandoRef.current = true;
+    Animated.parallel([
+      Animated.timing(fondoOpacidad, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(panelY, {
+        toValue: 300,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => alCerrar());
+  };
+
   // El botón de atrás de Android cierra la hoja, no la app. Ver el hook.
-  useBotonAtras(alCerrar);
+  useBotonAtras(cerrarConAnimacion);
 
   if (!producto) return null;
 
@@ -93,13 +115,22 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
           panel, no un envoltorio: envolviéndolo, cada toque dentro del panel
           burbujearía hasta aquí y cerraría el detalle al intentar tocar "+".
         */}
-        <Pressable style={estilos.zonaCierre} onPress={alCerrar} accessibilityLabel="Cerrar" />
+        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
         <Animated.View style={[estilos.panel, { transform: [{ translateY: panelY }] }]}>
           <View style={estilos.encabezado}>
-            <View style={estilos.asa} />
+            {/* El asa ya no es solo un dibujo: también cierra al tocarla,
+                como el gesto que insinúa (bajar la hoja). */}
             <Pressable
-              onPress={alCerrar}
+              onPress={cerrarConAnimacion}
+              hitSlop={{ top: 14, bottom: 14, left: 40, right: 40 }}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar el detalle"
+            >
+              <View style={estilos.asa} />
+            </Pressable>
+            <Pressable
+              onPress={cerrarConAnimacion}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Cerrar el detalle"
@@ -226,7 +257,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
               colorPresionado={colores.marcaOscuro}
               alPresionar={() => {
                 alAgregar(producto, cantidad);
-                alCerrar();
+                cerrarConAnimacion();
               }}
             />
           </View>
@@ -264,17 +295,19 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
   },
-  // El asa de la hoja: dice "esto se puede bajar" sin escribirlo.
+  // El asa de la hoja: dice "esto se puede bajar" sin escribirlo (y ahora
+  // también lo hace, ver el Pressable que la envuelve arriba).
   asa: {
     width: 38,
     height: 4,
     borderRadius: 2,
     backgroundColor: COLORES.borde,
   },
+  // Más metida en la esquina que antes (era right:14, top:6).
   cerrar: {
     position: 'absolute',
-    right: 14,
-    top: 6,
+    right: 10,
+    top: 8,
     width: 32,
     height: 32,
     borderRadius: 16,
