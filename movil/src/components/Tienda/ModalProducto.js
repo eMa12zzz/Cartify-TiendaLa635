@@ -29,6 +29,7 @@ import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text
 import { Image } from 'expo-image';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
+import { useEdad } from '../../context/EdadContext';
 import Boton from '../UI/Boton';
 import { Equis, Mas, Menos, Paquete } from '../UI/Iconos';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
@@ -39,6 +40,14 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
   const { colores } = useTema();
   const paso = pasoDe(producto);
   const [cantidad, setCantidad] = useState(paso);
+  /*
+   * Defensa extra, no la puerta principal: la puerta es TarjetaProducto (ahí
+   * se tapa la foto y no se llega hasta aquí). Pero esta ficha también se
+   * abre desde el asistente de voz (Asistente.js → mostrarProducto), que no
+   * pasa por esa tarjeta — así que "Agregar" vuelve a preguntar por su
+   * cuenta, igual que useDetalleProducto.js en la web.
+   */
+  const { mayorConfirmado, pedirConfirmacion } = useEdad();
 
   // La hoja entra deslizándose desde abajo mientras el fondo se oscurece,
   // y sale al revés al cerrar — nunca desaparece de golpe.
@@ -310,8 +319,15 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
               alPresionar={() => {
-                alAgregar(producto, cantidad);
-                cerrarConAnimacion();
+                const meter = () => {
+                  alAgregar(producto, cantidad);
+                  cerrarConAnimacion();
+                };
+                if (esSoloAdultos(producto) && !mayorConfirmado) {
+                  pedirConfirmacion(meter);
+                  return;
+                }
+                meter();
               }}
             />
           </View>

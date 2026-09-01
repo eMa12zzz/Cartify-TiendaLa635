@@ -90,9 +90,24 @@ export const AuthProvider = ({ children }) => {
     borrar(LLAVE_SESION);
   }, []);
 
+  /*
+   * Mete campos sueltos al usuario de la sesión sin pedirlo de nuevo al
+   * servidor — por ahora lo usa solo el candado +18 (EdadContext), para que
+   * el DUI que se acaba de guardar en la cuenta cuente YA MISMO y no haga
+   * falta cerrar sesión y volver a entrar para que dejen de preguntarle.
+   */
+  const actualizarUsuario = useCallback((campos) => {
+    setUser((actual) => {
+      if (!actual) return actual;
+      const nuevo = { ...actual, ...campos };
+      guardar(LLAVE_SESION, JSON.stringify({ token, user: nuevo }));
+      return nuevo;
+    });
+  }, [token]);
+
   const valor = useMemo(
-    () => ({ user, token, login, logout, isAuthenticated: !!token, cargando }),
-    [user, token, login, logout, cargando]
+    () => ({ user, token, login, logout, actualizarUsuario, isAuthenticated: !!token, cargando }),
+    [user, token, login, logout, actualizarUsuario, cargando]
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

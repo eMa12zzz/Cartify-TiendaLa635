@@ -31,6 +31,8 @@ import {
 } from 'expo-speech-recognition';
 import { asistenteApi } from '../api/asistenteApi';
 import { useAuth } from './useAuth';
+import { useEdad } from '../context/EdadContext';
+import { esSoloAdultos } from '../utils/unidades';
 import { navegarA } from '../navigation/navigationRef';
 
 const NUMEROS = {
@@ -113,6 +115,9 @@ const puntuarCoincidencia = (nombreProducto, t) => {
 
 export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto }) => {
   const { isAuthenticated } = useAuth();
+  // El mismo candado +18 que la tarjeta y la ficha: sin esto, pedirlo por
+  // voz era una puerta trasera que ni tocaba la foto tapada ni el DUI.
+  const { mayorConfirmado } = useEdad();
 
   const [activo, setActivo] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
@@ -225,6 +230,11 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
       const prod = idea.producto ? productos.find((p) => p.nombre === idea.producto) : null;
 
+      if (idea.accion === 'agregar' && prod && esSoloAdultos(prod) && !mayorConfirmado) {
+        hablarRef.current?.(`${prod.nombre} es para mayores de edad. Ábralo desde la tienda para confirmar su identificación.`);
+        return;
+      }
+
       if (idea.accion === 'agregar' && prod) {
         fns.agregarAlCarrito?.(prod, idea.cantidad || 1);
       } else if (idea.accion === 'quitar' && prod) {
@@ -237,7 +247,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     } finally {
       setPensando(false);
     }
-  }, []);
+  }, [mayorConfirmado]);
 
   const procesar = useCallback((texto) => {
     const t = expandirSinonimos(normalizar(texto));
@@ -338,30 +348,48 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     // ── Agregar (varios por frase) ──
     const partes = t.split(/\s+y\s+|,|\s+tambien\s+|\s+ademas\s+/).map((s) => s.trim()).filter(Boolean);
     const agregados = [];
+    // Productos +18 encontrados pero NO agregados: sin confirmar la edad, la
+    // voz no mete un producto restringido al carrito por su cuenta — mismo
+    // candado que la tarjeta y la ficha, solo que aquí no hay a dónde abrir
+    // un modal de DUI en medio de la conversación, así que se explica y ya.
+    const bloqueados = [];
     const vistos = new Set();
     for (const parte of partes) {
       const prod = buscarProducto(parte);
       if (prod && !vistos.has(prod.id)) {
+        vistos.add(prod.id);
+        if (esSoloAdultos(prod) && !mayorConfirmado) {
+          bloqueados.push(prod.nombre);
+          continue;
+        }
         const cant = cantidadExplicita(parte) ?? 1;
         fns.agregarAlCarrito?.(prod, cant);
         agregados.push(`${cant} ${prod.nombre}`);
-        vistos.add(prod.id);
       }
     }
 
-    if (agregados.length === 0) {
+    if (agregados.length === 0 && bloqueados.length === 0) {
       // Las reglas se dieron por vencidas: que lo intente la IA antes de
       // decir que no se entendió nada.
       preguntarALaIA(texto);
       return;
     }
 
-    const mensaje = agregados.length === 1
-      ? `Agregué ${agregados[0]}. ¿Algo más?`
-      : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}. ¿Algo más?`;
-
-    hablar(mensaje);
-  }, [hablar, preguntarALaIA, isAuthenticated]);
+    const piezas = [];
+    if (agregados.length) {
+      piezas.push(
+        agregados.length === 1
+          ? `Agregué ${agregados[0]}`
+          : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}`
+      );
+    }
+    if (bloqueados.length) {
+      const lista = bloqueados.join(' y ');
+      const verbo = bloqueados.length === 1 ? 'es' : 'son';
+      piezas.push(`${lista} ${verbo} para mayores de edad. Ábralo desde la tienda para confirmar su identificación.`);
+    }
+    hablar(piezas.join('. ') + (agregados.length ? ' ¿Algo más?' : ''));
+  }, [hablar, preguntarALaIA, isAuthenticated, mayorConfirmado]);
   procesarRef.current = procesar;
 
   // ── Eventos del reconocedor nativo ──

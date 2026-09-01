@@ -17,6 +17,14 @@
  *   AuthProvider      porque la tienda y los favoritos necesitan saber de quién
  *                     es la sesión.
  *   TemaProvider      trae los ajustes de la tienda y decide la temporada.
+ *   EdadProvider      el candado de los +18: necesita la sesión (por si ya
+ *                     hay un DUI guardado) Y el tema (su modal se pinta con
+ *                     colores.marca, igual que el resto de la tienda) — por
+ *                     eso va DESPUÉS de los dos, no antes. Poniéndolo antes
+ *                     de TemaProvider, ModalConfirmarEdad —que EdadProvider
+ *                     dibuja junto a sus hijos, no adentro— se queda sin
+ *                     TemaContext y truena con "useTema debe usarse dentro
+ *                     de <TemaProvider>" en cuanto se abre.
  *   FavoritosProvider y TiendaProvider van últimos: usan los anteriores.
  *
  * `FavoritosProvider` manda a la pantalla de entrar con `navegarA` en vez de
@@ -28,6 +36,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { AvisoProvider } from './src/context/AvisoContext';
+import { EdadProvider } from './src/context/EdadContext';
 import { FavoritosProvider } from './src/context/FavoritosContext';
 import { TemaProvider } from './src/context/TemaContext';
 import { TiendaProvider } from './src/context/TiendaContext';
@@ -40,12 +49,14 @@ export default function App() {
       <AvisoProvider>
         <AuthProvider>
           <TemaProvider>
-            <FavoritosProvider alPedirSesion={() => navegarA('Login')}>
-              <TiendaProvider>
-                <StatusBar style="dark" />
-                <RootNavigator />
-              </TiendaProvider>
-            </FavoritosProvider>
+            <EdadProvider>
+              <FavoritosProvider alPedirSesion={() => navegarA('Login')}>
+                <TiendaProvider>
+                  <StatusBar style="dark" />
+                  <RootNavigator />
+                </TiendaProvider>
+              </FavoritosProvider>
+            </EdadProvider>
           </TemaProvider>
         </AuthProvider>
       </AvisoProvider>
