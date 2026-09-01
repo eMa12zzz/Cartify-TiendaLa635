@@ -290,10 +290,18 @@ const estilos = StyleSheet.create({
     // Tope de alto: el detalle es una hoja que sube, no una pantalla entera.
     maxHeight: '88%',
   },
+  /*
+   * minHeight a propósito: "cerrar" es absoluta y mide más (top:8 + 32 de
+   * alto = 40) que lo que este encabezado ocupaba antes solo con el asa
+   * (~14px). Sin este mínimo, el ScrollView de abajo —que se dibuja
+   * DESPUÉS, ya que es el hermano siguiente— quedaba encima de la mitad de
+   * abajo de la "X" y se robaba el toque: se veía perfecto pero no cerraba.
+   */
   encabezado: {
     paddingTop: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
+    minHeight: 44,
   },
   // El asa de la hoja: dice "esto se puede bajar" sin escribirlo (y ahora
   // también lo hace, ver el Pressable que la envuelve arriba).
