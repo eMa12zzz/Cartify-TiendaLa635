@@ -63,10 +63,10 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
   }, [fondoOpacidad, panelY]);
 
   /*
-   * Todo lo que cierra —tocar fuera, la "X", el asa, el botón atrás de
-   * Android, o agregar y salir— pasa por aquí: primero la hoja baja y el
-   * fondo se aclara, y solo CUANDO terminan de verdad se avisa al que
-   * llama (alCerrar), que es quien de verdad la quita de pantalla.
+   * Todo lo que cierra —tocar fuera, la "X", el botón atrás de Android, o
+   * agregar y salir— pasa por aquí: primero la hoja baja y el fondo se
+   * aclara, y solo CUANDO terminan de verdad se avisa al que llama
+   * (alCerrar), que es quien de verdad la quita de pantalla.
    * `cerrandoRef` evita relanzar la animación si tocan dos veces seguidas.
    */
   const cerrarConAnimacion = () => {
@@ -119,16 +119,10 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
 
         <Animated.View style={[estilos.panel, { transform: [{ translateY: panelY }] }]}>
           <View style={estilos.encabezado}>
-            {/* El asa ya no es solo un dibujo: también cierra al tocarla,
-                como el gesto que insinúa (bajar la hoja). */}
-            <Pressable
-              onPress={cerrarConAnimacion}
-              hitSlop={{ top: 14, bottom: 14, left: 40, right: 40 }}
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar el detalle"
-            >
-              <View style={estilos.asa} />
-            </Pressable>
+            {/* El asa vuelve a ser solo un dibujo: se probó que cerrara al
+                tocarla y no respondía bien de forma consistente. Cerrar
+                sigue andando por la "X", tocar fuera, o el botón atrás. */}
+            <View style={estilos.asa} />
             <Pressable
               onPress={cerrarConAnimacion}
               hitSlop={12}
@@ -303,8 +297,7 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     minHeight: 44,
   },
-  // El asa de la hoja: dice "esto se puede bajar" sin escribirlo (y ahora
-  // también lo hace, ver el Pressable que la envuelve arriba).
+  // El asa de la hoja: dice "esto se puede bajar" sin escribirlo. Solo dibujo.
   asa: {
     width: 38,
     height: 4,
