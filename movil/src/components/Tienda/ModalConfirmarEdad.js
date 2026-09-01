@@ -17,7 +17,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShieldAlert } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
@@ -30,6 +31,10 @@ import { EDAD_MINIMA } from '../../utils/edad';
 
 const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   const { colores } = useTema();
+  // Sin esto, "No se comparte" (la última línea) quedaba debajo de la franja
+  // de gestos de Android en un teléfono real — mismo caso que Carrito.js y
+  // Confirmacion.js, y esta hoja no tiene ScrollView que lo disimule.
+  const { bottom } = useSafeAreaInsets();
   const [dui, setDui] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -37,6 +42,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   // Misma entrada que ModalProducto: fondo que se aclara, panel que sube.
   const fondoOpacidad = useRef(new Animated.Value(0)).current;
   const panelY = useRef(new Animated.Value(300)).current;
+  const cerrandoRef = useRef(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -50,7 +56,59 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
     ]).start();
   }, [fondoOpacidad, panelY]);
 
-  useBotonAtras(alCerrar);
+  /*
+   * Mismo cierre animado que ModalProducto, y por la misma razón: tocar
+   * fuera o el botón atrás no pueden quitar la vista de golpe cuando la
+   * apertura sí se anima — se veía como que la mitad del modal funcionaba
+   * distinto a la otra mitad.
+   */
+  const cerrarConAnimacion = () => {
+    if (cerrandoRef.current) return;
+    cerrandoRef.current = true;
+    Animated.parallel([
+      Animated.timing(fondoOpacidad, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(panelY, {
+        toValue: 300,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => alCerrar());
+  };
+
+  useBotonAtras(cerrarConAnimacion);
+
+  // El asa se arrastra igual que en ModalProducto: baja con el dedo, y al
+  // soltar decide sola si cierra o vuelve a subir, según si pasó la mitad
+  // del panel. Ver el comentario largo en ModalProducto.js sobre por qué
+  // hace falta onPanResponderTerminationRequest.
+  const panelAlturaRef = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evento, gesto) => Math.abs(gesto.dy) > 4,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderMove: (_evento, gesto) => {
+        if (gesto.dy > 0) panelY.setValue(gesto.dy);
+      },
+      onPanResponderRelease: (_evento, gesto) => {
+        const mitad = (panelAlturaRef.current || 300) / 2;
+        if (gesto.dy > mitad) {
+          cerrarConAnimacion();
+        } else {
+          Animated.timing(panelY, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.timing(panelY, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
 
   const escribir = (valor) => {
     setDui(formatearDui(valor));
@@ -76,14 +134,19 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable style={estilos.zonaCierre} onPress={alCerrar} accessibilityLabel="Cerrar" />
+        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
-        <Animated.View style={[estilos.panel, { transform: [{ translateY: panelY }] }]}>
+        <Animated.View
+          style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
+          onLayout={(e) => { panelAlturaRef.current = e.nativeEvent.layout.height; }}
+        >
           <View style={estilos.encabezado}>
-            <View style={estilos.asa} />
+            <View style={estilos.zonaAsa} {...panResponder.panHandlers}>
+              <View style={estilos.asa} />
+            </View>
           </View>
 
-          <View style={estilos.contenido}>
+          <View style={[estilos.contenido, { paddingBottom: Math.max(bottom + 14, 30) }]}>
             <View style={[estilos.icono, { backgroundColor: colores.marcaSuave }]}>
               <ShieldAlert size={26} color={colores.marcaOscuro} />
             </View>
@@ -145,6 +208,12 @@ const estilos = StyleSheet.create({
     paddingTop: 10,
     alignItems: 'center',
   },
+  // Misma zona de agarre ancha que ModalProducto: el dibujo (38x4) es
+  // angosto para arrastrarlo a ciegas con el dedo.
+  zonaAsa: {
+    paddingVertical: 14,
+    paddingHorizontal: 60,
+  },
   asa: {
     width: 38,
     height: 4,
@@ -154,7 +223,7 @@ const estilos = StyleSheet.create({
   contenido: {
     paddingHorizontal: 24,
     paddingTop: 14,
-    paddingBottom: 30,
+    // paddingBottom real se pone en línea, con la franja de gestos sumada.
   },
   icono: {
     width: 52,
