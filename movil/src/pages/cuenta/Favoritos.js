@@ -41,7 +41,10 @@ const Favoritos = ({ alVolver }) => {
   const { colores } = useTema();
   const { productos, cargando, agregarAlCarrito } = useTienda();
   const { esFavorito } = useFavoritos();
-  // Sin esto el último producto queda tapado detrás de la píldora flotante.
+  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
+  // sin este relleno en la pantalla entera, la cuadrícula se desliza hasta
+  // el borde de abajo de verdad y cualquier producto pasa un momento detrás
+  // de la barra al hacer scroll, no solo el último.
   const alturaBarra = useAlturaBarraInferior();
 
   const [productoAbierto, setProductoAbierto] = useState(null);
@@ -52,7 +55,7 @@ const Favoritos = ({ alVolver }) => {
   );
 
   return (
-    <View style={estilos.pantalla}>
+    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
       <BarraCuenta titulo="Mis favoritos" alVolver={alVolver} />
 
       {cargando ? (
@@ -73,7 +76,7 @@ const Favoritos = ({ alVolver }) => {
           keyExtractor={(p) => p.id}
           numColumns={2}
           columnWrapperStyle={estilos.fila}
-          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.paddingVertical + alturaBarra }]}
+          contentContainerStyle={estilos.lista}
           ListHeaderComponent={
             <Text style={estilos.conteo}>
               {marcados.length} {marcados.length === 1 ? 'producto guardado' : 'productos guardados'}

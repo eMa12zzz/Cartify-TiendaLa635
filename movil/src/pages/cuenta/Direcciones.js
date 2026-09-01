@@ -67,7 +67,10 @@ const Direcciones = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
   const { avisar } = useAviso();
-  // Sin esto la última dirección queda tapada detrás de la píldora flotante.
+  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
+  // sin este relleno en la pantalla entera, la lista se desliza hasta el
+  // borde de abajo de verdad y cualquier dirección pasa un momento detrás
+  // de la barra al hacer scroll, no solo la última.
   const alturaBarra = useAlturaBarraInferior();
 
   const [direcciones, setDirecciones] = useState([]);
@@ -148,7 +151,7 @@ const Direcciones = ({ alVolver }) => {
   };
 
   return (
-    <View style={estilos.pantalla}>
+    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
       <BarraCuenta titulo="Direcciones" alVolver={alVolver} />
 
       {cargando ? (
@@ -172,7 +175,7 @@ const Direcciones = ({ alVolver }) => {
         <FlatList
           data={direcciones}
           keyExtractor={(_, i) => String(i)}
-          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.padding + alturaBarra }]}
+          contentContainerStyle={estilos.lista}
           ListEmptyComponent={
             <View style={estilos.vacio}>
               <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />

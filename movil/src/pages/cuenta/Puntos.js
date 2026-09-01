@@ -87,7 +87,7 @@ const Puntos = ({ alVolver }) => {
     : '—';
 
   return (
-    <View style={estilos.pantalla}>
+    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
       <BarraCuenta titulo="Puntos de fidelidad" alVolver={alVolver} />
 
       {cargando ? (
@@ -108,9 +108,7 @@ const Puntos = ({ alVolver }) => {
           </View>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={[estilos.cuerpo, { paddingBottom: estilos.cuerpo.paddingBottom + alturaBarra }]}
-        >
+        <ScrollView contentContainerStyle={estilos.cuerpo}>
           {/* ── La tarjeta ── */}
           <View style={estilos.tarjeta}>
             {/*

@@ -50,8 +50,11 @@ import { Equis, Lupa } from '../components/UI/Iconos';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
-  // La píldora flotante ya no es opaca de punta a punta: sin este relleno la
-  // última fila de la cuadrícula queda tapada detrás de ella. Ver BarraInferior.
+  // La píldora flotante NO empuja el contenido: vive encima, no en su propio
+  // renglón. Sin este relleno en la pantalla entera (no solo al final de la
+  // lista), la cuadrícula se desliza hasta el borde de abajo de verdad y
+  // cualquier fila —no solo la última— pasa un momento detrás de la barra
+  // mientras se hace scroll. Ver BarraInferior.
   const alturaBarra = useAlturaBarraInferior();
   const { isAuthenticated, user } = useAuth();
   const nombre = user?.fullName || user?.userName;
@@ -204,7 +207,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   );
 
   return (
-    <View style={estilos.pantalla}>
+    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
       {/*
         Las figuras de temporada van PRIMERAS en el árbol para quedar detrás de
         todo: en React Native pinta encima lo que va después. La lista no tiene
@@ -250,7 +253,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           ListHeaderComponent={encabezado}
           ListEmptyComponent={vacio}
           columnWrapperStyle={estilos.fila}
-          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.paddingBottom + alturaBarra }]}
+          contentContainerStyle={estilos.lista}
           renderItem={({ item }) => (
             /*
              * El tope de ancho es lo que arregla la última fila impar. Con

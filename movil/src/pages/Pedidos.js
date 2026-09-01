@@ -122,7 +122,10 @@ const TarjetaPedido = ({ pedido }) => {
 const Pedidos = () => {
   const { user } = useAuth();
   const { colores } = useTema();
-  // Sin esto el último pedido queda tapado detrás de la píldora flotante.
+  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
+  // sin este relleno en la pantalla entera, la lista se desliza hasta el
+  // borde de abajo de verdad y cualquier pedido pasa un momento detrás de
+  // la barra al hacer scroll, no solo el último.
   const alturaBarra = useAlturaBarraInferior();
 
   const [pedidos, setPedidos] = useState([]);
@@ -164,7 +167,7 @@ const Pedidos = () => {
   }, [cargar]);
 
   return (
-    <View style={estilos.pantalla}>
+    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
         <Text style={estilos.titulo}>Mis pedidos</Text>
         {!cargando && !error && pedidos.length > 0 && (
@@ -204,7 +207,7 @@ const Pedidos = () => {
         <FlatList
           data={pedidos}
           keyExtractor={(p) => String(p._id)}
-          contentContainerStyle={[estilos.lista, { paddingBottom: estilos.lista.paddingBottom + alturaBarra }]}
+          contentContainerStyle={estilos.lista}
           renderItem={({ item }) => <TarjetaPedido pedido={item} />}
         />
       )}

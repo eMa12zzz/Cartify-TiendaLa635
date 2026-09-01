@@ -22,9 +22,10 @@ import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 
 const Asistente = () => {
   const { colores } = useTema();
-  // El resumen del carrito es lo último de la pantalla, justo donde antes
-  // llegaba la barra de siempre — ahora que flota, sin este relleno el
-  // renglón de abajo queda tapado detrás de ella.
+  // La píldora flotante vive ENCIMA de la pantalla entera, no en su propio
+  // renglón: sin este relleno en `pantalla`, el resumen del carrito —lo
+  // último de esta pantalla— queda detrás de la barra en vez de terminar
+  // justo arriba de ella.
   const alturaBarra = useAlturaBarraInferior();
   const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
   // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
@@ -73,7 +74,7 @@ const Asistente = () => {
   const alTocarMic = hablando ? interrumpir : activo ? detener : iniciar;
 
   return (
-    <View style={estilos.pantalla}>
+    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
         <Text style={estilos.titulo}>Asistente por voz</Text>
         <TouchableOpacity onPress={toggleMute} accessibilityLabel={muteado ? 'Activar voz' : 'Silenciar voz'}>
@@ -122,10 +123,7 @@ const Asistente = () => {
       <TouchableOpacity
         activeOpacity={carrito.length === 0 ? 1 : 0.7}
         onPress={() => carrito.length > 0 && navegarA('Carrito')}
-        style={[
-          estilos.carritoResumen,
-          { borderColor: colores.marcaSuave, backgroundColor: colores.marcaTenue, paddingBottom: 14 + alturaBarra },
-        ]}
+        style={[estilos.carritoResumen, { borderColor: colores.marcaSuave, backgroundColor: colores.marcaTenue }]}
       >
         <View style={estilos.carritoFila}>
           <Text style={estilos.carritoTitulo}>Tu carrito ({items})</Text>

@@ -80,7 +80,10 @@ const PANTALLAS = {
 const Perfil = () => {
   const { user, logout } = useAuth();
   const { colores } = useTema();
-  // Sin esto el último renglón queda tapado detrás de la píldora flotante.
+  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
+  // sin este relleno en la pantalla entera, la lista se desliza hasta el
+  // borde de abajo de verdad y cualquier renglón pasa un momento detrás de
+  // la barra al hacer scroll, no solo el último.
   const alturaBarra = useAlturaBarraInferior();
 
   const [seccion, setSeccion] = useState(null);
@@ -144,14 +147,12 @@ const Perfil = () => {
   const inicial = nombre.substring(0, 1).toUpperCase();
 
   return (
-    <View style={estilos.pantalla}>
+    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
         <Text style={estilos.tituloBarra}>Mi cuenta</Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[estilos.cuerpo, { paddingBottom: estilos.cuerpo.paddingBottom + alturaBarra }]}
-      >
+      <ScrollView contentContainerStyle={estilos.cuerpo}>
         {/* Quién está dentro */}
         <View style={estilos.cabecera}>
           {cliente?.image ? (
