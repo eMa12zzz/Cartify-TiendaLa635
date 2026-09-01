@@ -22,8 +22,8 @@
  * ============================================================
  */
 
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
@@ -39,6 +39,31 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
   const { colores } = useTema();
   const paso = pasoDe(producto);
   const [cantidad, setCantidad] = useState(paso);
+
+  /*
+   * La hoja entra deslizándose desde abajo mientras el fondo se oscurece,
+   * en vez de aparecer de golpe. Solo la ENTRADA: se pidió animar la
+   * apertura, no el cierre, así que alCerrar sigue quitando la vista al
+   * toque, tal como ya lo esperan zonaCierre y useBotonAtras.
+   */
+  const fondoOpacidad = useRef(new Animated.Value(0)).current;
+  const panelY = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fondoOpacidad, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(panelY, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fondoOpacidad, panelY]);
 
   // El botón de atrás de Android cierra la hoja, no la app. Ver el hook.
   useBotonAtras(alCerrar);
@@ -62,7 +87,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
      * "agregado al carrito" quedaba tapado. Ver hooks/useBotonAtras.js.
      */
     <View style={estilos.capa}>
-      <View style={estilos.fondo}>
+      <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
         {/*
           Tocar fuera cierra. Es un Pressable del tamaño del fondo DEBAJO del
           panel, no un envoltorio: envolviéndolo, cada toque dentro del panel
@@ -70,7 +95,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
         */}
         <Pressable style={estilos.zonaCierre} onPress={alCerrar} accessibilityLabel="Cerrar" />
 
-        <View style={estilos.panel}>
+        <Animated.View style={[estilos.panel, { transform: [{ translateY: panelY }] }]}>
           <View style={estilos.encabezado}>
             <View style={estilos.asa} />
             <Pressable
@@ -205,8 +230,8 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
               }}
             />
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
     </View>
   );
 };
