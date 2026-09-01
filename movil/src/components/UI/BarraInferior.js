@@ -108,50 +108,77 @@ const BarraInferior = ({ apartado, alCambiar }) => {
   if (tecladoAbierto) return null;
 
   return (
-    <View style={[estilos.barra, { paddingBottom: Math.max(bottom, 10) }]}>
-      {APARTADOS.map(({ clave, icono: Icono, nombre }) => {
-        const activo = apartado === clave;
+    // La franja de gestos ya no es padding DENTRO de la barra: es aire AFUERA,
+    // para que la píldora quede flotando por encima y no pegada al filo.
+    <View style={[estilos.envoltorio, { paddingBottom: Math.max(bottom, 14) }]}>
+      <View style={estilos.barra}>
+        {APARTADOS.map(({ clave, icono: Icono, nombre }) => {
+          const activo = apartado === clave;
 
-        return (
-          <Pressable
-            key={clave}
-            onPress={() => alCambiar(clave)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activo }}
-            accessibilityLabel={nombre}
-            style={({ pressed }) => [
-              estilos.apartado,
-              pressed && { backgroundColor: colores.marcaTenue },
-            ]}
-          >
-            <Icono
-              size={25}
-              color={activo ? colores.marca : COLORES.textoSuave}
-              strokeWidth={activo ? 2.4 : 1.8}
-            />
-          </Pressable>
-        );
-      })}
+          return (
+            <Pressable
+              key={clave}
+              onPress={() => alCambiar(clave)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activo }}
+              accessibilityLabel={nombre}
+              style={estilos.apartado}
+            >
+              {({ pressed }) => (
+                // El fondo encendido va en esta píldora chica, pegada al
+                // icono — no en toda la columna, que es lo que sigue siendo
+                // el área de toque completa.
+                <View
+                  style={[estilos.pastillaIcono, (activo || pressed) && { backgroundColor: colores.marcaTenue }]}
+                >
+                  <Icono
+                    size={24}
+                    color={activo ? colores.marca : COLORES.textoSuave}
+                    strokeWidth={activo ? 2.4 : 1.8}
+                  />
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 };
 
 const estilos = StyleSheet.create({
+  // Transparente: solo existe para reservarle aire de abajo a la píldora.
+  envoltorio: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
   barra: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORES.fondo,
-    borderTopWidth: 1,
-    borderTopColor: COLORES.linea,
-    // El relleno de abajo lo pone la franja de gestos (ver arriba); estos 8 son
-    // solo el aire de arriba, para que el icono no toque la raya.
-    paddingTop: 8,
+    borderRadius: 30,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    // La sombra es lo que la hace leerse como que flota y no como una barra
+    // pegada al borde de siempre.
+    elevation: 10,
+    shadowColor: '#000000',
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
   },
   apartado: {
     // Cada uno se lleva un cuarto del ancho, toque donde toque el dedo: los
     // huecos entre iconos también cambian de apartado.
     flex: 1,
-    height: 46,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pastillaIcono: {
+    width: 48,
+    height: 44,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
