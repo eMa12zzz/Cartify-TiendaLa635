@@ -22,13 +22,14 @@
  * ============================================================
  */
 
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
+import { useEdad } from '../../context/EdadContext';
 import Boton from '../UI/Boton';
 import { Equis, Mas, Menos, Paquete } from '../UI/Iconos';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
@@ -39,9 +40,116 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
   const { colores } = useTema();
   const paso = pasoDe(producto);
   const [cantidad, setCantidad] = useState(paso);
+  /*
+   * Defensa extra, no la puerta principal: la puerta es TarjetaProducto (ahí
+   * se tapa la foto y no se llega hasta aquí). Pero esta ficha también se
+   * abre desde el asistente de voz (Asistente.js → mostrarProducto), que no
+   * pasa por esa tarjeta — así que "Agregar" vuelve a preguntar por su
+   * cuenta, igual que useDetalleProducto.js en la web.
+   */
+  const { mayorConfirmado, pedirConfirmacion } = useEdad();
+
+  // La hoja entra deslizándose desde abajo mientras el fondo se oscurece,
+  // y sale al revés al cerrar — nunca desaparece de golpe.
+  const fondoOpacidad = useRef(new Animated.Value(0)).current;
+  const panelY = useRef(new Animated.Value(300)).current;
+  const cerrandoRef = useRef(false);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fondoOpacidad, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(panelY, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fondoOpacidad, panelY]);
+
+  /*
+   * Todo lo que cierra —tocar fuera, la "X", el botón atrás de Android, o
+   * agregar y salir— pasa por aquí: primero la hoja baja y el fondo se
+   * aclara, y solo CUANDO terminan de verdad se avisa al que llama
+   * (alCerrar), que es quien de verdad la quita de pantalla.
+   * `cerrandoRef` evita relanzar la animación si tocan dos veces seguidas.
+   */
+  const cerrarConAnimacion = () => {
+    if (cerrandoRef.current) return;
+    cerrandoRef.current = true;
+    Animated.parallel([
+      Animated.timing(fondoOpacidad, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(panelY, {
+        toValue: 300,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => alCerrar());
+  };
 
   // El botón de atrás de Android cierra la hoja, no la app. Ver el hook.
-  useBotonAtras(alCerrar);
+  useBotonAtras(cerrarConAnimacion);
+
+  /*
+   * Arrastrar el asa. Se guarda el alto real del panel (varía con el
+   * contenido: un producto con descripción larga mide distinto que uno
+   * sin ella) para poder comparar contra SU mitad, no un número fijo.
+   */
+  const panelAlturaRef = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      // Recién a partir de un arrastre de verdad: un toque corto en el asa
+      // (que ya no hace nada) no debe robarle el gesto a nadie.
+      onMoveShouldSetPanResponder: (_evento, gesto) => Math.abs(gesto.dy) > 4,
+      /*
+       * Sin esto, un arrastre largo terminaba en el ScrollView de abajo
+       * pidiendo (y llevándose) el control a medio camino — el gesto se
+       * "soltaba" ahí (onPanResponderTerminate) y el toque de "pasó la
+       * mitad" nunca llegaba a evaluarse: la hoja SIEMPRE volvía a subir,
+       * sin importar cuánto se hubiera bajado. Rechazar la cesión mantiene
+       * el gesto entero, de principio a fin, en manos de este asa.
+       */
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderMove: (_evento, gesto) => {
+        // Solo baja. Arrastrar hacia arriba no "abre más" — no hay más.
+        if (gesto.dy > 0) panelY.setValue(gesto.dy);
+      },
+      onPanResponderRelease: (_evento, gesto) => {
+        const mitad = (panelAlturaRef.current || 400) / 2;
+        if (gesto.dy > mitad) {
+          cerrarConAnimacion();
+        } else {
+          // No pasó de la mitad: vuelve a su lugar, con el mismo resorte
+          // que la apertura.
+          Animated.timing(panelY, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+      // Si soltó a medio arrastre sin terminar el gesto (una llamada entra,
+      // por ejemplo), que no se quede la hoja a medio bajar.
+      onPanResponderTerminate: () => {
+        Animated.timing(panelY, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      },
+    })
+  ).current;
 
   if (!producto) return null;
 
@@ -62,19 +170,30 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
      * "agregado al carrito" quedaba tapado. Ver hooks/useBotonAtras.js.
      */
     <View style={estilos.capa}>
-      <View style={estilos.fondo}>
+      <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
         {/*
           Tocar fuera cierra. Es un Pressable del tamaño del fondo DEBAJO del
           panel, no un envoltorio: envolviéndolo, cada toque dentro del panel
           burbujearía hasta aquí y cerraría el detalle al intentar tocar "+".
         */}
-        <Pressable style={estilos.zonaCierre} onPress={alCerrar} accessibilityLabel="Cerrar" />
+        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
-        <View style={estilos.panel}>
+        <Animated.View
+          style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
+          onLayout={(e) => { panelAlturaRef.current = e.nativeEvent.layout.height; }}
+        >
           <View style={estilos.encabezado}>
-            <View style={estilos.asa} />
+            {/*
+              El asa ahora sí se arrastra: baja con el dedo, y al soltar
+              decide sola — pasó la mitad del panel, cierra; si no, vuelve
+              a subir. La zona de agarre es más grande que el dibujo (38x4)
+              para no repetir el problema de un blanco angosto.
+            */}
+            <View style={estilos.zonaAsa} {...panResponder.panHandlers}>
+              <View style={estilos.asa} />
+            </View>
             <Pressable
-              onPress={alCerrar}
+              onPress={cerrarConAnimacion}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Cerrar el detalle"
@@ -200,13 +319,20 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
               alPresionar={() => {
-                alAgregar(producto, cantidad);
-                alCerrar();
+                const meter = () => {
+                  alAgregar(producto, cantidad);
+                  cerrarConAnimacion();
+                };
+                if (esSoloAdultos(producto) && !mayorConfirmado) {
+                  pedirConfirmacion(meter);
+                  return;
+                }
+                meter();
               }}
             />
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
     </View>
   );
 };
@@ -234,10 +360,24 @@ const estilos = StyleSheet.create({
     // Tope de alto: el detalle es una hoja que sube, no una pantalla entera.
     maxHeight: '88%',
   },
+  /*
+   * minHeight a propósito: "cerrar" es absoluta y mide más (top:8 + 32 de
+   * alto = 40) que lo que este encabezado ocupaba antes solo con el asa
+   * (~14px). Sin este mínimo, el ScrollView de abajo —que se dibuja
+   * DESPUÉS, ya que es el hermano siguiente— quedaba encima de la mitad de
+   * abajo de la "X" y se robaba el toque: se veía perfecto pero no cerraba.
+   */
   encabezado: {
     paddingTop: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
+    minHeight: 44,
+  },
+  // La zona de agarre del asa: bastante más ancha y alta que el dibujo
+  // (38x4) para que arrastrarla no dependa de acertarle a algo angosto.
+  zonaAsa: {
+    paddingVertical: 14,
+    paddingHorizontal: 60,
   },
   // El asa de la hoja: dice "esto se puede bajar" sin escribirlo.
   asa: {
@@ -246,10 +386,11 @@ const estilos = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORES.borde,
   },
+  // Más metida en la esquina que antes (era right:14, top:6).
   cerrar: {
     position: 'absolute',
-    right: 14,
-    top: 6,
+    right: 10,
+    top: 8,
     width: 32,
     height: 32,
     borderRadius: 16,

@@ -26,6 +26,10 @@ const CampoTexto = ({
   alCambiar,
   marcador,
   esContrasena = false,
+  // Pill redondeada en vez de la esquina de 8 de siempre — la usa el login
+  // rediseñado. Opcional para no mover el resto de formularios (Registro,
+  // el DUI de ModalConfirmarEdad) que siguen con el campo cuadrado normal.
+  redondo = false,
   ...props
 }) => {
   const [enfocado, setEnfocado] = useState(false);
@@ -41,11 +45,11 @@ const CampoTexto = ({
 
   return (
     <View style={estilos.contenedor}>
-      <Text style={estilos.etiqueta}>{etiqueta}</Text>
+      {etiqueta ? <Text style={estilos.etiqueta}>{etiqueta}</Text> : null}
 
       <View style={estilos.envoltorio}>
         {Icono && (
-          <View style={estilos.icono} pointerEvents="none">
+          <View style={[estilos.icono, redondo && estilos.iconoRedondo]} pointerEvents="none">
             {/* El color se pasa aquí para que los iconos de lucide (que por
                 defecto van negros) tomen el mismo gris que la web (#aaa). */}
             <Icono size={18} color={COLORES.iconoCampo} />
@@ -55,6 +59,7 @@ const CampoTexto = ({
         <TextInput
           style={[
             estilos.campo,
+            redondo && estilos.campoRedondo,
             { borderColor: colorBorde },
             enfocado && !error && [estilos.campoEnfocado, { shadowColor: colores.marca }],
             esContrasena && estilos.campoConOjo,
@@ -140,6 +145,14 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     color: COLORES.texto,
     backgroundColor: COLORES.fondo,
+  },
+  campoRedondo: {
+    borderRadius: 28,
+    paddingVertical: 15,
+    paddingLeft: 46,
+  },
+  iconoRedondo: {
+    left: 18,
   },
   // El halo café del `:focus` de la web, con la sombra que da Android.
   campoEnfocado: {

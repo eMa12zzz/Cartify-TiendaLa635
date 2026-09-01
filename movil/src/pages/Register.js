@@ -176,6 +176,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             alCambiar={cambiar('fullName')}
             error={errores.fullName}
             autoCapitalize="words"
+            redondo
           />
 
           <CampoTexto
@@ -186,6 +187,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             alCambiar={cambiar('userName')}
             error={errores.userName}
             autoCapitalize="none"
+            redondo
           />
 
           <CampoTexto
@@ -197,6 +199,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.dui}
             keyboardType="number-pad"
             maxLength={LARGO_DUI}
+            redondo
           />
 
           <CampoTexto
@@ -208,6 +211,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.phoneNumber}
             keyboardType="phone-pad"
             maxLength={LARGO_TELEFONO}
+            redondo
           />
 
           <CampoTexto
@@ -220,6 +224,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            redondo
           />
 
           <CampoTexto
@@ -231,6 +236,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.password}
             esContrasena
             autoCapitalize="none"
+            redondo
           />
 
           <Text style={estilos.etiquetaFoto}>Foto de Perfil (Opcional)</Text>
@@ -400,6 +406,7 @@ const estilos = StyleSheet.create({
   },
   boton: {
     marginTop: 10,
+    borderRadius: 28,
   },
   pie: {
     textAlign: 'center',

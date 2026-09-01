@@ -90,3 +90,20 @@ export const verificarCodigoCorreo = (codigo) =>
     metodo: 'POST',
     cuerpo: { verificationCodeRequest: codigo },
   });
+
+/*
+ * Entrar con Google. `credential` es el idToken que entrega
+ * @react-native-google-signin/google-signin; el backend lo verifica contra
+ * Google (misma GOOGLE_CLIENT_ID que ya usan frontend y backend) y busca o
+ * enlaza la cuenta. Misma respuesta que loginClientDB.
+ *
+ * Esta pantalla es solo para ENTRAR, así que no se manda `extra`: si el
+ * correo de Google no tiene cuenta todavía, el backend contesta 403 con
+ * `requiereConsentimiento` en vez de crearla — ver googleAuthClient.js en el
+ * backend. `peticion()` deja ese campo pegado al error para quien llame.
+ */
+export const googleLoginDB = (credential) =>
+  peticion('/loginClient/google', {
+    metodo: 'POST',
+    cuerpo: { credential },
+  });
