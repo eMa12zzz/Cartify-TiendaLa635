@@ -204,7 +204,9 @@ const estilos = StyleSheet.create({
   pastillaIcono: {
     width: 48,
     height: 44,
-    borderRadius: 16,
+    // La mitad del alto: esquinas totalmente redondas (píldora), no la
+    // esquina suavizada de antes que se leía como un cuadrado.
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
