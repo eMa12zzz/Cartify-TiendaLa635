@@ -207,6 +207,13 @@ const estilos = StyleSheet.create({
     // La mitad del alto: esquinas totalmente redondas (píldora), no la
     // esquina suavizada de antes que se leía como un cuadrado.
     borderRadius: 22,
+    // Sin esto, Android solo recorta bien la esquina la primera vez que se
+    // pinta la vista. El apartado que ya nace activo (Tienda) se ve redondo
+    // porque su fondo se pintó así desde el primer cuadro; los que se
+    // activan DESPUÉS —al tocar Asistente, Pedidos o Perfil— cambian el
+    // backgroundColor sobre una vista ya pintada, y sin overflow:'hidden'
+    // Android no vuelve a recortar: el fondo se ve casi cuadrado.
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
