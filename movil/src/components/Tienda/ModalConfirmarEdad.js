@@ -165,6 +165,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
               error={error}
               keyboardType="number-pad"
               maxLength={LARGO_DUI}
+              redondo
             />
 
             <Boton
@@ -173,6 +174,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
               deshabilitado={enviando}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
+              estilo={estilos.botonRedondo}
             />
 
             <Text style={estilos.aviso}>
@@ -250,6 +252,9 @@ const estilos = StyleSheet.create({
     lineHeight: 16.5,
     color: COLORES.textoTenue,
     marginTop: 14,
+  },
+  botonRedondo: {
+    borderRadius: 28,
   },
 });
 

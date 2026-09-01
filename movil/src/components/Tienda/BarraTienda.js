@@ -182,8 +182,10 @@ const estilos = StyleSheet.create({
     gap: 9,
     borderWidth: 1,
     borderColor: COLORES.borde,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    // Píldora completa (mitad del alto), a juego con los campos del login y
+    // con las pastillas de categoría de aquí abajo, que ya eran redondas.
+    borderRadius: 22,
+    paddingHorizontal: 16,
     // 44 de alto: es un campo, y los campos también se tocan.
     height: 44,
   },
