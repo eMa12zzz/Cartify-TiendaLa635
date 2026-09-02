@@ -43,7 +43,6 @@ import { useAviso } from '../../context/AvisoContext';
 import { getCliente, actualizarDirecciones } from '../../api/clienteApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
-import { useAlturaBarraInferior } from '../../components/UI/BarraInferior';
 
 /*
  * Las direcciones viejas son texto suelto y las nuevas son un objeto. Se
@@ -67,11 +66,6 @@ const Direcciones = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
   const { avisar } = useAviso();
-  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
-  // sin este relleno en la pantalla entera, la lista se desliza hasta el
-  // borde de abajo de verdad y cualquier dirección pasa un momento detrás
-  // de la barra al hacer scroll, no solo la última.
-  const alturaBarra = useAlturaBarraInferior();
 
   const [direcciones, setDirecciones] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -151,7 +145,7 @@ const Direcciones = ({ alVolver }) => {
   };
 
   return (
-    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
+    <View style={estilos.pantalla}>
       <BarraCuenta titulo="Direcciones" alVolver={alVolver} />
 
       {cargando ? (

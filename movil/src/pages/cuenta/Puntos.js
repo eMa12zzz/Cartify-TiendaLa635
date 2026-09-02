@@ -38,13 +38,10 @@ import { getResumenPuntos, getConfigFidelidad } from '../../api/fidelidadApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import { Estrella } from '../../components/UI/Iconos';
-import { useAlturaBarraInferior } from '../../components/UI/BarraInferior';
 
 const Puntos = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
-  // Sin esto lo último de la tarjeta queda tapado detrás de la píldora flotante.
-  const alturaBarra = useAlturaBarraInferior();
 
   const [resumen, setResumen] = useState({ available: 0, nextExpiry: null, expiringSoon: 0 });
   const [config, setConfig] = useState(null);
@@ -87,7 +84,7 @@ const Puntos = ({ alVolver }) => {
     : '—';
 
   return (
-    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
+    <View style={estilos.pantalla}>
       <BarraCuenta titulo="Puntos de fidelidad" alVolver={alVolver} />
 
       {cargando ? (

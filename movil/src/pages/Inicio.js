@@ -36,7 +36,6 @@ import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import { useAuth } from '../hooks/useAuth';
 import BarraTienda from '../components/Tienda/BarraTienda';
-import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 import CintaTemporada from '../components/Tienda/CintaTemporada';
 import DecoracionTemporada from '../components/Tienda/DecoracionTemporada';
 import PastillasCategoria from '../components/Tienda/PastillasCategoria';
@@ -50,12 +49,6 @@ import { Equis, Lupa } from '../components/UI/Iconos';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
-  // La píldora flotante NO empuja el contenido: vive encima, no en su propio
-  // renglón. Sin este relleno en la pantalla entera (no solo al final de la
-  // lista), la cuadrícula se desliza hasta el borde de abajo de verdad y
-  // cualquier fila —no solo la última— pasa un momento detrás de la barra
-  // mientras se hace scroll. Ver BarraInferior.
-  const alturaBarra = useAlturaBarraInferior();
   const { isAuthenticated, user } = useAuth();
   const nombre = user?.fullName || user?.userName;
   const {
@@ -207,7 +200,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   );
 
   return (
-    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
+    <View style={estilos.pantalla}>
       {/*
         Las figuras de temporada van PRIMERAS en el árbol para quedar detrás de
         todo: en React Native pinta encima lo que va después. La lista no tiene

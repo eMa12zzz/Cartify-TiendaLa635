@@ -48,25 +48,12 @@ import { Mic, Package, Store, User } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 
-/*
- * Las medidas de la píldora flotante, en un solo lugar porque las necesitan
- * DOS cosas: el propio StyleSheet de aquí abajo, y `useAlturaBarraInferior`
- * — que le dice a cada pantalla del Tab cuánto aire dejar al final de su
- * lista, para que la última fila no quede tapada detrás de la barra.
- *
- * Antes la barra era opaca y de punta a punta, así que lo que hubiera detrás
- * no se veía nunca. Ahora flota con las esquinas redondeadas y margen: sin
- * este relleno, la última fila de productos asoma cortada por los costados.
- */
+// Las medidas de la píldora flotante, juntas porque las usa el StyleSheet
+// de aquí abajo para armar el mismo tamaño en más de un lugar.
 const ALTO_ICONO = 52;
 const RELLENO_VERTICAL_BARRA = 6;
 const AIRE_ARRIBA = 10;
 const AIRE_ABAJO_MINIMO = 14;
-
-export const useAlturaBarraInferior = () => {
-  const { bottom } = useSafeAreaInsets();
-  return AIRE_ARRIBA + RELLENO_VERTICAL_BARRA * 2 + ALTO_ICONO + Math.max(bottom, AIRE_ABAJO_MINIMO);
-};
 
 /*
  * El orden importa y no es alfabético: la tienda primero porque es a lo que se
@@ -173,8 +160,13 @@ const BarraInferior = ({ apartado, alCambiar }) => {
 };
 
 const estilos = StyleSheet.create({
-  // Transparente: solo existe para reservarle aire de abajo a la píldora.
+  // Absoluta: flota ENCIMA de la pantalla del apartado en vez de empujarla
+  // a su propio renglón. Las pantallas ya no necesitan reservarle espacio.
   envoltorio: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: 20,
     paddingTop: AIRE_ARRIBA,
   },

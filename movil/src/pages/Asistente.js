@@ -18,15 +18,9 @@ import { useTienda } from '../context/TiendaContext';
 import { useAsistenteVoz } from '../hooks/useAsistenteVoz';
 import { navegarA } from '../navigation/navigationRef';
 import ModalProducto from '../components/Tienda/ModalProducto';
-import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 
 const Asistente = () => {
   const { colores } = useTema();
-  // La píldora flotante vive ENCIMA de la pantalla entera, no en su propio
-  // renglón: sin este relleno en `pantalla`, el resumen del carrito —lo
-  // último de esta pantalla— queda detrás de la barra en vez de terminar
-  // justo arriba de ella.
-  const alturaBarra = useAlturaBarraInferior();
   const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
   // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
   const [productoAbierto, setProductoAbierto] = useState(null);
@@ -74,7 +68,7 @@ const Asistente = () => {
   const alTocarMic = hablando ? interrumpir : activo ? detener : iniciar;
 
   return (
-    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
+    <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
         <Text style={estilos.titulo}>Asistente por voz</Text>
         <TouchableOpacity onPress={toggleMute} accessibilityLabel={muteado ? 'Activar voz' : 'Silenciar voz'}>

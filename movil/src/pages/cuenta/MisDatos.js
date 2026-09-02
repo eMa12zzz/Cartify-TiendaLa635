@@ -43,7 +43,6 @@ import { getCliente, actualizarPerfil, actualizarFotoPerfil } from '../../api/cl
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import CampoTexto from '../../components/UI/CampoTexto';
 import Boton from '../../components/UI/Boton';
-import { useAlturaBarraInferior } from '../../components/UI/BarraInferior';
 import { formatearDui, formatearTelefono, LARGO_TELEFONO } from '../../utils/mascaras';
 import { requerido, validarCorreo, validarTelefono, validarFormulario, sinErrores } from '../../utils/validaciones';
 
@@ -58,11 +57,6 @@ const MisDatos = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
   const { avisar } = useAviso();
-  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
-  // sin este relleno en la pantalla entera, el formulario se desliza hasta
-  // el borde de abajo de verdad y el botón de guardar pasa un momento
-  // detrás de la barra al hacer scroll.
-  const alturaBarra = useAlturaBarraInferior();
 
   const [form, setForm] = useState({ fullName: '', userName: '', email: '', phoneNumber: '' });
   const [dui, setDui] = useState('');
@@ -165,7 +159,7 @@ const MisDatos = ({ alVolver }) => {
   const inicial = (form.fullName || form.userName || 'C').substring(0, 1).toUpperCase();
 
   return (
-    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
+    <View style={estilos.pantalla}>
       <BarraCuenta titulo="Mis datos" alVolver={alVolver} />
 
       {cargando ? (

@@ -35,17 +35,11 @@ import { useFavoritos } from '../../context/FavoritosContext';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import TarjetaProducto from '../../components/Tienda/TarjetaProducto';
 import ModalProducto from '../../components/Tienda/ModalProducto';
-import { useAlturaBarraInferior } from '../../components/UI/BarraInferior';
 
 const Favoritos = ({ alVolver }) => {
   const { colores } = useTema();
   const { productos, cargando, agregarAlCarrito } = useTienda();
   const { esFavorito } = useFavoritos();
-  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
-  // sin este relleno en la pantalla entera, la cuadrícula se desliza hasta
-  // el borde de abajo de verdad y cualquier producto pasa un momento detrás
-  // de la barra al hacer scroll, no solo el último.
-  const alturaBarra = useAlturaBarraInferior();
 
   const [productoAbierto, setProductoAbierto] = useState(null);
 
@@ -55,7 +49,7 @@ const Favoritos = ({ alVolver }) => {
   );
 
   return (
-    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
+    <View style={estilos.pantalla}>
       <BarraCuenta titulo="Mis favoritos" alVolver={alVolver} />
 
       {cargando ? (

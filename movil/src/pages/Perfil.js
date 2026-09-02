@@ -46,7 +46,6 @@ import { Image } from 'expo-image';
 import { Bell, ChevronRight, Heart, LogOut, MapPin, Star, User } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
-import { useAlturaBarraInferior } from '../components/UI/BarraInferior';
 import { useAuth } from '../hooks/useAuth';
 import { useBotonAtras } from '../hooks/useBotonAtras';
 import { useTema } from '../context/TemaContext';
@@ -80,11 +79,6 @@ const PANTALLAS = {
 const Perfil = () => {
   const { user, logout } = useAuth();
   const { colores } = useTema();
-  // La píldora flotante vive ENCIMA de la pantalla, no en su propio renglón:
-  // sin este relleno en la pantalla entera, la lista se desliza hasta el
-  // borde de abajo de verdad y cualquier renglón pasa un momento detrás de
-  // la barra al hacer scroll, no solo el último.
-  const alturaBarra = useAlturaBarraInferior();
 
   const [seccion, setSeccion] = useState(null);
   const [cliente, setCliente] = useState(null);
@@ -147,7 +141,7 @@ const Perfil = () => {
   const inicial = nombre.substring(0, 1).toUpperCase();
 
   return (
-    <View style={[estilos.pantalla, { paddingBottom: alturaBarra }]}>
+    <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
         <Text style={estilos.tituloBarra}>Mi cuenta</Text>
       </View>
