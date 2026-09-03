@@ -27,6 +27,7 @@ import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { iconoDeModulo } from '../../utils/modulos';
+import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 
 const Opcion = ({ Icono, texto, activa, colores, onPress }) => (
   <Pressable
@@ -142,7 +143,12 @@ const MenuPasillos = ({ pasillos, moduloSeleccionado, alElegir, alCerrar }) => {
 
           <ScrollView
             style={estilos.lista}
-            contentContainerStyle={{ paddingBottom: Math.max(bottom, 14) }}
+            // No alcanza con el margen de seguridad de siempre: la píldora
+            // flotante la pinta el Tab Navigator, por ENCIMA de esta hoja,
+            // así que si el último renglón cae bajo ella el toque ahí lo
+            // captura la píldora, no la opción. Ver el comentario en
+            // BarraInferior.js.
+            contentContainerStyle={{ paddingBottom: Math.max(bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE }}
             bounces={false}
             showsVerticalScrollIndicator={false}
           >

@@ -59,7 +59,16 @@ const ANCHO_PILDORA = 56;
 const ALTO_PILDORA = 50;
 const RADIO_PILDORA = 25;
 const AIRE_ARRIBA = 10;
-const AIRE_ABAJO_MINIMO = 14;
+export const AIRE_ABAJO_MINIMO = 14;
+
+// Exportada para que una hoja que sube desde abajo (MenuPasillos, y
+// cualquier otra que se sume) le reserve este alto exacto a su último
+// renglón. A diferencia de las pantallas del Tab —que dejan que la barra
+// flote LIBRE por encima, a propósito—, una hoja sí termina en un borde
+// fijo: si ese borde cae bajo la píldora, el toque ahí lo captura la
+// píldora (que se pinta después, fuera del árbol de la hoja) y no el
+// renglón que se ve debajo.
+export const ALTURA_BARRA_FLOTANTE = RELLENO_VERTICAL_BARRA * 2 + ALTO_ICONO + AIRE_ARRIBA;
 
 /*
  * El orden importa y no es alfabético: la tienda primero porque es a lo que se
