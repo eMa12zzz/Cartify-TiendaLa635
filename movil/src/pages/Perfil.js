@@ -11,11 +11,11 @@
  *
  * ── La navegación de adentro vive AQUÍ, no en App.js ──
  *
- * Las cinco pantallas de la cuenta se abren y se cierran contra este archivo,
- * en su propio `useState`. No suben a `Raiz` como el resto porque son de este
+ * Las pantallas de la cuenta se abren y se cierran contra este archivo, en su
+ * propio `useState`. No suben a `Raiz` como el resto porque son de este
  * apartado y de ninguno más: metidas allá arriba, la lista de pantallas de la
- * app pasaría de siete a doce y ninguna de las cinco nuevas se podría alcanzar
- * desde otro lado.
+ * app se duplicaría y ninguna de las nuevas se podría alcanzar desde otro
+ * lado.
  *
  * El efecto que se busca es el de cualquier app con barra abajo: entrar a "Mis
  * datos" NO saca de la cuenta —la barra sigue ahí, con su icono encendido— y la
@@ -23,27 +23,28 @@
  *
  * ── De la web no está todo ──
  *
- * Faltan tres de los ítems de allá, y cada uno por su razón:
+ * Quedan afuera dos ítems del menú de allá, y ninguno por descuido:
  *
  *   Pedidos    no falta: es uno de los cuatro apartados de la barra de abajo,
  *              que es un lugar MEJOR que un renglón aquí adentro.
- *   Recibos    en la web es la lista de los pedidos ya entregados. Aquí cada
- *              pedido enseña su estado en la propia tarjeta, así que un segundo
- *              apartado para ver los mismos pedidos otra vez, filtrados, sería
- *              partir en dos una lista que cabe entera.
- *   Pagos      pide el saldo digital, el canje de tarjetas de regalo y la
- *              pasarela. Es un apartado entero, no un renglón.
  *   Ayuda      son preguntas frecuentes más los canales REALES de la tienda, y
  *              el único canal real (el WhatsApp) sale de una variable de Vite
  *              que en móvil no existe. Traer las preguntas sin los contactos
  *              deja un centro de ayuda que no lleva a ninguna persona.
+ *
+ * Pagos y Recibos sí se sumaron después (ver Pagos.js y Recibos.js): el
+ * primero reusa el saldo/canje que ya vivía en Checkout.js, y el segundo
+ * son los mismos pedidos de Pedidos.js, solo filtrados a los entregados —
+ * ningún endpoint nuevo, salvo el de guardar métodos de pago.
  * ============================================================
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { Bell, ChevronRight, Heart, LogOut, MapPin, Star, User } from 'lucide-react-native';
+import {
+  Bell, ChevronRight, CreditCard, Heart, LogOut, MapPin, Receipt, Star, User,
+} from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
@@ -54,26 +55,33 @@ import Direcciones from './cuenta/Direcciones';
 import Favoritos from './cuenta/Favoritos';
 import MisDatos from './cuenta/MisDatos';
 import Notificaciones from './cuenta/Notificaciones';
+import Pagos from './cuenta/Pagos';
 import Puntos from './cuenta/Puntos';
+import Recibos from './cuenta/Recibos';
 
 /*
  * Los iconos son los mismos con los que la web pinta este menú (ver
- * ClienteLayout): User, Star, Heart, MapPin y Bell.
+ * ClienteLayout): User, Heart, MapPin, CreditCard, Bell, Star y Receipt. El
+ * orden también es el de allá, menos Pedidos (ver el comentario de arriba).
  */
 const SECCIONES = [
   { clave: 'datos', titulo: 'Mis datos', sub: 'Nombre, correo y teléfono', icono: User },
-  { clave: 'puntos', titulo: 'Puntos de fidelidad', sub: 'Su saldo y cuánto valen', icono: Star },
   { clave: 'favoritos', titulo: 'Mis favoritos', sub: 'Lo que marcó con el corazón', icono: Heart },
   { clave: 'direcciones', titulo: 'Direcciones', sub: 'A dónde le llevamos el pedido', icono: MapPin },
+  { clave: 'pagos', titulo: 'Pagos', sub: 'Su saldo y sus métodos guardados', icono: CreditCard },
   { clave: 'avisos', titulo: 'Notificaciones', sub: 'Qué avisos quiere recibir', icono: Bell },
+  { clave: 'puntos', titulo: 'Puntos de fidelidad', sub: 'Su saldo y cuánto valen', icono: Star },
+  { clave: 'recibos', titulo: 'Recibos', sub: 'Sus pedidos ya entregados', icono: Receipt },
 ];
 
 const PANTALLAS = {
   datos: MisDatos,
-  puntos: Puntos,
   favoritos: Favoritos,
   direcciones: Direcciones,
+  pagos: Pagos,
   avisos: Notificaciones,
+  puntos: Puntos,
+  recibos: Recibos,
 };
 
 const Perfil = () => {
