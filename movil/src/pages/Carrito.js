@@ -43,10 +43,16 @@ import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete } from '../compone
 import ModalProducto from '../components/Tienda/ModalProducto';
 import { totalDeLinea } from '../utils/catalogo';
 import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
+import { iconoDeModulo } from '../utils/modulos';
 
-const LineaCarrito = ({ item, alActualizar, alEliminar, alAbrir, colores }) => {
+const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, colores }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
   const paso = pasoDe(item);
+  // Qué pasillo es este producto, para pintar su icono al frente de la fila
+  // -el mismo dibujo que ya usa MenuPasillos para ese pasillo-, no cuál
+  // es (eso ya se ve en la ficha del producto).
+  const modulo = pasillos.find((m) => String(m._id) === String(item.moduloId));
+  const IconoModulo = iconoDeModulo(modulo);
 
   return (
     <View style={estilos.linea}>
@@ -89,15 +95,9 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, alAbrir, colores }) => {
           cobrar de más. Ver utils/unidades.js.
         */}
         <View style={estilos.controles}>
-          <Pressable
-            onPress={() => alEliminar(item.id)}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={`Quitar ${item.nombre} del carrito`}
-            style={({ pressed }) => [estilos.botonQuitar, pressed && estilos.botonQuitarPresionado]}
-          >
-            <Basura size={14} color={COLORES.textoSuave} />
-          </Pressable>
+          <View style={estilos.insigniaModulo} accessibilityElementsHidden importantForAccessibility="no">
+            <IconoModulo size={16} color={colores.marca} strokeWidth={2} />
+          </View>
 
           <Pressable
             onPress={() => alActualizar(item.id, ajustarCantidad(item, item.cantidad - paso))}
@@ -130,6 +130,18 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, alAbrir, colores }) => {
           >
             <Mas size={12} color={item.cantidad >= item.stock ? COLORES.marcador : COLORES.texto} />
           </Pressable>
+
+          {/* Al final y no al frente: es la acción destructiva, y pegarla al
+              "+" (a donde más se toca) invitaba a un error justo ahí. */}
+          <Pressable
+            onPress={() => alEliminar(item.id)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Quitar ${item.nombre} del carrito`}
+            style={({ pressed }) => [estilos.botonQuitar, pressed && estilos.botonQuitarPresionado]}
+          >
+            <Basura size={14} color={COLORES.textoSuave} />
+          </Pressable>
         </View>
       </View>
 
@@ -139,7 +151,7 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, alAbrir, colores }) => {
 };
 
 const Carrito = ({ irAInicio, irAPagar }) => {
-  const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito, agregarAlCarrito } =
+  const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito, agregarAlCarrito, pasillos } =
     useTienda();
   const { colores } = useTema();
   // Igual que BarraInferior: sin esto "Ir a pagar" queda debajo de la franja
@@ -216,6 +228,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
             renderItem={({ item }) => (
               <LineaCarrito
                 item={item}
+                pasillos={pasillos}
                 alActualizar={actualizarCantidad}
                 alEliminar={eliminarDelCarrito}
                 alAbrir={setProductoAbierto}
@@ -433,6 +446,16 @@ const estilos = StyleSheet.create({
     gap: 6,
     marginTop: 5,
   },
+  // El pasillo del producto, al frente de la fila. No es un botón -no hace
+  // nada al tocarlo, solo dice de dónde es-, así que sin ancho de "botón"
+  // ni fondo propio: el mismo alto de 30 que sus vecinos, para que la fila
+  // no salte.
+  insigniaModulo: {
+    width: 22,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   botonQuitar: {
     width: 30,
     height: 30,
@@ -440,8 +463,8 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     // Separado de los pasos: es la acción destructiva y no debe quedar pegada
-    // al "−", que es a lo que se le apunta para bajar de a poco.
-    marginRight: 4,
+    // al "+", que es a lo que más se le apunta.
+    marginLeft: 4,
   },
   botonQuitarPresionado: {
     backgroundColor: '#FDECEC',

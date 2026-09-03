@@ -102,3 +102,34 @@ export const promosVisibles = (lista) =>
   (Array.isArray(lista) ? lista : []).filter(
     (p) => promoVigente(p) && p.showBanner !== false && (p.image || p.title)
   );
+
+/*
+ * ── Clasificación por pasillo ──
+ * Los pasillos (módulos) a los que pertenece una promo salen de SUS
+ * productos: una promo de pan tiene productos de Panadería, así que es una
+ * promo de Panadería. Solo funciona con los items poblados (productId como
+ * objeto), que es justo como los devuelve getPromociones.
+ */
+export const modulosDePromo = (promo) => {
+  const ids = new Set();
+  (promo?.items || []).forEach((it) => {
+    const prod = it?.productId;
+    if (!prod || typeof prod !== 'object') return;
+    const mod = prod.moduleId?._id || prod.moduleId;
+    if (mod) ids.add(String(mod));
+  });
+  return [...ids];
+};
+
+/*
+ * ¿Esta promo se muestra en este pasillo? Sin pasillo elegido (toda la
+ * tienda), sí. Con pasillo, solo si alguno de sus productos vive ahí. Si la
+ * promo no trae de dónde sacar el módulo (productos borrados o sin poblar),
+ * se muestra igual: mejor una promo de más que perderla por un dato que falta.
+ */
+export const promoEnModulo = (promo, moduloId) => {
+  if (!moduloId) return true;
+  const mods = modulosDePromo(promo);
+  if (mods.length === 0) return true;
+  return mods.includes(String(moduloId));
+};

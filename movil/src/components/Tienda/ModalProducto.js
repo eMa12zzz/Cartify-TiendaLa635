@@ -24,6 +24,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
@@ -34,10 +35,20 @@ import Boton from '../UI/Boton';
 import { Equis, Mas, Menos, Paquete } from '../UI/Iconos';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { cantidadConUnidad, esPorLibra, esSoloAdultos, pasoDe, piezasEnTexto, ajustarCantidad } from '../../utils/unidades';
+import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 
-const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
+/*
+ * `conBarraFlotante`: true solo cuando quien abre este detalle vive DENTRO
+ * de un apartado del Tab (Inicio, Asistente, Favoritos) — ahí la píldora de
+ * abajo flota por encima y tapa el botón "Agregar" si no se le deja hueco.
+ * Desde Carrito o Sección no hace falta: son pantallas de Stack que
+ * reemplazan el Tab entero, sin píldora detrás, y sumar el hueco ahí solo
+ * dejaría un espacio muerto bajo el botón.
+ */
+const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
   const { colores } = useTema();
+  const { bottom } = useSafeAreaInsets();
   const paso = pasoDe(producto);
   const [cantidad, setCantidad] = useState(paso);
   /*
@@ -312,7 +323,14 @@ const ModalProducto = ({ producto, alCerrar, alAgregar }) => {
             producto con descripción larga quedaba al final de todo, a dos
             deslizadas de distancia.
           */}
-          <View style={estilos.pie}>
+          <View
+            style={[
+              estilos.pie,
+              conBarraFlotante && {
+                paddingBottom: 26 + Math.max(bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE,
+              },
+            ]}
+          >
             <Boton
               texto={agotado ? 'Agotado' : `Agregar · $${(producto.precio * cantidad).toFixed(2)}`}
               deshabilitado={agotado}

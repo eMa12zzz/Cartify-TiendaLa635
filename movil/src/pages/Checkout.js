@@ -46,7 +46,8 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Check, Clock, CreditCard, Gift, MapPin, Store as Tienda, Wallet } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Check, Clock, CreditCard, Gift, MapPin, Package, Store as Tienda, Wallet } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
@@ -118,6 +119,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const { colores } = useTema();
   const { avisar } = useAviso();
   const { carrito, totalCarrito } = useTienda();
+  const { bottom } = useSafeAreaInsets();
 
   // Los pedidos van a nombre de un CLIENTE. El personal entra por la misma
   // puerta, y el backend rechaza un pedido con un id que no es de la tabla de
@@ -602,7 +604,10 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         </Seccion>
 
         {/* ── 3. Qué lleva ── */}
-        <Seccion icono={Paquete} titulo="Su orden" colores={colores}>
+        {/* El mismo Package de lucide que la píldora usa para "Pedidos": es
+            la orden que se está por hacer, así que lleva el mismo icono que
+            la sección donde va a vivir después de confirmada. */}
+        <Seccion icono={Package} titulo="Su orden" colores={colores}>
           <View style={estilos.miniaturas}>
             {carrito.slice(0, MINIATURAS).map((item) => (
               <View key={item.id} style={estilos.miniatura}>
@@ -628,7 +633,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         columna larga habría que desplazarse hasta abajo cada vez que se cambia
         una opción para ver cuánto quedó.
       */}
-      <View style={estilos.pie}>
+      <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 18) }]}>
         <Fila etiqueta="Total de artículos" valor={`$${subtotal.toFixed(2)}`} />
         <Fila etiqueta="Costo de envío" valor={`$${envio.toFixed(2)}`} />
         {descuento > 0 && (
@@ -958,7 +963,7 @@ const estilos = StyleSheet.create({
   pie: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 18,
+    // paddingBottom real se pone en línea, con la franja de gestos sumada.
     borderTopWidth: 1,
     borderTopColor: COLORES.linea,
     backgroundColor: COLORES.fondo,

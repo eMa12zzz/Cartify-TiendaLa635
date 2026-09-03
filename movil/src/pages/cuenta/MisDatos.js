@@ -254,6 +254,7 @@ const MisDatos = ({ alVolver }) => {
               cargando={guardando}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
+              estilo={estilos.botonRedondo}
             />
           </View>
         </ScrollView>
@@ -320,6 +321,12 @@ const estilos = StyleSheet.create({
   },
   boton: {
     marginTop: 10,
+  },
+  // Píldora completa, a juego con los campos de arriba y con el resto de
+  // botones de la app (login, candado de edad) — el Boton base trae 8 de
+  // esquina, pensado para otros usos.
+  botonRedondo: {
+    borderRadius: 28,
   },
 });
 

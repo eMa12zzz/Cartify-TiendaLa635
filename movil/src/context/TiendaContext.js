@@ -26,9 +26,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { cargarTienda } from '../api/tiendaApi';
+import { getModulos } from '../api/moduleApi';
 import { mapearCatalogo, idsDePromo, totalDeLinea } from '../utils/catalogo';
+import { modulosVisibles, flujoDeModulo } from '../utils/modulos';
 import { armarSecciones } from '../utils/secciones';
-import { promosVisibles } from '../utils/promos';
+import { promosVisibles, promoEnModulo } from '../utils/promos';
 import { cantidadConUnidad } from '../utils/unidades';
 import { guardar, leer, borrar, llave } from '../utils/almacen';
 import { useAviso } from './AvisoContext';
@@ -80,6 +82,12 @@ export const TiendaProvider = ({ children }) => {
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
 
+  // Los pasillos (módulos) de la tienda: panadería, farmacia... Se cargan
+  // aparte del catálogo y no lo bloquean — si esta lista falla, la tienda
+  // sigue mostrando todo, solo sin el filtro por pasillo.
+  const [pasillos, setPasillos] = useState([]);
+  const [moduloSeleccionado, setModuloSeleccionado] = useState(null);
+
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   // La promo que está filtrando la lista, y la que se está mirando en detalle.
@@ -119,13 +127,55 @@ export const TiendaProvider = ({ children }) => {
     traerCatalogo();
   }, [traerCatalogo]);
 
+  useEffect(() => {
+    let vivo = true;
+    getModulos()
+      .then((datos) => {
+        if (!vivo) return;
+        // Solo los de flujo 'estandar': los de flujo propio (impresiones)
+        // piden su propia pantalla, que todavía no existe en móvil. Ver
+        // utils/modulos.js.
+        setPasillos(modulosVisibles(datos).filter((m) => flujoDeModulo(m) === 'estandar'));
+      })
+      .catch(() => {
+        // Sin pasillos la tienda se ve completa, sin el botón de filtrar —
+        // no hay razón para que esto tumbe la portada.
+        if (vivo) setPasillos([]);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  /*
+   * Los productos de UN pasillo, o todos si no hay ninguno elegido. De acá
+   * salen categorías, destacados y "Se están acabando" — elegir "Panadería"
+   * tiene que sentirse como entrar a una tienda más chica, no como un filtro
+   * más encima del catálogo entero.
+   */
+  const productosDelPasillo = useMemo(() => {
+    if (!moduloSeleccionado) return productos;
+    return productos.filter((p) => String(p.moduloId) === String(moduloSeleccionado));
+  }, [productos, moduloSeleccionado]);
+
+  // Cambiar de pasillo limpia la categoría: una categoría de "Panadería" no
+  // dice nada dentro de "Farmacia", y dejarla puesta filtraría a cero.
+  useEffect(() => {
+    setCategoriaSeleccionada(null);
+  }, [moduloSeleccionado]);
+
+  const nombrePasillo = useMemo(
+    () => pasillos.find((m) => String(m._id) === String(moduloSeleccionado))?.name || '',
+    [pasillos, moduloSeleccionado]
+  );
+
   const categorias = useMemo(() => {
-    const cats = new Set(productos.map((p) => p.categoria).filter(Boolean));
+    const cats = new Set(productosDelPasillo.map((p) => p.categoria).filter(Boolean));
     return Array.from(cats).sort();
-  }, [productos]);
+  }, [productosDelPasillo]);
 
   const productosFiltrados = useMemo(() => {
-    let filtrados = productos;
+    let filtrados = productosDelPasillo;
 
     // Filtro por promo (el banner): solo los productos de esa promo.
     if (promoSeleccionada) {
@@ -148,18 +198,23 @@ export const TiendaProvider = ({ children }) => {
     }
 
     return filtrados;
-  }, [productos, categoriaSeleccionada, terminoBusqueda, promoSeleccionada]);
+  }, [productosDelPasillo, categoriaSeleccionada, terminoBusqueda, promoSeleccionada]);
 
-  const productosDestacados = useMemo(() => productos.slice(0, 6), [productos]);
+  const productosDestacados = useMemo(() => productosDelPasillo.slice(0, 6), [productosDelPasillo]);
 
   /*
    * Las filas que se arman solas con el inventario ("Se están acabando",
    * "Nuevos en la tienda"). Ver utils/secciones.js para cuáles y por qué esas.
    */
-  const secciones = useMemo(() => armarSecciones(productos), [productos]);
+  const secciones = useMemo(() => armarSecciones(productosDelPasillo), [productosDelPasillo]);
 
-  // Las que de verdad se anuncian en el carrusel.
-  const promosDelCarrusel = useMemo(() => promosVisibles(promociones), [promociones]);
+  // Las que de verdad se anuncian en el carrusel, y solo las de ESTE pasillo
+  // — igual que la web (PromoBanners con moduloId). Sin pasillo elegido
+  // (toda la tienda) salen todas.
+  const promosDelCarrusel = useMemo(
+    () => promosVisibles(promociones).filter((p) => promoEnModulo(p, moduloSeleccionado)),
+    [promociones, moduloSeleccionado]
+  );
 
   /*
    * Los productos de la promo abierta salen del catálogo ya mapeado, no de
@@ -436,6 +491,11 @@ export const TiendaProvider = ({ children }) => {
       cargando,
       errorCarga,
       recargar: traerCatalogo,
+      pasillos,
+      moduloSeleccionado,
+      setModuloSeleccionado,
+      nombrePasillo,
+      productosDelPasillo,
       categorias,
       categoriaSeleccionada,
       setCategoriaSeleccionada,
@@ -462,7 +522,8 @@ export const TiendaProvider = ({ children }) => {
       vaciarTrasPedido,
     }),
     [
-      productos, cargando, errorCarga, traerCatalogo, categorias, categoriaSeleccionada,
+      productos, cargando, errorCarga, traerCatalogo, pasillos, moduloSeleccionado,
+      nombrePasillo, productosDelPasillo, categorias, categoriaSeleccionada,
       terminoBusqueda, productosFiltrados, productosDestacados, secciones, promosDelCarrusel,
       promoSeleccionada, promoDetalle, productosDePromo, abrirPromo, cerrarPromo,
       verPromoEnTienda, carrito, totalCarrito, cantidadItems, agregarAlCarrito,

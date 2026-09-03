@@ -3,12 +3,13 @@
  * LA CUENTA DEL CLIENTE — clienteApi.js
  * ============================================================
  * El equivalente de `frontend/src/api/clientService.js`: lo que un cliente hace
- * sobre SU propia cuenta. Los mismos cuatro endpoints que usa la web:
+ * sobre SU propia cuenta. Los mismos endpoints que usa la web:
  *
  *   GET   /client/:id                  el cliente entero
  *   PATCH /client/:id/profile          nombre, usuario, correo, teléfono
  *   PATCH /client/:id/addresses        reemplaza la lista de direcciones
  *   PATCH /client/:id/notifications    los interruptores de avisos
+ *   PATCH /client/:id/payment-methods  reemplaza la lista de métodos de pago
  *
  * ── Uno solo trae casi todo ──
  *
@@ -58,3 +59,15 @@ export const actualizarDirecciones = (clienteId, direcciones) =>
 // estaban guardadas.
 export const actualizarNotificaciones = (clienteId, preferencias) =>
   peticion(`/client/${clienteId}/notifications`, { metodo: 'PATCH', cuerpo: preferencias });
+
+/*
+ * Igual que direcciones: la lista COMPLETA, no la que cambió. Y aunque se
+ * manden más campos, el controlador solo guarda type/alias/last4 —nunca el
+ * número completo ni el CVV, eso lo cobra la pasarela, que todavía no está
+ * conectada (ver Checkout.js)—.
+ */
+export const actualizarMetodosPago = (clienteId, metodosPago) =>
+  peticion(`/client/${clienteId}/payment-methods`, {
+    metodo: 'PATCH',
+    cuerpo: { paymentMethods: metodosPago },
+  });

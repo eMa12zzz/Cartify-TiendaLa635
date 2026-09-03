@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Mic, Volume2, VolumeX } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
@@ -18,9 +19,11 @@ import { useTienda } from '../context/TiendaContext';
 import { useAsistenteVoz } from '../hooks/useAsistenteVoz';
 import { navegarA } from '../navigation/navigationRef';
 import ModalProducto from '../components/Tienda/ModalProducto';
+import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../components/UI/BarraInferior';
 
 const Asistente = () => {
   const { colores } = useTema();
+  const { bottom } = useSafeAreaInsets();
   const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
   // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
   const [productoAbierto, setProductoAbierto] = useState(null);
@@ -117,7 +120,18 @@ const Asistente = () => {
       <TouchableOpacity
         activeOpacity={carrito.length === 0 ? 1 : 0.7}
         onPress={() => carrito.length > 0 && navegarA('Carrito')}
-        style={[estilos.carritoResumen, { borderColor: colores.marcaSuave, backgroundColor: colores.marcaTenue }]}
+        style={[
+          estilos.carritoResumen,
+          {
+            borderColor: colores.marcaSuave,
+            backgroundColor: colores.marcaTenue,
+            // Esta barra es el último hijo de la pantalla, no contenido que
+            // se desliza: si no le deja hueco a la píldora de abajo (que
+            // flota por ENCIMA, pintada por el propio Tab Navigator), el
+            // toque en "Tu carrito" lo captura la píldora y no esto.
+            paddingBottom: 14 + Math.max(bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE,
+          },
+        ]}
       >
         <View style={estilos.carritoFila}>
           <Text style={estilos.carritoTitulo}>Tu carrito ({items})</Text>
@@ -137,6 +151,7 @@ const Asistente = () => {
           producto={productoAbierto}
           alCerrar={() => setProductoAbierto(null)}
           alAgregar={agregarAlCarrito}
+          conBarraFlotante
         />
       )}
     </View>

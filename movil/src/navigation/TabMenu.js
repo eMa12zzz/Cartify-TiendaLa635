@@ -60,7 +60,11 @@ const InicioTab = ({ navigation }) => (
 const TabMenu = () => (
   <Tab.Navigator
     tabBar={(props) => <BarraDeApartados {...props} />}
-    screenOptions={{ headerShown: false }}
+    // `animation` es de bottom-tabs 7, no algo casero: solo se prende. Un
+    // cruce de opacidad entre pantallas, no un slide — no hay un "orden"
+    // real entre Tienda/Asistente/Pedidos/Perfil que un slide izq-der tenga
+    // que respetar.
+    screenOptions={{ headerShown: false, animation: 'fade' }}
   >
     <Tab.Screen name="inicio" component={InicioTab} />
     <Tab.Screen name="asistente" component={Asistente} />
