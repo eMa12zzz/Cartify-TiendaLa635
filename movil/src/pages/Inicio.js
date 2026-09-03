@@ -44,6 +44,7 @@ import FilaProductos from '../components/Tienda/FilaProductos';
 import TarjetaProducto from '../components/Tienda/TarjetaProducto';
 import ModalProducto from '../components/Tienda/ModalProducto';
 import ModalPromo from '../components/Tienda/ModalPromo';
+import MenuPasillos from '../components/Tienda/MenuPasillos';
 import Boton from '../components/UI/Boton';
 import { Equis, Lupa } from '../components/UI/Iconos';
 
@@ -55,6 +56,10 @@ const Inicio = ({ irACarrito, irASeccion }) => {
     cargando,
     errorCarga,
     recargar,
+    pasillos,
+    moduloSeleccionado,
+    setModuloSeleccionado,
+    nombrePasillo,
     categorias,
     categoriaSeleccionada,
     setCategoriaSeleccionada,
@@ -76,6 +81,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   } = useTienda();
 
   const [productoAbierto, setProductoAbierto] = useState(null);
+  const [menuPasillosAbierto, setMenuPasillosAbierto] = useState(false);
 
   const verDetalle = useCallback((producto) => setProductoAbierto(producto), []);
 
@@ -175,7 +181,12 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
       <View style={estilos.encabezadoCatalogo}>
         <Text style={estilos.tituloSeccion}>
-          {categoriaSeleccionada || (terminoBusqueda ? `"${terminoBusqueda}"` : 'Todos los productos')}
+          {categoriaSeleccionada ||
+            (terminoBusqueda
+              ? `"${terminoBusqueda}"`
+              : nombrePasillo
+                ? `Todo en ${nombrePasillo}`
+                : 'Todos los productos')}
         </Text>
         <Text style={estilos.conteo}>
           {productosFiltrados.length} {productosFiltrados.length === 1 ? 'producto' : 'productos'}
@@ -194,7 +205,9 @@ const Inicio = ({ irACarrito, irASeccion }) => {
       <Text style={estilos.vacioTexto}>
         {terminoBusqueda || categoriaSeleccionada
           ? `No hay productos para "${terminoBusqueda || categoriaSeleccionada}"`
-          : 'Todavía no hay productos en la tienda'}
+          : nombrePasillo
+            ? `${nombrePasillo} todavía no tiene productos`
+            : 'Todavía no hay productos en la tienda'}
       </Text>
     </View>
   );
@@ -214,6 +227,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
         alBuscar={setTerminoBusqueda}
         cantidadItems={cantidadItems}
         alAbrirCarrito={irACarrito}
+        alAbrirPasillos={() => setMenuPasillosAbierto(true)}
       />
 
       {cargando ? (
@@ -287,6 +301,15 @@ const Inicio = ({ irACarrito, irASeccion }) => {
             setProductoAbierto(p);
           }}
           alAgregar={agregarAlCarrito}
+        />
+      )}
+
+      {menuPasillosAbierto && (
+        <MenuPasillos
+          pasillos={pasillos}
+          moduloSeleccionado={moduloSeleccionado}
+          alElegir={setModuloSeleccionado}
+          alCerrar={() => setMenuPasillosAbierto(false)}
         />
       )}
     </View>
