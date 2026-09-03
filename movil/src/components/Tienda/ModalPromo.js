@@ -120,6 +120,7 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
               alPresionar={alVerEnTienda}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
+              estilo={estilos.botonRedondo}
             />
           </View>
         </View>
@@ -180,10 +181,13 @@ const estilos = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORES.borde,
   },
+  // Misma esquina que la "X" de ModalProducto (right:10, top:8), no la que
+  // traía antes: las dos hojas se abren una detrás de otra en la misma
+  // tienda y debían sentirse iguales, no cada una a su manera.
   cerrar: {
     position: 'absolute',
-    right: 14,
-    top: 6,
+    right: 10,
+    top: 8,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -230,6 +234,11 @@ const estilos = StyleSheet.create({
     paddingBottom: 26,
     borderTopWidth: 1,
     borderTopColor: COLORES.linea,
+  },
+  // Píldora completa, a juego con el resto de botones de la app — el Boton
+  // base trae 8 de esquina, pensado para otros usos.
+  botonRedondo: {
+    borderRadius: 28,
   },
 });
 
