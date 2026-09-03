@@ -285,6 +285,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           producto={productoAbierto}
           alCerrar={() => setProductoAbierto(null)}
           alAgregar={agregarAlCarrito}
+          conBarraFlotante
         />
       )}
 

@@ -17,6 +17,7 @@
 
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import Boton from '../UI/Boton';
@@ -25,9 +26,14 @@ import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import TarjetaPromo from './TarjetaPromo';
 import TarjetaProducto from './TarjetaProducto';
+import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 
+// Solo se abre desde Inicio (el carrusel de promos de la tienda), así que a
+// diferencia de ModalProducto no hace falta un prop: la píldora flotante
+// SIEMPRE está detrás.
 const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, alAgregar }) => {
   const { colores } = useTema();
+  const { bottom } = useSafeAreaInsets();
   useBotonAtras(alCerrar);
 
   if (!promo) return null;
@@ -103,7 +109,12 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
             )}
           </ScrollView>
 
-          <View style={estilos.pie}>
+          <View
+            style={[
+              estilos.pie,
+              { paddingBottom: 26 + Math.max(bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE },
+            ]}
+          >
             <Boton
               texto="Ver todos en la tienda"
               alPresionar={alVerEnTienda}
