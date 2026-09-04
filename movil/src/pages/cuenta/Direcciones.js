@@ -4,16 +4,10 @@
  * ============================================================
  * El equivalente de `frontend/src/pages/cliente/Direcciones.jsx`: la lista de
  * direcciones guardadas, con su nombre, su texto y su referencia. A diferencia
- * de la web, aquí también se agregan: mismos tres campos y el mismo endpoint
- * que usa Checkout.js al escribir una nueva al elegir el envío.
- *
- * ── Sin mapa, igual que en el checkout ──
- *
- * react-leaflet es del navegador, y en nativo pide react-native-maps, la
- * llave de Google y su compilación propia — otro trabajo. Por eso las
- * direcciones escritas desde el teléfono van sin coordenadas: el repartidor
- * lee el texto y la referencia, que es con lo que se llegaba antes de que
- * existiera el mapa.
+ * de la web, aquí también se agregan: mismo endpoint que usa Checkout.js al
+ * escribir una nueva al elegir el envío, y el mismo mapa de las dos —
+ * `ModalMapaDireccion`, ver ese archivo para el porqué de un WebView con
+ * Leaflet en vez de react-native-maps.
  *
  * ── Borrar (y agregar) es mandar la lista completa ──
  *
@@ -32,7 +26,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { MapPin, Signpost, Trash2 } from 'lucide-react-native';
@@ -43,6 +36,7 @@ import { useAviso } from '../../context/AvisoContext';
 import { getCliente, actualizarDirecciones } from '../../api/clienteApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
+import ModalMapaDireccion from '../../components/UI/ModalMapaDireccion';
 
 /*
  * Las direcciones viejas son texto suelto y las nuevas son un objeto. Se
@@ -72,8 +66,7 @@ const Direcciones = ({ alVolver }) => {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  const [escribiendo, setEscribiendo] = useState(false);
-  const [nueva, setNueva] = useState({ nombre: '', direccion: '', referencia: '' });
+  const [mostrarMapa, setMostrarMapa] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -93,19 +86,13 @@ const Direcciones = ({ alVolver }) => {
     cargar();
   }, [cargar]);
 
-  const agregar = async () => {
-    if (!nueva.direccion.trim()) {
-      avisar('Escriba la dirección para poder guardarla', 'error');
-      return;
-    }
-
-    const lista = [...direcciones, { ...nueva, lat: null, lng: null }];
+  const agregar = async (nueva) => {
+    const lista = [...direcciones, nueva];
     setGuardando(true);
     try {
       await actualizarDirecciones(user.id, lista);
       setDirecciones(lista);
-      setNueva({ nombre: '', direccion: '', referencia: '' });
-      setEscribiendo(false);
+      setMostrarMapa(false);
       avisar('Dirección guardada');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar la dirección', 'error');
@@ -179,61 +166,11 @@ const Direcciones = ({ alVolver }) => {
           }
           ListFooterComponent={
             <View style={estilos.agregar}>
-              {escribiendo ? (
-                /*
-                 * Tres campos y nada más, como en Checkout.js. La referencia
-                 * es la que de verdad usa el repartidor ("portón verde,
-                 * frente a la cancha"), así que se pide pero no se obliga.
-                 */
-                <View style={[estilos.formulario, { borderColor: colores.marcaSuave }]}>
-                  <TextInput
-                    value={nueva.nombre}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, nombre: v }))}
-                    placeholder="Nombre (Casa, Trabajo…)"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Nombre de la dirección"
-                  />
-                  <TextInput
-                    value={nueva.direccion}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, direccion: v }))}
-                    placeholder="Calle, número y colonia"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Dirección"
-                  />
-                  <TextInput
-                    value={nueva.referencia}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, referencia: v }))}
-                    placeholder="Referencia para encontrarla (opcional)"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Referencia"
-                  />
-                  <Boton
-                    texto="Guardar dirección"
-                    alPresionar={agregar}
-                    cargando={guardando}
-                    color={colores.marca}
-                    colorPresionado={colores.marcaOscuro}
-                  />
-                  <Pressable
-                    onPress={() => {
-                      setEscribiendo(false);
-                      setNueva({ nombre: '', direccion: '', referencia: '' });
-                    }}
-                    hitSlop={8}
-                  >
-                    <Text style={estilos.enlaceTenue}>Cancelar</Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable onPress={() => setEscribiendo(true)} hitSlop={8}>
-                  <Text style={[estilos.enlace, { color: colores.marca }]}>
-                    {direcciones.length === 0 ? '+ Agregar mi primera dirección' : '+ Agregar otra dirección'}
-                  </Text>
-                </Pressable>
-              )}
+              <Pressable onPress={() => setMostrarMapa(true)} hitSlop={8}>
+                <Text style={[estilos.enlace, { color: colores.marca }]}>
+                  {direcciones.length === 0 ? '+ Agregar mi primera dirección' : '+ Agregar otra dirección'}
+                </Text>
+              </Pressable>
             </View>
           }
           renderItem={({ item, index }) => (
@@ -269,6 +206,14 @@ const Direcciones = ({ alVolver }) => {
               </Pressable>
             </View>
           )}
+        />
+      )}
+
+      {mostrarMapa && (
+        <ModalMapaDireccion
+          alCerrar={() => setMostrarMapa(false)}
+          alGuardar={agregar}
+          guardando={guardando}
         />
       )}
     </View>
@@ -379,34 +324,9 @@ const estilos = StyleSheet.create({
   agregar: {
     marginTop: 4,
   },
-  formulario: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 9,
-  },
-  campo: {
-    borderWidth: 1,
-    borderColor: COLORES.borde,
-    borderRadius: 10,
-    paddingHorizontal: 13,
-    height: 44,
-    fontSize: 13.5,
-    color: COLORES.texto,
-    backgroundColor: COLORES.fondo,
-    // Android le mete relleno propio a los TextInput y descuadra el alto.
-    paddingVertical: 0,
-  },
   enlace: {
     fontSize: 13,
     fontWeight: '700',
-    textAlign: 'center',
-    paddingVertical: 4,
-  },
-  enlaceTenue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORES.textoSuave,
     textAlign: 'center',
     paddingVertical: 4,
   },
