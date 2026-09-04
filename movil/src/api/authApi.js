@@ -55,6 +55,8 @@ export const loginClientDB = ({ email, password }) =>
 export const registrarCliente = ({
   fullName,
   dui,
+  // "YYYY-MM-DD", para la edad de los productos +18 (ver utils/edad.js).
+  fechaNacimiento,
   phoneNumber,
   email,
   userName,
@@ -67,6 +69,7 @@ export const registrarCliente = ({
     cuerpo: {
       fullName,
       dui,
+      fechaNacimiento,
       phoneNumber,
       email,
       userName,

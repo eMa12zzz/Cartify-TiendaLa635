@@ -60,6 +60,7 @@ import { getResumenPuntos, getConfigFidelidad } from '../api/fidelidadApi';
 import { crearPedido, getTiempoPorZona } from '../api/pedidosApi';
 import Boton from '../components/UI/Boton';
 import { ChevronIzquierda, Paquete } from '../components/UI/Iconos';
+import ModalMapaDireccion from '../components/UI/ModalMapaDireccion';
 import { totalDeLinea } from '../utils/catalogo';
 
 // El mismo de la web. Solo se cobra si se lo llevan a la casa: antes se cobraba
@@ -133,8 +134,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const [entrega, setEntrega] = useState('retiro');
   const [direcciones, setDirecciones] = useState([]);
   const [indiceDireccion, setIndiceDireccion] = useState(0);
-  const [escribiendo, setEscribiendo] = useState(false);
-  const [nueva, setNueva] = useState({ nombre: '', direccion: '', referencia: '' });
+  const [mostrarMapa, setMostrarMapa] = useState(false);
   const [guardandoDireccion, setGuardandoDireccion] = useState(false);
   const [zona, setZona] = useState(null);
 
@@ -243,13 +243,8 @@ const Checkout = ({ alVolver, alConfirmar }) => {
     if (metodoPago === 'saldo' && !saldoAlcanza) setMetodoPago('efectivo');
   }, [metodoPago, saldoAlcanza]);
 
-  const guardarDireccion = async () => {
-    if (!nueva.direccion.trim()) {
-      avisar('Escriba la dirección para poder llevarle el pedido', 'error');
-      return;
-    }
-
-    const lista = [...direcciones, { ...nueva, lat: null, lng: null }];
+  const guardarDireccion = async (nueva) => {
+    const lista = [...direcciones, nueva];
     setGuardandoDireccion(true);
     try {
       await actualizarDirecciones(user.id, lista);
@@ -257,8 +252,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       // Se deja elegida la que acaba de escribir: agregarla y que el pedido
       // siguiera saliendo a la anterior es justo el error que se quiere evitar.
       setIndiceDireccion(lista.length - 1);
-      setNueva({ nombre: '', direccion: '', referencia: '' });
-      setEscribiendo(false);
+      setMostrarMapa(false);
       avisar('Dirección guardada');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar la dirección', 'error');
@@ -449,58 +443,13 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                 );
               })}
 
-              {escribiendo ? (
-                /*
-                 * Tres campos y nada más, como en la web. La referencia es la
-                 * que de verdad usa el repartidor ("portón verde, frente a la
-                 * cancha"), así que se pide pero no se obliga: nadie se queda
-                 * sin pedir por no saber describir su cuadra.
-                 */
-                <View style={[estilos.formulario, { borderColor: colores.marcaSuave }]}>
-                  <TextInput
-                    value={nueva.nombre}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, nombre: v }))}
-                    placeholder="Nombre (Casa, Trabajo…)"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Nombre de la dirección"
-                  />
-                  <TextInput
-                    value={nueva.direccion}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, direccion: v }))}
-                    placeholder="Calle, número y colonia"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Dirección"
-                  />
-                  <TextInput
-                    value={nueva.referencia}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, referencia: v }))}
-                    placeholder="Referencia para encontrarla (opcional)"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Referencia"
-                  />
-                  <Boton
-                    texto="Guardar y usarla"
-                    alPresionar={guardarDireccion}
-                    cargando={guardandoDireccion}
-                    color={colores.marca}
-                    colorPresionado={colores.marcaOscuro}
-                  />
-                  <Pressable onPress={() => setEscribiendo(false)} hitSlop={8}>
-                    <Text style={estilos.enlaceTenue}>Cancelar</Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable onPress={() => setEscribiendo(true)} hitSlop={8}>
-                  <Text style={[estilos.enlace, { color: colores.marca }]}>
-                    {direcciones.length === 0
-                      ? '+ Escribir mi dirección'
-                      : '+ Agregar otra dirección'}
-                  </Text>
-                </Pressable>
-              )}
+              <Pressable onPress={() => setMostrarMapa(true)} hitSlop={8}>
+                <Text style={[estilos.enlace, { color: colores.marca }]}>
+                  {direcciones.length === 0
+                    ? '+ Marcar mi dirección en el mapa'
+                    : '+ Agregar otra dirección'}
+                </Text>
+              </Pressable>
             </>
           )}
         </Seccion>
@@ -655,6 +604,14 @@ const Checkout = ({ alVolver, alConfirmar }) => {
           estilo={estilos.botonPedido}
         />
       </View>
+
+      {mostrarMapa && (
+        <ModalMapaDireccion
+          alCerrar={() => setMostrarMapa(false)}
+          alGuardar={guardarDireccion}
+          guardando={guardandoDireccion}
+        />
+      )}
     </View>
   );
 };
@@ -853,12 +810,6 @@ const estilos = StyleSheet.create({
     fontSize: 11,
     color: COLORES.textoTenue,
   },
-  formulario: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 9,
-  },
   campo: {
     borderWidth: 1,
     borderColor: COLORES.borde,
@@ -874,13 +825,6 @@ const estilos = StyleSheet.create({
   enlace: {
     fontSize: 13,
     fontWeight: '700',
-    paddingVertical: 4,
-  },
-  enlaceTenue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORES.textoSuave,
-    textAlign: 'center',
     paddingVertical: 4,
   },
   nota: {
