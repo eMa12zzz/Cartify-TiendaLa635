@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { EdadProvider } from './context/EdadContext';
 import { FavoritosProvider } from './context/FavoritosContext';
 import { DireccionProvider } from './context/DireccionContext';
+import { PedidoActivoProvider } from './context/PedidoActivoContext';
 import { AjustesProvider } from './context/AjustesContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { useTemporada } from './hooks/useTemporada';
@@ -165,6 +166,13 @@ function App() {
         */}
         <DireccionProvider>
         {/*
+          Los pedidos del cliente, en un solo lugar: la burbuja los lee y el
+          carrito (adentro de <Routes>) avisa aquí cuando confirma uno nuevo.
+          Va por fuera de la burbuja Y de las rutas para que ambos lo
+          alcancen. Ver PedidoActivoContext.
+        */}
+        <PedidoActivoProvider>
+        {/*
           Arriba a la derecha. Abajo también viven el botón de WhatsApp y la
           burbuja de seguimiento del pedido: con varios avisos apilados a la
           vez, la pila llegaba a taparlos (o quedaba ella tapada detrás, según
@@ -310,6 +318,7 @@ function App() {
 
         </Routes>
         </LimiteDeError>
+        </PedidoActivoProvider>
         </DireccionProvider>
         </FavoritosProvider>
         </EdadProvider>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { orderService } from '../api/orderService';
 import { useAuth } from './useAuth';
 
@@ -6,6 +6,10 @@ import { useAuth } from './useAuth';
  * useMyOrders — trae los pedidos del cliente logueado (su historial).
  * La lógica de carga vive aquí; la página MisPedidos solo pinta la lista.
  * Opcionalmente filtra por estado (ej. 'entregado' para la vista de Recibos).
+ *
+ * Expone `refrescar` para quien necesite la lista al día sin esperar a que el
+ * componente se vuelva a montar. Ver PedidoActivoContext: la burbuja de
+ * seguimiento vive montada toda la sesión y nunca se remonta sola.
  */
 export const useMyOrders = (statusFilter = null) => {
   // Los pedidos son de un CLIENTE. Con la sesión del personal —que en la
@@ -15,26 +19,25 @@ export const useMyOrders = (statusFilter = null) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const cargar = async () => {
-      if (!esCliente) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const data = await orderService.getMyOrders(user.id);
-        const lista = Array.isArray(data) ? data : [];
-        // Si nos pidieron un estado específico, filtramos aquí.
-        setOrders(statusFilter ? lista.filter((o) => o.status === statusFilter) : lista);
-      } catch (error) {
-        console.error('Error cargando pedidos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    cargar();
+  const cargar = useCallback(async () => {
+    if (!esCliente) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = await orderService.getMyOrders(user.id);
+      const lista = Array.isArray(data) ? data : [];
+      // Si nos pidieron un estado específico, filtramos aquí.
+      setOrders(statusFilter ? lista.filter((o) => o.status === statusFilter) : lista);
+    } catch (error) {
+      console.error('Error cargando pedidos:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id, esCliente, statusFilter]);
 
-  return { orders, loading };
+  useEffect(() => { cargar(); }, [cargar]);
+
+  return { orders, loading, refrescar: cargar };
 };

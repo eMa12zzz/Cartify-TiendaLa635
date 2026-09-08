@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
 import { useSaldo } from '../../hooks/useSaldo';
 import { useDireccionCtx } from '../../context/DireccionContext';
+import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { orderService } from '../../api/orderService';
 import { esPorLibra, pasoDe, ajustarCantidad, cantidadConUnidad } from '../../utils/unidades';
@@ -1184,6 +1185,10 @@ const ShoppingCart = ({
   // la activa puede ser la del personal. Ver useAuth.
   const { user, esCliente } = useAuth();
   const { ajustes } = useAjustesCtx();
+  // La burbuja de seguimiento vive montada desde antes de abrir el carrito y
+  // no se entera sola de un pedido recién pagado: aquí se le avisa. Ver
+  // PedidoActivoContext.
+  const { refrescar: refrescarPedidoActivo } = usePedidoActivoCtx();
 
   // El costo del envío se calcula por DISTANCIA (zona → por km → plano) con la
   // ubicación de la dirección elegida. Es el MISMO cálculo que hace el backend,
@@ -1302,6 +1307,9 @@ const ShoppingCart = ({
       // Si pagó con saldo, el del servidor ya bajó: lo volvemos a leer para
       // que no se quede mostrando el de antes.
       if (metodoPago === 'saldo') recargarSaldo();
+      // Con esto la burbuja ya sabe que hay un pedido en curso apenas se
+      // cierre el carrito, sin esperar a recargar la página.
+      refrescarPedidoActivo();
 
       /*
        * La foto ANTES de vaciar, y el vaciado justo después.
