@@ -98,6 +98,7 @@ const Favoritos = ({ alVolver }) => {
           producto={productoAbierto}
           alCerrar={() => setProductoAbierto(null)}
           alAgregar={agregarAlCarrito}
+          conBarraFlotante
         />
       )}
     </View>

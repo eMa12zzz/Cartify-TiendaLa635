@@ -23,8 +23,8 @@
  * ============================================================
  */
 
-import { useCallback, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTema } from '../../context/TemaContext';
 import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import TarjetaPromo from './TarjetaPromo';
@@ -61,6 +61,32 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
     },
     [paso, promos.length]
   );
+
+  /*
+   * El ancho de cada punto, animado con Animated en vez de LayoutAnimation:
+   * esta última no se anima de forma confiable con la New Architecture
+   * encendida en Android (app.json trae newArchEnabled), que es la misma
+   * razón por la que el resto de la app (Asistente.js, AvisoContext.js) ya
+   * usa Animated y no LayoutAnimation para esto.
+   */
+  const anchosPuntos = useRef([]).current;
+  if (anchosPuntos.length !== promos.length) {
+    anchosPuntos.length = 0;
+    promos.forEach((_, i) => anchosPuntos.push(new Animated.Value(i === activa ? 22 : 8)));
+  }
+
+  useEffect(() => {
+    const animaciones = anchosPuntos.map((valor, i) =>
+      Animated.timing(valor, {
+        toValue: i === activa ? 22 : 8,
+        duration: 220,
+        // El ancho no se puede animar con el driver nativo.
+        useNativeDriver: false,
+      })
+    );
+    Animated.parallel(animaciones).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activa]);
 
   if (promos.length === 0) return null;
 
@@ -106,11 +132,12 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
       {!unaSola && (
         <View style={estilos.puntos}>
           {promos.map((promo, i) => (
-            <View
+            <Animated.View
               key={promo._id}
               style={[
                 estilos.punto,
-                i === activa && [estilos.puntoActivo, { backgroundColor: colores.marcaOscuro }],
+                { width: anchosPuntos[i] },
+                i === activa && { backgroundColor: colores.marcaOscuro },
               ]}
             />
           ))}
@@ -136,16 +163,12 @@ const estilos = StyleSheet.create({
     gap: 5,
     marginTop: 12,
   },
+  // El ancho real (8 u 22) lo pone anchosPuntos, animado; height/radius se
+  // quedan fijos porque redondear un alto que no cambia no hacía falta.
   punto: {
-    width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: '#D9C7B4',
-  },
-  // La activa se alarga en vez de solo cambiar de color: se distingue de un
-  // vistazo aunque la pantalla esté al sol. El color lo pone la temporada.
-  puntoActivo: {
-    width: 22,
   },
 });
 

@@ -46,7 +46,8 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Check, Clock, CreditCard, Gift, MapPin, Store as Tienda, Wallet } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Check, Clock, CreditCard, Gift, MapPin, Package, Store as Tienda, Wallet } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
@@ -59,6 +60,7 @@ import { getResumenPuntos, getConfigFidelidad } from '../api/fidelidadApi';
 import { crearPedido, getTiempoPorZona } from '../api/pedidosApi';
 import Boton from '../components/UI/Boton';
 import { ChevronIzquierda, Paquete } from '../components/UI/Iconos';
+import ModalMapaDireccion from '../components/UI/ModalMapaDireccion';
 import { totalDeLinea } from '../utils/catalogo';
 
 // El mismo de la web. Solo se cobra si se lo llevan a la casa: antes se cobraba
@@ -118,6 +120,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const { colores } = useTema();
   const { avisar } = useAviso();
   const { carrito, totalCarrito } = useTienda();
+  const { bottom } = useSafeAreaInsets();
 
   // Los pedidos van a nombre de un CLIENTE. El personal entra por la misma
   // puerta, y el backend rechaza un pedido con un id que no es de la tabla de
@@ -131,8 +134,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const [entrega, setEntrega] = useState('retiro');
   const [direcciones, setDirecciones] = useState([]);
   const [indiceDireccion, setIndiceDireccion] = useState(0);
-  const [escribiendo, setEscribiendo] = useState(false);
-  const [nueva, setNueva] = useState({ nombre: '', direccion: '', referencia: '' });
+  const [mostrarMapa, setMostrarMapa] = useState(false);
   const [guardandoDireccion, setGuardandoDireccion] = useState(false);
   const [zona, setZona] = useState(null);
 
@@ -241,13 +243,8 @@ const Checkout = ({ alVolver, alConfirmar }) => {
     if (metodoPago === 'saldo' && !saldoAlcanza) setMetodoPago('efectivo');
   }, [metodoPago, saldoAlcanza]);
 
-  const guardarDireccion = async () => {
-    if (!nueva.direccion.trim()) {
-      avisar('Escriba la dirección para poder llevarle el pedido', 'error');
-      return;
-    }
-
-    const lista = [...direcciones, { ...nueva, lat: null, lng: null }];
+  const guardarDireccion = async (nueva) => {
+    const lista = [...direcciones, nueva];
     setGuardandoDireccion(true);
     try {
       await actualizarDirecciones(user.id, lista);
@@ -255,8 +252,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       // Se deja elegida la que acaba de escribir: agregarla y que el pedido
       // siguiera saliendo a la anterior es justo el error que se quiere evitar.
       setIndiceDireccion(lista.length - 1);
-      setNueva({ nombre: '', direccion: '', referencia: '' });
-      setEscribiendo(false);
+      setMostrarMapa(false);
       avisar('Dirección guardada');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar la dirección', 'error');
@@ -447,58 +443,13 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                 );
               })}
 
-              {escribiendo ? (
-                /*
-                 * Tres campos y nada más, como en la web. La referencia es la
-                 * que de verdad usa el repartidor ("portón verde, frente a la
-                 * cancha"), así que se pide pero no se obliga: nadie se queda
-                 * sin pedir por no saber describir su cuadra.
-                 */
-                <View style={[estilos.formulario, { borderColor: colores.marcaSuave }]}>
-                  <TextInput
-                    value={nueva.nombre}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, nombre: v }))}
-                    placeholder="Nombre (Casa, Trabajo…)"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Nombre de la dirección"
-                  />
-                  <TextInput
-                    value={nueva.direccion}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, direccion: v }))}
-                    placeholder="Calle, número y colonia"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Dirección"
-                  />
-                  <TextInput
-                    value={nueva.referencia}
-                    onChangeText={(v) => setNueva((d) => ({ ...d, referencia: v }))}
-                    placeholder="Referencia para encontrarla (opcional)"
-                    placeholderTextColor={COLORES.marcador}
-                    style={estilos.campo}
-                    accessibilityLabel="Referencia"
-                  />
-                  <Boton
-                    texto="Guardar y usarla"
-                    alPresionar={guardarDireccion}
-                    cargando={guardandoDireccion}
-                    color={colores.marca}
-                    colorPresionado={colores.marcaOscuro}
-                  />
-                  <Pressable onPress={() => setEscribiendo(false)} hitSlop={8}>
-                    <Text style={estilos.enlaceTenue}>Cancelar</Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable onPress={() => setEscribiendo(true)} hitSlop={8}>
-                  <Text style={[estilos.enlace, { color: colores.marca }]}>
-                    {direcciones.length === 0
-                      ? '+ Escribir mi dirección'
-                      : '+ Agregar otra dirección'}
-                  </Text>
-                </Pressable>
-              )}
+              <Pressable onPress={() => setMostrarMapa(true)} hitSlop={8}>
+                <Text style={[estilos.enlace, { color: colores.marca }]}>
+                  {direcciones.length === 0
+                    ? '+ Marcar mi dirección en el mapa'
+                    : '+ Agregar otra dirección'}
+                </Text>
+              </Pressable>
             </>
           )}
         </Seccion>
@@ -602,7 +553,10 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         </Seccion>
 
         {/* ── 3. Qué lleva ── */}
-        <Seccion icono={Paquete} titulo="Su orden" colores={colores}>
+        {/* El mismo Package de lucide que la píldora usa para "Pedidos": es
+            la orden que se está por hacer, así que lleva el mismo icono que
+            la sección donde va a vivir después de confirmada. */}
+        <Seccion icono={Package} titulo="Su orden" colores={colores}>
           <View style={estilos.miniaturas}>
             {carrito.slice(0, MINIATURAS).map((item) => (
               <View key={item.id} style={estilos.miniatura}>
@@ -628,7 +582,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         columna larga habría que desplazarse hasta abajo cada vez que se cambia
         una opción para ver cuánto quedó.
       */}
-      <View style={estilos.pie}>
+      <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 18) }]}>
         <Fila etiqueta="Total de artículos" valor={`$${subtotal.toFixed(2)}`} />
         <Fila etiqueta="Costo de envío" valor={`$${envio.toFixed(2)}`} />
         {descuento > 0 && (
@@ -650,6 +604,14 @@ const Checkout = ({ alVolver, alConfirmar }) => {
           estilo={estilos.botonPedido}
         />
       </View>
+
+      {mostrarMapa && (
+        <ModalMapaDireccion
+          alCerrar={() => setMostrarMapa(false)}
+          alGuardar={guardarDireccion}
+          guardando={guardandoDireccion}
+        />
+      )}
     </View>
   );
 };
@@ -848,12 +810,6 @@ const estilos = StyleSheet.create({
     fontSize: 11,
     color: COLORES.textoTenue,
   },
-  formulario: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 9,
-  },
   campo: {
     borderWidth: 1,
     borderColor: COLORES.borde,
@@ -869,13 +825,6 @@ const estilos = StyleSheet.create({
   enlace: {
     fontSize: 13,
     fontWeight: '700',
-    paddingVertical: 4,
-  },
-  enlaceTenue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORES.textoSuave,
-    textAlign: 'center',
     paddingVertical: 4,
   },
   nota: {
@@ -958,7 +907,7 @@ const estilos = StyleSheet.create({
   pie: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 18,
+    // paddingBottom real se pone en línea, con la franja de gestos sumada.
     borderTopWidth: 1,
     borderTopColor: COLORES.linea,
     backgroundColor: COLORES.fondo,

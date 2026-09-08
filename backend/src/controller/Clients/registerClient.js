@@ -51,13 +51,10 @@ registerClientController.register = async (req, res) => {
       return res.status(400).json({ message: "Ya existe una cuenta con ese correo" });
     }
 
-    // 2. Extraer la imagen directamente de req.file (Igual que en tu CRUD de empleados)
-    // Usamos el operador ternario (?) por si el cliente decide registrarse sin foto
-    const image = req.file ? req.file.path : "";
-    const public_id = req.file ? req.file.filename : "";
-
-    const passwordHashed = await bcryptjs.hash(password, 10);
-    const randomNumber = crypto.randomBytes(3).toString("hex");
+    const existsUserName = await clientModel.findOne({ userName });
+    if (existsUserName) {
+      return res.status(400).json({ message: "Ya existe una cuenta con ese nombre de usuario" });
+    }
 
     /*
      * El DUI es OPCIONAL: si no viene, se guarda como undefined y no como "".
@@ -67,8 +64,27 @@ registerClientController.register = async (req, res) => {
      * se lo ponga, veinte clientes compartiendo la cadena vacía harían que el
      * segundo registro sin DUI reventara con error de duplicado. Con undefined
      * el campo ni siquiera se crea y un índice único los deja pasar a todos.
+     *
+     * Por lo mismo, el chequeo de abajo solo corre si de verdad escribió un
+     * DUI: sin eso, buscar `{ dui: undefined }` encontraría al primer cliente
+     * que tampoco tiene uno y lo rechazaría por "duplicado" sin serlo.
      */
     const duiLimpio = dui?.trim() ? dui.trim() : undefined;
+
+    if (duiLimpio) {
+      const existsDui = await clientModel.findOne({ dui: duiLimpio });
+      if (existsDui) {
+        return res.status(400).json({ message: "Ya existe una cuenta con ese DUI" });
+      }
+    }
+
+    // 2. Extraer la imagen directamente de req.file (Igual que en tu CRUD de empleados)
+    // Usamos el operador ternario (?) por si el cliente decide registrarse sin foto
+    const image = req.file ? req.file.path : "";
+    const public_id = req.file ? req.file.filename : "";
+
+    const passwordHashed = await bcryptjs.hash(password, 10);
+    const randomNumber = crypto.randomBytes(3).toString("hex");
 
     // 3. Guardar TODO en el token (incluyendo la imagen y el public_id que vienen de req.file)
     const token = jsonwebtoken.sign(

@@ -15,8 +15,9 @@
  * ============================================================
  */
 
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import Boton from '../UI/Boton';
@@ -25,10 +26,81 @@ import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import TarjetaPromo from './TarjetaPromo';
 import TarjetaProducto from './TarjetaProducto';
+import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 
+// Solo se abre desde Inicio (el carrusel de promos de la tienda), así que a
+// diferencia de ModalProducto no hace falta un prop: la píldora flotante
+// SIEMPRE está detrás.
 const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, alAgregar }) => {
   const { colores } = useTema();
-  useBotonAtras(alCerrar);
+  const { bottom } = useSafeAreaInsets();
+
+  /*
+   * Antes aparecía y desaparecía de golpe, sin el resto de hojas de la
+   * tienda (ModalProducto, MenuPasillos, ModalConfirmarEdad): entraba y
+   * salía distinto a todo lo demás y el asa era de adorno, no se arrastraba.
+   * Mismo patrón que ModalProducto, sin repetir aquí el porqué de cada
+   * pieza — ver los comentarios largos ahí.
+   */
+  const fondoOpacidad = useRef(new Animated.Value(0)).current;
+  const panelY = useRef(new Animated.Value(300)).current;
+  const cerrandoRef = useRef(false);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fondoOpacidad, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(panelY, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fondoOpacidad, panelY]);
+
+  const cerrarConAnimacion = () => {
+    if (cerrandoRef.current) return;
+    cerrandoRef.current = true;
+    Animated.parallel([
+      Animated.timing(fondoOpacidad, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(panelY, {
+        toValue: 300,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => alCerrar());
+  };
+
+  useBotonAtras(cerrarConAnimacion);
+
+  const panelAlturaRef = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evento, gesto) => Math.abs(gesto.dy) > 4,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderMove: (_evento, gesto) => {
+        if (gesto.dy > 0) panelY.setValue(gesto.dy);
+      },
+      onPanResponderRelease: (_evento, gesto) => {
+        const mitad = (panelAlturaRef.current || 400) / 2;
+        if (gesto.dy > mitad) {
+          cerrarConAnimacion();
+        } else {
+          Animated.timing(panelY, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.timing(panelY, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
 
   if (!promo) return null;
 
@@ -40,14 +112,19 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
      * "agregado" tiene que poder verse. Con Modal quedaba debajo.
      */
     <View style={estilos.capa}>
-      <View style={estilos.fondo}>
-        <Pressable style={estilos.zonaCierre} onPress={alCerrar} accessibilityLabel="Cerrar" />
+      <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
+        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
-        <View style={estilos.panel}>
+        <Animated.View
+          style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
+          onLayout={(e) => { panelAlturaRef.current = e.nativeEvent.layout.height; }}
+        >
           <View style={estilos.encabezado}>
-            <View style={estilos.asa} />
+            <View style={estilos.zonaAsa} {...panResponder.panHandlers}>
+              <View style={estilos.asa} />
+            </View>
             <Pressable
-              onPress={alCerrar}
+              onPress={cerrarConAnimacion}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Cerrar la promoción"
@@ -103,16 +180,22 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
             )}
           </ScrollView>
 
-          <View style={estilos.pie}>
+          <View
+            style={[
+              estilos.pie,
+              { paddingBottom: 26 + Math.max(bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE },
+            ]}
+          >
             <Boton
               texto="Ver todos en la tienda"
               alPresionar={alVerEnTienda}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
+              estilo={estilos.botonRedondo}
             />
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
     </View>
   );
 };
@@ -158,10 +241,22 @@ const estilos = StyleSheet.create({
     borderTopRightRadius: 22,
     maxHeight: '88%',
   },
+  // minHeight a propósito, mismo motivo que ModalProducto: "cerrar" es
+  // absoluta y mide más (top:8 + 32 = 40) que el encabezado con solo el
+  // asa (~14px). Sin este mínimo el ScrollView de abajo —hermano
+  // siguiente, se dibuja DESPUÉS— tapaba la mitad de abajo de la "X" y
+  // se robaba el toque: se veía bien pero no cerraba.
   encabezado: {
     paddingTop: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
+    minHeight: 44,
+  },
+  // Zona de agarre ancha (no el dibujo de 38x4) para no depender de
+  // acertarle a algo angosto al arrastrar — igual que ModalProducto.
+  zonaAsa: {
+    paddingVertical: 14,
+    paddingHorizontal: 60,
   },
   asa: {
     width: 38,
@@ -169,10 +264,13 @@ const estilos = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORES.borde,
   },
+  // Misma esquina que la "X" de ModalProducto (right:10, top:8), no la que
+  // traía antes: las dos hojas se abren una detrás de otra en la misma
+  // tienda y debían sentirse iguales, no cada una a su manera.
   cerrar: {
     position: 'absolute',
-    right: 14,
-    top: 6,
+    right: 10,
+    top: 8,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -219,6 +317,11 @@ const estilos = StyleSheet.create({
     paddingBottom: 26,
     borderTopWidth: 1,
     borderTopColor: COLORES.linea,
+  },
+  // Píldora completa, a juego con el resto de botones de la app — el Boton
+  // base trae 8 de esquina, pensado para otros usos.
+  botonRedondo: {
+    borderRadius: 28,
   },
 });
 

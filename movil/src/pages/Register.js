@@ -9,12 +9,14 @@
  *
  * Dos cosas se hacen distinto que en la web, y por buenas razones:
  *
- *   1. El DUI y el teléfono se formatean solos mientras se escriben, con las
- *      máscaras del proyecto: en un teclado de celular, donde el guion está en
- *      otra pantalla del teclado, dejarlo a mano garantiza que la base termine
- *      con "12345678-9" y "123456789" conviviendo. El DUI es OPCIONAL, igual
- *      que en la web; si se escribe, se valida el dígito verificador (ver
- *      utils/validaciones.js `validarDui`).
+ *   1. El DUI, el teléfono y la fecha de nacimiento se formatean solos
+ *      mientras se escriben, con las máscaras del proyecto: en un teclado de
+ *      celular, donde el guion y la barra están en otra pantalla del teclado,
+ *      dejarlo a mano garantiza que la base termine con "12345678-9" y
+ *      "123456789" conviviendo. El DUI es OPCIONAL, igual que en la web; si
+ *      se escribe, se valida el dígito verificador (ver utils/validaciones.js
+ *      `validarDui`). La fecha de nacimiento SÍ es obligatoria (ver el
+ *      comentario de `puedeDui` más abajo, y `frontend/src/pages/Register.jsx`).
  *
  *   2. La foto de perfil todavía no abre la galería: eso pide
  *      `expo-image-picker`, que no está instalado. El recuadro está puesto,
@@ -50,13 +52,23 @@ import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
 import HojaTerminos from '../components/UI/HojaTerminos';
-// Los mismos iconos que la web (lucide): nombre/usuario `User`, DUI `Hash`,
-// teléfono `Phone`, correo `Mail`, contraseña `Lock`, foto `Camera`.
-import { Camera, Hash, Lock, Mail, Phone, User } from 'lucide-react-native';
+// Los mismos iconos que la web (lucide): nombre/usuario `User`, fecha de
+// nacimiento `Calendar`, DUI `Hash`, teléfono `Phone`, correo `Mail`,
+// contraseña `Lock`, foto `Camera`.
+import { Calendar, Camera, Hash, Lock, Mail, Phone, User } from 'lucide-react-native';
 import { registrarCliente } from '../api/authApi';
 import { useTema } from '../context/TemaContext';
 import { COLORES } from '../theme/colores';
-import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
+import { calcularEdad, esMayorDeEdad } from '../utils/edad';
+import {
+  fechaISO,
+  formatearDui,
+  formatearFecha,
+  formatearTelefono,
+  LARGO_DUI,
+  LARGO_FECHA,
+  LARGO_TELEFONO,
+} from '../utils/mascaras';
 import {
   requerido,
   sinErrores,
@@ -70,15 +82,41 @@ import {
 const VALORES_INICIALES = {
   fullName: '',
   userName: '',
+  fechaNacimiento: '',
   dui: '',
   phoneNumber: '',
   email: '',
   password: '',
 };
 
+/*
+ * Fecha de nacimiento: igual que en la web, obligatoria y con el mismo rango
+ * (0 a 120 años) — ver el `validate` de `fechaNacimiento` en
+ * `frontend/src/pages/Register.jsx`. Se queda aquí y no en validaciones.js
+ * porque así vive también en la web: es de este formulario, no una regla de
+ * campo genérica.
+ *
+ * La diferencia real con la web es que allá el selector nativo del navegador
+ * ya impide escribir un 31 de febrero; aquí es texto libre, así que esa
+ * comprobación la hace `fechaISO` (ver utils/mascaras.js) antes de que
+ * `calcularEdad` vea la fecha.
+ */
+const validarFechaNacimiento = (valor) => {
+  const iso = fechaISO(valor);
+  if (!iso) {
+    return String(valor || '').replace(/\D/g, '').length
+      ? 'Esa fecha no es válida'
+      : 'La fecha de nacimiento es obligatoria';
+  }
+  const edad = calcularEdad(iso);
+  if (edad < 0 || edad > 120) return 'Revise la fecha';
+  return null;
+};
+
 const REGLAS = {
   fullName: (v) => requerido(v, 'El nombre es obligatorio'),
   userName: (v) => requerido(v, 'El nombre de usuario es obligatorio'),
+  fechaNacimiento: validarFechaNacimiento,
   dui: validarDui,
   phoneNumber: validarTelefono,
   email: validarCorreo,
@@ -110,7 +148,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
   /*
    * `formateador` es opcional: los campos normales guardan lo que se teclea y
-   * el DUI y el teléfono pasan primero por su máscara.
+   * el DUI, el teléfono y la fecha pasan primero por su máscara.
    */
   const cambiar = (campo, formateador) => (texto) => {
     const valor = formateador ? formateador(texto) : texto;
@@ -140,6 +178,9 @@ const Register = ({ irALogin, alPedirCodigo }) => {
       await registrarCliente({
         ...valores,
         email: valores.email.trim(),
+        // Lo que guarda el estado es "DD/MM/AAAA"; lo que espera el backend
+        // (y lo que ya manda el <input type="date"> de la web) es ISO.
+        fechaNacimiento: fechaISO(valores.fechaNacimiento),
         aceptaTerminos,
         promociones,
       });
@@ -152,6 +193,11 @@ const Register = ({ irALogin, alPedirCodigo }) => {
       setCargando(false);
     }
   };
+
+  // El DUI solo se pide cuando la fecha de nacimiento ya dice que es mayor:
+  // en El Salvador el DUI se emite a los 18, así que antes no hay ninguno que
+  // dar. Mismo criterio que `frontend/src/pages/Register.jsx`.
+  const puedeDui = esMayorDeEdad(fechaISO(valores.fechaNacimiento));
 
   return (
     <View style={estilos.pantalla}>
@@ -176,6 +222,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             alCambiar={cambiar('fullName')}
             error={errores.fullName}
             autoCapitalize="words"
+            redondo
           />
 
           <CampoTexto
@@ -186,18 +233,38 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             alCambiar={cambiar('userName')}
             error={errores.userName}
             autoCapitalize="none"
+            redondo
           />
 
           <CampoTexto
-            etiqueta="DUI (opcional)"
-            icono={Hash}
-            marcador="00000000-0"
-            valor={valores.dui}
-            alCambiar={cambiar('dui', formatearDui)}
-            error={errores.dui}
+            etiqueta="Fecha de Nacimiento"
+            icono={Calendar}
+            marcador="DD/MM/AAAA"
+            valor={valores.fechaNacimiento}
+            alCambiar={cambiar('fechaNacimiento', formatearFecha)}
+            error={errores.fechaNacimiento}
             keyboardType="number-pad"
-            maxLength={LARGO_DUI}
+            maxLength={LARGO_FECHA}
+            redondo
           />
+
+          {/*
+            Igual que en la web: opcional, y solo aparece cuando la fecha de
+            nacimiento ya alcanza para ser mayor de edad.
+          */}
+          {puedeDui && (
+            <CampoTexto
+              etiqueta="DUI (opcional)"
+              icono={Hash}
+              marcador="00000000-0"
+              valor={valores.dui}
+              alCambiar={cambiar('dui', formatearDui)}
+              error={errores.dui}
+              keyboardType="number-pad"
+              maxLength={LARGO_DUI}
+              redondo
+            />
+          )}
 
           <CampoTexto
             etiqueta="Teléfono"
@@ -208,6 +275,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.phoneNumber}
             keyboardType="phone-pad"
             maxLength={LARGO_TELEFONO}
+            redondo
           />
 
           <CampoTexto
@@ -220,6 +288,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            redondo
           />
 
           <CampoTexto
@@ -231,6 +300,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.password}
             esContrasena
             autoCapitalize="none"
+            redondo
           />
 
           <Text style={estilos.etiquetaFoto}>Foto de Perfil (Opcional)</Text>
@@ -400,6 +470,7 @@ const estilos = StyleSheet.create({
   },
   boton: {
     marginTop: 10,
+    borderRadius: 28,
   },
   pie: {
     textAlign: 'center',

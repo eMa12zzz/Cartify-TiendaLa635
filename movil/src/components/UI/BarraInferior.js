@@ -41,12 +41,34 @@
  * ============================================================
  */
 
-import { useEffect, useState } from 'react';
-import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Mic, Package, Store, User } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
+
+// Las medidas de la píldora flotante, juntas porque las usa el StyleSheet
+// de aquí abajo para armar el mismo tamaño en más de un lugar — y porque
+// la que se desliza (más abajo) necesita las mismas cuentas para saber
+// dónde parar.
+const ALTO_ICONO = 52;
+const RELLENO_VERTICAL_BARRA = 6;
+const RELLENO_HORIZONTAL_BARRA = 6;
+const ANCHO_PILDORA = 56;
+const ALTO_PILDORA = 50;
+const RADIO_PILDORA = 25;
+const AIRE_ARRIBA = 10;
+export const AIRE_ABAJO_MINIMO = 14;
+
+// Exportada para que una hoja que sube desde abajo (MenuPasillos, y
+// cualquier otra que se sume) le reserve este alto exacto a su último
+// renglón. A diferencia de las pantallas del Tab —que dejan que la barra
+// flote LIBRE por encima, a propósito—, una hoja sí termina en un borde
+// fijo: si ese borde cae bajo la píldora, el toque ahí lo captura la
+// píldora (que se pinta después, fuera del árbol de la hoja) y no el
+// renglón que se ve debajo.
+export const ALTURA_BARRA_FLOTANTE = RELLENO_VERTICAL_BARRA * 2 + ALTO_ICONO + AIRE_ARRIBA;
 
 /*
  * El orden importa y no es alfabético: la tienda primero porque es a lo que se
@@ -105,55 +127,166 @@ const BarraInferior = ({ apartado, alCambiar }) => {
   const { bottom } = useSafeAreaInsets();
   const tecladoAbierto = useTecladoAbierto();
 
+  const indiceActivo = Math.max(APARTADOS.findIndex((a) => a.clave === apartado), 0);
+
+  /*
+   * La píldora que se desliza. Es UNA sola vista, no una por apartado: se
+   * mueve de columna en columna en vez de aparecer/desaparecer en cada una,
+   * que es lo que la hace leerse como que "viaja" y no como que parpadea.
+   *
+   * El destino se calcula, no se mide con onLayout en cada icono: las
+   * cuatro columnas son `flex: 1` a partes iguales, así que con el ancho
+   * de la barra alcanza. Ese ancho SÍ hace falta medirlo (varía por
+   * teléfono), así que hasta que `onLayout` no contesta la píldora no
+   * tiene dónde pararse — por eso `anchoBarraRef` empieza en 0 y todo lo
+   * demás espera a que deje de estarlo.
+   */
+  const anchoBarraRef = useRef(0);
+  const pildoraX = useRef(new Animated.Value(0)).current;
+  const yaUbicada = useRef(false);
+
+  const calcularDestino = (indice, anchoBarra) => {
+    const anchoColumna = (anchoBarra - RELLENO_HORIZONTAL_BARRA * 2) / APARTADOS.length;
+    return RELLENO_HORIZONTAL_BARRA + indice * anchoColumna + (anchoColumna - ANCHO_PILDORA) / 2;
+  };
+
+  useEffect(() => {
+    if (!yaUbicada.current || anchoBarraRef.current <= 0) return;
+    Animated.timing(pildoraX, {
+      toValue: calcularDestino(indiceActivo, anchoBarraRef.current),
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [indiceActivo]);
+
   if (tecladoAbierto) return null;
 
   return (
-    <View style={[estilos.barra, { paddingBottom: Math.max(bottom, 10) }]}>
-      {APARTADOS.map(({ clave, icono: Icono, nombre }) => {
-        const activo = apartado === clave;
+    // La franja de gestos ya no es padding DENTRO de la barra: es aire AFUERA,
+    // para que la píldora quede flotando por encima y no pegada al filo.
+    <View style={[estilos.envoltorio, { paddingBottom: Math.max(bottom, AIRE_ABAJO_MINIMO) }]}>
+      <View
+        style={estilos.barra}
+        onLayout={(e) => {
+          const ancho = e.nativeEvent.layout.width;
+          anchoBarraRef.current = ancho;
+          // La primera vez no se anima: la píldora aparece ya puesta en el
+          // apartado activo, no viaja desde el borde apenas se abre la app.
+          pildoraX.setValue(calcularDestino(indiceActivo, ancho));
+          yaUbicada.current = true;
+        }}
+      >
+        {/*
+          La píldora en sí: UNA vista detrás de los cuatro iconos, no una
+          por apartado. `pointerEvents="none"` para que no le robe el toque
+          a lo que tiene encima — la Pressable de cada apartado sigue siendo
+          la columna entera.
+        */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            estilos.pildoraActiva,
+            { backgroundColor: colores.marca, transform: [{ translateX: pildoraX }] },
+          ]}
+        />
 
-        return (
-          <Pressable
-            key={clave}
-            onPress={() => alCambiar(clave)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activo }}
-            accessibilityLabel={nombre}
-            style={({ pressed }) => [
-              estilos.apartado,
-              pressed && { backgroundColor: colores.marcaTenue },
-            ]}
-          >
-            <Icono
-              size={25}
-              color={activo ? colores.marca : COLORES.textoSuave}
-              strokeWidth={activo ? 2.4 : 1.8}
-            />
-          </Pressable>
-        );
-      })}
+        {APARTADOS.map(({ clave, icono: Icono, nombre }) => {
+          const activo = apartado === clave;
+
+          return (
+            <Pressable
+              key={clave}
+              onPress={() => alCambiar(clave)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activo }}
+              accessibilityLabel={nombre}
+              style={estilos.apartado}
+            >
+              {({ pressed }) => (
+                // Ya no lleva su propio fondo cuando está activo: eso lo
+                // pinta la píldora que se desliza por detrás. Aquí solo
+                // queda el tinte de "lo estoy tocando" en los inactivos.
+                <View
+                  style={[estilos.pastillaIcono, !activo && pressed && { backgroundColor: colores.marcaTenue }]}
+                >
+                  <Icono
+                    size={23}
+                    color={activo ? '#FFFFFF' : COLORES.textoSuave}
+                    strokeWidth={activo ? 2.2 : 1.8}
+                  />
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 };
 
 const estilos = StyleSheet.create({
+  // Absoluta: flota ENCIMA de la pantalla del apartado en vez de empujarla
+  // a su propio renglón. Las pantallas ya no necesitan reservarle espacio.
+  envoltorio: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingTop: AIRE_ARRIBA,
+  },
   barra: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORES.fondo,
-    borderTopWidth: 1,
-    borderTopColor: COLORES.linea,
-    // El relleno de abajo lo pone la franja de gestos (ver arriba); estos 8 son
-    // solo el aire de arriba, para que el icono no toque la raya.
-    paddingTop: 8,
+    borderRadius: 30,
+    paddingVertical: RELLENO_VERTICAL_BARRA,
+    paddingHorizontal: RELLENO_HORIZONTAL_BARRA,
+    // La sombra es lo que la hace leerse como que flota y no como una barra
+    // pegada al borde de siempre.
+    elevation: 10,
+    shadowColor: '#000000',
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
   },
   apartado: {
     // Cada uno se lleva un cuarto del ancho, toque donde toque el dedo: los
     // huecos entre iconos también cambian de apartado.
     flex: 1,
-    height: 46,
+    height: ALTO_ICONO,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pastillaIcono: {
+    width: ANCHO_PILDORA,
+    height: ALTO_PILDORA,
+    // La mitad del alto: esquinas totalmente redondas (píldora), no la
+    // esquina suavizada de antes que se leía como un cuadrado.
+    borderRadius: RADIO_PILDORA,
+    // Sin esto, Android solo recorta bien la esquina la primera vez que se
+    // pinta la vista. El apartado que ya nace activo (Tienda) se ve redondo
+    // porque su fondo se pintó así desde el primer cuadro; los que se
+    // activan DESPUÉS —al tocar Asistente, Pedidos o Perfil— cambian el
+    // backgroundColor sobre una vista ya pintada, y sin overflow:'hidden'
+    // Android no vuelve a recortar: el fondo se ve casi cuadrado.
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // La misma forma que `pastillaIcono`, pero sin overflow:'hidden': ese
+  // truco hacía falta porque el backgroundColor de aquella vista CAMBIABA
+  // después del primer pintado (de transparente a marca). Esta píldora no
+  // — nace con colores.marca puesto y de ahí solo se mueve con transform
+  // — así que nunca dispara el bug de Android que el overflow arregla.
+  pildoraActiva: {
+    position: 'absolute',
+    top: RELLENO_VERTICAL_BARRA + (ALTO_ICONO - ALTO_PILDORA) / 2,
+    left: 0,
+    width: ANCHO_PILDORA,
+    height: ALTO_PILDORA,
+    borderRadius: RADIO_PILDORA,
   },
 });
 

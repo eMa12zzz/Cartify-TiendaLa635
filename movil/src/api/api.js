@@ -9,33 +9,25 @@
  *
  * ── La dirección del backend ──
  *
- * Esta es la parte que en móvil no se parece en nada a la web y donde se
- * atasca todo el mundo: "localhost" dentro del emulador de Android NO es la
- * computadora, es el propio teléfono virtual. El backend en localhost:4000
- * queda invisible.
+ * Por defecto la app le pega al backend real en Render, así que no hace
+ * falta tener el backend corriendo en la compu para probar la app.
  *
- * El emulador llega a la computadora por la dirección especial 10.0.2.2, que
- * es la que se usa por defecto. En un teléfono de verdad conectado por WiFi no
- * sirve ninguna de las dos: hay que poner la IP de la computadora en la red
- * (la que Expo muestra al arrancar, tipo 192.168.1.23) en HOST_MANUAL.
+ * Para desarrollar contra un backend local: escriba su URL en HOST_MANUAL.
+ * Ojo con el detalle que atasca a todo el mundo en móvil: "localhost" dentro
+ * del emulador de Android NO es la computadora, es el propio teléfono
+ * virtual. El emulador llega a la computadora por la dirección especial
+ * 10.0.2.2. En un teléfono de verdad conectado por WiFi no sirve ninguna de
+ * las dos: hay que poner la IP de la computadora en la red (la que Expo
+ * muestra al arrancar, tipo 192.168.1.23).
+ * Ejemplo: const HOST_MANUAL = 'http://10.0.2.2:4000/api';
  * ============================================================
  */
 
-import { Platform } from 'react-native';
-
-/*
- * Para probar en un teléfono físico: escriba aquí la IP de su computadora.
- * Ejemplo: const HOST_MANUAL = 'http://192.168.1.23:4000/api';
- */
 const HOST_MANUAL = null;
 
-const HOST_POR_DEFECTO = Platform.select({
-  android: 'http://10.0.2.2:4000/api', // el emulador ve la PC en esta direccion
-  ios: 'http://localhost:4000/api',
-  default: 'http://localhost:4000/api',
-});
+const HOST_RENDER = 'https://cartify-tiendala635.onrender.com/api';
 
-export const URL_API = HOST_MANUAL || HOST_POR_DEFECTO;
+export const URL_API = HOST_MANUAL || HOST_RENDER;
 
 /*
  * El token de sesión vigente, para mandarlo por Authorization en cada
@@ -121,7 +113,13 @@ export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras } = {})
   if (!respuesta.ok) {
     const mensaje =
       datos?.message || RESPALDO_POR_ESTADO[respuesta.status] || 'Ocurrió un error inesperado';
-    throw new ErrorApi(mensaje, respuesta.status);
+    const error = new ErrorApi(mensaje, respuesta.status);
+    // El resto del cuerpo viaja pegado al error (p.ej. `requiereConsentimiento`
+    // y `sugerido` de /loginClient/google): así quien llama puede leerlo sin
+    // que este helper tenga que conocer de antemano los campos de cada ruta,
+    // igual que hace la web con su propio fetch a mano en authApi.js.
+    if (datos && typeof datos === 'object') Object.assign(error, datos);
+    throw error;
   }
 
   return datos;

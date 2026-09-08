@@ -26,9 +26,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 // WebP/AVIF de forma fiable (sobre todo en Android), y las fotos de producto
 // se sirven desde Cloudinary en .webp. Ver AGENTS.md y los docs de SDK 54.
 import { Image } from 'expo-image';
+import { Lock } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import { useFavoritos } from '../../context/FavoritosContext';
+import { useEdad } from '../../context/EdadContext';
 import { Corazon, Mas, Paquete } from '../UI/Iconos';
 import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 
@@ -51,16 +53,39 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar }) => {
   const { colores } = useTema();
   const { esFavorito, alternar } = useFavoritos();
 
+  /*
+   * Candado +18: si el producto es restringido y todavía no se confirmó la
+   * edad EN NINGÚN LADO de la app (esto es un solo interruptor global, no
+   * uno por producto), la foto se tapa y cada intento —ver o agregar— pasa
+   * antes por pedirConfirmacion. Igual que ProductCard.jsx en la web.
+   */
+  const { mayorConfirmado, pedirConfirmacion } = useEdad();
+  const tapado = esSoloAdultos(producto) && !mayorConfirmado;
+
   const bajoStock = producto.stock < 10;
   const sello = selloDePromo(producto.promo);
   const contenido = !esPorLibra(producto) ? piezasEnTexto(producto) : null;
   const marcado = esFavorito(producto.id);
 
+  const alTocarTarjeta = () => {
+    if (tapado) { pedirConfirmacion(() => alVerDetalle?.(producto)); return; }
+    alVerDetalle?.(producto);
+  };
+
+  const alTocarAgregar = () => {
+    if (tapado) { pedirConfirmacion(() => alAgregar?.(producto)); return; }
+    alAgregar?.(producto);
+  };
+
   return (
     <Pressable
-      onPress={() => alVerDetalle?.(producto)}
+      onPress={alTocarTarjeta}
       accessibilityRole="button"
-      accessibilityLabel={`${producto.nombre}, $${Number(producto.precio).toFixed(2)}`}
+      accessibilityLabel={
+        tapado
+          ? `${producto.nombre}, producto para mayores de edad, toque para confirmar su edad`
+          : `${producto.nombre}, $${Number(producto.precio).toFixed(2)}`
+      }
       style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
     >
       <View style={estilos.marcoImagen}>
@@ -79,6 +104,19 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar }) => {
           />
         ) : (
           <Paquete size={38} />
+        )}
+
+        {/*
+          La web tapa con un desenfoque (backdrop-filter: blur); aquí un panel
+          oscuro semitransparente hace el mismo trabajo —esconder la foto
+          hasta confirmar— sin traer expo-blur solo para este candado.
+        */}
+        {tapado && (
+          <View style={estilos.coberturaEdad}>
+            <Lock size={18} color="#FFFFFF" />
+            <Text style={estilos.coberturaTitulo}>Mayores de 18</Text>
+            <Text style={estilos.coberturaTexto}>Toque para confirmar su edad</Text>
+          </View>
         )}
       </View>
 
@@ -168,7 +206,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar }) => {
             Errarle a este botón cuesta una venta.
           */}
           <Pressable
-            onPress={() => alAgregar?.(producto)}
+            onPress={alTocarAgregar}
             disabled={producto.stock === 0}
             hitSlop={6}
             accessibilityRole="button"
@@ -230,6 +268,28 @@ const estilos = StyleSheet.create({
   imagen: {
     width: '100%',
     height: '100%',
+  },
+  // El candado +18: tapa la foto entera (marcoImagen ya recorta con
+  // overflow:hidden, así que esto sale con las mismas esquinas redondas).
+  coberturaEdad: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(28, 22, 20, 0.78)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    gap: 3,
+  },
+  coberturaTitulo: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  coberturaTexto: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 9,
+    textAlign: 'center',
+    lineHeight: 12,
   },
   sello: {
     position: 'absolute',

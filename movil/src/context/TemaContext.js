@@ -40,16 +40,15 @@ const TemaContext = createContext(null);
 
 /*
  * Los colores de siempre. Salen de la paleta de la app y de los tokens de la
- * web (`--marca-400` y `--acento`, que en móvil no existían porque hasta ahora
- * no había nada que los usara).
+ * web (`--marca-400`, `--marca-50` y `--acento` de frontend/src/index.css).
  */
 export const PALETA_BASE = {
   marcaOscuro: COLORES.marcaOscuro,
   marca: COLORES.marca,
-  marcaClaro: '#D8A860',
+  marcaClaro: '#066494',
   marcaSuave: COLORES.marcaSuave,
-  marcaTenue: '#FBF6F0',
-  acento: '#F08400',
+  marcaTenue: '#F1F6F9',
+  acento: '#009AEB',
 };
 
 export const TemaProvider = ({ children }) => {

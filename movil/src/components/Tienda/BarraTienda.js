@@ -24,28 +24,45 @@
  * en la mano mientras recorre este. Su contador tiene que verse desde la
  * tienda, junto a los productos que lo van llenando.
  *
- * Lo que NO se trajo del encabezado de la web: el menú de pasillos. Quedó fuera
- * del alcance de esta pantalla. El asistente de voz tampoco está aquí — tiene
- * su propio apartado en la barra de abajo.
+ * El asistente de voz no está aquí — tiene su propio apartado en la barra
+ * de abajo.
+ *
+ * ── El menú de pasillos, que sí se sumó ──
+ *
+ * En la web tocar el nombre de la tienda despliega sus módulos (panadería,
+ * farmacia...). Aquí lo mismo: el nombre es un botón con un icono de
+ * hamburguesa al lado, y abre MenuPasillos — la hoja que sube desde abajo en
+ * vez del dropdown de la web. Ver Inicio.js para quién guarda si está
+ * abierto y utils/modulos.js para qué pasillos existen.
  * ============================================================
  */
 
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Menu } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
 import { Bolsa, Equis, Lupa } from '../UI/Iconos';
 
-const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito }) => {
+const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, alAbrirPasillos }) => {
   const { colores } = useTema();
 
   return (
   <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
     <View style={estilos.piso}>
-      <View>
-        <Text style={estilos.marcaChica}>Tienda</Text>
-        <Text style={estilos.marcaNombre}>la 635</Text>
-      </View>
+      <Pressable
+        onPress={alAbrirPasillos}
+        accessibilityRole="button"
+        accessibilityLabel="Pasillos de la tienda"
+        hitSlop={6}
+        style={({ pressed }) => [estilos.marca, pressed && { backgroundColor: colores.marcaTenue }]}
+      >
+        <Menu size={19} color="#6B7280" strokeWidth={2.2} />
+        <View>
+          <Text style={estilos.marcaChica}>Tienda</Text>
+          <Text style={estilos.marcaNombre}>la 635</Text>
+        </View>
+      </Pressable>
 
       <View style={estilos.acciones}>
         <Pressable
@@ -130,6 +147,20 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  // El botón que abre los pasillos: hamburguesa + nombre, con su propio
+  // relleno para que el tinte de "lo estoy tocando" no quede pegado al
+  // texto.
+  marca: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingVertical: 4,
+    paddingRight: 10,
+    paddingLeft: 2,
+    borderRadius: 12,
+    // Que no se estire hasta pegarse con el carrito en un nombre largo.
+    flexShrink: 1,
+  },
   marcaChica: {
     fontSize: 12,
     color: '#AAAAAA',
@@ -182,8 +213,10 @@ const estilos = StyleSheet.create({
     gap: 9,
     borderWidth: 1,
     borderColor: COLORES.borde,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    // Píldora completa (mitad del alto), a juego con los campos del login y
+    // con las pastillas de categoría de aquí abajo, que ya eran redondas.
+    borderRadius: 22,
+    paddingHorizontal: 16,
     // 44 de alto: es un campo, y los campos también se tocan.
     height: 44,
   },

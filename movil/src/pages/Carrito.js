@@ -32,46 +32,61 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Store } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import Boton from '../components/UI/Boton';
-import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete, Tienda } from '../components/UI/Iconos';
+import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete } from '../components/UI/Iconos';
+import ModalProducto from '../components/Tienda/ModalProducto';
 import { totalDeLinea } from '../utils/catalogo';
 import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
+import { iconoDeModulo } from '../utils/modulos';
 
-const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
+const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, colores }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
   const paso = pasoDe(item);
+  // Qué pasillo es este producto, para pintar su icono al frente de la fila
+  // -el mismo dibujo que ya usa MenuPasillos para ese pasillo-, no cuál
+  // es (eso ya se ve en la ficha del producto).
+  const modulo = pasillos.find((m) => String(m._id) === String(item.moduloId));
+  const IconoModulo = iconoDeModulo(modulo);
 
   return (
     <View style={estilos.linea}>
-      <View style={estilos.miniatura}>
-        {item.imagen && !fallóImagen ? (
-          <Image
-            source={{ uri: item.imagen }}
-            contentFit="contain"
-            style={estilos.miniaturaImagen}
-            onError={() => setFallóImagen(true)}
-          />
-        ) : (
-          <Paquete size={26} />
-        )}
-      </View>
+      {/* Foto, nombre y precio abren la ficha del producto; los controles de
+          cantidad se quedan aparte para que no compitan por el mismo toque. */}
+      <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={`Ver ${item.nombre}`}>
+        <View style={estilos.miniatura}>
+          {item.imagen && !fallóImagen ? (
+            <Image
+              source={{ uri: item.imagen }}
+              contentFit="contain"
+              style={estilos.miniaturaImagen}
+              onError={() => setFallóImagen(true)}
+            />
+          ) : (
+            <Paquete size={26} />
+          )}
+        </View>
+      </Pressable>
 
       <View style={estilos.datos}>
-        <Text style={estilos.nombre} numberOfLines={2}>{item.nombre}</Text>
+        <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={`Ver ${item.nombre}`}>
+          <Text style={estilos.nombre} numberOfLines={2}>{item.nombre}</Text>
 
-        <View style={estilos.filaPrecio}>
-          {!!item.precioAnterior && (
-            <Text style={estilos.precioViejo}>${Number(item.precioAnterior).toFixed(2)}</Text>
-          )}
-          <Text style={estilos.precioUnitario}>
-            ${Number(item.precio).toFixed(2)}
-            {esPorLibra(item) && <Text style={estilos.porUnidad}>/lb</Text>}
-          </Text>
-        </View>
+          <View style={estilos.filaPrecio}>
+            {!!item.precioAnterior && (
+              <Text style={estilos.precioViejo}>${Number(item.precioAnterior).toFixed(2)}</Text>
+            )}
+            <Text style={estilos.precioUnitario}>
+              ${Number(item.precio).toFixed(2)}
+              {esPorLibra(item) && <Text style={estilos.porUnidad}>/lb</Text>}
+            </Text>
+          </View>
+        </Pressable>
 
         {/*
           El "+" y el "−" se mueven al paso de SU unidad: de uno en uno las
@@ -80,15 +95,9 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
           cobrar de más. Ver utils/unidades.js.
         */}
         <View style={estilos.controles}>
-          <Pressable
-            onPress={() => alEliminar(item.id)}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={`Quitar ${item.nombre} del carrito`}
-            style={({ pressed }) => [estilos.botonQuitar, pressed && estilos.botonQuitarPresionado]}
-          >
-            <Basura size={14} color={COLORES.textoSuave} />
-          </Pressable>
+          <View style={estilos.insigniaModulo} accessibilityElementsHidden importantForAccessibility="no">
+            <IconoModulo size={16} color={colores.marca} strokeWidth={2} />
+          </View>
 
           <Pressable
             onPress={() => alActualizar(item.id, ajustarCantidad(item, item.cantidad - paso))}
@@ -121,6 +130,18 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
           >
             <Mas size={12} color={item.cantidad >= item.stock ? COLORES.marcador : COLORES.texto} />
           </Pressable>
+
+          {/* Al final y no al frente: es la acción destructiva, y pegarla al
+              "+" (a donde más se toca) invitaba a un error justo ahí. */}
+          <Pressable
+            onPress={() => alEliminar(item.id)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Quitar ${item.nombre} del carrito`}
+            style={({ pressed }) => [estilos.botonQuitar, pressed && estilos.botonQuitarPresionado]}
+          >
+            <Basura size={14} color={COLORES.textoSuave} />
+          </Pressable>
         </View>
       </View>
 
@@ -130,9 +151,14 @@ const LineaCarrito = ({ item, alActualizar, alEliminar, colores }) => {
 };
 
 const Carrito = ({ irAInicio, irAPagar }) => {
-  const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito } =
+  const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito, agregarAlCarrito, pasillos } =
     useTienda();
   const { colores } = useTema();
+  // Igual que BarraInferior: sin esto "Ir a pagar" queda debajo de la franja
+  // de gestos de Android, porque app.json trae edgeToEdgeEnabled.
+  const { bottom } = useSafeAreaInsets();
+  // El artículo que se tocó para ver su ficha (no el que se está editando).
+  const [productoAbierto, setProductoAbierto] = useState(null);
 
   const vacio = carrito.length === 0;
 
@@ -187,7 +213,9 @@ const Carrito = ({ irAInicio, irAPagar }) => {
               <>
                 <View style={estilos.tienda}>
                   <View style={[estilos.iconoTienda, { backgroundColor: colores.marcaSuave }]}>
-                    <Tienda size={17} color={colores.marca} />
+                    {/* Mismo icono que BarraMarca/BarraInferior (lucide Store):
+                        el dibujo a mano de Iconos.js se veía distinto al resto. */}
+                    <Store size={17} color={colores.marca} strokeWidth={2.2} />
                   </View>
                   <View>
                     <Text style={estilos.tiendaNombre}>Tienda la 635</Text>
@@ -200,19 +228,29 @@ const Carrito = ({ irAInicio, irAPagar }) => {
             renderItem={({ item }) => (
               <LineaCarrito
                 item={item}
+                pasillos={pasillos}
                 alActualizar={actualizarCantidad}
                 alEliminar={eliminarDelCarrito}
+                alAbrir={setProductoAbierto}
                 colores={colores}
               />
             )}
           />
+
+          {productoAbierto && (
+            <ModalProducto
+              producto={productoAbierto}
+              alCerrar={() => setProductoAbierto(null)}
+              alAgregar={agregarAlCarrito}
+            />
+          )}
 
           {/*
             El resumen vive FUERA de la lista: es el número por el que se abrió
             esta pantalla, y al final de una lista de quince productos habría
             que desplazarse hasta abajo para verlo.
           */}
-          <View style={estilos.pie}>
+          <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 26) }]}>
             <View style={estilos.resumen}>
               <Text style={estilos.resumenTitulo}>Resumen de orden</Text>
               <View style={estilos.resumenFila}>
@@ -408,6 +446,16 @@ const estilos = StyleSheet.create({
     gap: 6,
     marginTop: 5,
   },
+  // El pasillo del producto, al frente de la fila. No es un botón -no hace
+  // nada al tocarlo, solo dice de dónde es-, así que sin ancho de "botón"
+  // ni fondo propio: el mismo alto de 30 que sus vecinos, para que la fila
+  // no salte.
+  insigniaModulo: {
+    width: 22,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   botonQuitar: {
     width: 30,
     height: 30,
@@ -415,8 +463,8 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     // Separado de los pasos: es la acción destructiva y no debe quedar pegada
-    // al "−", que es a lo que se le apunta para bajar de a poco.
-    marginRight: 4,
+    // al "+", que es a lo que más se le apunta.
+    marginLeft: 4,
   },
   botonQuitarPresionado: {
     backgroundColor: '#FDECEC',
@@ -453,7 +501,7 @@ const estilos = StyleSheet.create({
     borderTopColor: COLORES.linea,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 26,
+    // paddingBottom real se pone en línea, con la franja de gestos sumada.
     backgroundColor: COLORES.fondo,
   },
   resumen: {

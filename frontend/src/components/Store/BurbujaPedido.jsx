@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bike, X, ChevronRight, Clock } from 'lucide-react';
-import { useMyOrders } from '../../hooks/useMyOrders';
+import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
@@ -38,7 +38,7 @@ const BROWN = 'var(--marca-600)';
 const BurbujaPedido = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { orders } = useMyOrders();
+  const { orders } = usePedidoActivoCtx();
   const [abierta, setAbierta] = useState(false);
 
   /*

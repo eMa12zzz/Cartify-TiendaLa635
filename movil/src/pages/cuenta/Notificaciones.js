@@ -26,8 +26,8 @@
  * ============================================================
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORES } from '../../theme/colores';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
@@ -46,23 +46,61 @@ const OPCIONES = [
   { clave: 'pedidoCerca', titulo: 'Mi pedido va en camino', sub: 'Avíseme cuando mi pedido esté cerca.' },
 ];
 
+// Mismo tiempo que --dur-press en la web: es el mismo interruptor, misma duración.
+const DURACION_INTERRUPTOR = 160;
+
 /*
  * El interruptor. La bolita se mueve con `transform` y no cambiando `left`
  * porque es lo único que no obliga a recalcular la posición de todo lo que
- * tiene al lado en cada fotograma — mismo criterio que el de la web.
+ * tiene al lado en cada fotograma — mismo criterio que el de la web. El color
+ * del riel no admite el driver nativo, así que todo el progreso (bolita y
+ * color) corre por un solo `Animated.Value` en el hilo de JS.
  */
-const Interruptor = ({ encendido, alTocar, color, etiqueta }) => (
-  <Pressable
-    onPress={alTocar}
-    hitSlop={8}
-    accessibilityRole="switch"
-    accessibilityState={{ checked: encendido }}
-    accessibilityLabel={etiqueta}
-    style={[estilos.riel, { backgroundColor: encendido ? color : COLORES.borde }]}
-  >
-    <View style={[estilos.bolita, encendido && estilos.bolitaEncendida]} />
-  </Pressable>
-);
+const Interruptor = ({ encendido, alTocar, color, etiqueta }) => {
+  const progreso = useRef(new Animated.Value(encendido ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(progreso, {
+      toValue: encendido ? 1 : 0,
+      duration: DURACION_INTERRUPTOR,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [encendido, progreso]);
+
+  return (
+    <Pressable
+      onPress={alTocar}
+      hitSlop={8}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: encendido }}
+      accessibilityLabel={etiqueta}
+    >
+      <Animated.View
+        style={[
+          estilos.riel,
+          {
+            backgroundColor: progreso.interpolate({
+              inputRange: [0, 1],
+              outputRange: [COLORES.borde, color],
+            }),
+          },
+        ]}
+      >
+        <Animated.View
+          style={[
+            estilos.bolita,
+            {
+              transform: [
+                { translateX: progreso.interpolate({ inputRange: [0, 1], outputRange: [0, 19] }) },
+              ],
+            },
+          ]}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+};
 
 const Notificaciones = ({ alVolver }) => {
   const { user } = useAuth();
@@ -221,9 +259,6 @@ const estilos = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     backgroundColor: '#FFFFFF',
-  },
-  bolitaEncendida: {
-    transform: [{ translateX: 19 }],
   },
   pie: {
     marginTop: 6,
