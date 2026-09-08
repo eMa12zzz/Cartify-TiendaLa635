@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import MapaSeguimiento from './MapaSeguimiento';
+import CodigoEntrega from './CodigoEntrega';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 
 /*
@@ -249,6 +250,18 @@ const BurbujaPedido = () => {
               </div>
             </div>
           )}
+
+          {/*
+            El código con el que recibe el pedido. Mismo lugar que en
+            EstadoPedido: justo después de lo que se está mirando ahora mismo
+            —el mapa o el tiempo estimado—, para no tener que ir a buscarlo
+            cuando el repartidor ya está tocando el timbre.
+          */}
+          <CodigoEntrega
+            codigo={enCurso.deliveryCode}
+            deliveryType={enCurso.deliveryType}
+            estado={estado}
+          />
 
           <div style={{ padding: 14 }}>
             {/* Los pasos, con el actual resaltado */}
