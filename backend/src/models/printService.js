@@ -71,6 +71,12 @@ import { Schema, model } from 'mongoose';
                    Puede quedar vacío: un formato sin material declarado se
                    comporta como antes (siempre disponible), para no romper los
                    que ya estaban cargados.
+   esBase:         formato de arranque (Carta, Oficio, DUI...) sembrado por
+                   scripts/seedFormatosBaseImpresion.js, para que el panel no
+                   empiece vacío. Solo separa la tabla del admin en "Formatos
+                   base" y "Tus formatos" — no cambia en nada cómo se usan ni
+                   se cobran. No se edita desde el formulario: nace así al
+                   sembrarse y se queda así, aunque el admin edite el resto.
 */
 const printServiceSchema = new Schema(
   {
@@ -82,6 +88,7 @@ const printServiceSchema = new Schema(
     colorSurcharge: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     materialId: { type: Schema.Types.ObjectId, ref: 'printMaterialModel', default: null },
+    esBase: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
