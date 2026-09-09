@@ -54,7 +54,7 @@ const Personalizacion = () => {
   } = useAjustesCtx();
 
   const [form, setForm] = useState({
-    nombreLinea1: '', nombreLinea2: '', lema: '', direccion: '', costoEnvio: '',
+    nombreLinea1: '', nombreLinea2: '', lema: '', direccion: '',
   });
 
   // Qué apartado se está viendo (navegación lateral).
@@ -66,18 +66,12 @@ const Personalizacion = () => {
       nombreLinea2: ajustes.nombreLinea2 || '',
       lema: ajustes.lema || '',
       direccion: ajustes.direccion || '',
-      // Se guarda como texto en el formulario para poder escribir con comodidad;
-      // se convierte a número al enviar.
-      costoEnvio: ajustes.costoEnvio != null ? String(ajustes.costoEnvio) : '',
     });
-  }, [ajustes.nombreLinea1, ajustes.nombreLinea2, ajustes.lema, ajustes.direccion, ajustes.costoEnvio]);
+  }, [ajustes.nombreLinea1, ajustes.nombreLinea2, ajustes.lema, ajustes.direccion]);
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // El costo de envío viaja como número; si quedó vacío o inválido, se
-    // manda 0 en vez de NaN (que el backend rechazaría).
-    const costoEnvio = Number(form.costoEnvio);
-    guardar({ ...form, costoEnvio: Number.isFinite(costoEnvio) && costoEnvio >= 0 ? costoEnvio : 0 });
+    guardar(form);
   };
 
   const inputStyle = {
@@ -109,6 +103,21 @@ const Personalizacion = () => {
     { clave: 'manual', nombre: 'Manual', ayuda: 'Manda el tema que usted elija, aunque el calendario diga otra cosa.' },
     { clave: 'ninguno', nombre: 'Ninguno', ayuda: 'Los colores de siempre, todo el año.' },
   ];
+
+  /*
+   * El saludo de la cinta, por tema. Se edita aparte del resto de la
+   * temporada (modo/tema/decoración) porque es texto largo que se escribe con
+   * calma, no un botón que se toca y guarda de una vez.
+   */
+  const [saludos, setSaludos] = useState({});
+  useEffect(() => {
+    setSaludos({ ...(ajustes.temporada?.saludos || {}) });
+  }, [ajustes.temporada?.saludos]);
+
+  const guardarSaludos = (e) => {
+    e.preventDefault();
+    guardar({ temporada: { saludos } });
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8 max-w-6xl">
@@ -276,29 +285,6 @@ const Personalizacion = () => {
               />
             </div>
 
-            {/* Costo de envío (respaldo plano) */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>
-                Tarifa de envío de respaldo
-              </label>
-              <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
-                Lo que se cobra cuando no se puede medir la distancia (sin ubicación de la tienda
-                fijada, o una dirección sin punto en el mapa). El cálculo normal por km y por zona
-                se configura más abajo, en “Envío por distancia”.
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold" style={{ color: 'var(--theme-text-secondary)' }}>$</span>
-                <input
-                  type="number" min="0" step="0.01" inputMode="decimal"
-                  value={form.costoEnvio}
-                  onChange={(e) => setForm({ ...form, costoEnvio: e.target.value })}
-                  placeholder="4.78"
-                  className="w-40 px-4 py-2.5 rounded-xl border outline-none"
-                  style={inputStyle}
-                />
-              </div>
-            </div>
-
             <button
               type="submit" disabled={guardando}
               className="px-8 py-2.5 rounded-full font-bold shadow-sm transition-colors disabled:opacity-60"
@@ -424,6 +410,7 @@ const Personalizacion = () => {
 
             {/* ── Apariencia (2.ª parte): Temporada ── */}
             {seccion === 'apariencia' && (
+          <>
           <div className="p-6 rounded-2xl shadow-sm border" style={tarjeta}>
             <div className="mb-4">
               <h2 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary)' }}>
@@ -586,6 +573,47 @@ const Personalizacion = () => {
               </button>
             </div>
           </div>
+
+          {/* ── Apariencia (3.ª parte): el saludo de cada temporada ── */}
+          <div className="p-6 rounded-2xl shadow-sm border mt-6" style={tarjeta}>
+            <div className="mb-4">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                Saludo de cada temporada
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
+                El texto de la cinta que aparece debajo del encabezado mientras esa temporada está
+                pintada. En blanco, se usa el saludo de siempre.
+              </p>
+            </div>
+
+            <form onSubmit={guardarSaludos} className="flex flex-col gap-4">
+              {TEMAS_DE_TEMPORADA.map((tema) => (
+                <div key={tema.clave} className="space-y-1.5">
+                  <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                    {tema.nombre}
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={160}
+                    value={saludos[tema.clave] || ''}
+                    onChange={(e) => setSaludos({ ...saludos, [tema.clave]: e.target.value })}
+                    placeholder={tema.decoracion.saludo}
+                    className="w-full px-4 py-2.5 rounded-xl border outline-none"
+                    style={inputStyle}
+                  />
+                </div>
+              ))}
+
+              <button
+                type="submit" disabled={guardando}
+                className="self-start px-8 py-2.5 rounded-full font-bold shadow-sm transition-colors disabled:opacity-60"
+                style={{ backgroundColor: 'var(--theme-primary)', color: 'var(--theme-button-text)' }}
+              >
+                {guardando ? 'Guardando…' : 'Guardar saludos'}
+              </button>
+            </form>
+          </div>
+          </>
             )}
           </div>
         </div>
