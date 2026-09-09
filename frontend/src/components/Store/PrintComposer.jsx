@@ -1,57 +1,38 @@
 import { useRef } from 'react';
-import { ImagePlus, ZoomIn, ZoomOut, RotateCcw, RotateCw, Copy, Trash2, ArrowUp, Plus, X } from 'lucide-react';
+import { ImagePlus, Copy, Trash2, Plus, X, ImageOff } from 'lucide-react';
+import { pxDesdeCm } from '../../utils/pxImpresion';
 
 /*
  * PrintComposer — el editor visual de la hoja de impresión.
  * Solo pinta: toda la lógica vive en usePrintComposer.
  *
- * La hoja respeta la proporción REAL del formato elegido (widthCm × heightCm),
- * así lo que el cliente ve es lo que se imprime. Botones grandes y toolbar
- * al seleccionar (nada de manijitas diminutas) para que sirva con el dedo.
+ * La hoja es una CUADRÍCULA de celdas del tamaño real del formato elegido
+ * (columnas × filas calculadas en el hook). Cada foto llena su celda por
+ * completo — no hay arrastre ni zoom: eso era lo que dejaba una foto chica
+ * flotando en una hoja enorme. Se sube, cae en la siguiente celda vacía, y
+ * listo.
  */
 const BROWN = 'var(--marca-600)';
 
 const PrintComposer = ({ composer }) => {
   const {
     paginas, paginaActiva, setPaginaActiva, seleccionado, setSeleccionado,
-    agregarImagenes, mover, escalar, rotar, duplicar, eliminar, traerAlFrente,
+    agregarImagenes, eliminar, duplicar,
     agregarPagina, eliminarPagina, widthCm, heightCm,
+    celdaAnchoCm, celdaAltoCm, columnas, filas,
   } = composer;
 
-  const hojaRef = useRef(null);
   const inputRef = useRef(null);
-  const pagina = paginas[paginaActiva] || { items: [] };
-
-  // Arrastrar con mouse o dedo (pointer events cubren ambos).
-  const iniciarArrastre = (e, item) => {
-    e.preventDefault();
-    setSeleccionado(item.id);
-    const rect = hojaRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const origX = item.x;
-    const origY = item.y;
-
-    const alMover = (ev) => {
-      const dx = (ev.clientX - startX) / rect.width;
-      const dy = (ev.clientY - startY) / rect.height;
-      mover(item.id, origX + dx, origY + dy);
-    };
-    const alSoltar = () => {
-      window.removeEventListener('pointermove', alMover);
-      window.removeEventListener('pointerup', alSoltar);
-    };
-    window.addEventListener('pointermove', alMover);
-    window.addEventListener('pointerup', alSoltar);
-  };
+  const pagina = paginas[paginaActiva] || { celdas: [] };
 
   const btn = {
     display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px',
     borderRadius: 10, border: '1.5px solid #e0e0e0', background: '#fff',
     cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#333',
   };
+
+  const haySeleccion = seleccionado?.pagina === paginaActiva;
+  const celdaSeleccionada = haySeleccion ? pagina.celdas[seleccionado.celda] : null;
 
   return (
     <div>
@@ -64,7 +45,7 @@ const PrintComposer = ({ composer }) => {
         <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
           onChange={(e) => { agregarImagenes(e.target.files); e.target.value = ''; }} />
         <span style={{ fontSize: 12, color: '#999', alignSelf: 'center' }}>
-          Hoja {widthCm} × {heightCm} cm — arrastra las imágenes para acomodarlas
+          Celda {pxDesdeCm(celdaAnchoCm)} × {pxDesdeCm(celdaAltoCm)} px — hoja {widthCm} × {heightCm} cm ({columnas * filas} por hoja)
         </span>
       </div>
 
@@ -94,61 +75,82 @@ const PrintComposer = ({ composer }) => {
         </button>
       </div>
 
-      {/* La hoja */}
-      <div
-        ref={hojaRef}
-        onPointerDown={(e) => { if (e.target === hojaRef.current) setSeleccionado(null); }}
-        style={{
-          position: 'relative', width: '100%', aspectRatio: `${widthCm} / ${heightCm}`,
-          background: '#fff', border: '1px solid #ddd', borderRadius: 8,
-          overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', touchAction: 'none',
-          marginBottom: 12,
-        }}
-      >
-        {pagina.items.length === 0 && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 14, pointerEvents: 'none' }}>
-            Agrega imágenes y acomódalas aquí
-          </div>
-        )}
+      {/*
+        La hoja, en cuadrícula. Las columnas y filas van en `fr` con el
+        tamaño REAL de la celda (no 1fr parejo) — si no, una celda de 10×10
+        en una hoja de 21.6×27.9 se estira pareja entre las columnas y filas
+        que quepan, y una celda cuadrada sale rectangular. Lo que sobra de la
+        hoja (columnas/filas no completas) se deja como una pista más, en
+        blanco: el margen de una hoja de verdad.
+      */}
+      {(() => {
+        const sobranteAncho = Math.max(0, widthCm - columnas * celdaAnchoCm);
+        const sobranteAlto = Math.max(0, heightCm - filas * celdaAltoCm);
+        const colsTemplate = `repeat(${columnas}, ${celdaAnchoCm}fr)` + (sobranteAncho > 0.05 ? ` ${sobranteAncho}fr` : '');
+        const rowsTemplate = `repeat(${filas}, ${celdaAltoCm}fr)` + (sobranteAlto > 0.05 ? ` ${sobranteAlto}fr` : '');
 
-        {pagina.items.map((it) => (
-          <img
-            key={it.id}
-            src={it.src}
-            alt=""
-            draggable={false}
-            onPointerDown={(e) => iniciarArrastre(e, it)}
+        return (
+          <div
             style={{
-              position: 'absolute',
-              left: `${it.x * 100}%`,
-              top: `${it.y * 100}%`,
-              width: `${it.w * 100}%`,
-              height: 'auto',
-              transform: `translate(-50%, -50%) rotate(${it.rot || 0}deg)`,
-              cursor: 'grab',
-              outline: seleccionado === it.id ? `2px solid ${BROWN}` : 'none',
-              userSelect: 'none',
+              width: '100%', aspectRatio: `${widthCm} / ${heightCm}`,
+              background: '#fff', border: '1px solid #ddd', borderRadius: 8,
+              overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+              display: 'grid',
+              gridTemplateColumns: colsTemplate,
+              gridTemplateRows: rowsTemplate,
+              marginBottom: 12,
             }}
-          />
-        ))}
-      </div>
+          >
+            {pagina.celdas.map((celda, i) => {
+              const elegida = seleccionado?.pagina === paginaActiva && seleccionado?.celda === i;
+              const col = i % columnas;
+              const fil = Math.floor(i / columnas);
+              return (
+                <div
+                  key={i}
+                  onClick={() => setSeleccionado(celda ? { pagina: paginaActiva, celda: i } : null)}
+                  style={{
+                    position: 'relative',
+                    gridColumn: col + 1,
+                    gridRow: fil + 1,
+                    borderRight: (col !== columnas - 1) ? '1px dashed #e5e5e5' : 'none',
+                    borderBottom: (fil !== filas - 1) ? '1px dashed #e5e5e5' : 'none',
+                    outline: elegida ? `2px solid ${BROWN}` : 'none',
+                    outlineOffset: -2,
+                    cursor: celda ? 'pointer' : 'default',
+                    background: celda ? 'transparent' : '#fafafa',
+                  }}
+                >
+                  {celda ? (
+                    <img
+                      src={celda.src}
+                      alt=""
+                      draggable={false}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none' }}
+                    />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
+                      <ImageOff size={18} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
-      {/* Toolbar de la imagen seleccionada */}
-      {seleccionado && (
+      {/* Toolbar de la celda seleccionada */}
+      {celdaSeleccionada && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-          <button type="button" style={btn} onClick={() => escalar(seleccionado, 1.15)}><ZoomIn size={16} /> Más grande</button>
-          <button type="button" style={btn} onClick={() => escalar(seleccionado, 0.87)}><ZoomOut size={16} /> Más pequeña</button>
-          <button type="button" style={btn} onClick={() => rotar(seleccionado, -15)}><RotateCcw size={16} /> Girar</button>
-          <button type="button" style={btn} onClick={() => rotar(seleccionado, 15)}><RotateCw size={16} /> Girar</button>
-          <button type="button" style={btn} onClick={() => duplicar(seleccionado)}><Copy size={16} /> Duplicar</button>
-          <button type="button" style={btn} onClick={() => traerAlFrente(seleccionado)}><ArrowUp size={16} /> Al frente</button>
-          <button type="button" style={{ ...btn, color: '#ef4444', borderColor: '#fecaca' }} onClick={() => eliminar(seleccionado)}>
+          <button type="button" style={btn} onClick={() => duplicar(seleccionado.pagina, seleccionado.celda)}><Copy size={16} /> Duplicar</button>
+          <button type="button" style={{ ...btn, color: '#ef4444', borderColor: '#fecaca' }} onClick={() => eliminar(seleccionado.pagina, seleccionado.celda)}>
             <Trash2 size={16} /> Quitar
           </button>
         </div>
       )}
-      {!seleccionado && pagina.items.length > 0 && (
-        <p style={{ fontSize: 12, color: '#999', margin: 0 }}>Toca una imagen para agrandarla, girarla o duplicarla.</p>
+      {!celdaSeleccionada && pagina.celdas.some(Boolean) && (
+        <p style={{ fontSize: 12, color: '#999', margin: 0 }}>Toca una foto para duplicarla o quitarla.</p>
       )}
     </div>
   );

@@ -47,7 +47,7 @@ const DE_RESPALDO = {
   servicioTipo: 'fijo', // 'fijo' | 'porcentaje'
   servicioValor: 0,
   secciones: [],
-  temporada: { modo: 'automatico', tema: '' },
+  temporada: { modo: 'automatico', tema: '', saludos: {} },
 };
 
 export const useAjustesTienda = () => {

@@ -127,7 +127,7 @@ storeSettingsController.updateSettings = async (req, res) => {
      * y deja en paz a la hermana, que es lo que prometen los guardas de abajo.
      */
     if (req.body.temporada && typeof req.body.temporada === "object") {
-      const { modo, tema, decoracion } = req.body.temporada;
+      const { modo, tema, decoracion, saludos } = req.body.temporada;
 
       if (modo !== undefined) {
         if (!MODOS_DE_TEMPORADA.includes(modo)) {
@@ -137,6 +137,25 @@ storeSettingsController.updateSettings = async (req, res) => {
       }
       if (tema !== undefined) cambios["temporada.tema"] = String(tema).trim();
       if (decoracion !== undefined) cambios["temporada.decoracion"] = !!decoracion;
+
+      /*
+       * Los saludos personalizados, uno por tema. Se manda el objeto completo
+       * cada vez (igual que zonasEnvio o secciones): más simple que mezclar
+       * clave por clave, y aquí no hay carrera que perder porque solo lo edita
+       * el dueño desde un solo panel. Vacío después de recortar = "use el de
+       * fábrica", así que ni se guarda.
+       */
+      if (saludos !== undefined) {
+        if (typeof saludos !== "object" || saludos === null || Array.isArray(saludos)) {
+          return res.status(400).json({ message: "Los saludos de temporada no son válidos" });
+        }
+        const limpios = {};
+        for (const [clave, texto] of Object.entries(saludos)) {
+          const recortado = String(texto ?? "").trim().slice(0, 160);
+          if (recortado) limpios[clave] = recortado;
+        }
+        cambios["temporada.saludos"] = limpios;
+      }
     }
 
     /*

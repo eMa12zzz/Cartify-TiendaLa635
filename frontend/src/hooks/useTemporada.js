@@ -52,10 +52,17 @@ export const useTemaCalculado = () => {
    * la tienda abierta del 30 de noviembre al 1 de diciembre, se pinta de
    * Navidad en la siguiente navegación y con eso basta.
    */
-  const tema = useMemo(
-    () => temaActivo(ajustes.temporada),
-    [ajustes.temporada]
-  );
+  const tema = useMemo(() => {
+    const base = temaActivo(ajustes.temporada);
+    if (!base) return base;
+    /*
+     * El saludo de fábrica se puede reescribir por tema desde Personalización
+     * → Apariencia. En blanco (o sin entrada) se queda con el de siempre.
+     */
+    const propio = (ajustes.temporada?.saludos?.[base.clave] || '').trim();
+    if (!propio) return base;
+    return { ...base, decoracion: { ...base.decoracion, saludo: propio } };
+  }, [ajustes.temporada]);
 
   /*
    * Ya no hay "color base" que aplicar: la marca vive fija en index.css y

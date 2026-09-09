@@ -60,6 +60,13 @@ const temporadaSchema = new Schema(
      * la fecha y otras que prefieren no distraer.
      */
     decoracion: { type: Boolean, default: true },
+    /*
+     * El texto de la cinta, por tema — { navidad: "...", halloween: "...", ... }.
+     * Cada tema trae su saludo de fábrica (ver frontend/utils/temporadas.js);
+     * esto guarda solo lo que el dueño reescribió. Un tema sin entrada aquí
+     * (o con el texto en blanco) usa el saludo de fábrica.
+     */
+    saludos: { type: Schema.Types.Mixed, default: {} },
   },
   { _id: false }
 );
