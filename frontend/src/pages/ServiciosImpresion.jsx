@@ -92,6 +92,24 @@ const ServiciosImpresion = () => {
 
   const inputSm = 'w-40 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#00283D]';
 
+  // Misma fila para las dos tablas — solo cambia qué formatos entran en cada una.
+  const filaDeFormato = (item) => (
+    <>
+      <td className="py-4 px-4 text-sm text-gray-800">{item.name}</td>
+      <td className="py-4 px-4 text-sm text-gray-600">{pxDesdeCm(item.widthCm ?? 21.6)} × {pxDesdeCm(item.heightCm ?? 27.9)} px</td>
+      <td className="py-4 px-4 text-sm text-gray-600">${Number(item.pricePerCopy).toFixed(2)}</td>
+      <td className="py-4 px-4 text-sm text-gray-600">{item.allowsColor ? `Sí (+$${Number(item.colorSurcharge || 0).toFixed(2)})` : 'No'}</td>
+      <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>{item.isActive ? 'Activo' : 'Inactivo'}</td>
+      <td className="py-4 px-4 text-sm">
+        <TableActions onEdit={() => abrirEditar(item)} onDelete={() => { setToDelete(item); setConfirmOpen(true); }} />
+      </td>
+    </>
+  );
+
+  const columnasFormato = ['Formato', 'Tamaño', 'Precio/copia', 'Color', 'Estado', 'Acciones'];
+  const formatosBase = servicios.filter((s) => s.esBase);
+  const formatosPropios = servicios.filter((s) => !s.esBase);
+
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -99,29 +117,41 @@ const ServiciosImpresion = () => {
         <button onClick={abrirNuevo} className="px-4 py-2 bg-[#003049] hover:bg-[#00283D] text-white rounded-full text-sm font-medium transition-colors shadow-sm">Agregar formato</button>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">Servicios de Impresión</h3>
-        {loading ? (
+      {loading ? (
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <p className="text-gray-500">Cargando...</p>
-        ) : (
-          <DataTable
-            columns={['Formato', 'Tamaño', 'Precio/copia', 'Color', 'Estado', 'Acciones']}
-            data={servicios}
-            renderRow={(item) => (
-              <>
-                <td className="py-4 px-4 text-sm text-gray-800">{item.name}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{pxDesdeCm(item.widthCm ?? 21.6)} × {pxDesdeCm(item.heightCm ?? 27.9)} px</td>
-                <td className="py-4 px-4 text-sm text-gray-600">${Number(item.pricePerCopy).toFixed(2)}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.allowsColor ? `Sí (+$${Number(item.colorSurcharge || 0).toFixed(2)})` : 'No'}</td>
-                <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>{item.isActive ? 'Activo' : 'Inactivo'}</td>
-                <td className="py-4 px-4 text-sm">
-                  <TableActions onEdit={() => abrirEditar(item)} onDelete={() => { setToDelete(item); setConfirmOpen(true); }} />
-                </td>
-              </>
+        </div>
+      ) : (
+        <>
+          {/*
+            Base primero: son los tamaños de uso general (Carta, Oficio, DUI...)
+            que ya vienen cargados — lo que casi cualquier tienda va a usar.
+            Se pueden editar o borrar igual que cualquier otro, esto es solo
+            para que no se pierdan entre los que el dueño va agregando.
+          */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-1">Formatos base</h3>
+            <p className="text-xs text-gray-400 mb-6">De uso general — ya vienen cargados, revise sus precios antes de usarlos.</p>
+            {formatosBase.length === 0 ? (
+              <p className="text-gray-400 text-sm">
+                Ninguno todavía. Corra <code className="bg-gray-100 px-1.5 py-0.5 rounded">node src/scripts/seedFormatosBaseImpresion.js</code> en el backend para cargarlos.
+              </p>
+            ) : (
+              <DataTable columns={columnasFormato} data={formatosBase} renderRow={filaDeFormato} />
             )}
-          />
-        )}
-      </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-1">Tus formatos</h3>
+            <p className="text-xs text-gray-400 mb-6">Los que agregó usted, aparte de los de uso general.</p>
+            {formatosPropios.length === 0 ? (
+              <p className="text-gray-400 text-sm">Todavía no agregó ningún formato propio.</p>
+            ) : (
+              <DataTable columns={columnasFormato} data={formatosPropios} renderRow={filaDeFormato} />
+            )}
+          </div>
+        </>
+      )}
 
       {/* El papel y la tinta. Va DEBAJO de los formatos porque se consulta
           menos seguido, pero en la misma pantalla: son la misma conversación
