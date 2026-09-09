@@ -8,12 +8,18 @@ import MaterialesImpresion from '../components/Admin/MaterialesImpresion';
 import { printServiceService } from '../api/printServiceService';
 import { useMaterialesImpresion } from '../hooks/useMaterialesImpresion';
 import { numeroEnRango, bloquearTeclasNumero } from '../utils/validaciones';
+import { cmDesdePx, pxDesdeCm } from '../utils/pxImpresion';
 
 /*
  * ServiciosImpresion (Admin) — catálogo de formatos de impresión con precio.
  * El cliente elige estos formatos en /impresiones.
+ *
+ * La medida se escribe y se muestra en PÍXELES — es lo que se conoce, como
+ * una foto (1200×1200) — y se convierte a centímetros solo para guardarla:
+ * el editor y el PDF final necesitan el tamaño real en papel. Ver
+ * utils/pxImpresion.js.
  */
-const emptyForm = { name: '', widthCm: 21.6, heightCm: 27.9, pricePerCopy: '', allowsColor: true, colorSurcharge: '', isActive: true, materialId: '' };
+const emptyForm = { name: '', widthPx: pxDesdeCm(21.6), heightPx: pxDesdeCm(27.9), pricePerCopy: '', allowsColor: true, colorSurcharge: '', isActive: true, materialId: '' };
 
 const ServiciosImpresion = () => {
   const [servicios, setServicios] = useState([]);
@@ -39,7 +45,7 @@ const ServiciosImpresion = () => {
   const abrirEditar = (s) => {
     setEditId(s._id);
     setForm({
-      name: s.name || '', widthCm: s.widthCm ?? 21.6, heightCm: s.heightCm ?? 27.9,
+      name: s.name || '', widthPx: pxDesdeCm(s.widthCm ?? 21.6), heightPx: pxDesdeCm(s.heightCm ?? 27.9),
       pricePerCopy: s.pricePerCopy ?? '', allowsColor: s.allowsColor !== false,
       colorSurcharge: s.colorSurcharge ?? '', isActive: s.isActive !== false,
       // Puede venir poblado (objeto) o como puro id, según cómo lo traiga la API.
@@ -52,13 +58,14 @@ const ServiciosImpresion = () => {
     e.preventDefault();
     if (!form.name.trim() || form.pricePerCopy === '') { toast.error('Nombre y precio por copia son requeridos'); return; }
 
-    // Las medidas se usan para calcular la hoja en el editor: si vienen en 0
-    // o con letras, el canvas quedaría sin tamaño.
-    const ancho = numeroEnRango(form.widthCm, { min: 1, max: 200 });
-    if (ancho === null) { toast.error('El ancho debe estar entre 1 y 200 cm'); return; }
+    // Las medidas se piden en píxeles y se guardan en centímetros: el editor
+    // y el PDF final necesitan el tamaño real en papel. Si vienen en 0 o con
+    // letras, el canvas quedaría sin tamaño.
+    const anchoPx = numeroEnRango(form.widthPx, { min: 10, max: 20000, entero: true });
+    if (anchoPx === null) { toast.error('El ancho debe ser un número entero entre 10 y 20000 px'); return; }
 
-    const alto = numeroEnRango(form.heightCm, { min: 1, max: 200 });
-    if (alto === null) { toast.error('El alto debe estar entre 1 y 200 cm'); return; }
+    const altoPx = numeroEnRango(form.heightPx, { min: 10, max: 20000, entero: true });
+    if (altoPx === null) { toast.error('El alto debe ser un número entero entre 10 y 20000 px'); return; }
 
     const precio = numeroEnRango(form.pricePerCopy, { min: 0, max: 1000 });
     if (precio === null) { toast.error('El precio por copia debe ser un número de 0 o más'); return; }
@@ -66,7 +73,8 @@ const ServiciosImpresion = () => {
     const recargo = numeroEnRango(form.colorSurcharge === '' ? 0 : form.colorSurcharge, { min: 0, max: 1000 });
     if (recargo === null) { toast.error('El recargo de color debe ser un número de 0 o más'); return; }
 
-    const datos = { ...form, widthCm: ancho, heightCm: alto, pricePerCopy: precio, colorSurcharge: recargo };
+    const { widthPx, heightPx, ...resto } = form;
+    const datos = { ...resto, widthCm: cmDesdePx(anchoPx), heightCm: cmDesdePx(altoPx), pricePerCopy: precio, colorSurcharge: recargo };
 
     try {
       if (editId) { await printServiceService.updateService(editId, datos); toast.success('Formato actualizado'); }
@@ -102,7 +110,7 @@ const ServiciosImpresion = () => {
             renderRow={(item) => (
               <>
                 <td className="py-4 px-4 text-sm text-gray-800">{item.name}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{item.widthCm ?? 21.6} × {item.heightCm ?? 27.9} cm</td>
+                <td className="py-4 px-4 text-sm text-gray-600">{pxDesdeCm(item.widthCm ?? 21.6)} × {pxDesdeCm(item.heightCm ?? 27.9)} px</td>
                 <td className="py-4 px-4 text-sm text-gray-600">${Number(item.pricePerCopy).toFixed(2)}</td>
                 <td className="py-4 px-4 text-sm text-gray-600">{item.allowsColor ? `Sí (+$${Number(item.colorSurcharge || 0).toFixed(2)})` : 'No'}</td>
                 <td className={`py-4 px-4 text-sm font-medium ${item.isActive ? 'text-green-500' : 'text-red-500'}`}>{item.isActive ? 'Activo' : 'Inactivo'}</td>
@@ -138,16 +146,16 @@ const ServiciosImpresion = () => {
                 </div>
                 {/* Medidas de la plantilla: definen la hoja del editor del cliente */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Tamaño de la plantilla (cm)</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Tamaño de la plantilla (px)</label>
                   <div className="flex items-center gap-2">
-                    <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.widthCm} onChange={(e) => setForm({ ...form, widthCm: e.target.value })}
+                    <input type="number" min="10" step="1" onKeyDown={bloquearTeclasNumero} value={form.widthPx} onChange={(e) => setForm({ ...form, widthPx: e.target.value })}
                       className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#00283D]" placeholder="Ancho" />
                     <span className="text-gray-500">×</span>
-                    <input type="number" min="1" step="0.1" onKeyDown={bloquearTeclasNumero} value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
+                    <input type="number" min="10" step="1" onKeyDown={bloquearTeclasNumero} value={form.heightPx} onChange={(e) => setForm({ ...form, heightPx: e.target.value })}
                       className="w-28 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm text-center focus:outline-none focus:border-[#00283D]" placeholder="Alto" />
-                    <span className="text-xs text-gray-400">cm</span>
+                    <span className="text-xs text-gray-400">px</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Ej. DUI 8.5 × 5.4 · Carta 21.6 × 27.9 · A4 21 × 29.7</p>
+                  <p className="text-xs text-gray-400 mt-1">Ej. DUI 1004 × 638 · Carta 2551 × 3295 · A4 2480 × 3508</p>
                 </div>
 
                 <div>

@@ -13,6 +13,7 @@ import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import { calcularPrecioImpresion } from '../utils/precioImpresion';
+import { pxDesdeCm } from '../utils/pxImpresion';
 
 const BROWN = 'var(--marca-600)';
 const BROWN_DARK = 'var(--marca-700)';
@@ -197,7 +198,7 @@ const Impresiones = () => {
                 onClick={() => { setServicioId(s._id); if (!s.allowsColor) setColor(false); }}
               >
                 <span>{s.name}</span>
-                <span style={{ fontSize: 11, color: '#999', fontWeight: 500 }}>{s.widthCm} × {s.heightCm} cm</span>
+                <span style={{ fontSize: 11, color: '#999', fontWeight: 500 }}>{pxDesdeCm(s.widthCm)} × {pxDesdeCm(s.heightCm)} px</span>
                 <span style={{ fontSize: 12, color: '#888', fontWeight: 500 }}>${Number(s.pricePerCopy).toFixed(2)}/copia</span>
                 {/* El motivo va DENTRO de la tarjeta, no en un aviso aparte:
                     se lee justo donde la persona está mirando y decidiendo. */}

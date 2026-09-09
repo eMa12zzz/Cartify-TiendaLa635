@@ -1,23 +1,35 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 
 /*
  * usePrintComposer — el "cerebro" del editor de impresiones.
  *
- * El cliente arma su hoja: sube varias imágenes y las acomoda como quiera
- * dentro de la plantilla (el formato elegido define la proporción real).
- * Soporta VARIAS PÁGINAS.
+ * La hoja es SIEMPRE tamaño carta (o el formato elegido, si es más grande que
+ * una carta — un póster no cabe tiled). Adentro se traza una CUADRÍCULA de
+ * celdas del tamaño exacto del formato elegido (10×10, pasaporte, lo que
+ * sea): tantas columnas y filas como quepan. Cada foto que se sube va a la
+ * siguiente celda vacía y la llena por completo — se recorta lo que sobre,
+ * nunca queda una foto chica flotando en una hoja enorme.
  *
- * Al exportar:
- *   - 1 página  → una imagen PNG de la hoja.
- *   - 2 o más   → un PDF multipágina (jsPDF), con el tamaño real en cm.
+ * ANTES el editor era de posición libre: se subía una foto y quedaba del
+ * tamaño de la HOJA (10×10 si el formato era 10×10), así que imprimir tres
+ * fotitos de carnet gastaba tres hojas enteras. Ahora esas tres fotos caen en
+ * tres celdas de la MISMA hoja carta, como en una tira de fotomatón.
  *
- * Coordenadas: se guardan en FRACCIONES de la hoja (0 a 1), donde x/y es el
- * CENTRO de la imagen y w su ancho. Así lo que se ve en pantalla y lo que se
- * dibuja en el canvas final coinciden exactamente, sin importar el zoom.
+ * Soporta VARIAS PÁGINAS: al llenarse la cuadrícula de una, la siguiente foto
+ * abre una página nueva sola.
+ *
+ * Al exportar sale un PDF (jsPDF), con el tamaño real de la hoja en cm.
  */
 
 const DPI = 300;             // calidad de impresión
-const MAX_LADO_PX = 4000;    // tope para que un póster no reviente la memoria
+const MAX_LADO_PX = 4000;    // tope para que una hoja grande no reviente la memoria
+
+// Papel carta: el que carga la impresora cuando el formato elegido es más
+// chico que una hoja entera (10×10, pasaporte...). Un formato más grande que
+// esto (un póster) manda su propio tamaño: no tiene sentido "tilear" algo que
+// ya es más grande que el papel de siempre.
+const CARTA_ANCHO_CM = 21.6;
+const CARTA_ALTO_CM = 27.9;
 
 // Carga una imagen y espera a que esté lista (para dibujarla en el canvas).
 const cargarImagen = (src) =>
@@ -29,145 +41,179 @@ const cargarImagen = (src) =>
   });
 
 export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
-  const [paginas, setPaginas] = useState([{ id: 1, items: [] }]);
+  /*
+   * La cuadrícula: cuántas celdas de `widthCm × heightCm` caben en una hoja
+   * carta. Un formato más grande que la carta en cualquier lado se queda con
+   * SU propio tamaño de hoja y una sola celda — así un póster de 40×60 sigue
+   * ocupando su hoja completa, como antes.
+   */
+  const { columnas, filas, celdasPorHoja, hojaAnchoCm, hojaAltoCm } = useMemo(() => {
+    const cabeEnCarta = widthCm <= CARTA_ANCHO_CM && heightCm <= CARTA_ALTO_CM;
+    const anchoHoja = cabeEnCarta ? CARTA_ANCHO_CM : widthCm;
+    const altoHoja = cabeEnCarta ? CARTA_ALTO_CM : heightCm;
+    const cols = Math.max(1, Math.floor(anchoHoja / widthCm));
+    const fils = Math.max(1, Math.floor(altoHoja / heightCm));
+    return { columnas: cols, filas: fils, celdasPorHoja: cols * fils, hojaAnchoCm: anchoHoja, hojaAltoCm: altoHoja };
+  }, [widthCm, heightCm]);
+
+  // Cada página es un arreglo de `celdasPorHoja` casillas: null (vacía) o
+  // { id, src }. El índice EN el arreglo es la posición en la cuadrícula.
+  const celdaVacia = () => Array(celdasPorHoja).fill(null);
+  const [paginas, setPaginas] = useState([{ id: 'pagina-0', celdas: celdaVacia() }]);
   const [paginaActiva, setPaginaActiva] = useState(0);
-  const [seleccionado, setSeleccionado] = useState(null);
+  const [seleccionado, setSeleccionado] = useState(null); // { pagina, celda } o null
   const idRef = useRef(100);
   const nuevoId = () => ++idRef.current;
 
-  // Aplica un cambio a un item de la página activa.
-  const editarItem = useCallback((itemId, cambios) => {
-    setPaginas((prev) =>
-      prev.map((pag, i) =>
-        i !== paginaActiva
-          ? pag
-          : { ...pag, items: pag.items.map((it) => (it.id === itemId ? { ...it, ...cambios } : it)) }
-      )
-    );
-  }, [paginaActiva]);
+  /*
+   * Si cambia el formato (otro `widthCm`/`heightCm`, ej. el cliente elige
+   * "10x10" después de haber estado en "Carta"), la cuadrícula cambia de
+   * forma y las páginas viejas se vuelven a empezar.
+   *
+   * Sin esto, la primera página se quedaba con el tamaño de cuando el
+   * composer se montó por primera vez —`useState` solo lee su valor inicial
+   * UNA vez, en el montaje— y las páginas siguientes sí usaban el tamaño
+   * nuevo: la hoja 1 tenía una sola celda y la 2 en adelante tenían cuatro,
+   * así que las fotos se repartían torcido y sobraban páginas.
+   */
+  const celdasPorHojaAnterior = useRef(celdasPorHoja);
+  if (celdasPorHojaAnterior.current !== celdasPorHoja) {
+    celdasPorHojaAnterior.current = celdasPorHoja;
+    setPaginas([{ id: 'pagina-0', celdas: celdaVacia() }]);
+    setPaginaActiva(0);
+    setSeleccionado(null);
+  }
 
-  // Agrega imágenes (varias a la vez) a la página activa, escalonadas.
+  // Agrega imágenes: cada una cae en la SIGUIENTE celda vacía, empezando por
+  // la página activa. Si no queda ninguna, se abren páginas nuevas solas.
+  /*
+   * El id de una página nueva se saca de `copia.length` (dónde va a quedar en
+   * el arreglo) y no de un contador aparte: en StrictMode React invoca dos
+   * veces la función que se le pasa a setPaginas para detectar justo esto —
+   * un efecto secundario ahí adentro (un contador que avanza, una URL de
+   * blob que se crea) se duplica en cada invocación y la hoja terminaba con
+   * el doble de páginas de las que tocaban. `copia.length` da el MISMO
+   * resultado las dos veces porque depende solo del estado de entrada.
+   */
+  const idDePagina = (indice) => `pagina-${indice}`;
+
+  // A dónde saltar después de acomodar: se calcula DENTRO del cálculo puro de
+  // abajo y se lee aquí, ya afuera, para no llamar a otro setState desde
+  // dentro del actualizador de setPaginas.
+  const paginaDestino = useRef(0);
+
   const agregarImagenes = useCallback((files) => {
     const lista = Array.from(files || []).filter((f) => f.type.startsWith('image/'));
     if (lista.length === 0) return;
 
-    setPaginas((prev) =>
-      prev.map((pag, i) => {
-        if (i !== paginaActiva) return pag;
-        const nuevos = lista.map((file, k) => {
-          const n = pag.items.length + k;
-          return {
-            id: nuevoId(),
-            src: URL.createObjectURL(file),
-            // Escalonamos un poquito para que no queden una encima de otra.
-            x: 0.5 + ((n % 3) - 1) * 0.12,
-            y: 0.5 + (Math.floor(n / 3) % 3 - 1) * 0.12,
-            w: 0.45,
-            rot: 0,
-          };
-        });
-        return { ...pag, items: [...pag.items, ...nuevos] };
-      })
-    );
-  }, [paginaActiva]);
+    // Los ids y las URLs de objeto se generan UNA vez, aquí afuera — nunca
+    // dentro del actualizador de setPaginas. Ver la nota de arriba.
+    const nuevas = lista.map((file) => ({ id: nuevoId(), src: URL.createObjectURL(file) }));
 
-  // Mover (recibe la posición nueva en fracciones, la limitamos a la hoja).
-  const mover = useCallback((itemId, x, y) => {
-    const clamp = (v) => Math.min(1.1, Math.max(-0.1, v));
-    editarItem(itemId, { x: clamp(x), y: clamp(y) });
-  }, [editarItem]);
+    setPaginas((prev) => {
+      const copia = prev.map((p) => ({ ...p, celdas: [...p.celdas] }));
+      let pag = paginaActiva;
 
-  const escalar = useCallback((itemId, factor) => {
-    setPaginas((prev) =>
-      prev.map((pag, i) =>
-        i !== paginaActiva
-          ? pag
-          : {
-              ...pag,
-              items: pag.items.map((it) =>
-                it.id === itemId ? { ...it, w: Math.min(2, Math.max(0.05, it.w * factor)) } : it
-              ),
-            }
-      )
-    );
-  }, [paginaActiva]);
+      for (const nueva of nuevas) {
+        // Busca la siguiente celda vacía desde `pag`, abriendo páginas si hace falta.
+        while (true) {
+          if (pag >= copia.length) copia.push({ id: idDePagina(copia.length), celdas: celdaVacia() });
+          const libre = copia[pag].celdas.findIndex((c) => c === null);
+          if (libre !== -1) {
+            copia[pag].celdas[libre] = nueva;
+            paginaDestino.current = pag;
+            break;
+          }
+          pag++;
+        }
+      }
+      return copia;
+    });
+    // La vista salta a donde cayó la última foto agregada: si abrió una
+    // página nueva, quien sube las fotos quiere verla, no seguir mirando la
+    // que ya se llenó.
+    setPaginaActiva(paginaDestino.current);
+  }, [paginaActiva, celdasPorHoja]);
 
-  const rotar = useCallback((itemId, grados) => {
+  // Quita la foto de una celda (la celda queda vacía, no desaparece de la cuadrícula).
+  const eliminar = useCallback((paginaIdx, celdaIdx) => {
     setPaginas((prev) =>
-      prev.map((pag, i) =>
-        i !== paginaActiva
-          ? pag
-          : { ...pag, items: pag.items.map((it) => (it.id === itemId ? { ...it, rot: (it.rot || 0) + grados } : it)) }
-      )
-    );
-  }, [paginaActiva]);
-
-  // Duplicar: útil para repetir la misma foto varias veces en la hoja (ej. DUI).
-  const duplicar = useCallback((itemId) => {
-    setPaginas((prev) =>
-      prev.map((pag, i) => {
-        if (i !== paginaActiva) return pag;
-        const original = pag.items.find((it) => it.id === itemId);
-        if (!original) return pag;
-        return {
-          ...pag,
-          items: [...pag.items, { ...original, id: nuevoId(), x: Math.min(0.95, original.x + 0.08), y: Math.min(0.95, original.y + 0.08) }],
-        };
-      })
-    );
-  }, [paginaActiva]);
-
-  const eliminar = useCallback((itemId) => {
-    setPaginas((prev) =>
-      prev.map((pag, i) => (i !== paginaActiva ? pag : { ...pag, items: pag.items.filter((it) => it.id !== itemId) }))
+      prev.map((p, i) => (i !== paginaIdx ? p : { ...p, celdas: p.celdas.map((c, j) => (j === celdaIdx ? null : c)) }))
     );
     setSeleccionado(null);
-  }, [paginaActiva]);
+  }, []);
 
-  // Traer al frente = mandarlo al final del arreglo (se dibuja encima).
-  const traerAlFrente = useCallback((itemId) => {
-    setPaginas((prev) =>
-      prev.map((pag, i) => {
-        if (i !== paginaActiva) return pag;
-        const item = pag.items.find((it) => it.id === itemId);
-        if (!item) return pag;
-        return { ...pag, items: [...pag.items.filter((it) => it.id !== itemId), item] };
-      })
-    );
-  }, [paginaActiva]);
+  // Duplica una foto en la siguiente celda vacía — la manera de repetir un
+  // documento (un DUI, un pasaporte) varias veces en la misma hoja.
+  const duplicar = useCallback((paginaIdx, celdaIdx) => {
+    const origen = paginas[paginaIdx]?.celdas[celdaIdx];
+    if (!origen) return;
+    const copiaId = nuevoId();
+
+    setPaginas((prev) => {
+      const copia = prev.map((p) => ({ ...p, celdas: [...p.celdas] }));
+      let pag = paginaIdx;
+      while (true) {
+        if (pag >= copia.length) copia.push({ id: idDePagina(copia.length), celdas: celdaVacia() });
+        const libre = copia[pag].celdas.findIndex((c) => c === null);
+        if (libre !== -1) {
+          copia[pag].celdas[libre] = { id: copiaId, src: origen.src };
+          break;
+        }
+        pag++;
+      }
+      return copia;
+    });
+  }, [paginas]);
 
   const agregarPagina = useCallback(() => {
     setPaginas((prev) => {
-      const nueva = [...prev, { id: nuevoId(), items: [] }];
-      setPaginaActiva(nueva.length - 1);
-      return nueva;
+      paginaDestino.current = prev.length;
+      return [...prev, { id: idDePagina(prev.length), celdas: celdaVacia() }];
     });
+    setPaginaActiva(paginaDestino.current);
     setSeleccionado(null);
-  }, []);
+  }, [celdasPorHoja]);
 
   const eliminarPagina = useCallback((indice) => {
     setPaginas((prev) => {
       if (prev.length === 1) return prev; // siempre queda al menos una
-      const nuevas = prev.filter((_, i) => i !== indice);
-      setPaginaActiva((act) => Math.max(0, Math.min(act, nuevas.length - 1)));
-      return nuevas;
+      return prev.filter((_, i) => i !== indice);
     });
+    // Afuera del actualizador de arriba, por la misma razón que paginaDestino:
+    // no encadenar otro setState desde dentro de uno.
+    setPaginaActiva((act) => Math.max(0, act > indice ? act - 1 : act));
     setSeleccionado(null);
   }, []);
 
-  // Dibuja una página completa en un canvas a resolución de impresión.
+  /*
+   * Dibuja una página completa en un canvas a resolución de impresión. Cada
+   * celda se llena a lo "cubrir" (como object-fit: cover): se recorta lo que
+   * sobre del lado más largo, nunca queda un borde en blanco.
+   */
   const renderPagina = async (pagina) => {
     const pxPorCm = DPI / 2.54;
-    let W = Math.round(widthCm * pxPorCm);
-    let H = Math.round(heightCm * pxPorCm);
+    let W = Math.round(hojaAnchoCm * pxPorCm);
+    let H = Math.round(hojaAltoCm * pxPorCm);
+    let escalaHoja = 1;
 
-    // Si la hoja es enorme (pósters), bajamos proporcionalmente.
     const mayor = Math.max(W, H);
     if (mayor > MAX_LADO_PX) {
-      const f = MAX_LADO_PX / mayor;
-      W = Math.round(W * f);
-      H = Math.round(H * f);
+      escalaHoja = MAX_LADO_PX / mayor;
+      W = Math.round(W * escalaHoja);
+      H = Math.round(H * escalaHoja);
     }
+
+    /*
+     * El tamaño de CADA celda en píxeles, calculado de su medida real en cm
+     * —no de W/columnas—. Dividir el ancho de la hoja entre las columnas
+     * estira cada celda para llenar hasta el último milímetro, y una celda
+     * de 10×10 en una hoja de 21.6×27.9 con 2 columnas y 2 filas quedaba de
+     * 10.8×13.95: un rectángulo, no el cuadrado que se pidió. Lo que sobra
+     * de la hoja se queda en blanco, como el margen de una hoja de verdad.
+     */
+    const celdaWpx = widthCm * pxPorCm * escalaHoja;
+    const celdaHpx = heightCm * pxPorCm * escalaHoja;
 
     const canvas = document.createElement('canvas');
     canvas.width = W;
@@ -176,14 +222,25 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    for (const it of pagina.items) {
-      const img = await cargarImagen(it.src);
-      const w = it.w * W;
-      const h = w * (img.naturalHeight / img.naturalWidth);
+    for (let i = 0; i < pagina.celdas.length; i++) {
+      const celda = pagina.celdas[i];
+      if (!celda) continue;
+      const col = i % columnas;
+      const fil = Math.floor(i / columnas);
+      const img = await cargarImagen(celda.src);
+
+      // Escala "cubrir": el lado que sobra se recorta, nunca queda margen.
+      const escala = Math.max(celdaWpx / img.naturalWidth, celdaHpx / img.naturalHeight);
+      const wDibujo = img.naturalWidth * escala;
+      const hDibujo = img.naturalHeight * escala;
+      const x = col * celdaWpx + (celdaWpx - wDibujo) / 2;
+      const y = fil * celdaHpx + (celdaHpx - hDibujo) / 2;
+
       ctx.save();
-      ctx.translate(it.x * W, it.y * H);
-      ctx.rotate(((it.rot || 0) * Math.PI) / 180);
-      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.beginPath();
+      ctx.rect(col * celdaWpx, fil * celdaHpx, celdaWpx, celdaHpx);
+      ctx.clip();
+      ctx.drawImage(img, x, y, wDibujo, hDibujo);
       ctx.restore();
     }
     return canvas;
@@ -194,30 +251,27 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
     const canvases = [];
     for (const pag of paginas) canvases.push(await renderPagina(pag));
 
-    // Una sola hoja → imagen PNG.
-    if (canvases.length === 1) {
-      const blob = await new Promise((r) => canvases[0].toBlob(r, 'image/png'));
-      return new File([blob], 'impresion.png', { type: 'image/png' });
-    }
-
-    // Varias hojas → PDF con el tamaño real en centímetros.
+    // PDF con el tamaño real de la hoja en centímetros, tenga una o varias.
     const { jsPDF } = await import('jspdf');
-    const orientacion = widthCm > heightCm ? 'landscape' : 'portrait';
-    const doc = new jsPDF({ unit: 'cm', format: [widthCm, heightCm], orientation: orientacion });
+    const orientacion = hojaAnchoCm > hojaAltoCm ? 'landscape' : 'portrait';
+    const doc = new jsPDF({ unit: 'cm', format: [hojaAnchoCm, hojaAltoCm], orientation: orientacion });
     canvases.forEach((c, i) => {
-      if (i > 0) doc.addPage([widthCm, heightCm], orientacion);
-      doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, widthCm, heightCm);
+      if (i > 0) doc.addPage([hojaAnchoCm, hojaAltoCm], orientacion);
+      doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, hojaAnchoCm, hojaAltoCm);
     });
     const blob = doc.output('blob');
     return new File([blob], 'impresion.pdf', { type: 'application/pdf' });
-  }, [paginas, widthCm, heightCm]);
+  }, [paginas, hojaAnchoCm, hojaAltoCm, widthCm, heightCm, columnas, filas]);
 
-  const totalItems = paginas.reduce((a, p) => a + p.items.length, 0);
+  const totalItems = paginas.reduce((a, p) => a + p.celdas.filter(Boolean).length, 0);
 
   return {
     paginas, paginaActiva, setPaginaActiva, seleccionado, setSeleccionado,
-    agregarImagenes, mover, escalar, rotar, duplicar, eliminar, traerAlFrente,
+    agregarImagenes, eliminar, duplicar,
     agregarPagina, eliminarPagina, exportar, totalItems,
-    widthCm, heightCm,
+    // Tamaño de la HOJA (para pintarla) y de cada CELDA (para la cuadrícula).
+    widthCm: hojaAnchoCm, heightCm: hojaAltoCm,
+    celdaAnchoCm: widthCm, celdaAltoCm: heightCm,
+    columnas, filas, celdasPorHoja,
   };
 };
