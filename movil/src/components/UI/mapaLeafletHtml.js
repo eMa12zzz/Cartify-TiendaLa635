@@ -15,6 +15,13 @@
  * mapa o se suelta el pin arrastrado, manda `{lat, lng}` como JSON. Del otro
  * lado, `ModalMapaDireccion` lo recibe en `onMessage` y sigue desde ahí
  * (pide la dirección a Nominatim, etc.) — este archivo no sabe nada de eso.
+ *
+ * El camino inverso (RN → mapa) es `window.marcarPinExterno(lat, lng)`, que
+ * ModalMapaDireccion llama con `injectJavaScript` cuando la posición cambió
+ * por el botón de "Dirección actual" en vez de un toque: el GPS lo resuelve
+ * React Native (con expo-location), y el mapa solo necesita enterarse de
+ * dónde quedó el pin para centrarse ahí — no vuelve a avisar la posición
+ * hacia afuera, porque RN ya la tiene.
  * ============================================================
  */
 
@@ -75,6 +82,11 @@ export const crearHtmlMapa = ({ colorPin, centro }) => `<!DOCTYPE html>
       ponerPin(e.latlng.lat, e.latlng.lng);
       avisarPosicion(e.latlng.lat, e.latlng.lng);
     });
+
+    // Ver el comentario grande de arriba: esto lo llama RN, el mapa no lo llama solo.
+    window.marcarPinExterno = function (lat, lng) {
+      ponerPin(lat, lng);
+    };
   </script>
 </body>
 </html>`;

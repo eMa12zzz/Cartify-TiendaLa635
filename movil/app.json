@@ -49,7 +49,13 @@
         }
       ],
       "expo-font",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Se usa para llenar su dirección con su ubicación actual."
+        }
+      ]
     ]
   }
 }

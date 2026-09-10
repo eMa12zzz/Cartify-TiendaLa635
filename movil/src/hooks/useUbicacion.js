@@ -7,10 +7,9 @@
  * — la razón está en el original: la llave de Google del proyecto responde
  * REQUEST_DENIED desde que venció el trial, y Maps exige facturación.
  *
- * No se porta `localizarme` ("usar mi ubicación"): eso pide el GPS del
- * teléfono, que en RN es `expo-location`, una segunda dependencia nueva que
- * no se pidió. El mapa se puede usar tocando y arrastrando el pin igual, sin
- * ese atajo.
+ * `localizarme` ("Dirección actual") pide el GPS del teléfono con
+ * `expo-location`. Si lo niegan o falla, el pin se puede seguir marcando a
+ * mano tocando el mapa — no es el único camino, es un atajo.
  *
  * Nominatim pide no bombardearlo: por eso solo se consulta cuando se suelta
  * el pin (el mensaje que manda el mapa embebido en `ModalMapaDireccion`),
@@ -27,6 +26,7 @@
  */
 
 import { useState } from 'react';
+import * as Location from 'expo-location';
 
 // San Salvador: dónde abre el mapa si todavía no hay un pin puesto.
 export const CENTRO_POR_DEFECTO = { lat: 13.6929, lng: -89.2182 };
@@ -58,6 +58,7 @@ export const useUbicacion = () => {
   const [posicion, setPosicion] = useState(null);
   const [direccion, setDireccion] = useState('');
   const [buscando, setBuscando] = useState(false);
+  const [localizando, setLocalizando] = useState(false);
   const [avisoGeocod, setAvisoGeocod] = useState('');
 
   // Mueve el pin y trae la dirección de ese punto.
@@ -80,5 +81,39 @@ export const useUbicacion = () => {
     }
   };
 
-  return { posicion, direccion, setDireccion, buscando, avisoGeocod, marcarEn };
+  /*
+   * "Dirección actual". A diferencia del navegador (que ya pregunta el
+   * permiso solo), acá hay que pedirlo a mano con expo-location antes de
+   * poder leer el GPS.
+   */
+  const localizarme = async () => {
+    setLocalizando(true);
+    setAvisoGeocod('');
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setAvisoGeocod('No nos dio permiso de ubicarlo. Puede marcar el pin en el mapa.');
+        return;
+      }
+      const posicionGps = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      await marcarEn({ lat: posicionGps.coords.latitude, lng: posicionGps.coords.longitude });
+    } catch {
+      setAvisoGeocod('No pudimos ubicarlo. Pruebe marcando el pin en el mapa.');
+    } finally {
+      setLocalizando(false);
+    }
+  };
+
+  return {
+    posicion,
+    direccion,
+    setDireccion,
+    buscando,
+    localizando,
+    avisoGeocod,
+    marcarEn,
+    localizarme,
+  };
 };
