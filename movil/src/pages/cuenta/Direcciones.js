@@ -214,6 +214,7 @@ const Direcciones = ({ alVolver }) => {
           alCerrar={() => setMostrarMapa(false)}
           alGuardar={agregar}
           guardando={guardando}
+          conBarraFlotante
         />
       )}
     </View>
