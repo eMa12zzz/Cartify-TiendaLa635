@@ -33,13 +33,13 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Store } from 'lucide-react-native';
+import { ShoppingBag, Store, Trash2 } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import Boton from '../components/UI/Boton';
-import { Basura, Bolsa, ChevronIzquierda, Mas, Menos, Paquete } from '../components/UI/Iconos';
+import { ChevronIzquierda, Mas, Menos, Paquete } from '../components/UI/Iconos';
 import ModalProducto from '../components/Tienda/ModalProducto';
 import { totalDeLinea } from '../utils/catalogo';
 import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
@@ -140,7 +140,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
             accessibilityLabel={`Quitar ${item.nombre} del carrito`}
             style={({ pressed }) => [estilos.botonQuitar, pressed && estilos.botonQuitarPresionado]}
           >
-            <Basura size={14} color={COLORES.textoSuave} />
+            <Trash2 size={14} color={COLORES.textoSuave} />
           </Pressable>
         </View>
       </View>
@@ -179,7 +179,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
         </Pressable>
 
         <View style={estilos.tituloBarra}>
-          <Bolsa size={18} color={COLORES.texto} />
+          <ShoppingBag size={18} color={COLORES.texto} />
           <Text style={estilos.tituloTexto}>Carrito</Text>
           {!vacio && (
             <Text style={estilos.conteo}>
@@ -191,7 +191,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
 
       {vacio ? (
         <View style={estilos.centro}>
-          <Bolsa size={48} color={COLORES.marcador} grosor={1.4} />
+          <ShoppingBag size={48} color={COLORES.marcador} strokeWidth={1.4} />
           <Text style={estilos.vacioTitulo}>Su carrito está vacío</Text>
           <Text style={estilos.vacioTexto}>¡Agregue productos para comenzar!</Text>
           <View style={estilos.botonVacio}>

@@ -38,11 +38,12 @@
  */
 
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Menu } from 'lucide-react-native';
+import { Menu, ShoppingBag } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
-import { Bolsa, Equis, Lupa } from '../UI/Iconos';
+import { Equis, Lupa } from '../UI/Iconos';
+import MarcaTienda from '../UI/MarcaTienda';
 
 const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, alAbrirPasillos }) => {
   const { colores } = useTema();
@@ -58,10 +59,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
         style={({ pressed }) => [estilos.marca, pressed && { backgroundColor: colores.marcaTenue }]}
       >
         <Menu size={19} color="#6B7280" strokeWidth={2.2} />
-        <View>
-          <Text style={estilos.marcaChica}>Tienda</Text>
-          <Text style={estilos.marcaNombre}>la 635</Text>
-        </View>
+        <MarcaTienda tamano={20} />
       </Pressable>
 
       <View style={estilos.acciones}>
@@ -79,7 +77,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
             pressed && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
           ]}
         >
-          <Bolsa size={21} color={COLORES.texto} />
+          <ShoppingBag size={21} color={COLORES.texto} strokeWidth={2.2} />
           {/*
             El contador solo aparece cuando hay algo. Un "0" permanente sobre el
             icono se lee como un error del sistema, no como un carrito vacío.
@@ -160,18 +158,6 @@ const estilos = StyleSheet.create({
     borderRadius: 12,
     // Que no se estire hasta pegarse con el carrito en un nombre largo.
     flexShrink: 1,
-  },
-  marcaChica: {
-    fontSize: 12,
-    color: '#AAAAAA',
-    lineHeight: 15,
-  },
-  marcaNombre: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111111',
-    letterSpacing: -0.5,
-    lineHeight: 24,
   },
   acciones: {
     flexDirection: 'row',

@@ -76,7 +76,7 @@ const Favoritos = ({ alVolver }) => {
               {marcados.length} {marcados.length === 1 ? 'producto guardado' : 'productos guardados'}
             </Text>
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             /*
              * El tope de ancho es lo que arregla la última fila impar: con
              * `flex: 1` a secas, un producto solo abajo se estira a lo ancho de
@@ -87,6 +87,7 @@ const Favoritos = ({ alVolver }) => {
                 producto={item}
                 alVerDetalle={setProductoAbierto}
                 alAgregar={agregarAlCarrito}
+                indice={index}
               />
             </View>
           )}

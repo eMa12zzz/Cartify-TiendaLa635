@@ -19,23 +19,47 @@
  * ============================================================
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Package } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { getPedidosDeCliente } from '../api/pedidosApi';
+// Los estados y su color viven en utils/pasosPedido.js: este historial y
+// ModalPedido necesitan la misma chapa, y ya hubo un bug antes por tenerla
+// copiada en dos archivos que un día dejaron de decir lo mismo.
+import { ESTADOS_PEDIDO as ESTADOS } from '../utils/pasosPedido';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
+import PastillasCategoria from '../components/Tienda/PastillasCategoria';
+import ModalPedido from '../components/Tienda/ModalPedido';
 
-// Los cuatro estados del modelo Order, con el color con el que los pinta la web.
-const ESTADOS = {
-  pagado: { texto: 'Pagado', color: '#2563EB', fondo: '#E8EFFD' },
-  preparando: { texto: 'Preparando', color: '#D97706', fondo: '#FBF0DF' },
-  entregado: { texto: 'Entregado', color: '#16A34A', fondo: '#E4F5EA' },
-  cancelado: { texto: 'Cancelado', color: '#DC2626', fondo: '#FBE7E7' },
+// Las tres ventanas de tiempo del filtro (además de "Todos", que ya resuelve
+// PastillasCategoria). "Semana pasada"/"Mes pasado" son ventanas RODANTES
+// —últimos 7 y últimos 30 días— y no la semana/mes de calendario anterior:
+// es lo que espera alguien que busca "mis pedidos recientes", sin sorpresas
+// por dónde cae el lunes.
+const FILTROS_FECHA = ['Hoy', 'Semana pasada', 'Mes pasado'];
+const DIA_MS = 24 * 60 * 60 * 1000;
+
+const dentroDelFiltro = (iso, filtro) => {
+  if (!filtro) return true;
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return false;
+
+  if (filtro === 'Hoy') {
+    const hoy = new Date();
+    return (
+      fecha.getFullYear() === hoy.getFullYear() &&
+      fecha.getMonth() === hoy.getMonth() &&
+      fecha.getDate() === hoy.getDate()
+    );
+  }
+
+  const limite = filtro === 'Semana pasada' ? 7 * DIA_MS : 30 * DIA_MS;
+  return Date.now() - fecha.getTime() <= limite;
 };
 
 /*
@@ -64,11 +88,16 @@ const fechaCorta = (iso) => {
  */
 const numeroCorto = (id) => String(id || '').slice(-6).toUpperCase();
 
-const TarjetaPedido = ({ pedido }) => {
+const TarjetaPedido = ({ pedido, alPresionar }) => {
   const estado = ESTADOS[pedido.status] || ESTADOS.pagado;
 
   return (
-    <View style={estilos.tarjeta}>
+    <Pressable
+      onPress={alPresionar}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver el detalle del pedido ${numeroCorto(pedido._id)}`}
+      style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
+    >
       <View style={estilos.cabecera}>
         <View style={estilos.identidad}>
           <Text style={estilos.numero}>Pedido #{numeroCorto(pedido._id)}</Text>
@@ -114,7 +143,7 @@ const TarjetaPedido = ({ pedido }) => {
         )}
         <Text style={estilos.total}>Total: ${Number(pedido.total).toFixed(2)}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -125,6 +154,19 @@ const Pedidos = () => {
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [filtro, setFiltro] = useState(null); // null = "Todos"
+  const [pedidoAbierto, setPedidoAbierto] = useState(null);
+
+  // El más nuevo arriba, sin depender de en qué orden lo haya mandado el
+  // servidor — mismo criterio defensivo que ya usa PedidoActivoContext para
+  // elegir el pedido en curso.
+  const pedidosFiltrados = useMemo(
+    () =>
+      pedidos
+        .filter((p) => dentroDelFiltro(p.createdAt, filtro))
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
+    [pedidos, filtro]
+  );
 
   // Los pedidos son de un CLIENTE. El personal entra por la misma puerta, y
   // preguntar por los pedidos de un id de empleado devuelve una lista vacía que
@@ -166,10 +208,21 @@ const Pedidos = () => {
         <Text style={estilos.titulo}>Mis pedidos</Text>
         {!cargando && !error && pedidos.length > 0 && (
           <Text style={estilos.conteo}>
-            {pedidos.length} {pedidos.length === 1 ? 'pedido' : 'pedidos'}
+            {pedidosFiltrados.length} {pedidosFiltrados.length === 1 ? 'pedido' : 'pedidos'}
           </Text>
         )}
       </View>
+
+      {!cargando && !error && pedidos.length > 0 && (
+        // El View envolvente no es decoración: PastillasCategoria es un
+        // ScrollView sin alto propio, y un ScrollView suelto dentro de un
+        // padre flex:1 se estira a ocupar el espacio libre en vez de
+        // encogerse a su contenido — el mismo View que ya lo envuelve en
+        // Inicio.js es lo que evita eso ahí.
+        <View>
+          <PastillasCategoria categorias={FILTROS_FECHA} seleccionada={filtro} alSeleccionar={setFiltro} />
+        </View>
+      )}
 
       {cargando ? (
         <View style={estilos.centro}>
@@ -197,13 +250,26 @@ const Pedidos = () => {
             Cuando compre en la tienda, sus pedidos van a aparecer aquí.
           </Text>
         </View>
+      ) : pedidosFiltrados.length === 0 ? (
+        // Un vacío distinto: sí ha comprado, solo que no en este período.
+        <View style={estilos.centro}>
+          <Package size={38} color={COLORES.marcador} strokeWidth={1.5} />
+          <Text style={estilos.vacioTitulo}>Nada por aquí</Text>
+          <Text style={estilos.vacioTexto}>No tiene pedidos en ese período.</Text>
+        </View>
       ) : (
         <FlatList
-          data={pedidos}
+          data={pedidosFiltrados}
           keyExtractor={(p) => String(p._id)}
           contentContainerStyle={estilos.lista}
-          renderItem={({ item }) => <TarjetaPedido pedido={item} />}
+          renderItem={({ item }) => (
+            <TarjetaPedido pedido={item} alPresionar={() => setPedidoAbierto(item)} />
+          )}
         />
+      )}
+
+      {pedidoAbierto && (
+        <ModalPedido pedido={pedidoAbierto} alCerrar={() => setPedidoAbierto(null)} />
       )}
     </View>
   );
@@ -279,6 +345,10 @@ const estilos = StyleSheet.create({
     borderRadius: 14,
     padding: 15,
     gap: 12,
+  },
+  tarjetaPresionada: {
+    transform: [{ scale: 0.98 }],
+    borderColor: COLORES.lineaCard,
   },
   cabecera: {
     flexDirection: 'row',

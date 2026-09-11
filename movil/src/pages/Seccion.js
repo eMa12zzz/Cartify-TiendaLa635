@@ -54,9 +54,9 @@ const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
         numColumns={2}
         columnWrapperStyle={estilos.fila}
         contentContainerStyle={estilos.lista}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View style={estilos.celda}>
-            <TarjetaProducto producto={item} alVerDetalle={alVerDetalle} alAgregar={alAgregar} />
+            <TarjetaProducto producto={item} alVerDetalle={alVerDetalle} alAgregar={alAgregar} indice={index} />
           </View>
         )}
       />

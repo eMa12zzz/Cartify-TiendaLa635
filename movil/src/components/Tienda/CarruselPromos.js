@@ -34,10 +34,15 @@ const SEPARACION = 12;
 // Cuánto asoma la siguiente. Es el aviso de que el carrusel sigue.
 const ASOMO = 34;
 
+// Ancho del punto en reposo y de la píldora activa.
+const ANCHO_PUNTO = 8;
+const ANCHO_PILDORA = 22;
+
 const CarruselPromos = ({ promos, alElegirPromo }) => {
   const { colores } = useTema();
   const [activa, setActiva] = useState(0);
   const [anchoPantalla, setAnchoPantalla] = useState(Dimensions.get('window').width);
+  const scrollRef = useRef(null);
 
   const unaSola = promos.length === 1;
   /*
@@ -63,24 +68,45 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
   );
 
   /*
+   * Saltar a una promoción desde su punto. La marca activa se actualiza al
+   * toque —no hay que esperar a que el scroll termine para ver cuál se
+   * eligió— y el scroll la sigue.
+   */
+  const irA = useCallback(
+    (i) => {
+      setActiva(i);
+      scrollRef.current?.scrollTo({ x: i * paso, animated: true });
+    },
+    [paso]
+  );
+
+  /*
    * El ancho de cada punto, animado con Animated en vez de LayoutAnimation:
    * esta última no se anima de forma confiable con la New Architecture
    * encendida en Android (app.json trae newArchEnabled), que es la misma
    * razón por la que el resto de la app (Asistente.js, AvisoContext.js) ya
    * usa Animated y no LayoutAnimation para esto.
+   *
+   * Va con `useNativeDriver: false` a propósito, aunque pierda algún frame:
+   * el ancho es lo único que dibuja bien las puntas redondeadas de la
+   * píldora en cualquier tamaño intermedio. Animar con `transform: scaleX`
+   * corre en el hilo nativo y no tiembla, pero el `borderRadius` no se
+   * escala junto con el transform —se estira igual que el resto de la
+   * caja— y la píldora terminaba con las puntas ovaladas en vez de
+   * redondas. Entre una animación perfecta y una forma correcta, gana la
+   * forma.
    */
   const anchosPuntos = useRef([]).current;
   if (anchosPuntos.length !== promos.length) {
     anchosPuntos.length = 0;
-    promos.forEach((_, i) => anchosPuntos.push(new Animated.Value(i === activa ? 22 : 8)));
+    promos.forEach((_, i) => anchosPuntos.push(new Animated.Value(i === activa ? ANCHO_PILDORA : ANCHO_PUNTO)));
   }
 
   useEffect(() => {
     const animaciones = anchosPuntos.map((valor, i) =>
       Animated.timing(valor, {
-        toValue: i === activa ? 22 : 8,
+        toValue: i === activa ? ANCHO_PILDORA : ANCHO_PUNTO,
         duration: 220,
-        // El ancho no se puede animar con el driver nativo.
         useNativeDriver: false,
       })
     );
@@ -93,6 +119,7 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
   return (
     <View style={estilos.seccion} onLayout={alMedir}>
       <ScrollView
+        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={paso}
@@ -125,21 +152,28 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
         Los puntos. Solo tienen sentido si hay más de una: con una sola, un
         punto suelto abajo parece un adorno sin explicación.
 
-        Son indicadores, no controles — por eso no se tocan. En la web sí se
-        puede hacer clic, pero ahí el carrusel avanza solo y hace falta poder
-        saltar; aquí el dedo ya llega a la tarjeta directamente.
+        Se ven de 8px pero se tocan de bastante más (hitSlop): igual que en
+        la web, donde el botón es alto y transparente y adentro va la rayita.
       */}
       {!unaSola && (
         <View style={estilos.puntos}>
           {promos.map((promo, i) => (
-            <Animated.View
+            <Pressable
               key={promo._id}
-              style={[
-                estilos.punto,
-                { width: anchosPuntos[i] },
-                i === activa && { backgroundColor: colores.marcaOscuro },
-              ]}
-            />
+              onPress={() => irA(i)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={`Ir a la promoción ${i + 1}`}
+              accessibilityState={{ selected: i === activa }}
+            >
+              <Animated.View
+                style={[
+                  estilos.punto,
+                  { width: anchosPuntos[i] },
+                  i === activa && { backgroundColor: colores.marcaOscuro },
+                ]}
+              />
+            </Pressable>
           ))}
         </View>
       )}
