@@ -153,9 +153,9 @@ const Inicio = ({ irACarrito, irASeccion }) => {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={estilos.filaDestacados}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <View style={estilos.celdaDestacado}>
-                <TarjetaProducto producto={item} alVerDetalle={verDetalle} alAgregar={agregarAlCarrito} />
+                <TarjetaProducto producto={item} alVerDetalle={verDetalle} alAgregar={agregarAlCarrito} indice={index} />
               </View>
             )}
           />
@@ -261,7 +261,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           ListEmptyComponent={vacio}
           columnWrapperStyle={estilos.fila}
           contentContainerStyle={estilos.lista}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             /*
              * El tope de ancho es lo que arregla la última fila impar. Con
              * `flex: 1` a secas —que es lo que la tarjeta necesita para que
@@ -271,7 +271,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
              * está acompañado, así que en las filas completas no cambia nada.
              */
             <View style={estilos.celda}>
-              <TarjetaProducto producto={item} alVerDetalle={verDetalle} alAgregar={agregarAlCarrito} />
+              <TarjetaProducto producto={item} alVerDetalle={verDetalle} alAgregar={agregarAlCarrito} indice={index} />
             </View>
           )}
           // Cierra el teclado al empezar a desplazar: con el teclado abierto se

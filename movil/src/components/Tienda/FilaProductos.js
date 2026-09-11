@@ -54,9 +54,9 @@ const FilaProductos = ({ seccion, alVerTodos, alVerDetalle, alAgregar }) => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={estilos.fila}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View style={estilos.celda}>
-            <TarjetaProducto producto={item} alVerDetalle={alVerDetalle} alAgregar={alAgregar} />
+            <TarjetaProducto producto={item} alVerDetalle={alVerDetalle} alAgregar={alAgregar} indice={index} />
           </View>
         )}
       />
