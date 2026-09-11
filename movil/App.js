@@ -26,10 +26,18 @@
  *                     TemaContext y truena con "useTema debe usarse dentro
  *                     de <TemaProvider>" en cuanto se abre.
  *   FavoritosProvider y TiendaProvider van últimos: usan los anteriores.
+ *   PedidoActivoProvider necesita la sesión (AuthProvider), nada más — va
+ *                     junto a TiendaProvider porque a quien de verdad le
+ *                     importa es a BurbujaPedido, que vive ahí al lado.
  *
  * `FavoritosProvider` manda a la pantalla de entrar con `navegarA` en vez de
  * un `setPantalla` local: no puede recibir la navegación por props porque él
  * envuelve al propio `RootNavigator`, no al revés.
+ *
+ * `BurbujaPedido` va como hermano de `RootNavigator`, no adentro de una
+ * pantalla: así el seguimiento del pedido sigue viéndose al cambiar de
+ * apartado (Tienda, Asistente, Perfil) en vez de desaparecer con la pantalla
+ * en la que se abrió.
  */
 
 import { StatusBar } from 'expo-status-bar';
@@ -43,8 +51,10 @@ import { EdadProvider } from './src/context/EdadContext';
 import { FavoritosProvider } from './src/context/FavoritosContext';
 import { TemaProvider } from './src/context/TemaContext';
 import { TiendaProvider } from './src/context/TiendaContext';
+import { PedidoActivoProvider } from './src/context/PedidoActivoContext';
 import { navegarA } from './src/navigation/navigationRef';
 import RootNavigator from './src/navigation/RootNavigator';
+import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
 
 export default function App() {
   return (
@@ -55,8 +65,11 @@ export default function App() {
             <EdadProvider>
               <FavoritosProvider alPedirSesion={() => navegarA('Login')}>
                 <TiendaProvider>
-                  <StatusBar style="dark" />
-                  <RootNavigator />
+                  <PedidoActivoProvider>
+                    <StatusBar style="dark" />
+                    <RootNavigator />
+                    <BurbujaPedido />
+                  </PedidoActivoProvider>
                 </TiendaProvider>
               </FavoritosProvider>
             </EdadProvider>

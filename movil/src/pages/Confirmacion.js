@@ -34,13 +34,10 @@ import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
 import { useBotonAtras } from '../hooks/useBotonAtras';
+import { pasosDe, indiceDePaso } from '../utils/pasosPedido';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
-
-// Los tres momentos del pedido, los mismos de la web. El primero ya pasó —el
-// pedido acaba de entrar—; los otros dos se quedan apagados hasta que la tienda
-// mueva el estado desde su panel.
-const PASOS = ['Recibida', 'En camino', 'Entregada'];
+import CodigoEntrega from '../components/Tienda/CodigoEntrega';
 
 const fechaLarga = (iso) => {
   try {
@@ -84,6 +81,13 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   const puntosGanados = Number(respuesta?.pointsEarned) || 0;
   const descuento = Number(respuesta?.discount) || 0;
 
+  // Los pasos que le tocan a ESTE pedido: "En camino" solo si es a domicilio.
+  // Antes esta pantalla traía sus tres pasos fijos ("Recibida, En camino,
+  // Entregada") sin importar cómo lo pidieron, así que un retiro en el local
+  // se veía con un paso de reparto que nunca le iba a tocar.
+  const PASOS = pasosDe(pedido.deliveryType);
+  const pasoActual = indiceDePaso(PASOS, pedido.status);
+
   // Los últimos seis del id, en mayúsculas: el mismo número corto que enseña
   // "Mis pedidos", para que sean reconociblemente el mismo pedido.
   const numero = String(pedido._id || '').slice(-6).toUpperCase();
@@ -102,27 +106,44 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
         {/* ── En qué va ── */}
         <View style={estilos.linea}>
           {PASOS.map((paso, i) => {
-            const hecho = i === 0;
+            // Inclusivo (<=), no exclusivo: el paso actual también cuenta
+            // como "hecho" aquí — esta fila no distingue "en curso" de
+            // "completado" con un tercer color, a propósito, para que se lea
+            // igual de simple que en la web (ver EstadoPedido.jsx).
+            const hecho = i <= pasoActual;
             return (
-              <View key={paso} style={estilos.paso}>
+              <View key={paso.id} style={estilos.paso}>
                 <View style={estilos.pasoMarca}>
+                  {/*
+                    La rayita va PRIMERO en el árbol para que el punto se
+                    pinte encima de ella y no al revés. React Native apila por
+                    orden de aparición sin importar `position: absolute`, así
+                    que con el punto primero la raya terminaba tapando la
+                    mitad de los puntos apagados —del mismo tono que ella— y
+                    se veían mordidos en vez de redondos.
+                  */}
+                  {i < PASOS.length - 1 && <View style={estilos.raya} />}
                   <View
                     style={[
                       estilos.punto,
                       hecho ? { backgroundColor: colores.marca } : estilos.puntoApagado,
                     ]}
                   />
-                  {/* La rayita que une con el siguiente. El último no la lleva:
-                      una raya que no llega a ningún lado parece un paso que
-                      falta dibujar. */}
-                  {i < PASOS.length - 1 && <View style={estilos.raya} />}
                 </View>
                 <Text style={[estilos.pasoTexto, hecho && { color: colores.marca, fontWeight: '700' }]}>
-                  {paso}
+                  {paso.label}
                 </Text>
               </View>
             );
           })}
+        </View>
+
+        <View style={estilos.bloqueCodigo}>
+          <CodigoEntrega
+            codigo={pedido.deliveryCode}
+            deliveryType={pedido.deliveryType}
+            estado={pedido.status}
+          />
         </View>
 
         {/* ── Qué llevaba ── */}
@@ -261,6 +282,10 @@ const estilos = StyleSheet.create({
     alignSelf: 'stretch',
     marginTop: 24,
     marginBottom: 4,
+  },
+  bloqueCodigo: {
+    alignSelf: 'stretch',
+    marginTop: 20,
   },
   paso: {
     flex: 1,
