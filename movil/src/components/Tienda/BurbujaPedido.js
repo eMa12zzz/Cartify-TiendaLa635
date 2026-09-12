@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bike, X, ChevronRight, Clock } from 'lucide-react-native';
 import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
@@ -269,6 +269,13 @@ const BurbujaPedido = () => {
     bottom: posicion.bottom,
     width: posicion.left + PEDACITO_VISIBLE + 24,
     height: (encogida ? ANCHO_ENCOGIDA : 52) + 24,
+    // Mismo o más alto que estilos.contenedor (elevation 12, zIndex 900):
+    // sin esto, en Android la píldora sigue ganando el toque en su lugar
+    // ORIGINAL (sin trasladar) del layout aunque su contenido ya se haya
+    // deslizado fuera de la vista — la elevación decide quién responde,
+    // no dónde se ve pintado el contenido.
+    zIndex: 901,
+    elevation: 20,
   };
 
   const estiloPresencia = {
@@ -302,20 +309,18 @@ const BurbujaPedido = () => {
             <Icono size={19} color="#FFFFFF" strokeWidth={2.3} />
           </Pressable>
         </Animated.View>
-        {/* Ver el porqué de este Modal en el comentario grande junto al
+        {/* Ver el porqué de este catcher en el comentario grande junto al
             otro uso, más abajo. */}
         {oculta && (
-          <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => setOculta(false)}>
-            <View style={estilos.capaModalOculto} pointerEvents="box-none">
-              <Pressable
-                onPress={() => { setOculta(false); agrandar(); }}
-                style={estiloCapturaOculta}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel="Mostrar el seguimiento del pedido"
-              />
-            </View>
-          </Modal>
+          <View style={estiloCapturaOculta}>
+            <Pressable
+              onPress={() => { setOculta(false); agrandar(); }}
+              style={estilos.capturaOcultaToque}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Mostrar el seguimiento del pedido"
+            />
+          </View>
         )}
       </>
     );
@@ -441,31 +446,26 @@ const BurbujaPedido = () => {
     </Animated.View>
 
     {/*
-      Por qué un Modal y no solo una capa aparte con más elevación: ya se
-      intentó eso primero (misma esquina, sin el transform de la píldora,
-      con hitSlop, hasta con contenido adentro para que no se aplanara) y el
-      toque SIGUE cayendo en la tarjeta de producto de atrás — con TODO
-      dibujado encima, incluido el color de fondo bien visible en el lugar
-      correcto. La elevación/zIndex no está ganando la negociación de quién
-      responde al toque contra lo que sea que haya debajo en el FlatList.
-      Un Modal transparente abre una VENTANA nativa aparte, por encima de
-      toda la Activity — no compite por elevación con nada, gana siempre.
-      `pointerEvents="box-none"` en el envoltorio dejando pasar el toque a
-      la tienda en el resto de la pantalla; el Pressable de adentro sí lo
-      atrapa donde está, sin transform ni traducción.
+      Un Modal transparente de pantalla completa (probado antes que esto)
+      funcionaba para tocar el pedacito asomado, pero en Android se quedaba
+      comiéndose TODOS los toques de la pantalla mientras la burbuja estaba
+      escondida, sin importar dónde tocara el usuario — ni
+      `pointerEvents:'box-none'` por `style` en su envoltorio lo arregló, y
+      Android trataba la ventana del Modal entera como modal de cualquier
+      forma. Sin Modal, con `zIndex`/`elevation` iguales o más altos que
+      `estilos.contenedor` (ver estiloCapturaOculta), esta capa sí gana la
+      negociación del toque contra el FlatList de atrás.
     */}
     {oculta && (
-      <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => setOculta(false)}>
-        <View style={estilos.capaModalOculto} pointerEvents="box-none">
-          <Pressable
-            onPress={() => { setOculta(false); setAbierta((v) => !v); }}
-            style={estiloCapturaOculta}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Mostrar el seguimiento del pedido"
-          />
-        </View>
-      </Modal>
+      <View style={estiloCapturaOculta}>
+        <Pressable
+          onPress={() => { setOculta(false); setAbierta((v) => !v); }}
+          style={estilos.capturaOcultaToque}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Mostrar el seguimiento del pedido"
+        />
+      </View>
     )}
     </>
   );
@@ -480,11 +480,10 @@ const estilos = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
   },
-  // Toda la pantalla del Modal — pero "box-none" dice que ella misma no
-  // atrapa nada, solo lo hace el Pressable que vive adentro (ver
-  // estiloCapturaOculta). Sin esto, el Modal entero bloquearía la tienda
-  // aunque el usuario toque bien lejos de la burbuja.
-  capaModalOculto: {
+  // El Pressable de adentro llena esta capa; ver estiloCapturaOculta (en el
+  // cuerpo del componente) para su posición, tamaño y elevación reales, y el
+  // comentario grande junto a su uso para por qué no lleva Modal.
+  capturaOcultaToque: {
     flex: 1,
   },
   botonRedondo: {
