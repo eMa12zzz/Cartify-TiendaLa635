@@ -8,14 +8,16 @@
  * fondo que se aclara), y un dropdown anclado en el botón necesitaría medir
  * dónde quedó ese botón en pantalla — más trabajo para el mismo resultado.
  *
- * Elegir un pasillo NO navega a otra pantalla: solo cambia qué deja ver
- * `productosFiltrados` en TiendaContext, igual que en la web — el carrito y
- * la posición en la tienda no se pierden.
+ * Elegir un pasillo NORMAL no navega a otra pantalla: solo cambia qué deja
+ * ver `productosFiltrados` en TiendaContext, igual que en la web — el
+ * carrito y la posición en la tienda no se pierden.
  *
- * Impresiones no aparece en esta lista: pide su propia pantalla (archivo,
- * tamaño, color, páginas) antes de comprar, y esa pantalla todavía no existe
- * en móvil. TiendaContext ya deja `pasillos` filtrado a los de flujo
- * 'estandar' — ver utils/modulos.js.
+ * Impresiones es distinto: pide su propia pantalla (archivo, tamaño, color,
+ * copias) antes de comprar, así que tocarlo NAVEGA en vez de filtrar — mismo
+ * criterio que `abrir()` en `frontend/src/components/Store/MenuTienda.jsx`.
+ * Por eso este componente recibe la lista COMPLETA de módulos (`modulos`,
+ * de TiendaContext) y no la ya filtrada `pasillos`: esa nunca trae los de
+ * flujo propio, y aquí sí hace falta poder listarlos — ver utils/modulos.js.
  * ============================================================
  */
 
@@ -26,7 +28,8 @@ import { Store, Check } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
-import { iconoDeModulo } from '../../utils/modulos';
+import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
+import { navegarA } from '../../navigation/navigationRef';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 
 const Opcion = ({ Icono, texto, activa, colores, onPress }) => (
@@ -48,7 +51,7 @@ const Opcion = ({ Icono, texto, activa, colores, onPress }) => (
   </Pressable>
 );
 
-const MenuPasillos = ({ pasillos, moduloSeleccionado, alElegir, alCerrar }) => {
+const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
   const { colores } = useTema();
   const { bottom } = useSafeAreaInsets();
 
@@ -124,6 +127,14 @@ const MenuPasillos = ({ pasillos, moduloSeleccionado, alElegir, alCerrar }) => {
     cerrarConAnimacion();
   };
 
+  // Impresiones no filtra nada: abre su propia pantalla. Se cierra el menú
+  // primero y LUEGO se navega — al revés se ve la hoja cerrándose encima de
+  // la pantalla nueva.
+  const abrirImpresiones = () => {
+    cerrarConAnimacion();
+    navegarA('Impresiones');
+  };
+
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
@@ -160,14 +171,14 @@ const MenuPasillos = ({ pasillos, moduloSeleccionado, alElegir, alCerrar }) => {
               onPress={() => elegir(null)}
             />
 
-            {pasillos.map((m) => (
+            {modulos.map((m) => (
               <Opcion
                 key={m._id}
                 Icono={iconoDeModulo(m)}
                 texto={m.name}
                 activa={String(moduloSeleccionado) === String(m._id)}
                 colores={colores}
-                onPress={() => elegir(m._id)}
+                onPress={() => (flujoDeModulo(m) === 'impresiones' ? abrirImpresiones() : elegir(m._id))}
               />
             ))}
           </ScrollView>

@@ -38,6 +38,7 @@ import Carrito from '../pages/Carrito';
 import Checkout from '../pages/Checkout';
 import Confirmacion from '../pages/Confirmacion';
 import Seccion from '../pages/Seccion';
+import Impresiones from '../pages/Impresiones';
 import ModalProducto from '../components/Tienda/ModalProducto';
 import TabMenu from './TabMenu';
 
@@ -167,6 +168,13 @@ const SeccionRoute = ({ route, navigation }) => {
   );
 };
 
+// Su propia pantalla del stack, no un pasillo de la tienda: ver el
+// comentario grande en MenuPasillos.js sobre por qué "Impresiones" navega
+// en vez de filtrar.
+const ImpresionesRoute = ({ navigation }) => (
+  <Impresiones alVolver={() => navigation.goBack()} />
+);
+
 const RootNavigator = () => (
   <NavigationContainer ref={navigationRef}>
     <AuthWatcher />
@@ -180,6 +188,7 @@ const RootNavigator = () => (
       <Stack.Screen name="Checkout" component={CheckoutRoute} />
       <Stack.Screen name="Confirmacion" component={ConfirmacionRoute} />
       <Stack.Screen name="Seccion" component={SeccionRoute} />
+      <Stack.Screen name="Impresiones" component={ImpresionesRoute} />
     </Stack.Navigator>
   </NavigationContainer>
 );

@@ -35,6 +35,7 @@ import { useFavoritos } from '../../context/FavoritosContext';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import TarjetaProducto from '../../components/Tienda/TarjetaProducto';
 import ModalProducto from '../../components/Tienda/ModalProducto';
+import { avisarActividad } from '../../utils/actividadUsuario';
 
 const Favoritos = ({ alVolver }) => {
   const { colores } = useTema();
@@ -71,6 +72,7 @@ const Favoritos = ({ alVolver }) => {
           numColumns={2}
           columnWrapperStyle={estilos.fila}
           contentContainerStyle={estilos.lista}
+          onScrollBeginDrag={avisarActividad}
           ListHeaderComponent={
             <Text style={estilos.conteo}>
               {marcados.length} {marcados.length === 1 ? 'producto guardado' : 'productos guardados'}

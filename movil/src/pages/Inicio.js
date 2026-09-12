@@ -47,6 +47,7 @@ import ModalPromo from '../components/Tienda/ModalPromo';
 import MenuPasillos from '../components/Tienda/MenuPasillos';
 import Boton from '../components/UI/Boton';
 import { Equis, Lupa } from '../components/UI/Iconos';
+import { avisarActividad } from '../utils/actividadUsuario';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
@@ -57,6 +58,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
     errorCarga,
     recargar,
     pasillos,
+    todosLosModulos,
     moduloSeleccionado,
     setModuloSeleccionado,
     nombrePasillo,
@@ -261,6 +263,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           ListEmptyComponent={vacio}
           columnWrapperStyle={estilos.fila}
           contentContainerStyle={estilos.lista}
+          onScrollBeginDrag={avisarActividad}
           renderItem={({ item, index }) => (
             /*
              * El tope de ancho es lo que arregla la última fila impar. Con
@@ -307,7 +310,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
       {menuPasillosAbierto && (
         <MenuPasillos
-          pasillos={pasillos}
+          modulos={todosLosModulos}
           moduloSeleccionado={moduloSeleccionado}
           alElegir={setModuloSeleccionado}
           alCerrar={() => setMenuPasillosAbierto(false)}

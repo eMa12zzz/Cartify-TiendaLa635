@@ -44,6 +44,7 @@ import ModalProducto from '../components/Tienda/ModalProducto';
 import { totalDeLinea } from '../utils/catalogo';
 import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
 import { iconoDeModulo } from '../utils/modulos';
+import { avisarActividad } from '../utils/actividadUsuario';
 
 const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, colores }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
@@ -209,6 +210,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
             data={carrito}
             keyExtractor={(item) => item.id}
             contentContainerStyle={estilos.lista}
+            onScrollBeginDrag={avisarActividad}
             ListHeaderComponent={
               <>
                 <View style={estilos.tienda}>
