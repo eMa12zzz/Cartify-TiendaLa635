@@ -1,13 +1,50 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
-import { Equis, Estrella } from '../UI/Iconos';
+import { Equis, Estrella, Paquete } from '../UI/Iconos';
 import { ESTADOS_PEDIDO } from '../../utils/pasosPedido';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
+
+/*
+ * Una fila por producto, con su propio estado de "la imagen no cargó": cada
+ * línea trae su propia foto, así que el fallback es por línea, no por todo
+ * el modal. `item.productId` llega poblado desde el backend (getOrdersByClient
+ * hace populate) con el producto completo, `image` incluida — mismo array de
+ * URLs de Cloudinary que ya usa el catálogo, ver utils/catalogo.js.
+ */
+const FilaProducto = ({ item }) => {
+  const [fallóImagen, setFallóImagen] = useState(false);
+  const imagenBruta = item.productId?.image;
+  const imagen = Array.isArray(imagenBruta) ? imagenBruta[0] : imagenBruta;
+
+  return (
+    <View style={estilos.filaProductoImagen}>
+      <View style={estilos.miniatura}>
+        {imagen && !fallóImagen ? (
+          <Image
+            source={{ uri: imagen }}
+            contentFit="contain"
+            style={estilos.miniaturaImagen}
+            onError={() => setFallóImagen(true)}
+          />
+        ) : (
+          <Paquete size={18} color={COLORES.textoTenue} />
+        )}
+      </View>
+      <Text style={estilos.nombreProducto} numberOfLines={1}>
+        {item.amount}× {item.name || item.productId?.name || 'Producto'}
+      </Text>
+      <Text style={estilos.precioProducto}>
+        ${(Number(item.price) * Number(item.amount)).toFixed(2)}
+      </Text>
+    </View>
+  );
+};
 
 /*
  * ============================================================
@@ -166,14 +203,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               {items.map((item, i) => (
                 // Índice como clave: las líneas del pedido no traen `_id`
                 // propio (el esquema las guarda con `_id: false`).
-                <View key={i} style={estilos.filaProducto}>
-                  <Text style={estilos.nombreProducto} numberOfLines={1}>
-                    {item.amount}× {item.name || item.productId?.name || 'Producto'}
-                  </Text>
-                  <Text style={estilos.precioProducto}>
-                    ${(Number(item.price) * Number(item.amount)).toFixed(2)}
-                  </Text>
-                </View>
+                <FilaProducto key={i} item={item} />
               ))}
               <View style={estilos.separador} />
               <View style={estilos.filaTotal}>
@@ -336,6 +366,28 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  // Fila de producto CON foto (ver FilaProducto, arriba); distinta de
+  // filaProducto porque esa otra la reutiliza "Método de pago" ahí abajo,
+  // sin miniatura, y ese `justifyContent:'space-between'` con solo dos
+  // textos se rompería si le metiéramos una tercera vista en medio.
+  filaProductoImagen: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  miniatura: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#F4F4F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 5,
+  },
+  miniaturaImagen: {
+    width: '100%',
+    height: '100%',
   },
   nombreProducto: {
     flex: 1,

@@ -8,10 +8,10 @@ import { useTema } from '../../context/TemaContext';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
-import { navegarA } from '../../navigation/navigationRef';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
+import ModalPedido from './ModalPedido';
 import { suscribirseAActividad } from '../../utils/actividadUsuario';
 
 /*
@@ -65,6 +65,12 @@ const BurbujaPedido = () => {
    */
   const [oculta, setOculta] = useState(false);
   const [anchoPildora, setAnchoPildora] = useState(0);
+
+  // El detalle completo del pedido (pasos, código, dirección, productos con
+  // foto), el mismo ModalPedido que se abre al tocar una tarjeta en "Mis
+  // pedidos" — antes "Ver el pedido" solo mandaba a esa lista entera y había
+  // que volver a buscarlo ahí.
+  const [verPedido, setVerPedido] = useState(false);
 
   const esCliente = user?.type === 'client';
 
@@ -225,7 +231,7 @@ const BurbujaPedido = () => {
     setAbierta(true);
   };
 
-  const irAPedidos = () => navegarA('Tabs', { screen: 'pedidos' });
+  const irAPedidos = () => setVerPedido(true);
 
   /*
    * Arriba de la píldora flotante, no encima. `ALTURA_BARRA_FLOTANTE` es el
@@ -467,6 +473,8 @@ const BurbujaPedido = () => {
         />
       </View>
     )}
+
+    {verPedido && <ModalPedido pedido={pedido} alCerrar={() => setVerPedido(false)} />}
     </>
   );
 };
