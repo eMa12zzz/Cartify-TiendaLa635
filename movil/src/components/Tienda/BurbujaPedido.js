@@ -238,7 +238,7 @@ const BurbujaPedido = () => {
    */
   const posicion = {
     left: Math.max(20, insets.left),
-    bottom: Math.max(insets.bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE + 12,
+    bottom: Math.max(insets.bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE - 2,
   };
 
   // Ancho fijo cuando está encogida (botonRedondo, 44); medido cuando no
