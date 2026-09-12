@@ -35,6 +35,7 @@ import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import PastillasCategoria from '../components/Tienda/PastillasCategoria';
 import ModalPedido from '../components/Tienda/ModalPedido';
+import { avisarActividad } from '../utils/actividadUsuario';
 
 // Las tres ventanas de tiempo del filtro (además de "Todos", que ya resuelve
 // PastillasCategoria). "Semana pasada"/"Mes pasado" son ventanas RODANTES
@@ -262,6 +263,7 @@ const Pedidos = () => {
           data={pedidosFiltrados}
           keyExtractor={(p) => String(p._id)}
           contentContainerStyle={estilos.lista}
+          onScrollBeginDrag={avisarActividad}
           renderItem={({ item }) => (
             <TarjetaPedido pedido={item} alPresionar={() => setPedidoAbierto(item)} />
           )}

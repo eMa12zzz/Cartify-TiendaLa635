@@ -19,6 +19,7 @@ import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { ChevronIzquierda } from '../components/UI/Iconos';
 import TarjetaProducto from '../components/Tienda/TarjetaProducto';
+import { avisarActividad } from '../utils/actividadUsuario';
 
 const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
   const { colores } = useTema();
@@ -54,6 +55,7 @@ const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
         numColumns={2}
         columnWrapperStyle={estilos.fila}
         contentContainerStyle={estilos.lista}
+        onScrollBeginDrag={avisarActividad}
         renderItem={({ item, index }) => (
           <View style={estilos.celda}>
             <TarjetaProducto producto={item} alVerDetalle={alVerDetalle} alAgregar={alAgregar} indice={index} />

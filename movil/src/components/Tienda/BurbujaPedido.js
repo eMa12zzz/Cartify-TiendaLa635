@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bike, X, ChevronRight, Clock } from 'lucide-react-native';
 import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
@@ -12,6 +12,7 @@ import { navegarA } from '../../navigation/navigationRef';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
+import { suscribirseAActividad } from '../../utils/actividadUsuario';
 
 /*
  * ============================================================
@@ -54,6 +55,17 @@ const BurbujaPedido = () => {
    */
   const [encogidaEn, setEncogidaEn] = useState(null); // { id, novedad }
 
+  /*
+   * Aparte de "encogida" (la decide el cliente, tocando la X): "oculta" la
+   * decide la propia pantalla, cuando el cliente está haciendo otra cosa
+   * —scrolleando, cambiando de pestaña— y la burbuja se corre casi entera
+   * fuera de la pantalla para no estorbar. Un pedacito se queda a la vista a
+   * propósito: sigue ahí, se puede volver a sacar con un toque, y no es un
+   * "cerrar" del todo.
+   */
+  const [oculta, setOculta] = useState(false);
+  const [anchoPildora, setAnchoPildora] = useState(0);
+
   const esCliente = user?.type === 'client';
 
   const enCurso = esCliente
@@ -83,6 +95,17 @@ const BurbujaPedido = () => {
     bucle.start();
     return () => bucle.stop();
   }, [pulso]);
+
+  // 0 = a la vista, 1 = corrida casi entera fuera de pantalla.
+  const desplazamiento = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(desplazamiento, {
+      toValue: oculta ? 1 : 0,
+      duration: oculta ? 260 : 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [oculta, desplazamiento]);
 
   /*
    * El último pedido visto, para seguir pintando algo coherente MIENTRAS la
@@ -114,6 +137,7 @@ const BurbujaPedido = () => {
   useEffect(() => {
     if (hayPedidoActivo) {
       setMontada(true);
+      setOculta(false);
       Animated.spring(presencia, {
         toValue: 1,
         friction: 9,
@@ -132,6 +156,21 @@ const BurbujaPedido = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hayPedidoActivo]);
+
+  /*
+   * Quien avisa "el usuario se movió" no sabe nada de esta burbuja —son
+   * media docena de listas sueltas y la barra de pestañas, ver
+   * utils/actividadUsuario.js—; aquí solo se escucha. Si la tarjeta estaba
+   * abierta se cierra de una vez: no tiene sentido correr 290px de tarjeta
+   * fuera de pantalla, cuando lo que se guarda es la píldora chica.
+   */
+  useEffect(() => {
+    if (!montada) return;
+    return suscribirseAActividad(() => {
+      setAbierta(false);
+      setOculta(true);
+    });
+  }, [montada]);
 
   /*
    * Presencia de la TARJETA (el panel expandido) aparte de la burbuja: se
@@ -202,9 +241,47 @@ const BurbujaPedido = () => {
     bottom: Math.max(insets.bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE + 12,
   };
 
+  // Ancho fijo cuando está encogida (botonRedondo, 44); medido cuando no
+  // (el texto de la píldora cambia — "Preparando", "Ya casi llega"... — así
+  // que su ancho no se puede saber de antemano, hay que preguntarle).
+  const ANCHO_ENCOGIDA = 44;
+  /*
+   * Lo mínimo para que asome el puntito verde y ni una letra del texto — a
+   * ojo contra el dibujo real, no contra la cuenta de paddings de memoria,
+   * que salió corta. La confianza al tocarlo no depende de este número: la
+   * da el hitSlop de abajo, pensado para una tira angosta.
+   */
+  const PEDACITO_VISIBLE = 15;
+  const anchoActual = encogida ? ANCHO_ENCOGIDA : anchoPildora;
+  const maxDesplazamiento = Math.max(anchoActual - PEDACITO_VISIBLE, 0);
+
+  /*
+   * La capa de toque de "oculta" (más abajo) va anclada al borde de la
+   * PANTALLA (left: 0), no a `posicion.left` como el resto de la burbuja.
+   * Ojo con esto: el pedacito visible queda a la IZQUIERDA de
+   * `posicion.left` (ahí es donde termina el filo de la píldora ya
+   * trasladada), no a la derecha — anclarla en `posicion.left` como el resto
+   * dejaba la capa entera tapando el hueco de al lado en vez del filo.
+   */
+  const estiloCapturaOculta = {
+    position: 'absolute',
+    left: 0,
+    bottom: posicion.bottom,
+    width: posicion.left + PEDACITO_VISIBLE + 24,
+    height: (encogida ? ANCHO_ENCOGIDA : 52) + 24,
+  };
+
   const estiloPresencia = {
     opacity: presencia,
-    transform: [{ scale: presencia.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }],
+    transform: [
+      { scale: presencia.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
+      {
+        translateX: desplazamiento.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -maxDesplazamiento],
+        }),
+      },
+    ],
   };
 
   /*
@@ -214,20 +291,38 @@ const BurbujaPedido = () => {
   if (encogida) {
     const Icono = estaEnCamino ? Bike : paso.Icono;
     return (
-      <Animated.View style={[estilos.botonRedondo, posicion, estiloPresencia, { backgroundColor: colores.marca }]}>
-        <Pressable
-          onPress={agrandar}
-          accessibilityRole="button"
-          accessibilityLabel={`Ver su pedido: ${enCamino ? seguimiento.espera : paso.label}`}
-          style={estilos.botonRedondoToque}
-        >
-          <Icono size={19} color="#FFFFFF" strokeWidth={2.3} />
-        </Pressable>
-      </Animated.View>
+      <>
+        <Animated.View style={[estilos.botonRedondo, posicion, estiloPresencia, { backgroundColor: colores.marca }]}>
+          <Pressable
+            onPress={() => { setOculta(false); agrandar(); }}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver su pedido: ${enCamino ? seguimiento.espera : paso.label}`}
+            style={estilos.botonRedondoToque}
+          >
+            <Icono size={19} color="#FFFFFF" strokeWidth={2.3} />
+          </Pressable>
+        </Animated.View>
+        {/* Ver el porqué de este Modal en el comentario grande junto al
+            otro uso, más abajo. */}
+        {oculta && (
+          <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => setOculta(false)}>
+            <View style={estilos.capaModalOculto} pointerEvents="box-none">
+              <Pressable
+                onPress={() => { setOculta(false); agrandar(); }}
+                style={estiloCapturaOculta}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Mostrar el seguimiento del pedido"
+              />
+            </View>
+          </Modal>
+        )}
+      </>
     );
   }
 
   return (
+    <>
     <Animated.View style={[estilos.contenedor, posicion, estiloPresencia]}>
       {tarjetaMontada && (
         <Animated.View
@@ -306,11 +401,20 @@ const BurbujaPedido = () => {
 
       {/* La burbuja: el icono del paso actual y su nombre */}
       <Pressable
-        onPress={() => setAbierta((v) => !v)}
+        onPress={() => { setOculta(false); setAbierta((v) => !v); }}
+        onLayout={(e) => setAnchoPildora(e.nativeEvent.layout.width)}
         accessibilityRole="button"
         accessibilityState={{ expanded: abierta }}
         accessibilityLabel={enCamino ? `Su pedido va en camino. ${seguimiento.espera}` : `Su pedido: ${paso.label}`}
         style={[estilos.botonBurbuja, { backgroundColor: seguimiento.yaCasi ? '#14663A' : colores.marca }]}
+        /*
+         * Generoso arriba y abajo a propósito: la píldora tiene las puntas
+         * totalmente redondeadas (borderRadius 999), así que el filito que
+         * queda a la vista al estar "oculta" se angosta cerca del borde
+         * superior e inferior — sin este margen, tocar un poco fuera del
+         * centro vertical del filo caía fuera de la forma real.
+         */
+        hitSlop={{ top: 22, bottom: 22, left: 10, right: 14 }}
       >
         {estaEnCamino ? (
           <Bike size={19} color="#FFFFFF" strokeWidth={2.2} />
@@ -335,6 +439,35 @@ const BurbujaPedido = () => {
         </View>
       </Pressable>
     </Animated.View>
+
+    {/*
+      Por qué un Modal y no solo una capa aparte con más elevación: ya se
+      intentó eso primero (misma esquina, sin el transform de la píldora,
+      con hitSlop, hasta con contenido adentro para que no se aplanara) y el
+      toque SIGUE cayendo en la tarjeta de producto de atrás — con TODO
+      dibujado encima, incluido el color de fondo bien visible en el lugar
+      correcto. La elevación/zIndex no está ganando la negociación de quién
+      responde al toque contra lo que sea que haya debajo en el FlatList.
+      Un Modal transparente abre una VENTANA nativa aparte, por encima de
+      toda la Activity — no compite por elevación con nada, gana siempre.
+      `pointerEvents="box-none"` en el envoltorio dejando pasar el toque a
+      la tienda en el resto de la pantalla; el Pressable de adentro sí lo
+      atrapa donde está, sin transform ni traducción.
+    */}
+    {oculta && (
+      <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => setOculta(false)}>
+        <View style={estilos.capaModalOculto} pointerEvents="box-none">
+          <Pressable
+            onPress={() => { setOculta(false); setAbierta((v) => !v); }}
+            style={estiloCapturaOculta}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Mostrar el seguimiento del pedido"
+          />
+        </View>
+      </Modal>
+    )}
+    </>
   );
 };
 
@@ -346,6 +479,13 @@ const estilos = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 10,
+  },
+  // Toda la pantalla del Modal — pero "box-none" dice que ella misma no
+  // atrapa nada, solo lo hace el Pressable que vive adentro (ver
+  // estiloCapturaOculta). Sin esto, el Modal entero bloquearía la tienda
+  // aunque el usuario toque bien lejos de la burbuja.
+  capaModalOculto: {
+    flex: 1,
   },
   botonRedondo: {
     position: 'absolute',
