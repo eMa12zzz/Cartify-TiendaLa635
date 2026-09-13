@@ -26,18 +26,58 @@
  * ============================================================
  */
 
+import { useMemo, useState } from 'react';
 import { StyleSheet, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, Package } from 'lucide-react-native';
+import { Bike, Check, Package } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
 import { useBotonAtras } from '../hooks/useBotonAtras';
+import { useSeguimientoEnVivo } from '../hooks/useSeguimientoEnVivo';
 import { pasosDe, indiceDePaso } from '../utils/pasosPedido';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import CodigoEntrega from '../components/Tienda/CodigoEntrega';
+import MapaSeguimiento from '../components/Tienda/MapaSeguimiento';
+
+/*
+ * Una fila por producto, con su propia foto. El pedido que devuelve
+ * `POST /order` no viene con `items.productId` poblado (ver el comentario
+ * grande más arriba: acá se pinta la respuesta cruda del servidor) — así que
+ * la imagen no sale de ahí, sino del catálogo que la tienda YA tiene cargado
+ * en memoria para el listado normal (mismo id de producto, cero peticiones
+ * nuevas y sin tocar el backend).
+ */
+const FilaProducto = ({ item, imagen }) => {
+  const [fallóImagen, setFallóImagen] = useState(false);
+
+  return (
+    <View style={estilos.filaProducto}>
+      <View style={estilos.miniatura}>
+        {imagen && !fallóImagen ? (
+          <Image
+            source={{ uri: imagen }}
+            contentFit="contain"
+            style={estilos.miniaturaImagen}
+            onError={() => setFallóImagen(true)}
+          />
+        ) : (
+          <Package size={19} color={COLORES.marcador} strokeWidth={1.5} />
+        )}
+      </View>
+      <Text style={estilos.nombreProducto} numberOfLines={2}>
+        {item.name || 'Producto'}
+      </Text>
+      <Text style={estilos.cantidad}>×{item.amount}</Text>
+      <Text style={estilos.precio}>
+        ${(Number(item.price) * Number(item.amount)).toFixed(2)}
+      </Text>
+    </View>
+  );
+};
 
 const fechaLarga = (iso) => {
   try {
@@ -58,7 +98,11 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   // Mismo caso que Carrito.js: sin esto "Volver a la tienda" queda debajo de
   // la franja de gestos de Android.
   const { bottom } = useSafeAreaInsets();
-  const { vaciarTrasPedido } = useTienda();
+  const { vaciarTrasPedido, productos } = useTienda();
+  const imagenPorId = useMemo(
+    () => new Map(productos.map((p) => [String(p.id), p.imagen])),
+    [productos]
+  );
 
   /*
    * Cerrar es lo único que se puede hacer desde aquí, así que el carrito se
@@ -81,12 +125,36 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   const puntosGanados = Number(respuesta?.pointsEarned) || 0;
   const descuento = Number(respuesta?.discount) || 0;
 
+  /*
+   * El pedido en sí (productos, subtotal, total, puntos) se queda como llegó
+   * de POST /order a propósito — ver el comentario grande arriba de este
+   * archivo. Pero el ESTADO no: recién hecho el pedido, esta pantalla se
+   * queda abierta un rato (el cliente lee el código, la dirección...), y si
+   * en ese rato la tienda ya lo puso a preparar, mostrar "Recibido" tachado
+   * de pasado es peor que no decir nada — la burbuja de abajo, viendo el
+   * mismo pedido, ya lo diría distinto. Mismo hook y mismo criterio que
+   * BurbujaPedido.js: `seguimiento.estado` manda si contesta, `pedido.status`
+   * de respaldo mientras no ha contestado la primera vez.
+   */
+  const seguimiento = useSeguimientoEnVivo(pedido._id, !!pedido._id);
+  const estado = seguimiento.estado || pedido.status;
+
   // Los pasos que le tocan a ESTE pedido: "En camino" solo si es a domicilio.
   // Antes esta pantalla traía sus tres pasos fijos ("Recibida, En camino,
   // Entregada") sin importar cómo lo pidieron, así que un retiro en el local
   // se veía con un paso de reparto que nunca le iba a tocar.
   const PASOS = pasosDe(pedido.deliveryType);
-  const pasoActual = indiceDePaso(PASOS, pedido.status);
+  const pasoActual = indiceDePaso(PASOS, estado);
+
+  /*
+   * El mapa: la dirección de entrega desde el principio (para que el
+   * cliente vea A DÓNDE se lo van a llevar apenas paga), y el punto del
+   * repartidor solo cuando de verdad va en camino con señal fresca. Mismo
+   * criterio que `SeguimientoConfirmacion.jsx` en la web.
+   */
+  const esDomicilio = pedido.deliveryType === 'delivery';
+  const enCamino = esDomicilio && seguimiento.enVivo;
+  const tieneDestino = esDomicilio && seguimiento.destino?.lat != null && seguimiento.destino?.lng != null;
 
   // Los últimos seis del id, en mayúsculas: el mismo número corto que enseña
   // "Mis pedidos", para que sean reconociblemente el mismo pedido.
@@ -138,11 +206,42 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           })}
         </View>
 
+        {tieneDestino && (
+          <View style={estilos.marcoMapa}>
+            <MapaSeguimiento
+              punto={enCamino ? seguimiento.punto : null}
+              destino={seguimiento.destino}
+              alto={180}
+              colorMarca={colores.marca}
+            />
+            <View style={estilos.infoMapa}>
+              {enCamino ? (
+                <>
+                  <Bike size={15} color={seguimiento.yaCasi ? '#14663A' : '#173F94'} strokeWidth={2.4} />
+                  <Text style={[estilos.infoMapaTexto, { color: seguimiento.yaCasi ? '#14663A' : '#173F94' }]}>
+                    {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
+                    {seguimiento.distancia ? ` · a ${seguimiento.distancia}` : ''}
+                  </Text>
+                </>
+              ) : estado === 'entregado' ? (
+                <>
+                  <Check size={15} color={COLORES.textoSuave} strokeWidth={2.4} />
+                  <Text style={estilos.infoMapaTexto}>Entregado en su dirección</Text>
+                </>
+              ) : (
+                <Text style={estilos.infoMapaTexto}>
+                  Aquí le llevaremos su pedido. En cuanto el repartidor salga, verá su punto moverse.
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+
         <View style={estilos.bloqueCodigo}>
           <CodigoEntrega
             codigo={pedido.deliveryCode}
             deliveryType={pedido.deliveryType}
-            estado={pedido.status}
+            estado={estado}
           />
         </View>
 
@@ -153,18 +252,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           {items.map((item, i) => (
             // La clave es el índice porque las líneas del pedido no tienen id
             // propio (el esquema las guarda con `_id: false`).
-            <View key={i} style={estilos.filaProducto}>
-              <View style={estilos.miniatura}>
-                <Package size={19} color={COLORES.marcador} strokeWidth={1.5} />
-              </View>
-              <Text style={estilos.nombreProducto} numberOfLines={2}>
-                {item.name || 'Producto'}
-              </Text>
-              <Text style={estilos.cantidad}>×{item.amount}</Text>
-              <Text style={estilos.precio}>
-                ${(Number(item.price) * Number(item.amount)).toFixed(2)}
-              </Text>
-            </View>
+            <FilaProducto key={i} item={item} imagen={imagenPorId.get(String(item.productId))} />
           ))}
 
           <View style={estilos.separador} />
@@ -287,6 +375,28 @@ const estilos = StyleSheet.create({
     alignSelf: 'stretch',
     marginTop: 20,
   },
+  marcoMapa: {
+    alignSelf: 'stretch',
+    marginTop: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORES.lineaCard,
+    overflow: 'hidden',
+  },
+  infoMapa: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#F7F7F7',
+  },
+  infoMapaTexto: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: COLORES.textoSuave,
+  },
   paso: {
     flex: 1,
     alignItems: 'center',
@@ -347,6 +457,11 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F7F7F7',
+    padding: 5,
+  },
+  miniaturaImagen: {
+    width: '100%',
+    height: '100%',
   },
   nombreProducto: {
     flex: 1,

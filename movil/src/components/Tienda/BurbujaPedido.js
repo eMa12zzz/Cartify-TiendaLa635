@@ -12,6 +12,7 @@ import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
 import ModalPedido from './ModalPedido';
+import MapaSeguimiento from './MapaSeguimiento';
 import { suscribirseAActividad } from '../../utils/actividadUsuario';
 
 /*
@@ -356,18 +357,36 @@ const BurbujaPedido = () => {
             </View>
 
             {enCamino && (
-              <View style={[estilos.bloqueInfo, { backgroundColor: seguimiento.yaCasi ? '#EFFAF1' : '#F7FAFF' }]}>
-                <View style={estilos.filaIconoTexto}>
-                  <Bike size={15} color={seguimiento.yaCasi ? '#14663A' : '#173F94'} strokeWidth={2.4} />
-                  <Text style={[estilos.infoTitulo, { color: seguimiento.yaCasi ? '#14663A' : '#173F94' }]}>
-                    {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
+              <>
+                {/*
+                  132 de alto, sin borde propio: mismas medidas que la web
+                  para la burbuja (alto={132} borde="transparent"). Va con
+                  margen propio en vez de heredar el `gap` de estilos.cuerpo
+                  porque ese padding es horizontal Y vertical, y el mapa sí
+                  necesita tocar los bordes laterales del bloqueInfo de abajo
+                  para leerse como una sola pieza con él.
+                */}
+                <View style={estilos.marcoMapa}>
+                  <MapaSeguimiento
+                    punto={seguimiento.punto}
+                    destino={seguimiento.destino}
+                    alto={132}
+                    colorMarca={colores.marca}
+                  />
+                </View>
+                <View style={[estilos.bloqueInfo, { backgroundColor: seguimiento.yaCasi ? '#EFFAF1' : '#F7FAFF' }]}>
+                  <View style={estilos.filaIconoTexto}>
+                    <Bike size={15} color={seguimiento.yaCasi ? '#14663A' : '#173F94'} strokeWidth={2.4} />
+                    <Text style={[estilos.infoTitulo, { color: seguimiento.yaCasi ? '#14663A' : '#173F94' }]}>
+                      {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
+                    </Text>
+                  </View>
+                  <Text style={[estilos.infoDetalle, { color: seguimiento.yaCasi ? '#3C7A55' : '#5B76B0' }]}>
+                    {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
+                    {seguimiento.distancia ? `a ${seguimiento.distancia} de su dirección` : 'Le llevan su pedido'}
                   </Text>
                 </View>
-                <Text style={[estilos.infoDetalle, { color: seguimiento.yaCasi ? '#3C7A55' : '#5B76B0' }]}>
-                  {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
-                  {seguimiento.distancia ? `a ${seguimiento.distancia} de su dirección` : 'Le llevan su pedido'}
-                </Text>
-              </View>
+              </>
             )}
 
             {/*
@@ -534,6 +553,13 @@ const estilos = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  // El propio MapaSeguimiento ya recorta sus esquinas (ver su estilo
+  // `marco`); esta vista solo le da el margen lateral que el resto de la
+  // tarjeta trae por padding, ya que el mapa vive FUERA de estilos.cuerpo.
+  marcoMapa: {
+    marginHorizontal: 14,
+    marginTop: 12,
   },
   bloqueInfo: {
     paddingHorizontal: 14,
