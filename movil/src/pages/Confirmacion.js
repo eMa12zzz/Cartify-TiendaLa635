@@ -26,7 +26,9 @@
  * ============================================================
  */
 
+import { useMemo, useState } from 'react';
 import { StyleSheet, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, Package } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
@@ -38,6 +40,42 @@ import { pasosDe, indiceDePaso } from '../utils/pasosPedido';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import CodigoEntrega from '../components/Tienda/CodigoEntrega';
+
+/*
+ * Una fila por producto, con su propia foto. El pedido que devuelve
+ * `POST /order` no viene con `items.productId` poblado (ver el comentario
+ * grande más arriba: acá se pinta la respuesta cruda del servidor) — así que
+ * la imagen no sale de ahí, sino del catálogo que la tienda YA tiene cargado
+ * en memoria para el listado normal (mismo id de producto, cero peticiones
+ * nuevas y sin tocar el backend).
+ */
+const FilaProducto = ({ item, imagen }) => {
+  const [fallóImagen, setFallóImagen] = useState(false);
+
+  return (
+    <View style={estilos.filaProducto}>
+      <View style={estilos.miniatura}>
+        {imagen && !fallóImagen ? (
+          <Image
+            source={{ uri: imagen }}
+            contentFit="contain"
+            style={estilos.miniaturaImagen}
+            onError={() => setFallóImagen(true)}
+          />
+        ) : (
+          <Package size={19} color={COLORES.marcador} strokeWidth={1.5} />
+        )}
+      </View>
+      <Text style={estilos.nombreProducto} numberOfLines={2}>
+        {item.name || 'Producto'}
+      </Text>
+      <Text style={estilos.cantidad}>×{item.amount}</Text>
+      <Text style={estilos.precio}>
+        ${(Number(item.price) * Number(item.amount)).toFixed(2)}
+      </Text>
+    </View>
+  );
+};
 
 const fechaLarga = (iso) => {
   try {
@@ -58,7 +96,11 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   // Mismo caso que Carrito.js: sin esto "Volver a la tienda" queda debajo de
   // la franja de gestos de Android.
   const { bottom } = useSafeAreaInsets();
-  const { vaciarTrasPedido } = useTienda();
+  const { vaciarTrasPedido, productos } = useTienda();
+  const imagenPorId = useMemo(
+    () => new Map(productos.map((p) => [String(p.id), p.imagen])),
+    [productos]
+  );
 
   /*
    * Cerrar es lo único que se puede hacer desde aquí, así que el carrito se
@@ -153,18 +195,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           {items.map((item, i) => (
             // La clave es el índice porque las líneas del pedido no tienen id
             // propio (el esquema las guarda con `_id: false`).
-            <View key={i} style={estilos.filaProducto}>
-              <View style={estilos.miniatura}>
-                <Package size={19} color={COLORES.marcador} strokeWidth={1.5} />
-              </View>
-              <Text style={estilos.nombreProducto} numberOfLines={2}>
-                {item.name || 'Producto'}
-              </Text>
-              <Text style={estilos.cantidad}>×{item.amount}</Text>
-              <Text style={estilos.precio}>
-                ${(Number(item.price) * Number(item.amount)).toFixed(2)}
-              </Text>
-            </View>
+            <FilaProducto key={i} item={item} imagen={imagenPorId.get(String(item.productId))} />
           ))}
 
           <View style={estilos.separador} />
@@ -347,6 +378,11 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F7F7F7',
+    padding: 5,
+  },
+  miniaturaImagen: {
+    width: '100%',
+    height: '100%',
   },
   nombreProducto: {
     flex: 1,
