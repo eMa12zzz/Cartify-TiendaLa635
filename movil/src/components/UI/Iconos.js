@@ -5,15 +5,15 @@
  * Los iconos de los FORMULARIOS de sesión (correo, contraseña, DUI, teléfono,
  * la tienda de "seguir viendo"...) ya NO viven aquí: usan `lucide-react-native`,
  * que son los MISMOS iconos que la web dibuja con `lucide-react`. Lo mismo pasó
- * con la bolsa del carrito y el basurero de quitar un artículo: para esos lo
- * que se buscaba era calzar con el diseño de la web, y nada calza como el mismo
- * trazo.
+ * con la bolsa del carrito, el basurero de quitar un artículo y la lupa del
+ * buscador: para esos lo que se buscaba era calzar con el diseño de la web, y
+ * nada calza como el mismo trazo.
  *
  * Lo que queda aquí son los iconos de la TIENDA y la decoración de temporada:
- * formas simples (una lupa, un copo, un corazón) armadas con rectángulos,
- * círculos y rayas. Cuesta más leerlas que un SVG, pero pesan
- * cero y no atan la tienda a un set concreto — a un copo de fondo no le hace
- * falta ser "el" copo de ninguna librería.
+ * formas simples (un copo, un corazón) armadas con rectángulos, círculos y
+ * rayas. Cuesta más leerlas que un SVG, pero pesan cero y no atan la tienda a
+ * un set concreto — a un copo de fondo no le hace falta ser "el" copo de
+ * ninguna librería.
  *
  * Regla al dibujar: solo bordes uniformes (los cuatro lados iguales) y radios
  * uniformes. Android renderiza mal los bordes a medias con esquinas
@@ -291,35 +291,6 @@ export const Check = ({ size = 12, color = '#FFFFFF' }) => (
 );
 
 // ── Los de la tienda y el carrito ───────────────────────────
-
-export const Lupa = ({ size = 18, color = GRIS, grosor = 1.7 }) => {
-  const lente = size * 0.66;
-  return (
-    <View style={{ width: size, height: size }}>
-      <View
-        style={{
-          width: lente,
-          height: lente,
-          borderRadius: lente / 2,
-          borderWidth: grosor,
-          borderColor: color,
-        }}
-      />
-      {/* El mango sale de la esquina de abajo a la derecha del lente. */}
-      <Trazo
-        largo={size * 0.34}
-        grosor={grosor}
-        color={color}
-        estilo={{
-          position: 'absolute',
-          right: 0,
-          bottom: size * 0.13,
-          transform: [{ rotate: '45deg' }],
-        }}
-      />
-    </View>
-  );
-};
 
 export const Mas = ({ size = 14, color = '#FFFFFF', grosor = 2 }) => (
   <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>

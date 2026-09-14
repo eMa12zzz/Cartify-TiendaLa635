@@ -23,19 +23,25 @@
  *
  * ── De la web no está todo ──
  *
- * Quedan afuera dos ítems del menú de allá, y ninguno por descuido:
+ * Queda afuera un ítem del menú de allá, y no por descuido:
  *
  *   Pedidos    no falta: es uno de los cuatro apartados de la barra de abajo,
  *              que es un lugar MEJOR que un renglón aquí adentro.
- *   Ayuda      son preguntas frecuentes más los canales REALES de la tienda, y
- *              el único canal real (el WhatsApp) sale de una variable de Vite
- *              que en móvil no existe. Traer las preguntas sin los contactos
- *              deja un centro de ayuda que no lleva a ninguna persona.
  *
  * Pagos y Recibos sí se sumaron después (ver Pagos.js y Recibos.js): el
  * primero reusa el saldo/canje que ya vivía en Checkout.js, y el segundo
  * son los mismos pedidos de Pedidos.js, solo filtrados a los entregados —
  * ningún endpoint nuevo, salvo el de guardar métodos de pago.
+ *
+ * Ayuda también se sumó después (ver Ayuda.js): al principio se dejó afuera
+ * porque su único canal real, el WhatsApp, salía de una variable de Vite que
+ * en Expo no existe — ver el comentario grande de utils/tienda.js para la
+ * versión de Expo de lo mismo.
+ *
+ * ── Cerrar sesión vive arriba a la derecha, no abajo del menú ──
+ * Es la única acción de esta pantalla que no abre una sección de la cuenta:
+ * un icono aparte en la barra, lejos de la lista, para que no se confunda
+ * con un ítem más ni se toque por error al bajar deslizando la lista.
  * ============================================================
  */
 
@@ -43,7 +49,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import {
-  Bell, ChevronRight, CreditCard, Heart, LogOut, MapPin, Receipt, Star, User,
+  Bell, ChevronRight, CreditCard, Heart, HelpCircle, LogOut, MapPin, Receipt, Star, User,
 } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
@@ -51,6 +57,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useBotonAtras } from '../hooks/useBotonAtras';
 import { useTema } from '../context/TemaContext';
 import { getCliente } from '../api/clienteApi';
+import Ayuda from './cuenta/Ayuda';
 import Direcciones from './cuenta/Direcciones';
 import Favoritos from './cuenta/Favoritos';
 import MisDatos from './cuenta/MisDatos';
@@ -61,8 +68,9 @@ import Recibos from './cuenta/Recibos';
 
 /*
  * Los iconos son los mismos con los que la web pinta este menú (ver
- * ClienteLayout): User, Heart, MapPin, CreditCard, Bell, Star y Receipt. El
- * orden también es el de allá, menos Pedidos (ver el comentario de arriba).
+ * ClienteLayout): User, Heart, MapPin, CreditCard, Bell, Star, Receipt y
+ * HelpCircle. El orden también es el de allá, menos Pedidos (ver el
+ * comentario de arriba) — Ayuda al final, igual que en la barra de la web.
  */
 const SECCIONES = [
   { clave: 'datos', titulo: 'Mis datos', sub: 'Nombre, correo y teléfono', icono: User },
@@ -72,6 +80,7 @@ const SECCIONES = [
   { clave: 'avisos', titulo: 'Notificaciones', sub: 'Qué avisos quiere recibir', icono: Bell },
   { clave: 'puntos', titulo: 'Puntos de fidelidad', sub: 'Su saldo y cuánto valen', icono: Star },
   { clave: 'recibos', titulo: 'Recibos', sub: 'Sus pedidos ya entregados', icono: Receipt },
+  { clave: 'ayuda', titulo: 'Ayuda y contacto', sub: 'Preguntas frecuentes y cómo escribirnos', icono: HelpCircle },
 ];
 
 const PANTALLAS = {
@@ -82,6 +91,7 @@ const PANTALLAS = {
   avisos: Notificaciones,
   puntos: Puntos,
   recibos: Recibos,
+  ayuda: Ayuda,
 };
 
 const Perfil = () => {
@@ -152,6 +162,19 @@ const Perfil = () => {
     <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
         <Text style={estilos.tituloBarra}>Mi cuenta</Text>
+
+        <Pressable
+          onPress={salir}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar sesión"
+          style={({ pressed }) => [
+            estilos.botonSalir,
+            pressed && { backgroundColor: colores.marcaSuave },
+          ]}
+        >
+          <LogOut size={20} color={COLORES.textoSuave} strokeWidth={2} />
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={estilos.cuerpo}>
@@ -215,19 +238,6 @@ const Perfil = () => {
             </Text>
           </View>
         )}
-
-        {/*
-          Cerrar sesión no es un botón café: es la salida, y la salida se ofrece
-          sin insistir. Igual mide 50 de alto, que es lo que un dedo necesita.
-        */}
-        <Pressable
-          onPress={salir}
-          accessibilityRole="button"
-          style={({ pressed }) => [estilos.salir, pressed && estilos.salirPresionado]}
-        >
-          <LogOut size={17} color={COLORES.error} strokeWidth={2} />
-          <Text style={estilos.salirTexto}>Cerrar sesión</Text>
-        </Pressable>
       </ScrollView>
     </View>
   );
@@ -239,6 +249,9 @@ const estilos = StyleSheet.create({
     backgroundColor: COLORES.fondo,
   },
   barra: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
@@ -249,6 +262,13 @@ const estilos = StyleSheet.create({
     fontWeight: '800',
     color: COLORES.tituloFuerte,
     letterSpacing: -0.4,
+  },
+  botonSalir: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cuerpo: {
     padding: 16,
@@ -335,23 +355,6 @@ const estilos = StyleSheet.create({
     fontSize: 13.5,
     lineHeight: 21,
     color: COLORES.textoSuave,
-  },
-  salir: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 50,
-    marginTop: 22,
-    borderRadius: 12,
-  },
-  salirPresionado: {
-    backgroundColor: '#FDECEC',
-  },
-  salirTexto: {
-    fontSize: 14.5,
-    fontWeight: '600',
-    color: COLORES.error,
   },
 });
 
