@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { Maximize2 } from 'lucide-react-native';
+import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
 
 /*
  * ============================================================
@@ -23,66 +25,26 @@ import { WebView } from 'react-native-webview';
  * en curso, no uno por pantalla. Por eso BurbujaPedido.js solo lo monta
  * mientras `enCamino` es cierto, igual que la web solo lo dibuja con
  * `enCamino &&`.
+ *
+ * Se puede tocar para agrandarlo: avisa por `alAgrandar` en vez de abrir el
+ * mapa grande él mismo — antes esta miniatura ni dejaba acercar el zoom, una
+ * inconsistencia frente al mapa de marcar dirección (ModalMapaDireccion.js),
+ * que sí se arrastra y hace zoom libremente.
+ *
+ * ── Por qué el mapa grande no lo abre este archivo ──
+ * `ModalMapaSeguimiento.js` necesita ser hermano de una vista que ya ocupe
+ * la pantalla entera para que `StyleSheet.absoluteFillObject` la cubra de
+ * verdad — en React Native un elemento `position:absolute` llena a su padre
+ * INMEDIATO, no a la pantalla. Esta miniatura vive metida adentro de una
+ * tarjeta chica (la de BurbujaPedido.js, o `marcoMapa` en Confirmacion.js),
+ * así que si el mapa grande se abriera desde AQUÍ, quedaría encajonado
+ * dentro de esa misma tarjeta chica en vez de cubrir la pantalla. Por eso
+ * cada quien la usa (BurbujaPedido.js, Confirmacion.js) guarda su propio
+ * estado de "abierto" y dibuja `ModalMapaSeguimiento` en su propio nivel más
+ * arriba — mismo patrón que ya usa BurbujaPedido.js con `verPedido`/
+ * `ModalPedido`.
  * ============================================================
  */
-
-const paginaHtml = (punto, destino, colorMarca) => `<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    html, body, #mapa { height: 100%; margin: 0; padding: 0; background: #EAE7E2; }
-  </style>
-</head>
-<body>
-  <div id="mapa"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    var punto = ${punto ? JSON.stringify(punto) : 'null'};
-    var destino = ${destino ? JSON.stringify(destino) : 'null'};
-    var centro = punto || destino;
-
-    var mapa = L.map('mapa', {
-      zoomControl: false,
-      attributionControl: false,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      boxZoom: false,
-      keyboard: false,
-      tap: false,
-    }).setView([centro.lat, centro.lng], 15);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
-
-    var pinCasa = L.divIcon({
-      className: '',
-      html: '<div style="width:20px;height:20px;border-radius:50% 50% 50% 0;background:${colorMarca};transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.3);"></div>',
-      iconSize: [20, 20],
-      iconAnchor: [10, 20],
-    });
-    var pinRepartidor = L.divIcon({
-      className: '',
-      html: '<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 5px rgba(37,99,235,.22), 0 2px 6px rgba(0,0,0,.3);"></div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-    });
-
-    if (destino) L.marker([destino.lat, destino.lng], { icon: pinCasa }).addTo(mapa);
-    if (punto) L.marker([punto.lat, punto.lng], { icon: pinRepartidor }).addTo(mapa);
-
-    // Mismo encuadre que la web: los dos puntos a la vez si hay los dos, y
-    // se va cerrando solo conforme el repartidor se acerca a la casa.
-    if (punto && destino) {
-      mapa.fitBounds(L.latLngBounds([punto.lat, punto.lng], [destino.lat, destino.lng]), {
-        padding: [34, 34],
-        maxZoom: 16,
-      });
-    }
-  </script>
-</body>
-</html>`;
 
 /*
  * @param punto      - dónde va el repartidor ahora ({lat,lng}), o null.
@@ -90,14 +52,16 @@ const paginaHtml = (punto, destino, colorMarca) => `<!DOCTYPE html>
  * @param alto       - alto del mapa en dp.
  * @param colorMarca - color del pin de la casa; el del repartidor es fijo
  *                     (el mismo azul que la web, no cambia con la temporada).
+ * @param alAgrandar - se llama al tocar la miniatura; quien la use decide
+ *                     qué hacer (abrir ModalMapaSeguimiento.js).
  */
-const MapaSeguimiento = ({ punto, destino, alto = 132, colorMarca = '#8C5628' }) => {
+const MapaSeguimiento = ({ punto, destino, alto = 132, colorMarca = '#8C5628', alAgrandar }) => {
   // Sin ningún punto no hay mapa que valga la pena: ver el porqué en
   // BurbujaPedido.js, donde tampoco se monta sin esto.
   if (!punto && !destino) return null;
 
   const html = useMemo(
-    () => paginaHtml(punto, destino, colorMarca),
+    () => crearHtmlSeguimiento({ punto, destino, colorMarca, interactivo: false }),
     // Cambia de HTML solo cuando el punto se movió de verdad, no en cada
     // segundo que pasa: recrear el WebView entero por cada "tic" del reloj
     // haría parpadear el mapa en vez de solo mover el pin.
@@ -115,14 +79,22 @@ const MapaSeguimiento = ({ punto, destino, alto = 132, colorMarca = '#8C5628' })
         originWhitelist={['*']}
       />
       {/*
-        Encima del WebView, sin pintar nada y sin onPress: alcanza con que
-        exista para quedarse con el toque (una View normal ya es
-        `pointerEvents: 'auto'` por defecto). En Android un WebView atrapa el
-        toque aunque adentro nada sea arrastrable, y esto es una miniatura de
-        reojo, no algo que explorar — mismo espíritu que `interactivo={false}`
-        en la web, resuelto del lado nativo en vez de con una prop de Leaflet.
+        Encima del WebView: en Android un WebView atrapa el toque aunque
+        adentro nada sea arrastrable, así que hace falta esta capa para
+        quedarse con el toque ANTES de que llegue al mapa apagado de abajo
+        — ahora con `onPress` en vez de quedarse ahí sin hacer nada, más la
+        insignia para que se note que se puede agrandar.
       */}
-      <View style={estilos.capaToque} />
+      <Pressable
+        style={estilos.capaToque}
+        onPress={alAgrandar}
+        accessibilityRole="button"
+        accessibilityLabel="Ver el mapa en grande"
+      >
+        <View style={estilos.insignia}>
+          <Maximize2 size={12} color="#FFFFFF" strokeWidth={2.6} />
+        </View>
+      </Pressable>
     </View>
   );
 };
@@ -138,6 +110,17 @@ const estilos = StyleSheet.create({
   },
   capaToque: {
     ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+    padding: 6,
+  },
+  insignia: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

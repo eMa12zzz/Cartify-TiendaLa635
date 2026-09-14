@@ -42,6 +42,7 @@ import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import CodigoEntrega from '../components/Tienda/CodigoEntrega';
 import MapaSeguimiento from '../components/Tienda/MapaSeguimiento';
+import ModalMapaSeguimiento from '../components/Tienda/ModalMapaSeguimiento';
 
 /*
  * Una fila por producto, con su propia foto. El pedido que devuelve
@@ -99,6 +100,11 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   // la franja de gestos de Android.
   const { bottom } = useSafeAreaInsets();
   const { vaciarTrasPedido, productos } = useTienda();
+  // El mapa en grande: vive AQUÍ, en la pantalla entera, y no dentro de
+  // MapaSeguimiento.js — ver el porqué en el comentario grande de ese
+  // archivo (un `position:absolute` ahí adentro quedaría encajonado en
+  // `marcoMapa`, no cubriría la pantalla).
+  const [mapaGrande, setMapaGrande] = useState(false);
   const imagenPorId = useMemo(
     () => new Map(productos.map((p) => [String(p.id), p.imagen])),
     [productos]
@@ -209,10 +215,15 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
         {tieneDestino && (
           <View style={estilos.marcoMapa}>
             <MapaSeguimiento
+              // Ver el comentario del mismo `key` en BurbujaPedido.js: sin
+              // esto la miniatura queda con una franja gris a medio pintar
+              // al volver de ModalMapaSeguimiento.js.
+              key={mapaGrande ? 'grande' : 'chica'}
               punto={enCamino ? seguimiento.punto : null}
               destino={seguimiento.destino}
               alto={180}
               colorMarca={colores.marca}
+              alAgrandar={() => setMapaGrande(true)}
             />
             <View style={estilos.infoMapa}>
               {enCamino ? (
@@ -317,6 +328,15 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           colorPresionado={colores.marcaOscuro}
         />
       </View>
+
+      {mapaGrande && (
+        <ModalMapaSeguimiento
+          punto={enCamino ? seguimiento.punto : null}
+          destino={seguimiento.destino}
+          colorMarca={colores.marca}
+          alCerrar={() => setMapaGrande(false)}
+        />
+      )}
     </View>
   );
 };
