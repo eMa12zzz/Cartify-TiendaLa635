@@ -38,11 +38,11 @@
  */
 
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Menu, ShoppingBag } from 'lucide-react-native';
+import { Menu, Search, ShoppingBag } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
-import { Equis, Lupa } from '../UI/Iconos';
+import { Equis } from '../UI/Iconos';
 import MarcaTienda from '../UI/MarcaTienda';
 
 const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, alAbrirPasillos }) => {
@@ -96,7 +96,10 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
     </View>
 
     <View style={estilos.buscador}>
-      <Lupa size={17} color={COLORES.marcador} />
+      {/* Mismo icono y mismas medidas que HeaderTienda.jsx en la web
+          (size 17, strokeWidth 2.4): la lupa dibujada a mano quedaba con
+          un trazo visiblemente distinto al lado del resto de la barra. */}
+      <Search size={17} strokeWidth={2.4} color={COLORES.marcador} />
       <TextInput
         value={busqueda}
         onChangeText={alBuscar}

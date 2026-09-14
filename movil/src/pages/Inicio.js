@@ -31,6 +31,7 @@
 
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Search } from 'lucide-react-native';
 import { COLORES } from '../theme/colores';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
@@ -46,7 +47,7 @@ import ModalProducto from '../components/Tienda/ModalProducto';
 import ModalPromo from '../components/Tienda/ModalPromo';
 import MenuPasillos from '../components/Tienda/MenuPasillos';
 import Boton from '../components/UI/Boton';
-import { Equis, Lupa } from '../components/UI/Iconos';
+import { Equis } from '../components/UI/Iconos';
 import { avisarActividad } from '../utils/actividadUsuario';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
@@ -199,7 +200,9 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
   const vacio = (
     <View style={estilos.vacio}>
-      <Lupa size={34} color={COLORES.marcador} grosor={1.5} />
+      {/* Mismo icono que Store.jsx en la web para "sin resultados"
+          (size 34, strokeWidth 1.6). */}
+      <Search size={34} strokeWidth={1.6} color={COLORES.marcador} />
       {/*
         Una tienda recién montada está vacía hasta que le carguen productos.
         Decir 'No hay productos para ""' hacía parecer que la tienda estaba rota.
