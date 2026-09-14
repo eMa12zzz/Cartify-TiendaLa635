@@ -13,6 +13,7 @@ import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
 import ModalPedido from './ModalPedido';
 import MapaSeguimiento from './MapaSeguimiento';
+import ModalMapaSeguimiento from './ModalMapaSeguimiento';
 import { suscribirseAActividad } from '../../utils/actividadUsuario';
 
 /*
@@ -72,6 +73,10 @@ const BurbujaPedido = () => {
   // pedidos" — antes "Ver el pedido" solo mandaba a esa lista entera y había
   // que volver a buscarlo ahí.
   const [verPedido, setVerPedido] = useState(false);
+
+  // El mapa en grande: ver el porqué de que viva AQUÍ y no dentro de
+  // MapaSeguimiento.js en el comentario grande de ese archivo.
+  const [mapaGrande, setMapaGrande] = useState(false);
 
   const esCliente = user?.type === 'client';
 
@@ -209,6 +214,29 @@ const BurbujaPedido = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierta]);
+
+  /*
+   * Si se hace un pedido nuevo mientras el anterior TODAVÍA sigue activo (no
+   * entregado) —el caso que describe el comentario de `orders` en
+   * PedidoActivoContext.js—, `enCurso` salta directo al pedido nuevo pero
+   * `hayPedidoActivo` sigue en `true` todo el tiempo: nunca pasa por `false`,
+   * así que el efecto de arriba (el que resetea `oculta` al aparecer un
+   * pedido) no se entera. Sin este aparte, la tarjeta o el detalle que se
+   * habían quedado abiertos viendo el pedido VIEJO seguían abiertos igual,
+   * ahora con los datos del pedido nuevo adentro — se veían "aparecer solos"
+   * encima de la pantalla de confirmación recién abierta.
+   */
+  const idPedidoActivo = enCurso ? String(enCurso._id) : null;
+  const idPedidoAnteriorRef = useRef(idPedidoActivo);
+  useEffect(() => {
+    if (idPedidoActivo && idPedidoActivo !== idPedidoAnteriorRef.current) {
+      setAbierta(false);
+      setVerPedido(false);
+      setMapaGrande(false);
+      setOculta(false);
+    }
+    idPedidoAnteriorRef.current = idPedidoActivo;
+  }, [idPedidoActivo]);
 
   if (!montada || !pedido) return null;
 
@@ -368,10 +396,17 @@ const BurbujaPedido = () => {
                 */}
                 <View style={estilos.marcoMapa}>
                   <MapaSeguimiento
+                    // Al volver de ModalMapaSeguimiento.js, Android a veces
+                    // deja la miniatura con una franja gris a medio pintar
+                    // (el WebView grande le pisó la superficie mientras
+                    // estuvo encima) — cambiar la key fuerza un remontaje
+                    // limpio apenas se cierra.
+                    key={mapaGrande ? 'grande' : 'chica'}
                     punto={seguimiento.punto}
                     destino={seguimiento.destino}
                     alto={132}
                     colorMarca={colores.marca}
+                    alAgrandar={() => setMapaGrande(true)}
                   />
                 </View>
                 <View style={[estilos.bloqueInfo, { backgroundColor: seguimiento.yaCasi ? '#EFFAF1' : '#F7FAFF' }]}>
@@ -494,6 +529,15 @@ const BurbujaPedido = () => {
     )}
 
     {verPedido && <ModalPedido pedido={pedido} alCerrar={() => setVerPedido(false)} />}
+
+    {mapaGrande && (
+      <ModalMapaSeguimiento
+        punto={seguimiento.punto}
+        destino={seguimiento.destino}
+        colorMarca={colores.marca}
+        alCerrar={() => setMapaGrande(false)}
+      />
+    )}
     </>
   );
 };
