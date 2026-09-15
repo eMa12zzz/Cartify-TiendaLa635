@@ -38,6 +38,12 @@
  * pantalla: así el seguimiento del pedido sigue viéndose al cambiar de
  * apartado (Tienda, Asistente, Perfil) en vez de desaparecer con la pantalla
  * en la que se abrió.
+ *
+ * `PedidoDetalleFlotante` va DESPUÉS de `BurbujaPedido` por la misma razón,
+ * y en ese orden: el modal de detalle de un pedido tiene que pintarse
+ * encima de la burbuja (y de cualquier pantalla del stack), y el último
+ * hermano es el que gana esa pulseada — ver el comentario grande de
+ * `pedidoAbierto` en `PedidoActivoContext.js`.
  */
 
 import { StatusBar } from 'expo-status-bar';
@@ -55,6 +61,7 @@ import { PedidoActivoProvider } from './src/context/PedidoActivoContext';
 import { navegarA } from './src/navigation/navigationRef';
 import RootNavigator from './src/navigation/RootNavigator';
 import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
+import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante';
 
 export default function App() {
   return (
@@ -69,6 +76,7 @@ export default function App() {
                     <StatusBar style="dark" />
                     <RootNavigator />
                     <BurbujaPedido />
+                    <PedidoDetalleFlotante />
                   </PedidoActivoProvider>
                 </TiendaProvider>
               </FavoritosProvider>

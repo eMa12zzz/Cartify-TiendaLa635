@@ -12,6 +12,7 @@
  * no comparte un mismo componente padre.
  */
 
+import { useSyncExternalStore } from 'react';
 import { createNavigationContainerRef } from '@react-navigation/native';
 
 export const navigationRef = createNavigationContainerRef();
@@ -22,6 +23,28 @@ export const destinoPendiente = { current: null };
 // restaurada o no). Antes de eso, un cambio de `isAuthenticated` es el propio
 // arranque resolviéndose y no un login interactivo — ver RootNavigator.
 export const arranqueResuelto = { current: false };
+
+// Quien solo necesita LEER `.current` dentro de un efecto (AuthWatcher) le
+// alcanza con el ref de arriba. Pero BurbujaPedido vive fuera del stack de
+// pantallas (ver App.js) y necesita volver a pintarse en cuanto el arranque
+// se resuelve — un pedido ya "en curso" no debe asomar la burbuja mientras
+// todavía se ve el Splash. Un ref solo no avisa de sus cambios; esto sí.
+const oyentesArranque = new Set();
+
+export const marcarArranqueResuelto = () => {
+  if (arranqueResuelto.current) return;
+  arranqueResuelto.current = true;
+  oyentesArranque.forEach((fn) => fn());
+};
+
+export const useArranqueResuelto = () =>
+  useSyncExternalStore(
+    (fn) => {
+      oyentesArranque.add(fn);
+      return () => oyentesArranque.delete(fn);
+    },
+    () => arranqueResuelto.current
+  );
 
 export const navegarA = (nombre, params) => {
   if (navigationRef.isReady()) {

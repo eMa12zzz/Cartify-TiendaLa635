@@ -26,6 +26,7 @@ import { COLORES } from '../theme/colores';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
+import { usePedidoActivoCtx } from '../context/PedidoActivoContext';
 import { getPedidosDeCliente } from '../api/pedidosApi';
 // Los estados y su color viven en utils/pasosPedido.js: este historial y
 // ModalPedido necesitan la misma chapa, y ya hubo un bug antes por tenerla
@@ -34,7 +35,6 @@ import { ESTADOS_PEDIDO as ESTADOS } from '../utils/pasosPedido';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import PastillasCategoria from '../components/Tienda/PastillasCategoria';
-import ModalPedido from '../components/Tienda/ModalPedido';
 import { avisarActividad } from '../utils/actividadUsuario';
 
 // Las tres ventanas de tiempo del filtro (además de "Todos", que ya resuelve
@@ -151,12 +151,15 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
 const Pedidos = () => {
   const { user } = useAuth();
   const { colores } = useTema();
+  // El detalle (ModalPedido) se pinta en un solo lugar para toda la app —
+  // ver el comentario grande de `pedidoAbierto` en PedidoActivoContext.js —
+  // así que aquí solo se pide abrirlo, no se dibuja.
+  const { abrirPedido } = usePedidoActivoCtx();
 
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [filtro, setFiltro] = useState(null); // null = "Todos"
-  const [pedidoAbierto, setPedidoAbierto] = useState(null);
 
   // El más nuevo arriba, sin depender de en qué orden lo haya mandado el
   // servidor — mismo criterio defensivo que ya usa PedidoActivoContext para
@@ -265,13 +268,9 @@ const Pedidos = () => {
           contentContainerStyle={estilos.lista}
           onScrollBeginDrag={avisarActividad}
           renderItem={({ item }) => (
-            <TarjetaPedido pedido={item} alPresionar={() => setPedidoAbierto(item)} />
+            <TarjetaPedido pedido={item} alPresionar={() => abrirPedido(item)} />
           )}
         />
-      )}
-
-      {pedidoAbierto && (
-        <ModalPedido pedido={pedidoAbierto} alCerrar={() => setPedidoAbierto(null)} />
       )}
     </View>
   );
