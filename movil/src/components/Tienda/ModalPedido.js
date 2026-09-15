@@ -250,12 +250,11 @@ const estilos = StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     /*
-     * Más alto que BurbujaPedido.js (zIndex 900 / elevation 12): esta hoja
-     * está DENTRO de Pedidos.js, pero la burbuja vive montada como hermana
-     * del navegador entero (ver App.js). En Android el "elevation" compara
-     * globalmente, no por rama del árbol, así que sin superar el suyo la
-     * burbuja se colaba encima del fondo oscuro del modal — se veía
-     * literalmente partida por la mitad.
+     * Más alto que BurbujaPedido.js (zIndex 900 / elevation 12): quien monta
+     * ESTE componente (`PedidoDetalleFlotante`, ver App.js) va como el
+     * ÚLTIMO hermano del árbol, así que ya gana por orden de pintado nomás
+     * — este número de más es solo un cinturón y tirantes, para que ni un
+     * `elevation` suelto de otra pantalla alcance a colarse encima.
      */
     zIndex: 950,
     elevation: 20,

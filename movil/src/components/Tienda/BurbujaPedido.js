@@ -5,13 +5,13 @@ import { Bike, X, ChevronRight, Clock } from 'lucide-react-native';
 import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
+import { useArranqueResuelto } from '../../navigation/navigationRef';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
-import ModalPedido from './ModalPedido';
 import MapaSeguimiento from './MapaSeguimiento';
 import ModalMapaSeguimiento from './ModalMapaSeguimiento';
 import { suscribirseAActividad } from '../../utils/actividadUsuario';
@@ -48,7 +48,11 @@ const BurbujaPedido = () => {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { colores } = useTema();
-  const { orders } = usePedidoActivoCtx();
+  const { orders, abrirPedido, cerrarPedidoAbierto } = usePedidoActivoCtx();
+  // El pedido puede estar listo ANTES de que Splash termine de decidir a
+  // dónde ir (sesión restaurada + Onboarding leído): sin esto, la burbuja se
+  // alcanzaba a ver montándose encima del propio Splash.
+  const arranqueResuelto = useArranqueResuelto();
   const [abierta, setAbierta] = useState(false);
 
   /*
@@ -67,12 +71,6 @@ const BurbujaPedido = () => {
    */
   const [oculta, setOculta] = useState(false);
   const [anchoPildora, setAnchoPildora] = useState(0);
-
-  // El detalle completo del pedido (pasos, código, dirección, productos con
-  // foto), el mismo ModalPedido que se abre al tocar una tarjeta en "Mis
-  // pedidos" — antes "Ver el pedido" solo mandaba a esa lista entera y había
-  // que volver a buscarlo ahí.
-  const [verPedido, setVerPedido] = useState(false);
 
   // El mapa en grande: ver el porqué de que viva AQUÍ y no dentro de
   // MapaSeguimiento.js en el comentario grande de ese archivo.
@@ -135,7 +133,8 @@ const BurbujaPedido = () => {
   // "Hay pedido activo AHORA" usa `enCurso` (el dato fresco), no `pedido`
   // (que puede ser el último recordado): es lo que decide si la burbuja
   // tiene que estar entrando o saliendo.
-  const hayPedidoActivo = esCliente && !!enCurso && estado !== 'cancelado' && estado !== 'entregado';
+  const hayPedidoActivo =
+    arranqueResuelto && esCliente && !!enCurso && estado !== 'cancelado' && estado !== 'entregado';
 
   /*
    * Presencia de TODA la burbuja: entra con un resorte al aparecer el
@@ -231,11 +230,12 @@ const BurbujaPedido = () => {
   useEffect(() => {
     if (idPedidoActivo && idPedidoActivo !== idPedidoAnteriorRef.current) {
       setAbierta(false);
-      setVerPedido(false);
+      cerrarPedidoAbierto();
       setMapaGrande(false);
       setOculta(false);
     }
     idPedidoAnteriorRef.current = idPedidoActivo;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idPedidoActivo]);
 
   if (!montada || !pedido) return null;
@@ -260,7 +260,7 @@ const BurbujaPedido = () => {
     setAbierta(true);
   };
 
-  const irAPedidos = () => setVerPedido(true);
+  const irAPedidos = () => abrirPedido(pedido);
 
   /*
    * Arriba de la píldora flotante, no encima. `ALTURA_BARRA_FLOTANTE` es el
@@ -527,8 +527,6 @@ const BurbujaPedido = () => {
         />
       </View>
     )}
-
-    {verPedido && <ModalPedido pedido={pedido} alCerrar={() => setVerPedido(false)} />}
 
     {mapaGrande && (
       <ModalMapaSeguimiento
