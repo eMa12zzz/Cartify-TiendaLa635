@@ -20,8 +20,8 @@
  * ============================================================
  */
 
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable (sobre todo en Android), y las fotos de producto
 // se sirven desde Cloudinary en .webp. Ver AGENTS.md y los docs de SDK 54.
@@ -48,10 +48,37 @@ const selloDePromo = (promo) => {
   return 'Oferta';
 };
 
-const TarjetaProducto = ({ producto, alVerDetalle, alAgregar }) => {
+/*
+ * Entrada escalonada al aparecer, calcada de `.card-in` en index.css: un
+ * fundido con un empujón de 8px hacia arriba, 260ms, con la MISMA fórmula de
+ * retraso por posición (45ms por tarjeta, tope de 8) para que la cuadrícula
+ * entre en cascada y no de golpe. Con `useNativeDriver: true` porque tanto
+ * opacity como translateY sí corren en el hilo nativo — a diferencia del
+ * ancho de los puntos del carrusel (ver CarruselPromos.js), aquí no hay
+ * ningún borderRadius que un `transform` pueda deformar.
+ */
+const DURACION_ENTRADA = 260;
+const RETRASO_POR_TARJETA = 45;
+const TOPE_RETRASO = 8;
+
+const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
   const { colores } = useTema();
   const { esFavorito, alternar } = useFavoritos();
+
+  const entrada = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(entrada, {
+      toValue: 1,
+      duration: DURACION_ENTRADA,
+      delay: Math.min(indice, TOPE_RETRASO) * RETRASO_POR_TARJETA,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+    // Solo al montar: la tarjeta no tiene que volver a entrar porque cambió
+    // de posición en la lista.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /*
    * Candado +18: si el producto es restringido y todavía no se confirmó la
@@ -78,6 +105,13 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar }) => {
   };
 
   return (
+    <Animated.View
+      style={{
+        width: '100%',
+        opacity: entrada,
+        transform: [{ translateY: entrada.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
+      }}
+    >
     <Pressable
       onPress={alTocarTarjeta}
       accessibilityRole="button"
@@ -222,6 +256,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar }) => {
         </View>
       </View>
     </Pressable>
+    </Animated.View>
   );
 };
 

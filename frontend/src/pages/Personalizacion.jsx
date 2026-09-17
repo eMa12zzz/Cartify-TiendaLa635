@@ -4,7 +4,8 @@ import { useAjustesCtx } from '../context/AjustesContext';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
 import ServicioTarifa from '../components/Admin/ServicioTarifa';
-import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo } from '../utils/temporadas';
+import TemporadasPropias from '../components/Admin/TemporadasPropias';
+import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo, todosLosTemas } from '../utils/temporadas';
 
 /*
  * Los apartados de la izquierda. Antes todo era un scroll largo de tarjetas que
@@ -95,7 +96,9 @@ const Personalizacion = () => {
    * al revés. Ver storeSettingsController.
    */
   const temporada = ajustes.temporada || { modo: 'automatico', tema: '' };
-  const porCalendario = temaDeLaFecha();
+  // Las de fábrica más las que creó el dueño: las dos se eligen igual.
+  const temas = todosLosTemas(temporada);
+  const porCalendario = temaDeLaFecha(new Date(), temas);
   const pintandoAhora = temaActivo(temporada);
 
   const MODOS = [
@@ -110,13 +113,15 @@ const Personalizacion = () => {
    * calma, no un botón que se toca y guarda de una vez.
    */
   const [saludos, setSaludos] = useState({});
+  const [saludoNormal, setSaludoNormal] = useState('');
   useEffect(() => {
     setSaludos({ ...(ajustes.temporada?.saludos || {}) });
-  }, [ajustes.temporada?.saludos]);
+    setSaludoNormal(ajustes.temporada?.saludoNormal || '');
+  }, [ajustes.temporada?.saludos, ajustes.temporada?.saludoNormal]);
 
   const guardarSaludos = (e) => {
     e.preventDefault();
-    guardar({ temporada: { saludos } });
+    guardar({ temporada: { saludos, saludoNormal } });
   };
 
   return (
@@ -482,7 +487,7 @@ const Personalizacion = () => {
               diciembre. En automático no se pueden tocar, pero se ven.
             */}
             <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-              {TEMAS_DE_TEMPORADA.map((tema) => {
+              {temas.map((tema) => {
                 const elegido = temporada.modo === 'manual' && temporada.tema === tema.clave;
                 const esElDeHoy = porCalendario?.clave === tema.clave;
                 const seleccionable = temporada.modo === 'manual';
@@ -514,6 +519,14 @@ const Personalizacion = () => {
                       <div className="text-sm font-bold flex items-center gap-1.5"
                            style={{ color: 'var(--theme-text-primary)' }}>
                         {tema.nombre}
+                        {tema.propio && (
+                          <span
+                            className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
+                            style={{ backgroundColor: 'var(--theme-primary-light)', color: 'var(--theme-primary)' }}
+                          >
+                            Suya
+                          </span>
+                        )}
                         {elegido && <Check className="w-3.5 h-3.5" style={{ color: 'var(--theme-primary)' }} />}
                       </div>
                       <div className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
@@ -574,19 +587,49 @@ const Personalizacion = () => {
             </div>
           </div>
 
-          {/* ── Apariencia (3.ª parte): el saludo de cada temporada ── */}
+          {/* ── Apariencia (3.ª parte): las temporadas que crea el dueño ── */}
+          <TemporadasPropias temporada={temporada} guardar={guardar} guardando={guardando} />
+
+          {/* ── Apariencia (4.ª parte): el saludo de cada temporada ── */}
           <div className="p-6 rounded-2xl shadow-sm border mt-6" style={tarjeta}>
             <div className="mb-4">
               <h2 className="text-lg font-bold" style={{ color: 'var(--theme-text-primary)' }}>
                 Saludo de cada temporada
               </h2>
               <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
-                El texto de la cinta que aparece debajo del encabezado mientras esa temporada está
-                pintada. En blanco, se usa el saludo de siempre.
+                El texto de la cinta que aparece debajo del encabezado. En las temporadas de
+                fábrica, en blanco se usa el saludo de siempre. El de sus temporadas se escribe
+                al crearlas, arriba.
               </p>
             </div>
 
             <form onSubmit={guardarSaludos} className="flex flex-col gap-4">
+              {/*
+                Los días sin temporada: la mayor parte del año. En blanco no
+                sale cinta, que es como se veía la tienda antes.
+              */}
+              <div
+                className="space-y-1.5 rounded-xl p-4"
+                style={{ backgroundColor: 'var(--theme-primary-light)' }}
+              >
+                <label htmlFor="saludo-normal" className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>
+                  Días sin temporada
+                </label>
+                <input
+                  id="saludo-normal"
+                  type="text"
+                  maxLength={160}
+                  value={saludoNormal}
+                  onChange={(e) => setSaludoNormal(e.target.value)}
+                  placeholder="Ej. Envío gratis los martes — pida antes de las 5 p. m."
+                  className="w-full px-4 py-2.5 rounded-xl border outline-none"
+                  style={inputStyle}
+                />
+                <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>
+                  Sale el resto del año, con los colores de siempre. En blanco no se muestra cinta.
+                </p>
+              </div>
+
               {TEMAS_DE_TEMPORADA.map((tema) => (
                 <div key={tema.clave} className="space-y-1.5">
                   <label className="block text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>

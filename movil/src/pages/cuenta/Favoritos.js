@@ -35,6 +35,7 @@ import { useFavoritos } from '../../context/FavoritosContext';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import TarjetaProducto from '../../components/Tienda/TarjetaProducto';
 import ModalProducto from '../../components/Tienda/ModalProducto';
+import { avisarActividad } from '../../utils/actividadUsuario';
 
 const Favoritos = ({ alVolver }) => {
   const { colores } = useTema();
@@ -71,12 +72,13 @@ const Favoritos = ({ alVolver }) => {
           numColumns={2}
           columnWrapperStyle={estilos.fila}
           contentContainerStyle={estilos.lista}
+          onScrollBeginDrag={avisarActividad}
           ListHeaderComponent={
             <Text style={estilos.conteo}>
               {marcados.length} {marcados.length === 1 ? 'producto guardado' : 'productos guardados'}
             </Text>
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             /*
              * El tope de ancho es lo que arregla la última fila impar: con
              * `flex: 1` a secas, un producto solo abajo se estira a lo ancho de
@@ -87,6 +89,7 @@ const Favoritos = ({ alVolver }) => {
                 producto={item}
                 alVerDetalle={setProductoAbierto}
                 alAgregar={agregarAlCarrito}
+                indice={index}
               />
             </View>
           )}

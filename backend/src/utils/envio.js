@@ -10,9 +10,10 @@
  *   1. Zona: si la dirección cae dentro de una zonaEnvio (un círculo con precio
  *      fijo), manda ese precio. Si cae en varias, gana la de radio más chico.
  *   2. Por km: envioBase + envioPorKm × distancia desde la tienda.
- *   3. Plano: si no se puede medir (falta la ubicación de la tienda o del
- *      cliente), se cae al costoEnvio de siempre. Así una tienda que no
- *      configura nada sigue funcionando igual que antes.
+ *   3. Solo la base: si no se puede medir (falta la ubicación de la tienda o
+ *      del cliente), se cobra envioBase y nada más. Antes aquí entraba una
+ *      "tarifa plana de respaldo" aparte, que el panel ya no dejaba editar y
+ *      aun así se seguía cobrando: un precio que nadie veía ni podía cambiar.
  * ============================================================
  */
 
@@ -41,21 +42,20 @@ export const distanciaKm = (lat1, lng1, lat2, lng2) => {
  * calculó (útil para mostrárselo al cliente: "$2.50 · a 3 km").
  *
  * ajustes: documento de storeSettings (ubicacionTienda, envioBase, envioPorKm,
- *          zonasEnvio, costoEnvio).
+ *          zonasEnvio).
  * destino: { lat, lng } de la dirección del cliente (puede venir sin coords).
  */
 export const calcularEnvio = (ajustes = {}, destino = {}) => {
   const base = num(ajustes.envioBase, 1);
   const porKm = num(ajustes.envioPorKm, 0.5);
-  const plano = num(ajustes.costoEnvio, 4.78);
   const zonas = Array.isArray(ajustes.zonasEnvio) ? ajustes.zonasEnvio : [];
   const tienda = ajustes.ubicacionTienda || {};
   const lat = destino?.lat;
   const lng = destino?.lng;
 
-  // Sin coordenadas del cliente no hay cómo medir: tarifa plana de siempre.
+  // Sin coordenadas del cliente no hay cómo medir: se cobra solo la base.
   if (!hayCoord(lat, lng)) {
-    return { costo: redondear(plano), metodo: "plano", distanciaKm: null, zona: null };
+    return { costo: redondear(base), metodo: "base", distanciaKm: null, zona: null };
   }
 
   // 1. ¿Cae dentro de alguna zona? Gana la más específica (radio más chico).
@@ -77,6 +77,6 @@ export const calcularEnvio = (ajustes = {}, destino = {}) => {
     };
   }
 
-  // 3. Sin ubicación de la tienda: tarifa plana.
-  return { costo: redondear(plano), metodo: "plano", distanciaKm: null, zona: null };
+  // 3. Sin ubicación de la tienda: solo la base.
+  return { costo: redondear(base), metodo: "base", distanciaKm: null, zona: null };
 };

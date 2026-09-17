@@ -18,9 +18,12 @@
  *      `validarDui`). La fecha de nacimiento SÍ es obligatoria (ver el
  *      comentario de `puedeDui` más abajo, y `frontend/src/pages/Register.jsx`).
  *
- *   2. La foto de perfil todavía no abre la galería: eso pide
- *      `expo-image-picker`, que no está instalado. El recuadro está puesto,
- *      con su sitio y su medida, para que al conectarlo no se mueva nada.
+ *   2. La foto de perfil usa `expo-image-picker` directo, sin el recorte
+ *      "cover" que arma `SubidorArchivo` en la web con CSS: acá el mismo
+ *      efecto lo hace `contentFit="cover"` de expo-image sobre la miniatura.
+ *      El límite de peso (8 MB) es el mismo que `SubidorArchivo` porque es el
+ *      límite real de multer en el servidor (ver upload.js), no un número
+ *      inventado para esta pantalla.
  *
  * ── Ya no se pide la dirección ──
  *
@@ -47,6 +50,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
@@ -56,6 +61,7 @@ import HojaTerminos from '../components/UI/HojaTerminos';
 // nacimiento `Calendar`, DUI `Hash`, teléfono `Phone`, correo `Mail`,
 // contraseña `Lock`, foto `Camera`.
 import { Calendar, Camera, Hash, Lock, Mail, Phone, User } from 'lucide-react-native';
+import { Equis } from '../components/UI/Iconos';
 import { registrarCliente } from '../api/authApi';
 import { useTema } from '../context/TemaContext';
 import { COLORES } from '../theme/colores';
@@ -146,6 +152,39 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   const [errorTerminos, setErrorTerminos] = useState('');
   const [verTerminos, setVerTerminos] = useState(false);
 
+  const [foto, setFoto] = useState(null);
+  const [errorFoto, setErrorFoto] = useState('');
+
+  /*
+   * Mismo tope que `SubidorArchivo` en la web (8 MB) — y el mismo que de
+   * verdad hace cumplir multer en el servidor (ver
+   * backend/src/utils/cloudinaryConfig.js), no un número puesto a ojo.
+   */
+  const PESO_MAXIMO_FOTO = 8 * 1024 * 1024;
+
+  const elegirFoto = async () => {
+    setErrorFoto('');
+    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permiso.granted) {
+      setErrorFoto('No dio permiso para abrir la galería.');
+      return;
+    }
+
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (resultado.canceled) return;
+
+    const elegida = resultado.assets[0];
+    if (elegida.fileSize && elegida.fileSize > PESO_MAXIMO_FOTO) {
+      const pesoMB = (elegida.fileSize / (1024 * 1024)).toFixed(1);
+      setErrorFoto(`Esa foto pesa ${pesoMB} MB y el máximo son 8 MB.`);
+      return;
+    }
+    setFoto(elegida);
+  };
+
   /*
    * `formateador` es opcional: los campos normales guardan lo que se teclea y
    * el DUI, el teléfono y la fecha pasan primero por su máscara.
@@ -183,6 +222,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
         fechaNacimiento: fechaISO(valores.fechaNacimiento),
         aceptaTerminos,
         promociones,
+        foto,
       });
 
       // La cuenta todavía no existe: nace cuando vuelva el código del correo.
@@ -305,17 +345,37 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <Text style={estilos.etiquetaFoto}>Foto de Perfil (Opcional)</Text>
           <Pressable
+            onPress={elegirFoto}
             style={({ pressed }) => [
               estilos.zonaFoto,
-              pressed && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
+              foto && estilos.zonaFotoConImagen,
+              pressed && !foto && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Subir foto de perfil"
+            accessibilityLabel={foto ? 'Cambiar foto de perfil' : 'Subir foto de perfil'}
           >
-            <Camera size={28} color={COLORES.iconoCampo} />
-            <Text style={estilos.textoFoto}>Toque para elegir su foto</Text>
-            <Text style={estilos.ayudaFoto}>JPG o PNG, hasta 8 MB</Text>
+            {foto ? (
+              <>
+                <Image source={{ uri: foto.uri }} style={estilos.previewFoto} contentFit="cover" />
+                <Pressable
+                  onPress={() => setFoto(null)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Quitar la foto elegida"
+                  style={estilos.quitarFoto}
+                >
+                  <Equis size={14} color="#fff" />
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Camera size={28} color={COLORES.iconoCampo} />
+                <Text style={estilos.textoFoto}>Toque para elegir su foto</Text>
+                <Text style={estilos.ayudaFoto}>JPG o PNG, hasta 8 MB</Text>
+              </>
+            )}
           </Pressable>
+          {errorFoto ? <Text style={estilos.errorFoto}>{errorFoto}</Text> : null}
 
           {/*
             El consentimiento. La casilla y el enlace van en la MISMA fila
@@ -417,6 +477,33 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  // Con foto, el recuadro deja de ser una zona vacía por rellenar: borde
+  // sólido, sin el guionado que solo tiene sentido cuando no hay nada adentro.
+  zonaFotoConImagen: {
+    borderStyle: 'solid',
+    borderColor: COLORES.lineaCard,
+  },
+  previewFoto: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  quitarFoto: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorFoto: {
+    color: COLORES.error,
+    fontSize: 12,
+    marginTop: -12,
     marginBottom: 16,
   },
   textoFoto: {

@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import { divIcon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { Bike, Navigation, Signpost, Phone, Package, MapPin, Radio, Sun, TriangleAlert } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useReparto, enlaceDeRuta } from '../../hooks/useReparto';
 import { useViajeEnVivo } from '../../hooks/useViajeEnVivo';
 import { useAjustesCtx } from '../../context/AjustesContext';
 import ModalCodigoEntrega from '../../components/Admin/ModalCodigoEntrega';
+import Mapa from '../../components/Mapa/Mapa';
 
 /*
  * Reparto — los pedidos a domicilio pendientes, para quien los lleva.
@@ -19,30 +17,6 @@ import ModalCodigoEntrega from '../../components/Admin/ModalCodigoEntrega';
  * Además, desde aquí se comparte la ubicación en vivo: el pedido que se suma
  * al viaje empieza a mandar dónde va, y el cliente lo ve avanzar.
  */
-
-const pinEntrega = divIcon({
-  className: '',
-  html: `<div style="
-    width:26px;height:26px;border-radius:50% 50% 50% 0;
-    background:var(--marca-600);transform:rotate(-45deg);
-    border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.35);
-  "></div>`,
-  iconSize: [26, 26],
-  iconAnchor: [13, 26],
-});
-
-// El repartidor en su propio mapa: círculo con halo, para distinguirlo de una
-// sola mirada del pin del destino.
-const pinRepartidor = divIcon({
-  className: '',
-  html: `<div style="
-    width:18px;height:18px;border-radius:50%;
-    background:#2563eb;border:3px solid #fff;
-    box-shadow:0 0 0 6px rgba(37,99,235,.22), 0 3px 8px rgba(0,0,0,.3);
-  "></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-});
 
 const dinero = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 
@@ -200,24 +174,22 @@ const Reparto = () => {
                 */}
                 {hayPunto && (
                   <div style={{ height: 150 }}>
-                    <MapContainer
-                      center={[p.deliveryLat, p.deliveryLng]}
+                    {/*
+                      El destino es la gota; su propio punto (el azul que late)
+                      sale cuando comparte ubicación, para confirmar de un
+                      vistazo que el GPS está agarrando y no manda cualquier cosa.
+                    */}
+                    <Mapa
+                      centro={{ lat: p.deliveryLat, lng: p.deliveryLng }}
                       zoom={16}
-                      zoomControl={false}
-                      attributionControl={false}
-                      dragging={false}
-                      scrollWheelZoom={false}
-                      doubleClickZoom={false}
-                      style={{ height: '100%', width: '100%' }}
-                    >
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <Marker position={[p.deliveryLat, p.deliveryLng]} icon={pinEntrega} />
-                      {/* Su propio punto, para confirmar de un vistazo que el
-                          GPS está agarrando y no está mandando cualquier cosa */}
-                      {compartiendo && posicion && (
-                        <Marker position={[posicion.lat, posicion.lng]} icon={pinRepartidor} />
-                      )}
-                    </MapContainer>
+                      interactivo={false}
+                      pines={[
+                        { id: 'entrega', lat: p.deliveryLat, lng: p.deliveryLng, tipo: 'gota', tamano: 26 },
+                        compartiendo && posicion && {
+                          id: 'repartidor', lat: posicion.lat, lng: posicion.lng, tipo: 'repartidor', tamano: 18,
+                        },
+                      ].filter(Boolean)}
+                    />
                   </div>
                 )}
 

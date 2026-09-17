@@ -73,8 +73,30 @@ const imprimirArchivo = (url) => {
   win.document.close();
 };
 
-// Fuerza la descarga en Cloudinary (fl_attachment) en vez de abrirlo.
-const urlDescarga = (url) => (url.includes('/upload/') ? url.replace('/upload/', '/upload/fl_attachment/') : url);
+/*
+ * La descarga de un trabajo de impresión SIEMPRE sale en PDF, con un nombre
+ * que dice de qué pedido es.
+ *
+ * Antes se bajaba tal cual se guardó: las hojas armadas en el editor viejo y
+ * las fotos que suben los clientes llegaban como PNG o JPG sueltos, con el
+ * nombre al azar de Cloudinary ("f1xpr6sgbcnk2ri0xsvb.png"). Un documento que
+ * se va a imprimir tiene que llegar como documento.
+ *
+ * No hace falta convertir nada aquí: Cloudinary entrega una imagen como PDF
+ * con solo pedirle la extensión .pdf, y fl_attachment:<nombre> hace que el
+ * navegador lo descargue con ese nombre en vez de abrirlo. Los que ya eran
+ * PDF quedan igual, solo con el nombre nuevo.
+ */
+const urlDescarga = (order) => {
+  const url = order.printJob.fileUrl;
+  if (!url.includes('/image/upload/')) {
+    return url.includes('/upload/') ? url.replace('/upload/', '/upload/fl_attachment/') : url;
+  }
+  const nombre = `impresion-pedido-${String(order._id).slice(-6)}`;
+  return url
+    .replace('/image/upload/', `/image/upload/fl_attachment:${nombre}/`)
+    .replace(/\.(png|jpe?g|webp|gif)(\?.*)?$/i, '.pdf$2');
+};
 
 const Orders = () => {
   const { orders, loading, cambiarEstado } = useOrders();
@@ -288,10 +310,10 @@ const Orders = () => {
                             <Eye className="w-3.5 h-3.5" /> Ver archivo
                           </a>
                           <a
-                            href={urlDescarga(order.printJob.fileUrl)} target="_blank" rel="noreferrer"
+                            href={urlDescarga(order)} target="_blank" rel="noreferrer"
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
                           >
-                            <Download className="w-3.5 h-3.5" /> Descargar
+                            <Download className="w-3.5 h-3.5" /> Descargar PDF
                           </a>
                           <span className="text-xs ml-1" style={{ color: order.printJob.emailedToPrinter ? '#16a34a' : '#d97706' }}>
                             {order.printJob.emailedToPrinter ? '✓ Ya enviado a impresora' : 'Pendiente de imprimir'}

@@ -8,6 +8,7 @@
  *   GET  /order/client/:clienteId   su historial
  *   POST /order                     crear el pedido (el checkout)
  *   GET  /order/tiempo-zona         cuánto tardamos en llegar a un punto
+ *   GET  /order/:id/courier         dónde va el repartidor, en vivo
  *
  * El historial viene ordenado del más nuevo al más viejo por el backend, con
  * los productos ya poblados. No hace falta reordenarlo aquí, y hacerlo sería
@@ -41,3 +42,11 @@ export const crearPedido = (datos) => peticion('/order', { metodo: 'POST', cuerp
  */
 export const getTiempoPorZona = (lat, lng) =>
   peticion(`/order/tiempo-zona?lat=${lat}&lng=${lng}`);
+
+/*
+ * Dónde va el repartidor ahora mismo (y el estado del pedido, de paso). Lo
+ * consulta useSeguimientoEnVivo cada pocos segundos mientras el pedido está
+ * en curso — ver ese hook para el porqué del "cada pocos segundos" en vez de
+ * un socket.
+ */
+export const getCourierPosition = (pedidoId) => peticion(`/order/${pedidoId}/courier`);

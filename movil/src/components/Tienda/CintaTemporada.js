@@ -18,21 +18,23 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTema } from '../../context/TemaContext';
 
 const CintaTemporada = () => {
-  const { decoracion, colores } = useTema();
+  const { decoracion, colores, activo, saludoNormal } = useTema();
 
   /*
-   * Sin temporada, con la decoración apagada, o con un tema sin saludo, no se
-   * pinta NADA. Ni una vista vacía: un contenedor invisible con relleno sigue
-   * empujando la tienda hacia abajo todo el año.
+   * Con temporada: su saludo (si la decoración está encendida). Sin
+   * temporada: el saludo de días normales, si el dueño escribió uno. Si no
+   * hay nada que decir no se pinta NADA — ni una vista vacía: un contenedor
+   * invisible con relleno sigue empujando la tienda hacia abajo todo el año.
    */
-  if (!decoracion?.saludo) return null;
+  const texto = activo ? decoracion?.saludo : saludoNormal;
+  if (!texto) return null;
 
   return (
     <View
       style={[estilos.banda, { backgroundColor: colores.marca }]}
       accessibilityRole="text"
     >
-      <Text style={estilos.texto}>{decoracion.saludo}</Text>
+      <Text style={estilos.texto}>{texto}</Text>
     </View>
   );
 };

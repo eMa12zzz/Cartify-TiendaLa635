@@ -7,14 +7,14 @@
  * debajo. Se usa en los dos mismos lugares que la web — Checkout y Mi
  * cuenta → Direcciones — como una sola hoja compartida, no dos copias.
  *
- * ── Por qué es un WebView con Leaflet, y no react-native-maps ──
- * La web dejó Google Maps por Nominatim/OpenStreetMap: la llave de Google
- * del proyecto ya no sirve (venció el trial) y Maps pide facturación con
- * tarjeta (ver `useUbicacion.js`). `react-native-maps` en Android SIEMPRE
- * dibuja con el motor de Google Maps por debajo — así que hubiera chocado
- * con el mismo problema que ya se evitó en la web. Un WebView que corre la
- * MISMA librería (Leaflet, mismas teselas OSM) no necesita ninguna llave.
- * El HTML que corre adentro está en `mapaLeafletHtml.js`; este archivo solo
+ * ── Por qué es un WebView con MapLibre, y no react-native-maps ──
+ * La web dejó Google Maps: la llave de Google del proyecto ya no sirve
+ * (venció el trial) y Maps pide facturación con tarjeta (ver
+ * `useUbicacion.js`). `react-native-maps` en Android SIEMPRE dibuja con el
+ * motor de Google Maps por debajo — así que hubiera chocado con el mismo
+ * problema. Un WebView que corre lo MISMO que la web (MapLibre con el estilo
+ * de CARTO, como mapcn) no necesita ninguna llave y se ve igual.
+ * El HTML que corre adentro está en `mapaDireccionHtml.js`; este archivo solo
  * pone el marco (la hoja, los campos, guardar/cancelar) y escucha los
  * mensajes que manda el mapa.
  *
@@ -24,10 +24,13 @@
  * TEXTO a mano (Nominatim acierta la calle pero no sabe que es "la casa del
  * portón verde"), pero no se puede guardar sin haber tocado el mapa.
  *
- * ── Lo que se dejó afuera a propósito ──
- * El botón "Usar mi ubicación" de la web pide el GPS del navegador; en RN
- * eso es `expo-location`, una SEGUNDA dependencia nueva que no se pidió. Se
- * puede marcar el pin a mano igual, tocando el mapa.
+ * ── "Dirección actual" ──
+ * Pide el GPS con `expo-location` (permiso de foreground nada más, no hace
+ * falta ubicación en segundo plano) y mueve el pin igual que si se hubiera
+ * tocado ese punto en el mapa. El mapa vive en el WebView y esto corre en
+ * React Native, así que la posición se le manda al revés que un toque
+ * normal: por `injectJavaScript`, llamando a `window.marcarPinExterno` (ver
+ * mapaDireccionHtml.js) en vez de esperar un mensaje del mapa.
  * ============================================================
  */
 
@@ -45,23 +48,42 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin } from 'lucide-react-native';
+import { LocateFixed, MapPin } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
-import { crearHtmlMapa } from './mapaLeafletHtml';
+import { crearHtmlMapa } from './mapaDireccionHtml';
 import Boton from './Boton';
 import CampoTexto from './CampoTexto';
+import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from './BarraInferior';
 
 const ALTO_MAPA = 260;
 
-const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false }) => {
+/*
+ * `conBarraFlotante`: true solo cuando esta hoja se abre desde una pantalla
+ * que vive DENTRO de un apartado del Tab (Mi cuenta → Direcciones) — ahí la
+ * píldora de abajo flota por encima y tapa "Guardar esta dirección" si no se
+ * le deja hueco. Desde Checkout no hace falta: es una pantalla de Stack que
+ * reemplaza el Tab entero, sin píldora detrás. Mismo criterio que
+ * `ModalProducto` (ver el comentario grande ahí).
+ */
+const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFlotante = false }) => {
   const { colores } = useTema();
   const { bottom } = useSafeAreaInsets();
-  const { posicion, direccion, setDireccion, buscando, avisoGeocod, marcarEn } = useUbicacion();
+  const {
+    posicion,
+    direccion,
+    setDireccion,
+    buscando,
+    localizando,
+    avisoGeocod,
+    marcarEn,
+    localizarme,
+  } = useUbicacion();
   const [nombre, setNombre] = useState('');
   const [referencia, setReferencia] = useState('');
+  const webviewRef = useRef(null);
 
   // Misma entrada/salida animada que ModalProducto y ModalConfirmarEdad.
   const fondoOpacidad = useRef(new Animated.Value(0)).current;
@@ -139,6 +161,22 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false }) => {
     }
   };
 
+  /*
+   * Cada vez que cambia la posición —tocando el mapa o con "Dirección
+   * actual"— se le avisa al mapa por si acaso. Cuando el cambio vino de un
+   * toque dentro del propio mapa esto es un no-op (ya está ahí); cuando vino
+   * del GPS es lo único que lo entera de dónde centrarse y poner el pin.
+   */
+  useEffect(() => {
+    if (posicion) {
+      webviewRef.current?.injectJavaScript(
+        // Con guarda: si el GPS responde antes de que el mapa termine de
+        // cargar, la función todavía no existe.
+        `window.marcarPinExterno && window.marcarPinExterno(${posicion.lat}, ${posicion.lng}); true;`
+      );
+    }
+  }, [posicion]);
+
   const listo = !!posicion && direccion.trim().length > 0 && !guardando;
 
   const guardar = () => {
@@ -168,7 +206,14 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false }) => {
           </View>
 
           <ScrollView
-            contentContainerStyle={[estilos.contenido, { paddingBottom: Math.max(bottom + 16, 30) }]}
+            contentContainerStyle={[
+              estilos.contenido,
+              {
+                paddingBottom: conBarraFlotante
+                  ? 16 + Math.max(bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE
+                  : Math.max(bottom + 16, 30),
+              },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -176,6 +221,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false }) => {
 
             <View style={estilos.marcoMapa}>
               <WebView
+                ref={webviewRef}
                 originWhitelist={['*']}
                 source={{ html: htmlMapa }}
                 onMessage={alMensajeDelMapa}
@@ -195,12 +241,34 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false }) => {
               )}
             </View>
 
+            <Pressable
+              onPress={localizarme}
+              disabled={localizando}
+              hitSlop={4}
+              style={({ pressed }) => [
+                estilos.botonUbicacion,
+                { borderColor: colores.marca },
+                localizando && estilos.botonUbicacionApagado,
+                pressed && !localizando && { backgroundColor: colores.marcaSuave },
+              ]}
+            >
+              {localizando ? (
+                <ActivityIndicator size="small" color={colores.marca} />
+              ) : (
+                <LocateFixed size={15} color={colores.marca} />
+              )}
+              <Text style={[estilos.textoUbicacion, { color: colores.marca }]}>
+                {localizando ? 'Buscando su ubicación…' : 'Dirección actual'}
+              </Text>
+            </Pressable>
+
             <CampoTexto
               etiqueta="Dirección"
               icono={MapPin}
               marcador={posicion ? 'Calle, número y colonia' : 'Se llena al marcar en el mapa'}
               valor={direccion}
               alCambiar={setDireccion}
+              redondo
             />
             {buscando && (
               <View style={estilos.filaBuscando}>
@@ -215,12 +283,14 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false }) => {
               marcador="Casa, Trabajo…"
               valor={nombre}
               alCambiar={setNombre}
+              redondo
             />
             <CampoTexto
               etiqueta="Referencia (opcional)"
               marcador="Portón verde, frente a la cancha"
               valor={referencia}
               alCambiar={setReferencia}
+              redondo
             />
 
             <View style={estilos.filaBotones}>
@@ -311,6 +381,25 @@ const estilos = StyleSheet.create({
     fontSize: 12.5,
     color: '#5a4a3c',
     textAlign: 'center',
+  },
+  botonUbicacion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    alignSelf: 'flex-start',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    marginBottom: 14,
+  },
+  botonUbicacionApagado: {
+    opacity: 0.6,
+  },
+  textoUbicacion: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   filaBuscando: {
     flexDirection: 'row',

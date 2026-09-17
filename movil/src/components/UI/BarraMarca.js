@@ -15,12 +15,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Store } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
+import MarcaTienda from './MarcaTienda';
 
 const BarraMarca = ({ centrado = false, alTocarMarca, textoAccion, alPresionarAccion }) => (
   <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 12 }, centrado && estilos.barraCentrada]}>
     <Pressable onPress={alTocarMarca} disabled={!alTocarMarca} style={centrado && estilos.marcaCentrada}>
-      <Text style={[estilos.marcaChica, centrado && estilos.centrado]}>Tienda</Text>
-      <Text style={[estilos.marcaNombre, centrado && estilos.centrado]}>la 635</Text>
+      <MarcaTienda tamano={20} centrado={centrado} />
     </Pressable>
 
     {textoAccion && (
@@ -55,21 +55,6 @@ const estilos = StyleSheet.create({
   },
   marcaCentrada: {
     alignItems: 'center',
-  },
-  marcaChica: {
-    fontSize: 12,
-    color: '#AAAAAA',
-    lineHeight: 15,
-  },
-  marcaNombre: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111111',
-    letterSpacing: -0.5,
-    lineHeight: 24,
-  },
-  centrado: {
-    textAlign: 'center',
   },
   accion: {
     flexDirection: 'row',

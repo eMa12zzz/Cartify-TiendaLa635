@@ -336,6 +336,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
               deshabilitado={agotado}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
+              estilo={estilos.botonRedondo}
               alPresionar={() => {
                 const meter = () => {
                   alAgregar(producto, cantidad);
@@ -556,6 +557,12 @@ const estilos = StyleSheet.create({
     paddingBottom: 26,
     borderTopWidth: 1,
     borderTopColor: COLORES.linea,
+  },
+  // Misma píldora de 28 que ya lleva "Iniciar sesión" (LoginClient.js) y
+  // "Confirmar" del candado de edad: se pasa por `estilo`, sin tocar las
+  // esquinas de 8 del Boton compartido, que otros usos sí necesitan.
+  botonRedondo: {
+    borderRadius: 28,
   },
 });
 

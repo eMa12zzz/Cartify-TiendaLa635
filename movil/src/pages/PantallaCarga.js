@@ -14,7 +14,7 @@ import { COLORES } from '../theme/colores';
 const PantallaCarga = () => (
   <View style={estilos.contenedor}>
     <View style={estilos.marca}>
-      <Text style={estilos.marcaChica}>Tienda</Text>
+      <Text style={estilos.marcaNombre}>Tienda</Text>
       <Text style={estilos.marcaNombre}>la 635</Text>
     </View>
     <ActivityIndicator size="large" color={COLORES.marca} style={estilos.indicador} />
@@ -30,11 +30,6 @@ const estilos = StyleSheet.create({
   },
   marca: {
     alignItems: 'center',
-  },
-  marcaChica: {
-    fontSize: 15,
-    color: COLORES.textoTenue,
-    letterSpacing: 1,
   },
   marcaNombre: {
     fontSize: 36,

@@ -31,10 +31,10 @@ export const loginClientDB = ({ email, password }) =>
  * token de 15 minutos, lo deja en la cookie `registrationCookie` y manda un
  * código de 6 caracteres al correo. La cuenta nace en verificarCodigoCorreo.
  *
- * Se manda como JSON y no como FormData porque todavía no hay foto que subir.
- * El multer de la ruta deja pasar de largo las peticiones que no son
- * multipart, así que funciona igual; cuando se conecte la galería, esto
- * cambia a FormData y el resto se queda como está.
+ * Va como FormData y no como JSON porque puede traer una foto (ver
+ * pages/Register.js, `elegirFoto`) — mismo formato que ya manda
+ * `useRegistro.js` en la web, campo por campo y no con un objeto suelto,
+ * porque FormData no sabe volcar un objeto de una sola vez.
  *
  * ── El consentimiento ──
  *
@@ -48,9 +48,8 @@ export const loginClientDB = ({ email, password }) =>
  * se aceptara la que dice el cliente, bastaría con inventarse un número para
  * dejar registrado el consentimiento de un texto que nunca existió.
  *
- * Van como booleanos de verdad y no como "true": el backend los lee con
- * `esVerdadero`, que acepta ambos, pero esto es JSON y no multipart — no hay
- * razón para mandar texto.
+ * Los booleanos van como texto ("true"/"false") porque FormData no sabe de
+ * otra cosa; el backend los lee con `esVerdadero`, que acepta ambos.
  */
 export const registrarCliente = ({
   fullName,
@@ -63,21 +62,32 @@ export const registrarCliente = ({
   password,
   aceptaTerminos,
   promociones,
-}) =>
-  peticion('/registerClient', {
-    metodo: 'POST',
-    cuerpo: {
-      fullName,
-      dui,
-      fechaNacimiento,
-      phoneNumber,
-      email,
-      userName,
-      password,
-      aceptaTerminos: !!aceptaTerminos,
-      promociones: !!promociones,
-    },
-  });
+  // El "asset" que entrega expo-image-picker: { uri, fileName, mimeType }.
+  foto,
+}) => {
+  const cuerpo = new FormData();
+  cuerpo.append('fullName', fullName);
+  // El DUI solo viaja si se escribió: ver el mismo cuidado en useRegistro.js
+  // de la web (una cadena vacía para todos los que no lo dieron es peor que
+  // no mandar el campo).
+  if (dui?.trim()) cuerpo.append('dui', dui.trim());
+  if (fechaNacimiento) cuerpo.append('fechaNacimiento', fechaNacimiento);
+  cuerpo.append('phoneNumber', phoneNumber);
+  cuerpo.append('email', email);
+  cuerpo.append('userName', userName);
+  cuerpo.append('password', password);
+  cuerpo.append('aceptaTerminos', String(!!aceptaTerminos));
+  cuerpo.append('promociones', String(!!promociones));
+  if (foto) {
+    cuerpo.append('image', {
+      uri: foto.uri,
+      name: foto.fileName || 'foto.jpg',
+      type: foto.mimeType || 'image/jpeg',
+    });
+  }
+
+  return peticion('/registerClient', { metodo: 'POST', cuerpo });
+};
 
 /*
  * Confirmar el código del correo. Aquí sí se crea la cuenta.

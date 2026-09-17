@@ -343,12 +343,34 @@ clientController.updatePaymentMethods = async (req, res) => {
       return res.status(400).json({ message: "paymentMethods debe ser un arreglo" });
     }
 
-    // Blindaje: guardamos SOLO campos no sensibles, aunque el front mande de más.
-    const limpios = paymentMethods.map((m) => ({
-      type: m.type || "tarjeta",
-      alias: m.alias || "",
-      last4: (m.last4 || "").toString().slice(-4),
-    }));
+    /*
+     * Blindaje: guardamos SOLO campos no sensibles, aunque el front mande de
+     * más. Si alguien manda el número completo o el CVV, no hay campo donde
+     * caigan: de `last4` se quedan solo los últimos 4 dígitos.
+     */
+    const MARCAS = ["visa", "mastercard", "amex", "discover", "otra"];
+    const limpios = paymentMethods.map((m) => {
+      const esEfectivo = m.type === "efectivo";
+      const base = {
+        type: esEfectivo ? "efectivo" : "tarjeta",
+        alias: String(m.alias || "").trim().slice(0, 40),
+        last4: String(m.last4 || "").replace(/\D/g, "").slice(-4),
+      };
+      if (esEfectivo) return base;
+
+      const mes = Number(m.expMonth);
+      const anio = Number(m.expYear);
+      return {
+        ...base,
+        brand: MARCAS.includes(m.brand) ? m.brand : "otra",
+        cardType: ["credito", "debito"].includes(m.cardType) ? m.cardType : "",
+        holder: String(m.holder || "").trim().toUpperCase().slice(0, 40),
+        // Las tarjetas viejas (de antes de estos campos) no traen vencimiento
+        // y se guardan sin él, no se rechazan.
+        expMonth: Number.isInteger(mes) && mes >= 1 && mes <= 12 ? mes : undefined,
+        expYear: Number.isInteger(anio) && anio >= 2000 && anio <= 2100 ? anio : undefined,
+      };
+    });
 
     const updated = await clientModel
       .findByIdAndUpdate(req.params.id, { paymentMethods: limpios }, { new: true })

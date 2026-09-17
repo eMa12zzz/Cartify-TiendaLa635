@@ -54,6 +54,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
 import { useAviso } from '../context/AvisoContext';
+import { usePedidoActivoCtx } from '../context/PedidoActivoContext';
 import { getCliente, actualizarDirecciones } from '../api/clienteApi';
 import { getSaldo, canjearTarjeta } from '../api/giftCardApi';
 import { getResumenPuntos, getConfigFidelidad } from '../api/fidelidadApi';
@@ -120,6 +121,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const { colores } = useTema();
   const { avisar } = useAviso();
   const { carrito, totalCarrito } = useTienda();
+  const { refrescar: refrescarPedidoActivo } = usePedidoActivoCtx();
   const { bottom } = useSafeAreaInsets();
 
   // Los pedidos van a nombre de un CLIENTE. El personal entra por la misma
@@ -129,6 +131,14 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
+  /*
+   * Qué miniaturas de "Su orden" fallaron al cargar (por id de producto).
+   * Sin esto, un WebP/AVIF que expo-image no decodifica —el mismo problema
+   * que Carrito.js y TarjetaProducto.js ya cubren con su propio
+   * `fallóImagen`— se quedaba en blanco para siempre en vez de caer al
+   * icono de repuesto.
+   */
+  const [fallosImagen, setFallosImagen] = useState({});
 
   // ── Cómo lo recibe ──
   const [entrega, setEntrega] = useState('retiro');
@@ -329,6 +339,9 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       // cerrarse. Vaciarlo ahora dejaría el resumen del pedido recién hecho
       // pintándose sobre una lista que se acaba de quedar vacía.
       alConfirmar(respuesta);
+      // La burbuja de seguimiento cargó los pedidos UNA vez al abrir la app;
+      // sin este aviso no se enteraría de que hay uno nuevo hasta reabrirla.
+      refrescarPedidoActivo();
     } catch (e) {
       /*
        * Aquí caen los mensajes que valen: "Solo quedan 3 de Leche", "Saldo
@@ -560,8 +573,13 @@ const Checkout = ({ alVolver, alConfirmar }) => {
           <View style={estilos.miniaturas}>
             {carrito.slice(0, MINIATURAS).map((item) => (
               <View key={item.id} style={estilos.miniatura}>
-                {item.imagen ? (
-                  <Image source={{ uri: item.imagen }} contentFit="contain" style={estilos.miniaturaImagen} />
+                {item.imagen && !fallosImagen[item.id] ? (
+                  <Image
+                    source={{ uri: item.imagen }}
+                    contentFit="contain"
+                    style={estilos.miniaturaImagen}
+                    onError={() => setFallosImagen((f) => ({ ...f, [item.id]: true }))}
+                  />
                 ) : (
                   <Paquete size={22} />
                 )}

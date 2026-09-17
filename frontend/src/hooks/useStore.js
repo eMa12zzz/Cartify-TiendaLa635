@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from 'react';
 import toast from 'react-hot-toast';
+import { avisarAgregado } from '../utils/avisoCarrito';
+import { volarAlCarrito } from '../utils/volarAlCarrito';
 import { productService } from '../api/productService';
 import { promotionService } from '../api/promotionService';
 import { promoVigente } from '../utils/promos';
@@ -477,7 +479,12 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
     escribirLineas(suyo, fusion);
   }, [user?.id]);
 
-  const agregarAlCarrito = (producto, cantidad = 1) => {
+  /*
+   * `origen` es la foto desde donde se tocó "+": si viene, sale volando hasta
+   * el botón del carrito. El asistente de voz agrega sin foto de origen y ahí
+   * no vuela nada — solo sale el aviso.
+   */
+  const agregarAlCarrito = (producto, cantidad = 1, { origen } = {}) => {
     if (!producto?.id) return;
     const stock = Number(producto.stock) || 0;
     if (stock <= 0) {
@@ -500,12 +507,15 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
         : [...carrito, { id: producto.id, cantidad }]
     );
 
+    volarAlCarrito(origen);
+
     /*
      * El aviso dice cuántos lleva, no solo que se agregó: al segundo click el
      * texto era idéntico y no había forma de saber si el toque contó.
-     * El estilo sale del <Toaster> de App: aquí no se pisa nada.
+     * Es la píldora oscura de la landing page, abajo al centro; ver
+     * utils/avisoCarrito.jsx.
      */
-    toast.success(
+    avisarAgregado(
       nuevaCantidad > 1
         ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
         : `${producto.nombre} agregado al carrito`

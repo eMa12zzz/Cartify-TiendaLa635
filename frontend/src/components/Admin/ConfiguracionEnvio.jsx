@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
-import { divIcon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { MapPin, Search, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAjustesCtx } from '../../context/AjustesContext';
+import Mapa from '../Mapa/Mapa';
 
 /*
  * ============================================================
@@ -19,7 +17,8 @@ import { useAjustesCtx } from '../../context/AjustesContext';
  * resto de los mapas de la app.
  *
  * El cálculo vive en utils/envio.js y es el MISMO que usa el carrito y el
- * backend. Sin ubicación fijada, se cae a la tarifa plana de siempre.
+ * backend. Sin ubicación fijada (o si el cliente no marcó su punto) se cobra
+ * solo la tarifa base.
  * ============================================================
  */
 
@@ -27,42 +26,17 @@ import { useAjustesCtx } from '../../context/AjustesContext';
 const CENTRO_POR_DEFECTO = [13.6989, -89.1914];
 
 /*
- * var(--theme-primary) y no var(--marca-*): el resto de esta pantalla ya
- * sigue la paleta del panel (ver el MapPin de abajo), y este pin es lo
- * mismo, un marcador de ubicación — no una vitrina del color de marca como
- * sí lo es ColorMarca.jsx. --theme-primary está pintada siempre, sin
- * importar la ruta, así que no hace falta el truco de inyectarla a mano.
+ * var(--theme-primary) y no var(--marca-*) para el pin: el resto de esta
+ * pantalla ya sigue la paleta del panel (ver el MapPin de abajo), y este pin
+ * es lo mismo, un marcador de ubicación. --theme-primary está pintada siempre,
+ * sin importar la ruta.
  */
-const pinTienda = divIcon({
-  className: '',
-  html: `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:var(--theme-primary,#003049);transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.35);"></div>`,
-  iconSize: [22, 22],
-  iconAnchor: [11, 22],
-});
+const COLOR_PIN = 'var(--theme-primary, #003049)';
 
 // Number(null) === 0, así que hay que descartar vacíos antes de tratarlos como
 // coordenada; si no, la tienda sin fijar aparecería en (0,0), en el mar.
 const esCoord = (v) => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
 const hayCoord = (lat, lng) => esCoord(lat) && esCoord(lng);
-
-// Capta el clic en el mapa para colocar la tienda a mano.
-const CaptadorDeClic = ({ onClick }) => {
-  useMapEvents({ click: (e) => onClick(e.latlng.lat, e.latlng.lng) });
-  return null;
-};
-
-/*
- * Mueve el mapa cuando el buscador encuentra una dirección. El centro de
- * MapContainer solo se usa al montar, así que sin esto el pin nuevo aparecía
- * pero el mapa se quedaba mirando a otro lado.
- */
-const RecentrarMapa = ({ vista }) => {
-  const mapa = useMap();
-  useEffect(() => {
-    if (vista) mapa.setView([vista.lat, vista.lng], 16, { animate: true });
-  }, [vista, mapa]);
-  return null;
-};
 
 const ConfiguracionEnvio = () => {
   const { ajustes, guardar, guardando } = useAjustesCtx();
@@ -89,7 +63,7 @@ const ConfiguracionEnvio = () => {
     ? [Number(tienda.lat), Number(tienda.lng)]
     : CENTRO_POR_DEFECTO;
 
-  const alClicEnMapa = (lat, lng) => setTienda({ lat, lng });
+  const alClicEnMapa = ({ lat, lng }) => setTienda({ lat, lng });
 
   /*
    * Busca la dirección en Nominatim (OpenStreetMap). Se sesga a El Salvador
@@ -165,8 +139,8 @@ const ConfiguracionEnvio = () => {
         </h2>
         <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
           El precio del domicilio se calcula por la distancia real hasta el cliente: una tarifa
-          base más un precio por km. Fije abajo de dónde salen los repartos. Sin ubicación fijada,
-          se cobra la tarifa plana de respaldo.
+          base más un precio por km. Fije abajo de dónde salen los repartos. Mientras no haya
+          ubicación, se cobra solo la tarifa base.
         </p>
       </div>
 
@@ -201,14 +175,22 @@ const ConfiguracionEnvio = () => {
       {/* El mapa */}
       <div className="rounded-2xl overflow-hidden border mb-2" style={{ borderColor: 'var(--theme-card-border)' }}>
         <div style={{ height: 320 }}>
-          <MapContainer center={centro} zoom={tieneUbicacion ? 16 : 13} style={{ height: '100%', width: '100%' }}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <CaptadorDeClic onClick={alClicEnMapa} />
-            <RecentrarMapa vista={vista} />
-            {tieneUbicacion && (
-              <Marker position={[Number(tienda.lat), Number(tienda.lng)]} icon={pinTienda} />
-            )}
-          </MapContainer>
+          {/*
+            Tocar el mapa fija la tienda. Cuando el buscador encuentra una
+            dirección el mapa se mueve hasta ella (`seguir`): sin eso el pin
+            nuevo aparecía pero el mapa se quedaba mirando a otro lado.
+          */}
+          <Mapa
+            centro={{ lat: centro[0], lng: centro[1] }}
+            zoom={tieneUbicacion ? 16 : 13}
+            onTocar={alClicEnMapa}
+            seguir={{ punto: vista, zoomMinimo: 16, forzar: vista?._t }}
+            controles
+            pines={tieneUbicacion ? [{
+              id: 'tienda', lat: Number(tienda.lat), lng: Number(tienda.lng),
+              tipo: 'gota', tamano: 22, color: COLOR_PIN,
+            }] : []}
+          />
         </div>
       </div>
 
@@ -219,11 +201,11 @@ const ConfiguracionEnvio = () => {
           className="text-xs font-semibold underline mb-5"
           style={{ color: 'var(--theme-text-muted)' }}
         >
-          Quitar la ubicación (volver a tarifa plana)
+          Quitar la ubicación
         </button>
       ) : (
         <p className="text-xs mb-5 font-semibold" style={{ color: '#d97706' }}>
-          Sin ubicación de la tienda se cobra la tarifa plana. Busque la dirección o toque el mapa.
+          Sin ubicación de la tienda se cobra solo la tarifa base. Busque la dirección o toque el mapa.
         </p>
       )}
 
@@ -244,7 +226,7 @@ const ConfiguracionEnvio = () => {
               style={inputStyle}
             />
           </div>
-          <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>Lo fijo que se cobra siempre.</p>
+          <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>Lo fijo que se cobra siempre (y lo único, si no se puede medir la distancia).</p>
         </div>
 
         <div className="space-y-1.5">

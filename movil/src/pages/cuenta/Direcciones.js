@@ -7,7 +7,7 @@
  * de la web, aquí también se agregan: mismo endpoint que usa Checkout.js al
  * escribir una nueva al elegir el envío, y el mismo mapa de las dos —
  * `ModalMapaDireccion`, ver ese archivo para el porqué de un WebView con
- * Leaflet en vez de react-native-maps.
+ * MapLibre en vez de react-native-maps.
  *
  * ── Borrar (y agregar) es mandar la lista completa ──
  *
@@ -214,6 +214,7 @@ const Direcciones = ({ alVolver }) => {
           alCerrar={() => setMostrarMapa(false)}
           alGuardar={agregar}
           guardando={guardando}
+          conBarraFlotante
         />
       )}
     </View>

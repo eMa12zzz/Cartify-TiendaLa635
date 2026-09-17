@@ -614,7 +614,7 @@ const ProductDetailModal = ({
                 entender que había varias vistas cuando no las hay.
               */}
               {producto.imagen && !imgError ? (
-                <Foto src={producto.imagen} alt={producto.nombre} onError={marcarImagenRota} />
+                <Foto data-foto-detalle src={producto.imagen} alt={producto.nombre} onError={marcarImagenRota} />
               ) : (
                 <SinFoto><Package size={84} strokeWidth={1.1} /></SinFoto>
               )}

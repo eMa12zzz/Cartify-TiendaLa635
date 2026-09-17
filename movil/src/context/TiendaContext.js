@@ -85,8 +85,18 @@ export const TiendaProvider = ({ children }) => {
   // Los pasillos (módulos) de la tienda: panadería, farmacia... Se cargan
   // aparte del catálogo y no lo bloquean — si esta lista falla, la tienda
   // sigue mostrando todo, solo sin el filtro por pasillo.
-  const [pasillos, setPasillos] = useState([]);
+  //
+  // `todosLosModulos` es la lista completa (incluye los de flujo propio,
+  // como Impresiones); `pasillos` es la que de verdad filtra el catálogo, y
+  // por eso se queda solo con los de flujo 'estandar' — ver utils/modulos.js.
+  // MenuPasillos.js necesita la lista completa para poder MOSTRAR Impresiones
+  // aunque no la use para filtrar nada.
+  const [todosLosModulos, setTodosLosModulos] = useState([]);
   const [moduloSeleccionado, setModuloSeleccionado] = useState(null);
+  const pasillos = useMemo(
+    () => todosLosModulos.filter((m) => flujoDeModulo(m) === 'estandar'),
+    [todosLosModulos]
+  );
 
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
@@ -132,15 +142,12 @@ export const TiendaProvider = ({ children }) => {
     getModulos()
       .then((datos) => {
         if (!vivo) return;
-        // Solo los de flujo 'estandar': los de flujo propio (impresiones)
-        // piden su propia pantalla, que todavía no existe en móvil. Ver
-        // utils/modulos.js.
-        setPasillos(modulosVisibles(datos).filter((m) => flujoDeModulo(m) === 'estandar'));
+        setTodosLosModulos(modulosVisibles(datos));
       })
       .catch(() => {
         // Sin pasillos la tienda se ve completa, sin el botón de filtrar —
         // no hay razón para que esto tumbe la portada.
-        if (vivo) setPasillos([]);
+        if (vivo) setTodosLosModulos([]);
       });
     return () => {
       vivo = false;
@@ -492,6 +499,7 @@ export const TiendaProvider = ({ children }) => {
       errorCarga,
       recargar: traerCatalogo,
       pasillos,
+      todosLosModulos,
       moduloSeleccionado,
       setModuloSeleccionado,
       nombrePasillo,
@@ -522,7 +530,7 @@ export const TiendaProvider = ({ children }) => {
       vaciarTrasPedido,
     }),
     [
-      productos, cargando, errorCarga, traerCatalogo, pasillos, moduloSeleccionado,
+      productos, cargando, errorCarga, traerCatalogo, pasillos, todosLosModulos, moduloSeleccionado,
       nombrePasillo, productosDelPasillo, categorias, categoriaSeleccionada,
       terminoBusqueda, productosFiltrados, productosDestacados, secciones, promosDelCarrusel,
       promoSeleccionada, promoDetalle, productosDePromo, abrirPromo, cerrarPromo,

@@ -4,15 +4,16 @@
  * ============================================================
  * Los iconos de los FORMULARIOS de sesión (correo, contraseña, DUI, teléfono,
  * la tienda de "seguir viendo"...) ya NO viven aquí: usan `lucide-react-native`,
- * que son los MISMOS iconos que la web dibuja con `lucide-react`. Para esos lo
- * que se buscaba era calzar con el diseño de la web, y nada calza como el mismo
- * trazo.
+ * que son los MISMOS iconos que la web dibuja con `lucide-react`. Lo mismo pasó
+ * con la bolsa del carrito, el basurero de quitar un artículo y la lupa del
+ * buscador: para esos lo que se buscaba era calzar con el diseño de la web, y
+ * nada calza como el mismo trazo.
  *
- * Lo que queda aquí son los iconos de la TIENDA, el carrito y la decoración de
- * temporada: formas simples (una bolsa, una lupa, un copo, un corazón) armadas
- * con rectángulos, círculos y rayas. Cuesta más leerlas que un SVG, pero pesan
- * cero y no atan la tienda a un set concreto — a un copo de fondo no le hace
- * falta ser "el" copo de ninguna librería.
+ * Lo que queda aquí son los iconos de la TIENDA y la decoración de temporada:
+ * formas simples (un copo, un corazón) armadas con rectángulos, círculos y
+ * rayas. Cuesta más leerlas que un SVG, pero pesan cero y no atan la tienda a
+ * un set concreto — a un copo de fondo no le hace falta ser "el" copo de
+ * ninguna librería.
  *
  * Regla al dibujar: solo bordes uniformes (los cuatro lados iguales) y radios
  * uniformes. Android renderiza mal los bordes a medias con esquinas
@@ -291,60 +292,6 @@ export const Check = ({ size = 12, color = '#FFFFFF' }) => (
 
 // ── Los de la tienda y el carrito ───────────────────────────
 
-export const Lupa = ({ size = 18, color = GRIS, grosor = 1.7 }) => {
-  const lente = size * 0.66;
-  return (
-    <View style={{ width: size, height: size }}>
-      <View
-        style={{
-          width: lente,
-          height: lente,
-          borderRadius: lente / 2,
-          borderWidth: grosor,
-          borderColor: color,
-        }}
-      />
-      {/* El mango sale de la esquina de abajo a la derecha del lente. */}
-      <Trazo
-        largo={size * 0.34}
-        grosor={grosor}
-        color={color}
-        estilo={{
-          position: 'absolute',
-          right: 0,
-          bottom: size * 0.13,
-          transform: [{ rotate: '45deg' }],
-        }}
-      />
-    </View>
-  );
-};
-
-/*
- * La bolsa de la compra. Es el icono del carrito en toda la tienda —la web usa
- * ShoppingBag, no un carrito de supermercado— y se arma con el cuerpo
- * rectangular y el asa como medio círculo asomando por arriba.
- */
-export const Bolsa = ({ size = 20, color = GRIS, grosor = 1.7 }) => {
-  const cuerpo = size * 0.74;
-  const asa = size * 0.36;
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
-      {/* El asa: un círculo al que la caja de arriba le corta la mitad de abajo. */}
-      <Arco ancho={asa} alto={asa / 2} grosor={grosor} color={color} estilo={{ marginBottom: -1 }} />
-      <View
-        style={{
-          width: cuerpo,
-          height: size * 0.62,
-          borderWidth: grosor,
-          borderColor: color,
-          borderRadius: 3,
-        }}
-      />
-    </View>
-  );
-};
-
 export const Mas = ({ size = 14, color = '#FFFFFF', grosor = 2 }) => (
   <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
     <Trazo largo={size * 0.82} grosor={grosor} color={color} estilo={{ position: 'absolute' }} />
@@ -379,24 +326,6 @@ export const Equis = ({ size = 16, color = GRIS, grosor = 1.8 }) => (
       grosor={grosor}
       color={color}
       estilo={{ position: 'absolute', transform: [{ rotate: '-45deg' }] }}
-    />
-  </View>
-);
-
-export const Basura = ({ size = 15, color = GRIS, grosor = 1.5 }) => (
-  <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
-    {/* La agarradera de la tapa, y la tapa. */}
-    <Trazo largo={size * 0.3} grosor={grosor} color={color} />
-    <Trazo largo={size * 0.86} grosor={grosor} color={color} estilo={{ marginTop: 1.5 }} />
-    <View
-      style={{
-        width: size * 0.66,
-        height: size * 0.6,
-        borderWidth: grosor,
-        borderColor: color,
-        borderRadius: 2,
-        marginTop: 1.5,
-      }}
     />
   </View>
 );

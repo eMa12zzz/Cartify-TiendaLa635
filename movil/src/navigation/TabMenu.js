@@ -12,10 +12,11 @@
  * cierra la sesión estando en uno de esos dos, se cae a la tienda.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../hooks/useAuth';
 import { destinoPendiente, navegarA } from './navigationRef';
+import { avisarActividad } from '../utils/actividadUsuario';
 import BarraInferior from '../components/UI/BarraInferior';
 import Inicio from '../pages/Inicio';
 import Asistente from '../pages/Asistente';
@@ -35,6 +36,20 @@ const BarraDeApartados = ({ state, navigation }) => {
       navigation.navigate('inicio');
     }
   }, [isAuthenticated, apartado, navigation]);
+
+  /*
+   * Cambiar de apartado cuenta como "el usuario se movió", igual que
+   * scrollear — BurbujaPedido se aparta sola. Se salta el primer render: eso
+   * no es un cambio de pestaña, es la app arrancando en una.
+   */
+  const primeraVez = useRef(true);
+  useEffect(() => {
+    if (primeraVez.current) {
+      primeraVez.current = false;
+      return;
+    }
+    avisarActividad();
+  }, [apartado]);
 
   const cambiar = (clave) => {
     if (CON_SESION.includes(clave) && !isAuthenticated) {

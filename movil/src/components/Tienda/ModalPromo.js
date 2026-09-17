@@ -166,12 +166,13 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
                   justo lo que React Native avisa que no se haga.
                 */}
                 <View style={estilos.cuadricula}>
-                  {productos.map((p) => (
+                  {productos.map((p, i) => (
                     <View key={p.id} style={estilos.celda}>
                       <TarjetaProducto
                         producto={p}
                         alVerDetalle={alVerProducto}
                         alAgregar={alAgregar}
+                        indice={i}
                       />
                     </View>
                   ))}

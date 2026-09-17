@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Package, Lock } from 'lucide-react';
 import styled from 'styled-components';
 import { useFavoritosCtx } from '../../context/FavoritosContext';
@@ -15,7 +15,12 @@ const Card = styled.div`
   overflow: hidden;
   cursor: pointer;
   position: relative;
-  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
+  /*
+   * El levantarse dura más que un "press" (350ms y no 160): es la misma
+   * tarjeta de la landing page, que sube despacio y con la sombra difusa de
+   * abajo, no un salto.
+   */
+  transition: background-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), border-color 300ms var(--ease-out), transform 350ms var(--ease-out), box-shadow 350ms var(--ease-out);
   border: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
@@ -27,8 +32,9 @@ const Card = styled.div`
    */
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
-      transform: translateY(-4px);
+      border-color: transparent;
+      box-shadow: 0 18px 40px -18px rgba(0, 26, 41, 0.28);
+      transform: translateY(-5px);
     }
   }
 
@@ -71,11 +77,12 @@ const ProductImage = styled.img`
    * completas dentro del mismo marco.
    */
   object-fit: contain;
-  transition: transform 0.3s ease;
+  transition: transform 600ms var(--ease-out);
 
+  /* La foto se acerca y se ladea un poco, como en la landing page. */
   @media (hover: hover) and (pointer: fine) {
     ${Card}:hover & {
-      transform: scale(1.06);
+      transform: scale(1.08) rotate(-4deg);
     }
   }
 `;
@@ -325,13 +332,13 @@ const AddButton = styled.button`
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      background: #000;
+      background: var(--marca-600);
       transform: scale(1.08);
     }
   }
 
   &:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
   }
 
   /* Mismo criterio que el corazón: 38px se ven, 48px se tocan. Este botón es
@@ -354,6 +361,8 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
   const { esFavorito, alternar } = useFavoritosCtx();
   const liked = esFavorito(producto.id);
   const [imgError, setImgError] = useState(false);
+  // De aquí sale la foto que vuela al carrito (ver utils/volarAlCarrito.js).
+  const fotoRef = useRef(null);
 
   // Candado +18: si el producto es restringido y aún no confirmó su edad, se
   // tapa y cada intento (ver o agregar) pasa antes por la confirmación.
@@ -372,7 +381,9 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
   const handleAgregar = (e) => {
     e.stopPropagation();
     if (tapado) { pedirConfirmacion(() => onAgregarAlCarrito(producto)); return; }
-    onAgregarAlCarrito(producto);
+    // Vuela la foto sola; sin foto (el ícono de paquete), el recuadro entero.
+    const origen = fotoRef.current?.querySelector('img') || fotoRef.current;
+    onAgregarAlCarrito(producto, 1, { origen });
   };
 
   const handleWishlist = (e) => {
@@ -401,7 +412,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
         {liked ? '♥' : '♡'}
       </WishlistButton>
 
-      <ImageWrapper>
+      <ImageWrapper ref={fotoRef}>
         {producto.imagen && !imgError ? (
           <ProductImage
             src={producto.imagen}

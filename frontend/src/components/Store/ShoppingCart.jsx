@@ -1152,7 +1152,7 @@ const ShoppingCart = ({
    * Antes había dos caminos: escribirla a ciegas en tres cajas de texto, o
    * irse a otra pantalla a marcarla. El primero dejaba direcciones sin
    * coordenadas —el repartidor sale con un texto y sin saber a qué portón
-   * tocar, el envío se cobra a tarifa plana en vez de por distancia, y el
+   * tocar, el envío se cobra solo la base en vez de por distancia, y el
    * cliente no puede seguir su pedido en el mapa— y el segundo sacaba a la
    * persona del pago para mandarla de viaje.
    *
@@ -1193,7 +1193,7 @@ const ShoppingCart = ({
   // El costo del envío se calcula por DISTANCIA (zona → por km → plano) con la
   // ubicación de la dirección elegida. Es el MISMO cálculo que hace el backend,
   // así que lo que se ve aquí es lo que se va a cobrar. Si aún no cargan los
-  // ajustes o la dirección no tiene coordenadas, cae a la tarifa plana.
+  // ajustes o la dirección no tiene coordenadas, se cobra solo la tarifa base.
   const envioCalc = calcularEnvio(ajustes, { lat: direccionElegida?.lat, lng: direccionElegida?.lng });
   const COSTO_ENVIO = envioCalc.costo;
   const ENVIO = items.length > 0 && entrega === 'delivery' ? COSTO_ENVIO : 0;

@@ -29,8 +29,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
 import { useTienda } from '../context/TiendaContext';
 import { useSplashTimer } from '../hooks/useSplashTimer';
-import { arranqueResuelto, destinoPendiente, irATabs, navegarA, navigationRef } from './navigationRef';
+import { leer, guardar, llave } from '../utils/almacen';
+import { arranqueResuelto, destinoPendiente, irATabs, marcarArranqueResuelto, navegarA, navigationRef } from './navigationRef';
 import PantallaCarga from '../pages/PantallaCarga';
+import Onboarding from '../pages/Onboarding';
 import LoginClient from '../pages/LoginClient';
 import Register from '../pages/Register';
 import Verification from '../pages/Verification';
@@ -38,19 +40,40 @@ import Carrito from '../pages/Carrito';
 import Checkout from '../pages/Checkout';
 import Confirmacion from '../pages/Confirmacion';
 import Seccion from '../pages/Seccion';
+import Impresiones from '../pages/Impresiones';
 import ModalProducto from '../components/Tienda/ModalProducto';
 import TabMenu from './TabMenu';
 
 const Stack = createNativeStackNavigator();
 
+// Misma llave para leer (aquí) y para grabar (OnboardingRoute, al terminar).
+const LLAVE_ONBOARDING = llave('onboarding', 'visto');
+
 const SplashRoute = ({ navigation }) => {
   const { isAuthenticated, cargando } = useAuth();
-  const mostrarSplash = useSplashTimer(cargando);
+
+  // `null` mientras no se sabe todavía si ya se vio la introducción — un
+  // tercer estado, no un `false` de arranque, porque un `false` inicial
+  // mandaría a todo el mundo a Onboarding un instante antes de que
+  // `leer()` conteste que sí la había visto.
+  const [onboardingVisto, setOnboardingVisto] = useState(null);
+  useEffect(() => {
+    let vivo = true;
+    leer(LLAVE_ONBOARDING).then((valor) => vivo && setOnboardingVisto(valor === '1'));
+    return () => { vivo = false; };
+  }, []);
+
+  const mostrarSplash = useSplashTimer(cargando || onboardingVisto === null);
 
   useEffect(() => {
-    if (mostrarSplash) return;
+    if (mostrarSplash || onboardingVisto === null) return;
 
-    arranqueResuelto.current = true;
+    marcarArranqueResuelto();
+
+    if (!onboardingVisto) {
+      navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+      return;
+    }
 
     if (isAuthenticated) {
       irATabs(destinoPendiente.current);
@@ -61,9 +84,33 @@ const SplashRoute = ({ navigation }) => {
     // Solo debe correr cuando el splash termina, no en cada cambio de sesión:
     // el login interactivo lo atiende AuthWatcher, no esta pantalla.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mostrarSplash]);
+  }, [mostrarSplash, onboardingVisto]);
 
   return <PantallaCarga />;
+};
+
+/*
+ * Al terminar la introducción (o al saltarla) se graba la llave y se sigue
+ * EXACTAMENTE por donde habría seguido Splash si nunca hubiera hecho falta
+ * mostrarla — mismo criterio, para no mantenerlo escrito dos veces de forma
+ * distinta.
+ */
+const OnboardingRoute = ({ navigation }) => {
+  const { isAuthenticated } = useAuth();
+
+  const terminar = () => {
+    guardar(LLAVE_ONBOARDING, '1');
+    marcarArranqueResuelto();
+
+    if (isAuthenticated) {
+      irATabs(destinoPendiente.current);
+      destinoPendiente.current = null;
+    } else {
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    }
+  };
+
+  return <Onboarding alTerminar={terminar} />;
 };
 
 // Sin pantalla propia: solo escucha. Vive como hermano del Stack para que
@@ -167,11 +214,19 @@ const SeccionRoute = ({ route, navigation }) => {
   );
 };
 
+// Su propia pantalla del stack, no un pasillo de la tienda: ver el
+// comentario grande en MenuPasillos.js sobre por qué "Impresiones" navega
+// en vez de filtrar.
+const ImpresionesRoute = ({ navigation }) => (
+  <Impresiones alVolver={() => navigation.goBack()} />
+);
+
 const RootNavigator = () => (
   <NavigationContainer ref={navigationRef}>
     <AuthWatcher />
     <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashRoute} />
+      <Stack.Screen name="Onboarding" component={OnboardingRoute} />
       <Stack.Screen name="Login" component={LoginRoute} />
       <Stack.Screen name="Register" component={RegisterRoute} />
       <Stack.Screen name="Verification" component={VerificationRoute} />
@@ -180,6 +235,7 @@ const RootNavigator = () => (
       <Stack.Screen name="Checkout" component={CheckoutRoute} />
       <Stack.Screen name="Confirmacion" component={ConfirmacionRoute} />
       <Stack.Screen name="Seccion" component={SeccionRoute} />
+      <Stack.Screen name="Impresiones" component={ImpresionesRoute} />
     </Stack.Navigator>
   </NavigationContainer>
 );

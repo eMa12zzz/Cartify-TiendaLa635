@@ -1,23 +1,72 @@
 import { useState } from 'react';
-import { CreditCard, Wallet, Trash2, Plus, Gift } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { CreditCard, Wallet, Trash2, Plus, Gift, Lock, CircleAlert } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { useSaldo } from '../../hooks/useSaldo';
+import MarcaTarjeta from '../../components/Cuenta/MarcaTarjeta';
+import VistaTarjeta from '../../components/Cuenta/VistaTarjeta';
+import {
+  NOMBRE_MARCA,
+  detectarMarca,
+  estaVencida,
+  formatearNumero,
+  formatearVencimiento,
+  largoDe,
+  leerVencimiento,
+  pasaLuhn,
+  soloDigitos,
+  vencimientoEnTexto,
+} from '../../utils/tarjetas';
 
 /*
  * MetodoPago — el cliente gestiona sus métodos de pago (área "Mi Cuenta").
- * Importante: solo guardamos tipo, alias y últimos 4 dígitos — NUNCA el número
- * completo ni el CVV. El cobro real pasa por la pasarela (Wompi).
+ *
+ * AGREGAR UNA TARJETA se hace como en cualquier tienda seria: número completo
+ * con la marca reconocida al vuelo, titular y vencimiento, con una tarjeta de
+ * vista previa que se va llenando. El número se valida con el dígito
+ * verificador (Luhn) y el vencimiento no puede estar en el pasado.
+ *
+ * Importante: el número completo NUNCA sale de este formulario. Al servidor
+ * viajan la marca, el tipo, los últimos 4, el titular y el vencimiento; el CVV
+ * ni siquiera se pide: lo pide la pasarela (Wompi) al momento de pagar.
+ *
+ * Sin recuadros alrededor de las secciones: el saldo, la lista y el
+ * formulario van directo sobre el fondo, separados con aire y líneas finas.
  */
+
+// "Visa crédito", "Mastercard débito"... o "Tarjeta" para las guardadas antes de conocer la marca.
+const nombreMarcaTipo = (m) =>
+  `${NOMBRE_MARCA[m.brand] && m.brand !== 'otra' ? NOMBRE_MARCA[m.brand] : 'Tarjeta'}${m.cardType ? ` ${m.cardType === 'debito' ? 'débito' : 'crédito'}` : ''}`;
+
+const FORM_VACIO = { tipo: 'credito', numero: '', titular: '', vencimiento: '', alias: '' };
+
+const Etiqueta = ({ htmlFor, color, children }) => (
+  <label htmlFor={htmlFor} className="block text-sm font-semibold mb-1.5" style={{ color }}>
+    {children}
+  </label>
+);
+
+const MensajeError = ({ texto }) => (texto ? (
+  <p className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: '#dc2626' }} role="alert">
+    <CircleAlert className="w-3.5 h-3.5 flex-none" /> {texto}
+  </p>
+) : null);
+
 const MetodoPago = () => {
   const { palette } = useTheme();
   const c = palette.colors;
+  const reducir = useReducedMotion();
   const { methods, loading, saving, agregar, eliminar } = usePaymentMethods();
-  const [form, setForm] = useState({ type: 'tarjeta', alias: '', last4: '' });
 
   // Saldo digital cargado con tarjetas de regalo.
   const { saldo, cargando: cargandoSaldo, canjeando, canjear } = useSaldo();
   const [codigo, setCodigo] = useState('');
+
+  const [agregando, setAgregando] = useState(false);
+  const [form, setForm] = useState(FORM_VACIO);
+  const [tocado, setTocado] = useState({});
+  const [porQuitar, setPorQuitar] = useState(null);
 
   const onCanjear = async (e) => {
     e.preventDefault();
@@ -26,151 +75,352 @@ const MetodoPago = () => {
     if (await canjear(codigo)) setCodigo('');
   };
 
-  const onAgregar = (e) => {
-    e.preventDefault();
-    const esTarjeta = form.type === 'tarjeta';
-    if (esTarjeta && form.last4.replace(/\D/g, '').length < 4) return;
-    agregar({
-      type: form.type,
-      alias: form.alias.trim() || (esTarjeta ? 'Tarjeta' : 'Efectivo'),
-      last4: esTarjeta ? form.last4.replace(/\D/g, '').slice(-4) : '',
-    });
-    setForm({ type: 'tarjeta', alias: '', last4: '' });
+  /* ── Validación del formulario ── */
+  const digitos = soloDigitos(form.numero);
+  const marca = detectarMarca(digitos);
+  const numeroCompleto = digitos.length === largoDe(marca);
+  const numeroValido = numeroCompleto && pasaLuhn(digitos);
+  const venc = leerVencimiento(form.vencimiento);
+  const vencida = venc ? estaVencida(venc.mes, venc.anio) : false;
+  const titularValido = form.titular.trim().replace(/[^a-zA-ZÀ-ÿ]/g, '').length >= 3;
+  const duplicada = numeroValido && venc && methods.some((m) =>
+    m.type !== 'efectivo' && m.last4 === digitos.slice(-4) && m.brand === marca
+    && Number(m.expMonth) === venc.mes && Number(m.expYear) === venc.anio
+  );
+
+  const errores = {
+    numero: !tocado.numero || !digitos ? ''
+      : !numeroCompleto ? `Faltan dígitos: ${NOMBRE_MARCA[marca] === 'Tarjeta' ? 'la tarjeta' : NOMBRE_MARCA[marca]} lleva ${largoDe(marca)}.`
+      : !numeroValido ? 'Revise el número: no corresponde a una tarjeta válida.'
+      : duplicada ? 'Esa tarjeta ya está guardada.'
+      : '',
+    vencimiento: !tocado.vencimiento || !form.vencimiento ? ''
+      : !venc ? 'Use el formato MM/AA, con un mes entre 01 y 12.'
+      : vencida ? 'Esta tarjeta ya venció.'
+      : '',
+    titular: tocado.titular && !titularValido ? 'Escriba el nombre como aparece en la tarjeta.' : '',
   };
 
-  const inputStyle = { backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary };
+  const listo = numeroValido && venc && !vencida && titularValido && !duplicada && !saving;
+
+  const cambiar = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }));
+  const tocar = (campo) => setTocado((t) => ({ ...t, [campo]: true }));
+
+  const cerrar = () => {
+    setAgregando(false);
+    setForm(FORM_VACIO);
+    setTocado({});
+  };
+
+  const onGuardar = async (e) => {
+    e.preventDefault();
+    setTocado({ numero: true, vencimiento: true, titular: true });
+    if (!listo) return;
+    const ok = await agregar({
+      type: 'tarjeta',
+      alias: form.alias.trim() || `${NOMBRE_MARCA[marca]} ${form.tipo === 'debito' ? 'débito' : 'crédito'}`,
+      last4: digitos.slice(-4),
+      brand: marca,
+      cardType: form.tipo,
+      holder: form.titular.trim().toUpperCase(),
+      expMonth: venc.mes,
+      expYear: venc.anio,
+    });
+    if (ok) cerrar();
+  };
+
+  const campo = (error) => ({
+    backgroundColor: c.cardBg,
+    borderColor: error ? '#dc2626' : c.cardBorder,
+    color: c.textPrimary,
+  });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-2" style={{ color: c.textPrimary }}>Métodos de pago</h1>
-      <p className="text-xs mb-6" style={{ color: c.textMuted }}>
-        Por seguridad solo guardamos los últimos 4 dígitos. Nunca el número completo ni el CVV.
+    <div className="max-w-3xl">
+      <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>Métodos de pago</h1>
+      <p className="text-sm mt-1" style={{ color: c.textSecondary }}>
+        Sus tarjetas guardadas y el saldo de sus tarjetas de regalo.
       </p>
 
       {/* ── Saldo digital ── */}
-      <div
-        className="rounded-2xl p-5 mb-6"
-        style={{ backgroundColor: c.primaryLight, border: `1px solid ${c.cardBorder}` }}
-      >
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2 mb-1" style={{ color: c.textSecondary }}>
-              <Gift className="w-4 h-4" />
-              <span className="text-sm font-medium">Saldo disponible</span>
-            </div>
-            <div className="text-3xl font-extrabold" style={{ color: c.primary }}>
-              {cargandoSaldo ? '—' : `$${saldo.toFixed(2)}`}
-            </div>
-            <p className="text-xs mt-1" style={{ color: c.textMuted }}>
-              Puede pagar sus compras con este saldo al finalizar el pedido.
-            </p>
+      <section className="mt-8 pb-8 flex items-end justify-between gap-6 flex-wrap" style={{ borderBottom: `1px solid ${c.cardBorder}` }}>
+        <div>
+          <div className="flex items-center gap-2 text-sm font-medium" style={{ color: c.textSecondary }}>
+            <Gift className="w-4 h-4" /> Saldo disponible
           </div>
+          <div className="text-4xl font-extrabold tracking-tight mt-1 tabular-nums" style={{ color: c.primary }}>
+            {cargandoSaldo ? '—' : `$${saldo.toFixed(2)}`}
+          </div>
+          <p className="text-xs mt-1" style={{ color: c.textMuted }}>
+            Puede pagar sus compras con este saldo al finalizar el pedido.
+          </p>
+        </div>
 
-          <form onSubmit={onCanjear} className="flex gap-2 items-start">
-            <div>
-              <input
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-                placeholder="635-XXXX-XXXX"
-                aria-label="Código de la tarjeta"
-                className="px-3 py-2.5 rounded-xl border outline-none font-mono tracking-wider w-48"
-                style={inputStyle}
-              />
-              <p className="text-xs mt-1" style={{ color: c.textMuted }}>
-                Escriba el código de su tarjeta
-              </p>
-            </div>
+        <form onSubmit={onCanjear} className="flex gap-2 items-start">
+          <div>
+            <input
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+              placeholder="635-XXXX-XXXX"
+              aria-label="Código de la tarjeta de regalo"
+              className="px-3 py-2.5 rounded-xl border outline-none font-mono tracking-wider w-48"
+              style={campo()}
+            />
+            <p className="text-xs mt-1" style={{ color: c.textMuted }}>Código de su tarjeta de regalo</p>
+          </div>
+          <button
+            type="submit"
+            disabled={canjeando}
+            className="press px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+            style={{ backgroundColor: c.primary }}
+          >
+            {canjeando ? 'Canjeando…' : 'Canjear'}
+          </button>
+        </form>
+      </section>
+
+      {/* ── Tarjetas guardadas ── */}
+      <section className="mt-8">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-bold" style={{ color: c.textPrimary }}>Tarjetas</h2>
+          {!agregando && (
             <button
-              type="submit"
-              disabled={canjeando}
-              className="press px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-              style={{ backgroundColor: c.primary }}
+              type="button"
+              onClick={() => setAgregando(true)}
+              className="press inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
+              style={{ backgroundColor: c.primary, color: c.buttonText }}
             >
-              {canjeando ? 'Canjeando…' : 'Canjear'}
+              <Plus className="w-4 h-4" /> Agregar tarjeta
             </button>
-          </form>
+          )}
         </div>
-      </div>
 
-      {/* Formulario para agregar un método */}
-      <form onSubmit={onAgregar} className="flex flex-col sm:flex-row gap-2 mb-6">
-        <select
-          value={form.type}
-          onChange={(e) => setForm({ ...form, type: e.target.value })}
-          className="px-3 py-2.5 rounded-xl border outline-none"
-          style={inputStyle}
-        >
-          <option value="tarjeta">Tarjeta</option>
-          <option value="efectivo">Efectivo</option>
-        </select>
-        <input
-          value={form.alias}
-          onChange={(e) => setForm({ ...form, alias: e.target.value })}
-          placeholder="Alias (ej. Mi Visa)"
-          className="flex-1 px-4 py-2.5 rounded-xl border outline-none"
-          style={inputStyle}
-        />
-        {form.type === 'tarjeta' && (
-          <input
-            value={form.last4}
-            onChange={(e) => setForm({ ...form, last4: e.target.value })}
-            placeholder="Últimos 4"
-            maxLength={4}
-            inputMode="numeric"
-            className="w-28 px-4 py-2.5 rounded-xl border outline-none"
-            style={inputStyle}
-          />
+        {loading ? (
+          <p className="text-sm mt-6" style={{ color: c.textSecondary }}>Cargando sus métodos…</p>
+        ) : methods.length === 0 && !agregando ? (
+          <div className="flex flex-col items-center text-center py-12">
+            <CreditCard className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
+            <p className="text-sm font-semibold" style={{ color: c.textPrimary }}>Todavía no tiene tarjetas guardadas</p>
+            <p className="text-sm mt-1" style={{ color: c.textSecondary }}>Guárdela una vez y la tendrá a mano en su próxima compra.</p>
+          </div>
+        ) : (
+          <ul className="mt-4">
+            {methods.map((m, i) => {
+              const esEfectivo = m.type === 'efectivo';
+              const vencidaGuardada = !esEfectivo && estaVencida(Number(m.expMonth), Number(m.expYear));
+              const detalle = esEfectivo
+                ? 'Efectivo'
+                : [
+                  // El nombre de la marca solo si el alias no lo dice ya ("Mastercard débito" dos veces se lee como error).
+                  nombreMarcaTipo(m) !== m.alias && nombreMarcaTipo(m),
+                  `•••• ${m.last4 || '••••'}`,
+                  vencimientoEnTexto(m.expMonth, m.expYear) && `Vence ${vencimientoEnTexto(m.expMonth, m.expYear)}`,
+                ].filter(Boolean).join(' · ');
+
+              return (
+                <li
+                  key={`${m.last4}-${i}`}
+                  className="flex items-center gap-4 py-4"
+                  style={{ borderTop: i === 0 ? 'none' : `1px solid ${c.cardBorder}` }}
+                >
+                  {esEfectivo
+                    ? <span className="grid place-items-center flex-none" style={{ width: 45, height: 30 }}><Wallet className="w-5 h-5" style={{ color: c.primary }} /></span>
+                    : <MarcaTarjeta marca={m.brand || 'otra'} />}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold truncate" style={{ color: c.textPrimary }}>
+                      {m.alias || (esEfectivo ? 'Efectivo' : 'Tarjeta')}
+                    </div>
+                    <div className="text-xs mt-0.5 truncate" style={{ color: c.textMuted }}>{detalle}</div>
+                  </div>
+                  {vencidaGuardada && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ color: '#b91c1c', backgroundColor: '#fee2e2' }}>
+                      Vencida
+                    </span>
+                  )}
+                  {porQuitar === i ? (
+                    <span className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => { await eliminar(i); setPorQuitar(null); }}
+                        disabled={saving}
+                        className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-60"
+                        style={{ backgroundColor: '#dc2626' }}
+                      >
+                        Quitar
+                      </button>
+                      <button type="button" onClick={() => setPorQuitar(null)} className="text-xs font-semibold px-2 py-1.5" style={{ color: c.textSecondary }}>
+                        Cancelar
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPorQuitar(i)}
+                      disabled={saving}
+                      aria-label={`Quitar ${m.alias || 'método de pago'}`}
+                      className="p-2 rounded-lg transition-colors disabled:opacity-60 hover:bg-red-50"
+                      style={{ color: '#dc2626' }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex items-center justify-center gap-1 px-4 py-2.5 rounded-xl font-bold shadow-sm transition-colors disabled:opacity-60"
-          style={{ backgroundColor: c.primary, color: c.buttonText }}
-        >
-          <Plus className="w-4 h-4" /> Agregar
-        </button>
-      </form>
 
-      {/* Lista de métodos */}
-      {loading ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tus métodos…</p>
-      ) : methods.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <CreditCard className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
-          <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>Sin métodos guardados</p>
-          <p className="text-sm" style={{ color: c.textSecondary }}>Agrega una tarjeta o efectivo para tus compras.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {methods.map((m, i) => {
-            const Icon = m.type === 'efectivo' ? Wallet : CreditCard;
-            return (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-4 rounded-xl"
-                style={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}` }}
-              >
-                <Icon className="w-5 h-5 flex-none" style={{ color: c.primary }} />
-                <div className="flex-1">
-                  <div className="text-sm font-semibold" style={{ color: c.textPrimary }}>{m.alias || m.type}</div>
-                  <div className="text-xs" style={{ color: c.textMuted }}>
-                    {m.type === 'efectivo' ? 'Efectivo' : `Tarjeta •••• ${m.last4 || '••••'}`}
+        {/* ── Agregar tarjeta ── */}
+        <AnimatePresence initial={false}>
+          {agregando && (
+            <motion.form
+              key="agregar"
+              onSubmit={onGuardar}
+              noValidate
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: reducir ? 0 : 0.28, ease: [0.23, 1, 0.32, 1] }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div className="pt-6 mt-2 grid gap-8 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)]" style={{ borderTop: methods.length ? `1px solid ${c.cardBorder}` : 'none' }}>
+                <div className="flex flex-col items-center md:items-start gap-4">
+                  <VistaTarjeta numero={digitos} titular={form.titular} vencimiento={form.vencimiento} tipo={form.tipo} />
+                  <p className="flex items-start gap-2 text-xs max-w-[340px]" style={{ color: c.textMuted }}>
+                    <Lock className="w-3.5 h-3.5 flex-none mt-0.5" />
+                    Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El número
+                    completo no sale de este formulario, y el código de seguridad se pide solo al pagar.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-5">
+                  {/* Crédito o débito */}
+                  <div role="radiogroup" aria-label="Tipo de tarjeta" className="inline-flex self-start p-1 rounded-full" style={{ backgroundColor: c.primaryLight }}>
+                    {[['credito', 'Crédito'], ['debito', 'Débito']].map(([valor, texto]) => {
+                      const elegido = form.tipo === valor;
+                      return (
+                        <button
+                          key={valor}
+                          type="button"
+                          role="radio"
+                          aria-checked={elegido}
+                          onClick={() => cambiar('tipo', valor)}
+                          className="px-5 py-2 rounded-full text-sm font-semibold transition-colors"
+                          style={{
+                            backgroundColor: elegido ? c.cardBg : 'transparent',
+                            color: elegido ? c.primary : c.textSecondary,
+                            boxShadow: elegido ? '0 1px 4px rgba(0,0,0,.12)' : 'none',
+                          }}
+                        >
+                          {texto}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div>
+                    <Etiqueta htmlFor="tarjeta-numero" color={c.textPrimary}>Número de tarjeta</Etiqueta>
+                    <div className="relative">
+                      <input
+                        id="tarjeta-numero"
+                        name="cc-number"
+                        autoComplete="cc-number"
+                        inputMode="numeric"
+                        placeholder="1234 5678 9012 3456"
+                        value={formatearNumero(form.numero)}
+                        onChange={(e) => {
+                          // Recortado al largo de la marca: pegar un número con espacios o de más no deja dígitos escondidos.
+                          const d = soloDigitos(e.target.value);
+                          cambiar('numero', d.slice(0, largoDe(detectarMarca(d))));
+                        }}
+                        onBlur={() => tocar('numero')}
+                        aria-invalid={!!errores.numero}
+                        className="w-full pl-4 pr-16 py-3 rounded-xl border outline-none font-mono tracking-wider text-base"
+                        style={campo(errores.numero)}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {digitos ? <MarcaTarjeta marca={marca} alto={24} /> : <CreditCard className="w-5 h-5" style={{ color: c.textMuted }} />}
+                      </span>
+                    </div>
+                    <MensajeError texto={errores.numero} />
+                  </div>
+
+                  <div>
+                    <Etiqueta htmlFor="tarjeta-titular" color={c.textPrimary}>Nombre del titular</Etiqueta>
+                    <input
+                      id="tarjeta-titular"
+                      name="cc-name"
+                      autoComplete="cc-name"
+                      placeholder="Como aparece en la tarjeta"
+                      value={form.titular}
+                      maxLength={40}
+                      onChange={(e) => cambiar('titular', e.target.value)}
+                      onBlur={() => tocar('titular')}
+                      aria-invalid={!!errores.titular}
+                      className="w-full px-4 py-3 rounded-xl border outline-none uppercase placeholder:normal-case"
+                      style={campo(errores.titular)}
+                    />
+                    <MensajeError texto={errores.titular} />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <Etiqueta htmlFor="tarjeta-vencimiento" color={c.textPrimary}>Vencimiento</Etiqueta>
+                      <input
+                        id="tarjeta-vencimiento"
+                        name="cc-exp"
+                        autoComplete="cc-exp"
+                        inputMode="numeric"
+                        placeholder="MM/AA"
+                        value={form.vencimiento}
+                        onChange={(e) => cambiar('vencimiento', formatearVencimiento(e.target.value))}
+                        onBlur={() => tocar('vencimiento')}
+                        aria-invalid={!!errores.vencimiento}
+                        className="w-full px-4 py-3 rounded-xl border outline-none font-mono tracking-wider"
+                        style={campo(errores.vencimiento)}
+                      />
+                      <MensajeError texto={errores.vencimiento} />
+                    </div>
+                    <div>
+                      <Etiqueta htmlFor="tarjeta-alias" color={c.textPrimary}>
+                        Nombre para reconocerla <span className="font-normal" style={{ color: c.textMuted }}>(opcional)</span>
+                      </Etiqueta>
+                      <input
+                        id="tarjeta-alias"
+                        placeholder={digitos ? `${NOMBRE_MARCA[marca]} ${form.tipo === 'debito' ? 'débito' : 'crédito'}` : 'Ej. Tarjeta del trabajo'}
+                        value={form.alias}
+                        maxLength={40}
+                        onChange={(e) => cambiar('alias', e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border outline-none"
+                        style={campo()}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="press inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-bold disabled:opacity-60"
+                      style={{ backgroundColor: listo ? c.primary : c.cardBorder, color: listo ? c.buttonText : c.textMuted }}
+                    >
+                      <Lock className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar tarjeta'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cerrar}
+                      className="px-5 py-3 rounded-full text-sm font-semibold"
+                      style={{ color: c.textSecondary }}
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => eliminar(i)}
-                  disabled={saving}
-                  aria-label="Eliminar método de pago"
-                  className="p-1.5 rounded-lg transition-colors disabled:opacity-60"
-                  style={{ color: '#dc2626' }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </motion.form>
+          )}
+        </AnimatePresence>
+      </section>
     </div>
   );
 };
