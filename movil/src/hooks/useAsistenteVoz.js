@@ -20,6 +20,14 @@
  *     todavía (ver `Asistente.js`). Sí navega a los 4 apartados y al carrito.
  *   - El upsell ("por cierto, X está en oferta"): el catálogo mapeado de
  *     móvil no trae el campo `esMasVendido` que usaba esa regla.
+ *
+ * ── El plan B SÍ cambió: tool calling, no `responseSchema` ──
+ * `preguntarALaIA` (más abajo) es lo que entra cuando estas reglas de texto
+ * se dan por vencidas. Ahí SÍ hay una diferencia con la web: móvil habla con
+ * `/ai/entender-herramientas` (function calling de Gemini) en vez de
+ * `/ai/entender` (un producto por turno). La web se queda como está — ver
+ * el comentario grande en `aiController.js` (entenderConHerramientas) para
+ * el porqué.
  * ============================================================
  */
 
@@ -211,8 +219,21 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     return mejor;
   };
 
+  /*
+   * El backend (`/ai/entender-herramientas`) ya hizo el tool calling: esto
+   * solo EJECUTA la lista de acciones que Gemini decidió, una por una, igual
+   * que las reglas locales de más abajo ejecutan lo que entendieron por
+   * regex. Puede traer varias en un mismo turno ("dos manzanas y una
+   * leche" son dos `agregar` en la misma respuesta) — por eso hacía falta
+   * tool calling y no el `responseSchema` de un solo campo que usa la web.
+   *
+   * El monto en dólares de "total"/"comprar" NUNCA sale de lo que dijo la
+   * IA: se arma acá con `totalCarrito`, que es la cuenta exacta de la
+   * tienda. Pedirle aritmética de dinero a un modelo de lenguaje es
+   * invitarlo a redondear mal.
+   */
   const preguntarALaIA = useCallback(async (frase) => {
-    const { productos, carrito } = dataRef.current;
+    const { productos } = dataRef.current;
     const fns = fnRef.current;
 
     setPensando(true);
@@ -220,7 +241,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       const idea = await asistenteApi.entenderPedido({
         frase,
         productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })),
-        carrito: carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
+        carrito: dataRef.current.carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
       });
 
       if (!idea?.entendido) {
@@ -228,22 +249,88 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
         return;
       }
 
-      const prod = idea.producto ? productos.find((p) => p.nombre === idea.producto) : null;
+      const acciones = Array.isArray(idea.acciones) ? idea.acciones : [];
+      const bloqueados = [];
+      let pideTotal = false;
+      let pideComprar = false;
 
-      if (idea.accion === 'agregar' && prod && esSoloAdultos(prod) && !mayorConfirmado) {
-        hablarRef.current?.(`${prod.nombre} es para mayores de edad. Ábralo desde la tienda para confirmar su identificación.`);
-        return;
+      for (const accion of acciones) {
+        const prod = accion.producto ? productos.find((p) => p.nombre === accion.producto) : null;
+
+        switch (accion.tipo) {
+          case 'agregar': {
+            if (!prod) break;
+            // Mismo candado +18 que la tarjeta, la ficha y las reglas
+            // locales: la IA no lo mete al carrito por su cuenta.
+            if (esSoloAdultos(prod) && !mayorConfirmado) {
+              bloqueados.push(prod.nombre);
+              break;
+            }
+            fns.agregarAlCarrito?.(prod, accion.cantidad || 1);
+            break;
+          }
+          case 'quitar': {
+            if (!prod) break;
+            const enCarrito = dataRef.current.carrito.find((i) => i.id === prod.id);
+            if (!enCarrito) break;
+            if (accion.cantidad && accion.cantidad < enCarrito.cantidad) {
+              fns.actualizarCantidad?.(prod.id, enCarrito.cantidad - accion.cantidad);
+            } else {
+              fns.eliminarDelCarrito?.(prod.id);
+            }
+            break;
+          }
+          case 'mostrar':
+            if (prod) fns.mostrarProducto?.(prod);
+            break;
+          case 'vaciar':
+            fns.limpiarCarrito?.();
+            break;
+          case 'total':
+            pideTotal = true;
+            break;
+          case 'comprar':
+            pideComprar = true;
+            break;
+          default:
+            break;
+        }
       }
 
-      if (idea.accion === 'agregar' && prod) {
-        fns.agregarAlCarrito?.(prod, idea.cantidad || 1);
-      } else if (idea.accion === 'quitar' && prod) {
-        fns.eliminarDelCarrito?.(prod.id);
-      } else if (idea.accion === 'vaciar') {
-        fns.limpiarCarrito?.();
-      }
+      /*
+       * `agregarAlCarrito`/`eliminarDelCarrito` de arriba no cambian
+       * `dataRef.current` al instante: lo actualiza el próximo render de
+       * TiendaContext, que todavía no pasó en este mismo tick. Leer el total
+       * ahora mismo diría un número viejo justo en el caso que más importa
+       * que esté bien: "dos manzanas y cuánto llevo" en la misma frase. Un
+       * `setTimeout` a 0 alcanza — para cuando corre, ya hubo tiempo de
+       * volver a renderizar y `dataRef.current` está al día.
+       */
+      setTimeout(() => {
+        // Los tres se pisan a propósito, en este orden: un producto +18 sin
+        // confirmar es lo más urgente de decir, y comprar/total con el monto
+        // real pesa más que la frase suelta que haya dicho la IA.
+        let dice = idea.respuesta;
 
-      hablarRef.current?.(idea.respuesta);
+        if (bloqueados.length) {
+          const lista = bloqueados.join(' y ');
+          const verbo = bloqueados.length === 1 ? 'es' : 'son';
+          dice = `${lista} ${verbo} para mayores de edad. Ábralo desde la tienda para confirmar su identificación.`;
+        } else if (pideComprar) {
+          const { carrito, totalCarrito } = dataRef.current;
+          if (!carrito.length) {
+            dice = 'Tu carrito está vacío. ¿Qué te gustaría llevar?';
+          } else {
+            confirmandoRef.current = true;
+            dice = `Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(carrito)} productos. ¿Confirmas la compra? Di sí para confirmar.`;
+          }
+        } else if (pideTotal) {
+          const { carrito, totalCarrito } = dataRef.current;
+          dice = `Llevas $${totalCarrito.toFixed(2)} en ${contarItems(carrito)} productos.`;
+        }
+
+        hablarRef.current?.(dice);
+      }, 0);
     } finally {
       setPensando(false);
     }

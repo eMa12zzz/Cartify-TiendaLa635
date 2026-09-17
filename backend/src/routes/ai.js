@@ -21,6 +21,11 @@ router.route("/promo-copy")
 router.route("/entender")
     .post(aiController.entenderPedido);
 
+// Lo mismo, pero con tool calling: puede devolver varias acciones en un
+// solo turno ("dos manzanas y una leche"). La usa el asistente de móvil.
+router.route("/entender-herramientas")
+    .post(aiController.entenderConHerramientas);
+
 // Acomoda en su estante los productos que las reglas del frontend no supieron
 // clasificar. Lo que resuelve queda guardado en el producto.
 router.route("/clasificar")

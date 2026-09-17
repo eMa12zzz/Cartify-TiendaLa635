@@ -2,10 +2,16 @@
  * ============================================================
  * ASISTENTE — el plan B con IA
  * ============================================================
- * El equivalente móvil de `frontend/src/api/aiService.js` (solo la parte de
- * `entenderPedido`): mismo endpoint (`/ai/entender`), que ya existe en el
- * backend y no hubo que tocar. Se llama SOLO cuando las reglas locales del
- * asistente no entendieron la frase.
+ * A diferencia del resto de la app, esto NO es un calco de
+ * `frontend/src/api/aiService.js`: la web sigue en `/ai/entender` (un
+ * producto por turno, `responseSchema`), pero móvil habla con
+ * `/ai/entender-herramientas` — el mismo plan B, con tool calling de Gemini
+ * del lado del backend, para poder entender "dos manzanas y una leche" en
+ * un solo viaje en vez de solo la mitad. Ver el comentario grande en
+ * `backend/src/controller/aiController.js` (entenderConHerramientas).
+ *
+ * Se llama SOLO cuando las reglas locales del asistente no entendieron la
+ * frase (ver useAsistenteVoz.js).
  * ============================================================
  */
 
@@ -18,12 +24,12 @@ export const asistenteApi = {
    */
   entenderPedido: async ({ frase, productos, carrito }) => {
     try {
-      return await peticion('/ai/entender', {
+      return await peticion('/ai/entender-herramientas', {
         metodo: 'POST',
         cuerpo: { frase, productos, carrito },
       });
     } catch {
-      return { accion: 'ninguna', entendido: false, origen: 'sin-red' };
+      return { acciones: [], respuesta: '', entendido: false, origen: 'sin-red' };
     }
   },
 };
