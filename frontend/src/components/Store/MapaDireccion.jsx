@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import { divIcon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { LocateFixed, MapPin, Loader2 } from 'lucide-react';
+import Mapa from '../Mapa/Mapa';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
 
 /*
@@ -38,29 +36,6 @@ import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
 
 const BROWN = 'var(--marca-600)';
 
-const pin = divIcon({
-  className: '',
-  iconSize: [26, 26],
-  iconAnchor: [13, 26],
-  html: `<div style="width:20px;height:20px;border-radius:50% 50% 50% 0;background:${'var(--marca-600)'};transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.3);"></div>`,
-});
-
-// Tocar el mapa mueve el pin. Es la forma natural de decir "aquí" con el dedo.
-const AlTocar = ({ onTocar }) => {
-  useMapEvents({ click: (e) => onTocar({ lat: e.latlng.lat, lng: e.latlng.lng }) });
-  return null;
-};
-
-/*
- * Cuando el GPS encuentra a la persona, el mapa la sigue. Sin esto el pin
- * aparecía en su casa y el mapa se quedaba mirando el centro de San Salvador.
- */
-const SeguirAlPin = ({ punto }) => {
-  const mapa = useMap();
-  if (punto) mapa.setView([punto.lat, punto.lng], Math.max(mapa.getZoom(), 16));
-  return null;
-};
-
 const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 }) => {
   const { posicion, direccion, setDireccion, buscando, localizando, marcarEn, localizarme } = useUbicacion();
   const [nombre, setNombre] = useState('');
@@ -92,32 +67,23 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
     <form onSubmit={guardar} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e5e5', position: 'relative' }}>
         <div style={{ height: alto }}>
-          <MapContainer
-            center={[centro.lat, centro.lng]}
+          {/*
+            Tocar el mapa mueve el pin (la forma natural de decir "aquí" con el
+            dedo), y el pin también se arrastra. Cuando el GPS encuentra a la
+            persona, el mapa la sigue: sin eso el pin aparecía en su casa y el
+            mapa se quedaba mirando el centro de San Salvador.
+          */}
+          <Mapa
+            centro={centro}
             zoom={posicion ? 16 : 13}
-            style={{ height: '100%', width: '100%' }}
-            scrollWheelZoom
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; OpenStreetMap'
-            />
-            <AlTocar onTocar={marcarEn} />
-            <SeguirAlPin punto={posicion} />
-            {posicion && (
-              <Marker
-                position={[posicion.lat, posicion.lng]}
-                icon={pin}
-                draggable
-                eventHandlers={{
-                  dragend: (e) => {
-                    const { lat, lng } = e.target.getLatLng();
-                    marcarEn({ lat, lng });
-                  },
-                }}
-              />
-            )}
-          </MapContainer>
+            onTocar={marcarEn}
+            seguir={{ punto: posicion, zoomMinimo: 16 }}
+            controles
+            pines={posicion ? [{
+              id: 'direccion', lat: posicion.lat, lng: posicion.lng,
+              tipo: 'gota', tamano: 22, arrastrable: true, onSoltar: marcarEn,
+            }] : []}
+          />
         </div>
 
         {/*

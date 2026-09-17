@@ -24,13 +24,6 @@ const EASE_OUT = [0.23, 1, 0.32, 1];
 const FONDO =
   'radial-gradient(900px 620px at 50% 26%, rgba(0, 92, 138, 0.38), transparent 62%), #000';
 
-const ESCENARIO = {
-  background:
-    'radial-gradient(circle at 50% 14%, rgba(255,255,255,0.10), transparent 42%), linear-gradient(180deg, #071824, #010407)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  boxShadow: '0 60px 120px -40px rgba(0, 154, 235, 0.28)',
-};
-
 /*
  * El orbe va SIEMPRE en el azul de la casa, no en --marca-600: en diciembre
  * esa variable es verde y en Halloween naranja, y un orbe naranja encima de
@@ -310,8 +303,12 @@ const AsistenteVoz = ({
             <span className="text-white font-semibold">“quiero una manzana y dos galletas”</span>
           </p>
 
-          {/* ── El escenario ── */}
-          <div className="relative w-full mt-6 rounded-[34px] px-5 md:px-8 pt-6 pb-5 flex flex-col items-center" style={ESCENARIO}>
+          {/*
+            Todo va directo sobre el fondo, sin un recuadro que lo encierre:
+            el orbe, la conversación y el carrito se separan con aire y una
+            línea fina, no con cajas.
+          */}
+          <div className="relative w-full mt-8 flex flex-col items-center">
             {/* Orbe del micrófono con anillos */}
             <div className="relative w-[170px] h-[170px] grid place-items-center flex-none">
               <span className="asis-anillo" />
@@ -450,8 +447,8 @@ const AsistenteVoz = ({
 
             {/* ── El carrito ── */}
             <div
-              className="w-full mt-5 rounded-[22px] p-4 text-left"
-              style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+              className="w-full mt-6 pt-5 text-left"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="flex items-center gap-2 text-sm md:text-base" style={{ color: 'rgba(255,255,255,0.75)' }}>

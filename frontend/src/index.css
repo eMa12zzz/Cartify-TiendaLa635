@@ -559,3 +559,60 @@ input:disabled {
 @media (prefers-reduced-motion: reduce) {
   .asis-anillo, .asis-barra, .asis-orbe, .asis-escribiendo i { animation: none !important; }
 }
+
+/*
+  ==========================================
+  MAPAS (mapcn / MapLibre)
+  ==========================================
+  El componente del mapa (src/components/mapcn/map.jsx) viene del ecosistema
+  shadcn y pinta sus controles con los nombres de color de shadcn
+  (bg-background, text-muted-foreground, border-border...). La tienda no usa
+  shadcn, así que aquí se le dan esos nombres apuntando a los colores de la
+  casa. Solo los usa el mapa.
+*/
+:root {
+  --background: #ffffff;
+  --foreground: var(--tinta);
+  --muted: var(--papel-gris);
+  --muted-foreground: var(--tinta-tenue);
+  --popover: #ffffff;
+  --popover-foreground: var(--tinta);
+  --accent: var(--marca-50);
+  --border: var(--linea);
+  --ring: var(--marca-400);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+}
+
+/* Lo que agrega mapcn al instalarlo: popups sin marco propio y la atribución
+   de los mapas con el mismo aspecto que los controles. */
+@layer base {
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+  }
+  .maplibregl-ctrl-attrib {
+    @apply bg-background! text-muted-foreground! border-border! rounded-md! border! shadow-sm!;
+  }
+  .maplibregl-ctrl-attrib a {
+    @apply text-muted-foreground!;
+  }
+  .maplibregl-ctrl-attrib a:hover {
+    @apply text-foreground!;
+  }
+  .maplibregl-ctrl-attrib-button {
+    @apply bg-transparent!;
+  }
+}
