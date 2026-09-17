@@ -34,7 +34,7 @@ const Container = styled.div`
    * son claras— y hacía ver la página como una hoja vieja; con blanco los
    * productos y las promociones son lo único con color.
    */
-  background: #fff;
+  background: var(--papel);
   font-family: var(--fuente);
 
   /*
@@ -244,9 +244,9 @@ const FilterBtn = styled.button`
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  border: 1.5px solid ${props => props.$open ? BROWN : '#e0e0e0'};
-  background: ${props => props.$open ? BROWN_LIGHT : 'white'};
-  color: ${props => props.$open ? BROWN : '#444'};
+  border: 1.5px solid ${props => props.$open ? BROWN : 'var(--linea-fuerte)'};
+  background: ${props => props.$open ? BROWN_LIGHT : 'var(--papel)'};
+  color: ${props => props.$open ? BROWN : 'var(--tinta-suave)'};
   border-radius: 30px;
   font-size: 14px;
   font-weight: 500;
@@ -298,7 +298,7 @@ const FilterToggle = styled.div`
   width: 32px;
   height: 18px;
   border-radius: 9px;
-  background: ${props => props.$active ? 'white' : 'rgba(255,255,255,0.3)'};
+  background: ${props => props.$active ? 'var(--papel)' : 'rgba(255,255,255,0.3)'};
   position: relative;
   flex-shrink: 0;
   transition: background 0.2s;
@@ -311,7 +311,7 @@ const FilterToggle = styled.div`
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: ${props => props.$active ? BROWN : 'white'};
+    background: ${props => props.$active ? BROWN : 'var(--papel)'};
     transition: left 0.2s;
   }
 `;
@@ -435,7 +435,7 @@ const ProductsGrid = styled.div`
 const EmptyState = styled.div`
   text-align: center;
   padding: 60px 20px;
-  color: #aaa;
+  color: var(--tinta-tenue);
   font-size: 16px;
   .icon { font-size: 48px; margin-bottom: 12px; }
 `;
@@ -661,7 +661,7 @@ const Store = () => {
           </span>
           <button
             onClick={() => setPromoSeleccionada(null)}
-            style={{ border: '1px solid #ddd', background: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 13, cursor: 'pointer', color: '#444' }}
+            style={{ border: '1px solid var(--linea-fuerte)', background: 'var(--papel)', borderRadius: 20, padding: '4px 12px', fontSize: 13, cursor: 'pointer', color: 'var(--tinta-suave)' }}
           >
             ✕ Ver todos
           </button>

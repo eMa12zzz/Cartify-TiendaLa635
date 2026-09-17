@@ -41,9 +41,9 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-[var(--papel)]">
       {/* Left Column - Image */}
-      <div className="hidden lg:block lg:w-1/2 relative bg-gray-100">
+      <div className="hidden lg:block lg:w-1/2 relative bg-[var(--papel-gris)]">
         <img 
           src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop" 
           alt="Fruits" 
@@ -62,19 +62,19 @@ const ForgotPassword = () => {
               {ajustes.nombreLinea1}
               {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
             </h1>
-            <p className="text-gray-500 text-sm font-medium">Recuperar contraseña</p>
-            <p className="text-gray-400 text-xs mt-2 max-w-xs mx-auto">
+            <p className="text-[var(--tinta-suave)] text-sm font-medium">Recuperar contraseña</p>
+            <p className="text-[var(--tinta-tenue)] text-xs mt-2 max-w-xs mx-auto">
               Ingresa el correo asociado a tu cuenta y te enviaremos las instrucciones.
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5 relative">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Correo</label>
+              <label className="block text-sm font-semibold text-[var(--tinta-suave)] mb-1.5">Correo</label>
               <input
                 type="email"
                 placeholder="Introduce tu correo electrónico"
-                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] transition-colors text-sm`}
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-[var(--peligro)]' : 'border-[var(--linea-fuerte)]'} focus:outline-none focus:border-[var(--marca-600)] focus:ring-1 focus:ring-[var(--marca-600)] transition-colors text-sm`}
                 {...register("email", { 
                   required: "El correo es obligatorio",
                   pattern: {
@@ -84,7 +84,7 @@ const ForgotPassword = () => {
                 })}
               />
               {errors.email && (
-                <span className="text-red-500 text-xs mt-1 block absolute">
+                <span className="text-[var(--peligro)] text-xs mt-1 block absolute">
                   {errors.email.message}
                 </span>
               )}
@@ -93,16 +93,16 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-[#066494] hover:bg-[#A36B3D] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-[var(--marca-600)] hover:bg-[var(--marca-700)] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : 'Recuperar contraseña'}
             </button>
           </form>
 
           <div className="mt-8 text-center flex flex-col gap-2">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[var(--tinta-suave)]">
               ¿Ya la recordaste?{' '}
-              <Link to="/iniciar-sesion" className="text-[#003049] hover:text-[#00283D] font-semibold transition-colors">
+              <Link to="/iniciar-sesion" className="text-[var(--marca-600)] hover:text-[var(--marca-700)] font-semibold transition-colors">
                 Iniciar sesión
               </Link>
             </p>

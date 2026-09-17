@@ -8,14 +8,14 @@ const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: white;
+  background: var(--papel);
   display: flex;
   flex-direction: column;
 `;
 
 const TopBar = styled.div`
   width: 100%;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--linea);
   padding: 12px 0;
   text-align: center;
 `;
@@ -23,7 +23,7 @@ const TopBar = styled.div`
 const BrandSmall = styled.span`
   display: block;
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
   line-height: 1.2;
 `;
 
@@ -31,7 +31,7 @@ const BrandName = styled.span`
   display: block;
   font-size: 18px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   line-height: 1.2;
 `;
 
@@ -53,7 +53,7 @@ const BackButton = styled.button`
   border: none;
   font-size: 22px;
   cursor: pointer;
-  color: #000;
+  color: var(--tinta);
   margin-bottom: 20px;
   padding: 0;
   display: block;
@@ -64,13 +64,13 @@ const BackButton = styled.button`
 const SectionTitle = styled.h2`
   font-size: 26px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   margin: 0 0 8px 0;
 `;
 
 const Subtitle = styled.p`
   font-size: 14px;
-  color: #888;
+  color: var(--tinta-tenue);
   margin: 0 0 28px;
 `;
 
@@ -78,18 +78,18 @@ const Label = styled.label`
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--tinta);
   margin-bottom: 6px;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 13px 16px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--linea-fuerte);
   border-radius: 10px;
   font-size: 15px;
   outline: none;
-  color: #111;
+  color: var(--tinta);
   box-sizing: border-box;
   transition: border-color 0.2s;
   margin-bottom: 20px;
@@ -110,16 +110,16 @@ const Button = styled.button`
   margin-bottom: 16px;
   transition: background 0.2s;
 
-  &:hover { background: #00283D; }
+  &:hover { background: var(--marca-700); }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
 const ErrorMsg = styled.div`
-  color: #ef4444;
+  color: var(--peligro);
   font-size: 13px;
   margin-bottom: 14px;
   padding: 10px 14px;
-  background: #fef2f2;
+  background: var(--peligro-fondo);
   border-radius: 8px;
 `;
 

@@ -73,7 +73,7 @@ const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
           <div style={{
             padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6,
             fontSize: 13, fontWeight: 700,
-            color: enCamino ? (seg.yaCasi ? '#14663A' : '#173F94') : 'var(--tinta-suave)',
+            color: enCamino ? (seg.yaCasi ? 'var(--exito-texto)' : 'var(--info-texto)') : 'var(--tinta-suave)',
             background: 'var(--papel)',
           }}>
             {enCamino

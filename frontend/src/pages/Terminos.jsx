@@ -155,7 +155,7 @@ const EnlaceIndice = styled.button`
     border: 1px solid var(--linea);
     border-radius: var(--radio-pill);
     font-size: 12.5px;
-    background: #fff;
+    background: var(--papel);
   }
 `;
 

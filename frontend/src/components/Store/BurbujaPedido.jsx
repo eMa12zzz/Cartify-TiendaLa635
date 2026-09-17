@@ -161,10 +161,10 @@ const BurbujaPedido = () => {
         <div
           style={{
             width: 'min(300px, calc(100vw - 40px))',
-            background: '#fff',
+            background: 'var(--papel)',
             borderRadius: 18,
             boxShadow: '0 18px 44px rgba(0,0,0,0.22)',
-            border: '1px solid #ECE7E1',
+            border: '1px solid var(--linea)',
             overflow: 'hidden',
             animation: 'cardIn 220ms var(--ease-out)',
           }}
@@ -207,18 +207,18 @@ const BurbujaPedido = () => {
               */}
               <div style={{
                 padding: '10px 14px',
-                background: seguimiento.yaCasi ? '#EFFAF1' : '#F7FAFF',
-                borderBottom: `1px solid ${seguimiento.yaCasi ? '#D3EEDA' : '#EAF0FA'}`,
+                background: seguimiento.yaCasi ? 'var(--exito-fondo)' : 'var(--info-fondo)',
+                borderBottom: `1px solid ${seguimiento.yaCasi ? 'var(--exito-borde)' : 'var(--info-borde)'}`,
               }}>
                 <div style={{
                   fontSize: 13, fontWeight: 800,
-                  color: seguimiento.yaCasi ? '#14663A' : '#173F94',
+                  color: seguimiento.yaCasi ? 'var(--exito-texto)' : 'var(--info-texto)',
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
                   <Bike size={15} strokeWidth={2.4} />
                   {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
                 </div>
-                <div style={{ fontSize: 11.5, color: seguimiento.yaCasi ? '#3C7A55' : '#5B76B0', marginTop: 2 }}>
+                <div style={{ fontSize: 11.5, color: seguimiento.yaCasi ? 'var(--exito-suave)' : 'var(--info-suave)', marginTop: 2 }}>
                   {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
                   {/* La distancia solo sale si el pedido guardó su punto en el
                       mapa; los viejos traen nada más la dirección escrita */}
@@ -238,14 +238,14 @@ const BurbujaPedido = () => {
           */}
           {!enCamino && esDomicilio && estado !== 'entregado' && zona.hayDatos && (
             <div style={{
-              padding: '10px 14px', background: '#F8FAF8',
-              borderBottom: '1px solid #EDF2ED',
+              padding: '10px 14px', background: 'var(--exito-fondo)',
+              borderBottom: '1px solid var(--exito-borde)',
             }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#14663A', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--exito-texto)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Clock size={14} strokeWidth={2.4} />
                 {zona.texto}
               </div>
-              <div style={{ fontSize: 11, color: '#6E8A78', marginTop: 1 }}>
+              <div style={{ fontSize: 11, color: 'var(--exito-suave)', marginTop: 1 }}>
                 {zona.respaldo}
               </div>
             </div>
@@ -268,27 +268,27 @@ const BurbujaPedido = () => {
             {PASOS.map((p, i) => {
               const hecho = i < pasoActual;
               const actual = i === pasoActual;
-              const color = hecho || actual ? BROWN : '#c9c2bb';
+              const color = hecho || actual ? BROWN : 'var(--tinta-apagada)';
               return (
                 <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', opacity: hecho || actual ? 1 : 0.55 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', alignSelf: 'stretch' }}>
                     <div style={{
                       width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                      background: actual ? BROWN : hecho ? 'var(--marca-100)' : '#f3f0ed',
+                      background: actual ? BROWN : hecho ? 'var(--marca-100)' : 'var(--marca-50)',
                       color: actual ? '#fff' : color,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <p.Icono size={14} strokeWidth={2.4} />
                     </div>
                     {i < PASOS.length - 1 && (
-                      <div style={{ width: 2, flex: 1, minHeight: 14, background: hecho ? 'var(--marca-100)' : '#f3f0ed' }} />
+                      <div style={{ width: 2, flex: 1, minHeight: 14, background: hecho ? 'var(--marca-100)' : 'var(--marca-50)' }} />
                     )}
                   </div>
                   <div style={{ paddingBottom: i < PASOS.length - 1 ? 12 : 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: actual ? 800 : 600, color: actual ? '#1C1614' : '#6B7280' }}>
+                    <div style={{ fontSize: 13, fontWeight: actual ? 800 : 600, color: actual ? 'var(--tinta)' : 'var(--tinta-suave)' }}>
                       {p.label}
                     </div>
-                    <div style={{ fontSize: 11.5, color: '#9CA3AF' }}>{p.detalle}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--tinta-tenue)' }}>{p.detalle}</div>
                   </div>
                 </div>
               );
@@ -300,14 +300,14 @@ const BurbujaPedido = () => {
               novedad), se dice tal cual en vez de disimular.
             */}
             {esDomicilio && seguimiento.senalFria && (
-              <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '10px 0 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: 11.5, color: 'var(--tinta-tenue)', margin: '10px 0 0', lineHeight: 1.45 }}>
                 Su pedido va en camino. La última novedad del repartidor fue hace{' '}
                 {seguimiento.minutosDesdeUltimoDato || 1} min.
               </p>
             )}
 
             {esDomicilio && enCurso.deliveryAddress && (
-              <p style={{ fontSize: 11.5, color: '#9CA3AF', margin: '10px 0 0', lineHeight: 1.45 }}>
+              <p style={{ fontSize: 11.5, color: 'var(--tinta-tenue)', margin: '10px 0 0', lineHeight: 1.45 }}>
                 Se lo llevamos a: {enCurso.deliveryAddress}
               </p>
             )}
@@ -317,7 +317,7 @@ const BurbujaPedido = () => {
               onClick={() => navigate(`/mi-cuenta/pedido/${enCurso._id}`)}
               style={{
                 marginTop: 12, width: '100%', padding: '9px 0', borderRadius: 999,
-                border: '1px solid #eee', background: '#fff', color: BROWN,
+                border: '1px solid var(--linea)', background: 'var(--papel)', color: BROWN,
                 fontSize: 12.5, fontWeight: 700, display: 'flex',
                 alignItems: 'center', justifyContent: 'center', gap: 4,
               }}

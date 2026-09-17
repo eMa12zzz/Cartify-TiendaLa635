@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAjustesCtx } from '../context/AjustesContext';
+import { useModo } from './useModo';
 import { temaActivo, aplicarTema } from '../utils/temporadas';
 
 /*
@@ -109,14 +110,16 @@ export const useTemaCalculado = () => {
 export const useTemporada = () => {
   const calculado = useTemaCalculado();
   const { tema, temaBase, enPanel } = calculado;
+  // En modo oscuro la temporada se pinta con su versión para fondo oscuro.
+  const { oscuro } = useModo();
 
   useEffect(() => {
     // Prioridad: temporada (temporal) > color base del dueño > café de fábrica.
-    aplicarTema(enPanel ? null : (tema || temaBase));
+    aplicarTema(enPanel ? null : (tema || temaBase), { oscuro });
     // Al desmontar se despinta: si no, el tema quedaría puesto sobre cualquier
     // pantalla que se monte después sin pasar por aquí.
     return () => aplicarTema(null);
-  }, [tema, temaBase, enPanel]);
+  }, [tema, temaBase, enPanel, oscuro]);
 
   return calculado;
 };

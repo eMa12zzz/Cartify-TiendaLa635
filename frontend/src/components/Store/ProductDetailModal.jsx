@@ -375,7 +375,7 @@ const Existencia = styled.span`
 const AvisoAdultos = styled.div`
   background: color-mix(in srgb, var(--alerta) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--alerta) 32%, transparent);
-  color: #8A2B12;
+  color: var(--alerta-texto);
   border-radius: var(--radio-tarjeta);
   padding: 11px 14px;
   font-size: 12.5px;

@@ -53,13 +53,46 @@
   --tinta-suave: #6B6560; /* texto secundario */
   --tinta-tenue: #9C9691; /* texto de apoyo, placeholders */
 
-  --papel:        #FFFFFF; /* fondo de tarjetas */
-  --papel-gris:   #F5F5F5; /* fondo de imagen de producto */
+  --tinta-apagada: #D4D0CC; /* iconos en reposo que apenas se ven */
+  --sobre-tinta:   #FFFFFF; /* texto encima de un botón color tinta */
+
+  --papel:        #FFFFFF; /* fondo de la página y de tarjetas */
+  --papel-alto:   #FFFFFF; /* lo que flota encima: modales, cajones, menús */
+  --papel-suave:  #FAFAFA; /* hover de filas */
+  --papel-gris:   #F5F5F5; /* fondo de imagen de producto, campos, chips */
   --banda:        #E9E7E4; /* bandas de sección */
   --linea:        #ECE7E1; /* bordes sutiles */
+  --linea-fuerte: #E0E0E0; /* borde de campos y botones secundarios */
+  --realce:       rgba(0, 0, 0, 0.03); /* sombreado al pasar por encima */
+  --velo:         rgba(0, 0, 0, 0.45); /* lo que oscurece detrás de un modal */
 
   --alerta: #D8542C; /* "quedan pocos", errores */
+  --alerta-texto: #8A2B12; /* texto sobre el fondo teñido de alerta */
   --exito:  #2F8F4E;
+  --deshabilitado: #C9D4DB; /* botón principal apagado */
+
+  /*
+    Colores de ESTADO: verde de listo, azul de en camino, ámbar de cuidado,
+    rojo de error. No son marca, así que no cambian con la temporada; sí
+    cambian con el modo oscuro, porque un fondo pastel sobre negro deslumbra.
+  */
+  --exito-fondo:   #EFFAF1;
+  --exito-borde:   #D3EEDA;
+  --exito-texto:   #14663A;
+  --exito-suave:   #3C7A55;
+  --exito-vivo:    #16A34A;
+  --info-fondo:    #EFF5FF;
+  --info-borde:    #CFE0FF;
+  --info-texto:    #173F94;
+  --info-suave:    #3E5FA3;
+  --info-vivo:     #1D4ED8;
+  --aviso-fondo:   #FFF6E9;
+  --aviso-borde:   #F3DFC0;
+  --aviso-texto:   #7A3E08;
+  --aviso-vivo:    #B4590C;
+  --peligro-fondo: #FEF2F2;
+  --peligro-borde: #FECACA;
+  --peligro:       #DC2626;
 
   /* Radios: en el diseño casi todo es pill; las tarjetas son suaves. */
   --radio-pill: 999px;
@@ -74,12 +107,88 @@
 }
 
 /*
+  ==========================================
+  MODO OSCURO (tienda y Mi Cuenta)
+  ==========================================
+  Lo elige cada persona en Mi Cuenta → Preferencias (ver ModoContext). Se
+  enciende con data-modo="oscuro" en el <html>, que se pone SOLO fuera del
+  panel: el panel tiene sus propias paletas de accesibilidad.
+
+  Aquí solo se cambian los tokens; las pantallas usan var(--papel),
+  var(--tinta)... y se repintan solas. Un color fijo (#fff, #111) en una
+  pantalla de la tienda es un pedazo que se queda claro en modo oscuro.
+
+  La marca oscura sale de paletaOscura() en utils/temporadas.js a partir del
+  azul de la casa; si cambia la marca, se recalcula allá y se copia aquí. Las
+  temporadas no pasan por aquí: se calculan al pintarlas.
+*/
+:root[data-modo="oscuro"] {
+  color-scheme: dark;
+
+  --marca-700: #1296DA;
+  --marca-600: #0F80BA;
+  --marca-400: #49B8F0;
+  --marca-100: #113041;
+  --marca-50:  #12232E;
+  --acento:    #009AEB;
+
+  --tinta:          #ECEEF0;
+  --tinta-suave:    #A9B0B7;
+  --tinta-tenue:    #7D858D;
+  --tinta-apagada:  #4A5058;
+  --sobre-tinta:    #121417;
+
+  --papel:        #121417;
+  --papel-alto:   #1A1D21;
+  --papel-suave:  #181B1F;
+  --papel-gris:   #1F2328;
+  --banda:        #23272C;
+  --linea:        #2A2F35;
+  --linea-fuerte: #3A4047;
+  --realce:       rgba(255, 255, 255, 0.05);
+  --velo:         rgba(0, 0, 0, 0.65);
+
+  --alerta: #F07A52;
+  --alerta-texto: #F4A58A;
+  --exito:  #4CC27A;
+  --deshabilitado: #2E3A42;
+
+  --exito-fondo:   #10261A;
+  --exito-borde:   #1E4630;
+  --exito-texto:   #7DDBA3;
+  --exito-suave:   #5FB386;
+  --exito-vivo:    #34C46A;
+  --info-fondo:    #121F36;
+  --info-borde:    #22385F;
+  --info-texto:    #A3C2FF;
+  --info-suave:    #8AA5D8;
+  --info-vivo:     #6A9CFF;
+  --aviso-fondo:   #2A1F12;
+  --aviso-borde:   #4F3A1C;
+  --aviso-texto:   #F2C58B;
+  --aviso-vivo:    #F0A35A;
+  --peligro-fondo: #331719;
+  --peligro-borde: #5C2629;
+  --peligro:       #F87171;
+
+  --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --sombra-flotante: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+
+/*
+  Las clases dark: de Tailwind siguen al modo elegido en la tienda, no al del
+  sistema operativo (que en el panel no significa nada).
+*/
+@custom-variant dark (&:where([data-modo="oscuro"], [data-modo="oscuro"] *));
+
+/*
   Poppins en toda la app. Antes no había ninguna fuente declarada y cada
   navegador ponía la suya, así que el diseño se veía distinto en cada máquina.
 */
 body {
   font-family: var(--fuente);
   color: var(--tinta);
+  background: var(--papel);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -171,7 +280,7 @@ input:disabled {
     que no son <button>: se les pone .clickable y ya traen cursor y sombra.
   */
   .clickable:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: var(--realce);
   }
 }
 
@@ -247,7 +356,7 @@ input:disabled {
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, #fff 70%, transparent),
+    color-mix(in srgb, var(--papel) 70%, transparent),
     transparent
   );
   animation: esqueletoBrillo 1200ms linear infinite;
@@ -571,11 +680,11 @@ input:disabled {
   casa. Solo los usa el mapa.
 */
 :root {
-  --background: #ffffff;
+  --background: var(--papel-alto);
   --foreground: var(--tinta);
   --muted: var(--papel-gris);
   --muted-foreground: var(--tinta-tenue);
-  --popover: #ffffff;
+  --popover: var(--papel-alto);
   --popover-foreground: var(--tinta);
   --accent: var(--marca-50);
   --border: var(--linea);

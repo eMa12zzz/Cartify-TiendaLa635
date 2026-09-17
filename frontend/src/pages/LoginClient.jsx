@@ -31,7 +31,7 @@ const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: #fff;
+  background: var(--papel);
   display: flex;
   flex-direction: column;
 `;
@@ -50,8 +50,8 @@ const Container = styled.div`
  * Ahora sale de los ajustes, igual que en el encabezado de verdad.
  */
 const TopBar = styled.header`
-  background: #fff;
-  border-bottom: 1px solid #ECE7E1;
+  background: var(--papel);
+  border-bottom: 1px solid var(--linea);
   padding: 0 28px;
   height: 64px;
   display: flex;
@@ -120,7 +120,7 @@ const Titular = styled.h1`
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: -1px;
-  color: #101820;
+  color: var(--tinta);
   margin: 0 0 16px;
 
   strong { color: ${BROWN}; font-weight: 800; }
@@ -129,7 +129,7 @@ const Titular = styled.h1`
 const Bajada = styled.p`
   font-size: 15.5px;
   line-height: 1.6;
-  color: #6B7280;
+  color: var(--tinta-suave);
   margin: 0 0 26px;
   max-width: 440px;
 
@@ -153,17 +153,17 @@ const Ventaja = styled.li`
   align-items: flex-start;
   gap: 11px;
   font-size: 14px;
-  color: #4B5563;
+  color: var(--tinta-suave);
   line-height: 1.45;
 
-  strong { color: #1C1614; font-weight: 700; }
+  strong { color: var(--tinta); font-weight: 700; }
 `;
 
 const IconoVentaja = styled.span`
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  background: #F1F6F9;
+  background: var(--marca-50);
   color: ${BROWN};
   display: flex;
   align-items: center;
@@ -183,7 +183,7 @@ const SinCuenta = styled.div`
 const SinCuentaTexto = styled.span`
   font-size: 14px;
   font-weight: 700;
-  color: #1C1614;
+  color: var(--tinta);
 `;
 
 const BotonRegistro = styled(Link)`
@@ -200,14 +200,14 @@ const BotonRegistro = styled(Link)`
   box-shadow: 0 8px 20px rgba(0, 48, 73, 0.28);
   transition: background 0.18s, transform 0.18s;
 
-  &:hover { background: #00283D; transform: translateY(-1px); }
+  &:hover { background: var(--marca-700); transform: translateY(-1px); }
 `;
 
 // ── La mitad de la derecha: el formulario ──
 const Card = styled.div`
   width: 100%;
-  background: #fff;
-  border: 1px solid #ECE7E1;
+  background: var(--papel);
+  border: 1px solid var(--linea);
   border-radius: 20px;
   box-shadow: 0 20px 50px rgba(0, 48, 73, 0.10);
   padding: 32px 30px;
@@ -223,14 +223,14 @@ const Card = styled.div`
 const SectionTitle = styled.h2`
   font-size: 22px;
   font-weight: 800;
-  color: #101820;
+  color: var(--tinta);
   margin: 0 0 6px 0;
   text-align: center;
 `;
 
 const SubTitle = styled.p`
   font-size: 13.5px;
-  color: #9CA3AF;
+  color: var(--tinta-tenue);
   margin: 0 0 24px 0;
   text-align: center;
 `;
@@ -243,7 +243,7 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #000;
+  color: var(--tinta);
   margin-bottom: 8px;
 `;
 
@@ -256,7 +256,7 @@ const InputWrapper = styled.div`
 const IconWrapper = styled.div`
   position: absolute;
   left: 14px;
-  color: #aaa;
+  color: var(--tinta-tenue);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -266,13 +266,13 @@ const IconWrapper = styled.div`
 const Input = styled.input`
   width: 100%;
   padding: 12px 14px 12px 44px;
-  border: 1.5px solid ${({ $error }) => ($error ? '#ff4d4f' : '#e0e0e0')};
+  border: 1.5px solid ${({ $error }) => ($error ? 'var(--peligro)' : 'var(--linea-fuerte)')};
   border-radius: 8px;
   font-size: 14px;
   box-sizing: border-box;
   outline: none;
-  color: #000;
-  background: white;
+  color: var(--tinta);
+  background: var(--papel);
   transition: border-color 0.2s;
 
   &:focus {
@@ -280,11 +280,11 @@ const Input = styled.input`
     box-shadow: 0 0 0 3px rgba(0,48,73,0.08);
   }
 
-  &::placeholder { color: #bbb; }
+  &::placeholder { color: var(--tinta-tenue); }
 `;
 
 const ErrorMsg = styled.span`
-  color: #ff4d4f;
+  color: var(--peligro);
   font-size: 12px;
   display: block;
   margin-top: 5px;
@@ -302,7 +302,7 @@ const RememberLabel = styled.label`
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #555;
+  color: var(--tinta-suave);
   cursor: pointer;
 `;
 
@@ -331,8 +331,8 @@ const Button = styled.button`
   transition: background 0.2s;
   margin-bottom: 20px;
 
-  &:hover { background: #00283D; }
-  &:disabled { background: #C9D4DB; cursor: not-allowed; }
+  &:hover { background: var(--marca-700); }
+  &:disabled { background: var(--deshabilitado); cursor: not-allowed; }
 `;
 
 // Separador "o" entre el formulario y el botón de Google.
@@ -341,7 +341,7 @@ const Divisor = styled.div`
   align-items: center;
   gap: 12px;
   margin: 4px 0 18px;
-  color: #b7b0a8;
+  color: var(--tinta-tenue);
   font-size: 12.5px;
   font-weight: 600;
 
@@ -349,7 +349,7 @@ const Divisor = styled.div`
     content: '';
     flex: 1;
     height: 1px;
-    background: #eee;
+    background: var(--papel-gris);
   }
 `;
 
@@ -363,7 +363,7 @@ const GoogleFila = styled.div`
 const FooterText = styled.div`
   text-align: center;
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
 `;
 
 const FooterLink = styled(Link)`

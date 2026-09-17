@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store, Heart, Bike,
+  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store, Heart, Bike, SlidersHorizontal,
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
@@ -37,6 +37,7 @@ const navItems = [
   { to: '/mi-cuenta/notificaciones', label: 'Avisos',         titulo: 'Notificaciones',        icon: Bell,        ready: true },
   { to: '/mi-cuenta/puntos',         label: 'Puntos',         titulo: 'Puntos de fidelidad',   icon: Star,        ready: true },
   { to: '/mi-cuenta/recibidos',      label: 'Recibos',        titulo: 'Recibos',               icon: Receipt,     ready: true },
+  { to: '/mi-cuenta/preferencias',   label: 'Preferencias',   titulo: 'Modo claro u oscuro',   icon: SlidersHorizontal, ready: true },
 ];
 
 const ClienteLayout = () => {
@@ -324,7 +325,7 @@ const ClienteLayout = () => {
               exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}
               transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
               className="relative z-10 w-full max-w-sm rounded-2xl p-6 shadow-xl"
-              style={{ backgroundColor: c.cardBg || '#fff', color: c.textPrimary }}
+              style={{ backgroundColor: c.cardBg || 'var(--papel)', color: c.textPrimary }}
               role="dialog"
               aria-modal="true"
             >

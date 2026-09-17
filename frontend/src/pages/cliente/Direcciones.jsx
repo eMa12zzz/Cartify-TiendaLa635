@@ -105,7 +105,7 @@ const Direcciones = () => {
                 disabled={saving}
                 aria-label={`Eliminar ${dir.nombre || 'dirección'}`}
                 className="p-1.5 rounded-lg transition-colors disabled:opacity-60"
-                style={{ color: '#dc2626' }}
+                style={{ color: 'var(--peligro)' }}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

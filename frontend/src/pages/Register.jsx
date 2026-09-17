@@ -21,14 +21,14 @@ const BROWN_HOVER = 'var(--marca-700)';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: white;
+  background: var(--papel);
   display: flex;
   flex-direction: column;
 `;
 
 const TopBar = styled.div`
   width: 100%;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--linea);
   padding: 12px 0;
   text-align: center;
 `;
@@ -36,7 +36,7 @@ const TopBar = styled.div`
 const BrandSmall = styled.span`
   display: block;
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
   line-height: 1.2;
 `;
 
@@ -44,7 +44,7 @@ const BrandName = styled.span`
   display: block;
   font-size: 18px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   line-height: 1.2;
 `;
 
@@ -64,7 +64,7 @@ const Card = styled.div`
 const SectionTitle = styled.h2`
   font-size: 26px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   margin: 0 0 20px 0;
 `;
 
@@ -72,7 +72,7 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #000;
+  color: var(--tinta);
   margin-bottom: 6px;
 `;
 
@@ -91,7 +91,7 @@ const IconWrapper = styled.div`
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #aaa;
+  color: var(--tinta-tenue);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -101,14 +101,14 @@ const IconWrapper = styled.div`
 const Input = styled.input`
   width: 100%;
   padding: 12px 14px 12px 44px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--linea-fuerte);
   border-radius: 8px;
   font-size: 14px;
   box-sizing: border-box;
   outline: none;
-  color: #000;
+  color: var(--tinta);
   transition: border-color 0.2s;
-  background: white;
+  background: var(--papel);
 
   &:focus {
     border-color: ${BROWN};
@@ -116,7 +116,7 @@ const Input = styled.input`
   }
 
   &::placeholder {
-    color: #bbb;
+    color: var(--tinta-tenue);
   }
 `;
 
@@ -126,7 +126,7 @@ const BloqueFoto = styled.div`
 `;
 
 const ErrorMsg = styled.span`
-  color: #ff4d4f;
+  color: var(--peligro);
   font-size: 12px;
   position: absolute;
   bottom: -18px;
@@ -155,7 +155,7 @@ const Button = styled.button`
   }
   
   &:disabled {
-    background: #C9D4DB;
+    background: var(--deshabilitado);
     cursor: not-allowed;
   }
 `;
@@ -165,7 +165,7 @@ const Divisor = styled.div`
   align-items: center;
   gap: 12px;
   margin: 20px 0 16px;
-  color: #b7b0a8;
+  color: var(--tinta-tenue);
   font-size: 12.5px;
   font-weight: 600;
 
@@ -173,7 +173,7 @@ const Divisor = styled.div`
     content: '';
     flex: 1;
     height: 1px;
-    background: #eee;
+    background: var(--papel-gris);
   }
 `;
 
@@ -186,7 +186,7 @@ const FooterText = styled.div`
   text-align: center;
   margin-top: 18px;
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
 `;
 
 const FooterLink = styled.span`
@@ -208,8 +208,8 @@ const FooterLink = styled.span`
 const BloqueConsentimiento = styled.div`
   margin: 24px 0 4px;
   padding: 16px 18px;
-  background: #fbfaf9;
-  border: 1px solid #eeeae5;
+  background: var(--papel-suave);
+  border: 1px solid var(--linea);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -233,7 +233,7 @@ const Casilla = styled.div`
   label {
     font-size: 13.5px;
     line-height: 1.55;
-    color: #444;
+    color: var(--tinta-suave);
     cursor: pointer;
   }
 `;
@@ -268,7 +268,7 @@ const EnlaceTerminos = styled.button`
 const TextoCasilla = styled.div`
   font-size: 13.5px;
   line-height: 1.55;
-  color: #444;
+  color: var(--tinta-suave);
 `;
 
 // La segunda línea de la casilla de promociones: qué significa decir que sí,
@@ -278,7 +278,7 @@ const Aclaracion = styled.span`
   display: block;
   margin-top: 3px;
   font-size: 12.5px;
-  color: #999;
+  color: var(--tinta-tenue);
 `;
 
 // El error de la casilla no puede ser el ErrorMsg de los campos: aquel va
@@ -286,7 +286,7 @@ const Aclaracion = styled.span`
 const ErrorCasilla = styled.span`
   display: block;
   margin: -6px 0 0 29px;
-  color: #ff4d4f;
+  color: var(--peligro);
   font-size: 12px;
 `;
 

@@ -38,7 +38,7 @@ const Velo = styled.div`
 `;
 
 const Panel = styled.div`
-  background: #fff;
+  background: var(--papel);
   border-radius: 16px;
   width: 100%;
   max-width: 720px;
@@ -111,7 +111,7 @@ const Cerrar = styled.button`
   justify-content: center;
   border: 1px solid var(--linea);
   border-radius: 50%;
-  background: #fff;
+  background: var(--papel);
   color: var(--tinta-suave);
   cursor: pointer;
   transition: border-color var(--dur-press) var(--ease-out),
