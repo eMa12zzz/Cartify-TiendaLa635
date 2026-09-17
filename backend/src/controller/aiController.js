@@ -1,4 +1,4 @@
-import { Type } from "@google/genai";
+import { FunctionCallingConfigMode, Type } from "@google/genai";
 import productModel from "../models/product.js";
 import { getIA, generarConIA } from "../utils/iaClient.js";
 import { generarCopyPlantilla } from "../utils/plantillasPromo.js";
@@ -373,6 +373,278 @@ aiController.entenderPedido = async (req, res) => {
       // simplemente vuelve a decir que no entendió.
       console.log("IA no disponible para el asistente: " + errorIA.message);
       return res.status(200).json({ accion: "ninguna", entendido: false, origen: "error" });
+    }
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * ============================================================
+ * ENTENDER CON HERRAMIENTAS (tool calling) — el asistente de voz móvil
+ * ============================================================
+ * Mismo trabajo que `entenderPedido` de arriba (plan B cuando las reglas del
+ * asistente no entendieron la frase), pero con function calling de Gemini en
+ * vez de un `responseSchema` de un solo campo. La diferencia no es de gusto:
+ * `entenderPedido` solo puede devolver UN producto por turno, así que "dame
+ * dos manzanas y una leche" le entendía nada más la mitad. Con herramientas
+ * el modelo puede llamar `agregar_producto` dos veces en la misma respuesta.
+ *
+ * Es una ruta APARTE y no un cambio en `/entender` porque esa la sigue
+ * usando la web (`frontend/src/hooks/useVoiceAssistant.js`) tal como está;
+ * esta es solo para el asistente de móvil.
+ *
+ * Cada "herramienta" es una acción que el CLIENTE sabe ejecutar (agregar al
+ * carrito, quitarlo, etc.) — el backend nunca toca el carrito, que vive en
+ * el teléfono. Gemini elige qué llamar y con qué argumentos; el backend solo
+ * valida esas llamadas (que el producto exista de verdad en la lista) y se
+ * las devuelve al móvil como una lista de acciones para que las ejecute.
+ *
+ * `responder` es una herramienta más, no un campo aparte: así TODO lo que
+ * hace el modelo —mutar el carrito y hablar— es una llamada a función, sin
+ * mezclar partes de texto suelto con partes de función en la respuesta.
+ * `functionCallingConfig: { mode: ANY }` obliga a que SIEMPRE conteste con
+ * llamadas a estas herramientas, nunca con un texto libre que habría que
+ * parsear a mano.
+ */
+const HERRAMIENTAS_ASISTENTE = [
+  {
+    functionDeclarations: [
+      {
+        name: "agregar_producto",
+        description: "Agrega unidades de un producto del catálogo al carrito del cliente.",
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            producto: {
+              type: Type.STRING,
+              description: "Nombre EXACTO tal como viene en la lista de productos.",
+            },
+            cantidad: { type: Type.NUMBER, description: "Cuántas unidades. 1 si no lo dijo." },
+          },
+          required: ["producto"],
+        },
+      },
+      {
+        name: "quitar_producto",
+        description: "Quita unidades de un producto que ya está en el carrito del cliente.",
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            producto: { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de productos." },
+            cantidad: {
+              type: Type.NUMBER,
+              description: "Cuántas unidades quitar. Si no lo dijo, se quita del todo.",
+            },
+          },
+          required: ["producto"],
+        },
+      },
+      {
+        name: "mostrar_producto",
+        description: "El cliente quiere VER un producto (su ficha), sin agregarlo todavía.",
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            producto: { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de productos." },
+          },
+          required: ["producto"],
+        },
+      },
+      {
+        name: "vaciar_carrito",
+        description: "Vacía el carrito completo del cliente.",
+        parameters: { type: Type.OBJECT, properties: {} },
+      },
+      {
+        name: "ver_total",
+        description: "El cliente pregunta cuánto lleva o cuál es el total de su carrito.",
+        parameters: { type: Type.OBJECT, properties: {} },
+      },
+      {
+        name: "ir_a_pagar",
+        description: "El cliente quiere pagar, comprar o finalizar su pedido.",
+        parameters: { type: Type.OBJECT, properties: {} },
+      },
+      {
+        name: "responder",
+        description:
+          "Lo que el asistente dice en voz alta. SIEMPRE hay que llamarla, además de cualquier otra herramienta que haga falta.",
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            texto: {
+              type: Type.STRING,
+              description: "Una o dos frases, máximo 140 caracteres. Se escucha, no se lee.",
+            },
+          },
+          required: ["texto"],
+        },
+      },
+    ],
+  },
+];
+
+const MODO_ASISTENTE_HERRAMIENTAS = [
+  "Eres el asistente de voz de Tienda La 635, una tienda de barrio en El Salvador.",
+  "Un cliente te habló y las reglas del sistema no entendieron qué quería. Tu trabajo es",
+  "descifrarlo y llamar las herramientas que hagan falta para atenderlo.",
+  "",
+  "Cómo trabajas:",
+  "- Si pide varias cosas en la misma frase ('dos manzanas y una leche'), llamá",
+  "  'agregar_producto' una vez POR CADA producto. No hace falta juntarlo en una sola llamada.",
+  "- SOLO podés usar productos de la lista que te paso. Si lo que pide no está en esa lista,",
+  "  no llames ninguna herramienta de carrito para eso — solo 'responder', con amabilidad.",
+  "  Nunca inventes productos.",
+  "- Si pide algo por su uso ('algo para la tos', 'para el desayuno'), buscá en la lista",
+  "  qué le sirve y ofrecelo por su nombre.",
+  "- SIEMPRE llamá 'responder', sin excepción, además de cualquier otra herramienta.",
+  "- Lo que digas en 'responder' se ESCUCHA, no se lee: frases cortas, sin listas, sin emojis.",
+  "- Hablás en español claro, cálido y cercano pero NEUTRO: al cliente de usted,",
+  "  sin diminutivos ni jerga (nada de 'pancito', 'heladitos', 'cafecito').",
+  "- Entre los clientes hay personas mayores: se entiende de una sola escuchada.",
+  "",
+  "SI LA PREGUNTA NO ES DE PRODUCTOS NI DEL CARRITO (el horario, la dirección,",
+  "si aceptan tarjeta, cómo es la entrega, o cualquier charla que no sea comprar):",
+  "no inventes la respuesta —no tenés esos datos— pero TAMPOCO digas 'no entendí'",
+  "ni le pidas que repita, porque sí la entendiste, solo no es algo que puedas",
+  "resolver vos. Decile con dos frases que eso no lo manejás vos, y ofrecele algo",
+  "que sí podés: 'Eso no lo sé decir, mejor pregúntele a alguien de la tienda por",
+  "WhatsApp. ¿Le ayudo a armar su pedido mientras tanto?'. No llames ninguna otra",
+  "herramienta para eso, pero la respuesta tiene que sonar a que la escuchaste,",
+  "no a que la ignoraste.",
+  "",
+  "Reservá el 'no entendí, repítalo' para cuando la frase de verdad no se entiende",
+  "—se cortó, quedó a medias, o no tiene sentido ninguno—, que es distinto de una",
+  "pregunta clara sobre algo que no es tu trabajo.",
+].join("\n");
+
+aiController.entenderConHerramientas = async (req, res) => {
+  try {
+    const { frase, productos = [], carrito = [] } = req.body;
+
+    if (!frase || !String(frase).trim()) {
+      return res.status(400).json({ message: "Hace falta la frase" });
+    }
+
+    const ia = getIA();
+    if (!ia) {
+      return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "sin-ia" });
+    }
+
+    // Mismo tope que /entender: 120 productos alcanzan para no gastar la
+    // cuota gratis en dos días y mantener la respuesta rápida.
+    const catalogo = productos
+      .slice(0, 120)
+      .map((p) => `${p.nombre}${p.precio != null ? ` ($${p.precio})` : ""}`)
+      .join("\n");
+
+    const enCarrito = carrito.length
+      ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
+      : "vacío";
+
+    const contents = [
+      `El cliente dijo: "${frase}"`,
+      "",
+      `En su carrito lleva: ${enCarrito}`,
+      "",
+      "Productos que la tienda tiene hoy:",
+      catalogo,
+    ].join("\n");
+
+    try {
+      // Un solo intento, igual que /entender: hay alguien hablándole al
+      // teléfono y esperando respuesta ya.
+      const respuesta = await generarConIA({
+        contents,
+        config: {
+          systemInstruction: MODO_ASISTENTE_HERRAMIENTAS,
+          tools: HERRAMIENTAS_ASISTENTE,
+          toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY } },
+          // Baja a propósito: aquí no se quiere creatividad, se quiere que
+          // entienda bien y elija de la lista.
+          temperature: 0.2,
+        },
+      }, { intentos: 1 });
+
+      const llamadas = respuesta.functionCalls || [];
+      if (!llamadas.length) throw new Error("La IA no llamó ninguna herramienta");
+
+      /*
+       * No se confía en que el modelo copió bien el nombre del producto: se
+       * verifica contra la lista real, igual que en /entender. Lo que no
+       * calza se descarta sin decir nada — esa llamada simplemente no se
+       * traduce en ninguna acción.
+       */
+      const nombresReales = new Map(
+        productos
+          .filter((p) => p?.nombre)
+          .map((p) => [String(p.nombre).toLowerCase(), p.nombre])
+      );
+
+      const acciones = [];
+      let dice = "";
+
+      for (const llamada of llamadas) {
+        const args = llamada.args || {};
+        const nombreReal = () => nombresReales.get(String(args.producto || "").toLowerCase()) || null;
+
+        switch (llamada.name) {
+          case "agregar_producto": {
+            const producto = nombreReal();
+            if (producto) {
+              acciones.push({
+                tipo: "agregar",
+                producto,
+                cantidad: Number(args.cantidad) > 0 ? Math.round(Number(args.cantidad)) : 1,
+              });
+            }
+            break;
+          }
+          case "quitar_producto": {
+            const producto = nombreReal();
+            if (producto) {
+              acciones.push({
+                tipo: "quitar",
+                producto,
+                cantidad: Number(args.cantidad) > 0 ? Math.round(Number(args.cantidad)) : null,
+              });
+            }
+            break;
+          }
+          case "mostrar_producto": {
+            const producto = nombreReal();
+            if (producto) acciones.push({ tipo: "mostrar", producto });
+            break;
+          }
+          case "vaciar_carrito":
+            acciones.push({ tipo: "vaciar" });
+            break;
+          case "ver_total":
+            acciones.push({ tipo: "total" });
+            break;
+          case "ir_a_pagar":
+            acciones.push({ tipo: "comprar" });
+            break;
+          case "responder":
+            dice = String(args.texto || "").trim();
+            break;
+          default:
+            break;
+        }
+      }
+
+      // Mismo candado que /entender: sin frase que decir, no hay respuesta
+      // que dar — mejor admitir que no se entendió que quedarse mudo.
+      if (!dice) {
+        return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "vacia" });
+      }
+
+      return res.status(200).json({ acciones, respuesta: dice, entendido: true, origen: "ia" });
+    } catch (errorIA) {
+      console.log("IA no disponible para el asistente (herramientas): " + errorIA.message);
+      return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "error" });
     }
   } catch (error) {
     console.log("error " + error);
