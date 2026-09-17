@@ -20,43 +20,43 @@ const BROWN_DARK = 'var(--marca-700)';
 
 /* Columna flex por lo mismo que la tienda: con poco contenido, el pie tiene
    que aterrizar abajo y no quedar flotando a media pantalla. */
-const Container = styled.div`min-height: 100vh; background: #f6f6f6; font-family: var(--fuente); display: flex; flex-direction: column;`;
+const Container = styled.div`min-height: 100vh; background: var(--papel-suave); font-family: var(--fuente); display: flex; flex-direction: column;`;
 const Content = styled.div`flex: 1; padding: 32px 28px 60px; max-width: 760px; margin: 0 auto; width: 100%;`;
-const StepTitle = styled.h2`font-size: 18px; font-weight: 800; color: #111; margin: 0 0 14px;`;
+const StepTitle = styled.h2`font-size: 18px; font-weight: 800; color: var(--tinta); margin: 0 0 14px;`;
 const Tabs = styled.div`display: flex; gap: 8px; margin-bottom: 18px;`;
-const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : '#e0e0e0')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#555')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
+const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : 'var(--linea-fuerte)')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'var(--papel)')}; color: ${p => (p.$active ? BROWN_DARK : 'var(--tinta-suave)')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
 const SizesGrid = styled.div`display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }`;
-const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.5px solid ${p => (p.$active ? BROWN : '#cfcfcf')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'white')}; color: ${p => (p.$active ? BROWN_DARK : '#222')}; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); padding: 10px; &:hover { border-color: ${BROWN}; }
+const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.5px solid ${p => (p.$active ? BROWN : 'var(--linea-fuerte)')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'var(--papel)')}; color: ${p => (p.$active ? BROWN_DARK : 'var(--tinta)')}; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); padding: 10px; &:hover { border-color: ${BROWN}; }
   /*
    * Sin material no se puede elegir. Se deja VISIBLE y apagado en vez de
    * esconderlo: la tienda sí ofrece ese formato, hoy no hay con qué hacerlo.
    * Un formato que desaparece de la lista parece que nunca existió, y la gente
    * lo vuelve a buscar mañana sin entender qué pasó.
    */
-  &:disabled { opacity: 0.5; cursor: not-allowed; background: #f7f7f7; border-color: #e0e0e0; color: #888; }
-  &:disabled:hover { border-color: #e0e0e0; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; background: var(--papel-suave); border-color: var(--linea-fuerte); color: var(--tinta-tenue); }
+  &:disabled:hover { border-color: var(--linea-fuerte); }
 `;
 
 // El motivo, en palabras. "Agotado" a secas no dice qué se acabó.
-const SinMaterial = styled.span`font-size: 11px; font-weight: 700; color: #C0392B; text-transform: uppercase; letter-spacing: 0.3px;`;
+const SinMaterial = styled.span`font-size: 11px; font-weight: 700; color: var(--peligro); text-transform: uppercase; letter-spacing: 0.3px;`;
 const QuedaPoco = styled.span`font-size: 11px; font-weight: 700; color: ${BROWN_DARK};`;
-const OptionsCard = styled.div`background: white; border: 1px solid #ebebeb; border-radius: 14px; padding: 20px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px;`;
+const OptionsCard = styled.div`background: var(--papel); border: 1px solid var(--linea); border-radius: 14px; padding: 20px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px;`;
 const Row = styled.div`display: flex; align-items: center; justify-content: space-between; gap: 12px;`;
-const Label = styled.span`font-size: 14px; color: #333; font-weight: 600;`;
-const NumInput = styled.input`width: 90px; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none; &:focus { border-color: ${BROWN}; }`;
-const Select = styled.select`border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none; background: white; &:focus { border-color: ${BROWN}; }`;
-const Toggle = styled.button`position: relative; width: 44px; height: 24px; border-radius: 999px; border: none; cursor: pointer; background: ${p => (p.$on ? BROWN : '#d1d5db')}; transition: background-color var(--dur-press) var(--ease-out); & span { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: white; transform: ${p => (p.$on ? 'translateX(20px)' : 'translateX(0)')}; transition: transform var(--dur-press) var(--ease-out); }`;
-const PriceBox = styled.div`display: flex; align-items: baseline; justify-content: space-between; padding: 16px 0; border-top: 1px dashed #ddd; margin-bottom: 20px;`;
-const PriceLabel = styled.span`font-size: 15px; color: #555;`;
+const Label = styled.span`font-size: 14px; color: var(--tinta); font-weight: 600;`;
+const NumInput = styled.input`width: 90px; border: 1.5px solid var(--linea-fuerte); border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none; &:focus { border-color: ${BROWN}; }`;
+const Select = styled.select`border: 1.5px solid var(--linea-fuerte); border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none; background: var(--papel); &:focus { border-color: ${BROWN}; }`;
+const Toggle = styled.button`position: relative; width: 44px; height: 24px; border-radius: 999px; border: none; cursor: pointer; background: ${p => (p.$on ? BROWN : 'var(--linea-fuerte)')}; transition: background-color var(--dur-press) var(--ease-out); & span { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--papel); transform: ${p => (p.$on ? 'translateX(20px)' : 'translateX(0)')}; transition: transform var(--dur-press) var(--ease-out); }`;
+const PriceBox = styled.div`display: flex; align-items: baseline; justify-content: space-between; padding: 16px 0; border-top: 1px dashed var(--linea-fuerte); margin-bottom: 20px;`;
+const PriceLabel = styled.span`font-size: 15px; color: var(--tinta-suave);`;
 const PriceValue = styled.span`font-size: 28px; font-weight: 800; color: ${BROWN_DARK};`;
-const ErrorMsg = styled.div`color: #ef4444; font-size: 13px; margin-bottom: 16px;`;
+const ErrorMsg = styled.div`color: var(--peligro); font-size: 13px; margin-bottom: 16px;`;
 /*
  * Distinto del ErrorMsg rojo a propósito: esto no bloquea nada, es un
  * "ojo con esto" — mismo tono ámbar que usan los avisos de advertencia en
  * el resto de la web, no la alarma roja de "esto no se puede enviar".
  */
-const Advertencia = styled.div`display: flex; align-items: flex-start; gap: 8px; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.4; margin-top: 10px;`;
-const ContinueBtn = styled.button`width: 100%; padding: 15px; background: ${BROWN}; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; &:hover { background: ${BROWN_DARK}; } &:disabled { background: #C9D4DB; cursor: not-allowed; }`;
+const Advertencia = styled.div`display: flex; align-items: flex-start; gap: 8px; background: var(--aviso-fondo); border: 1px solid var(--aviso-borde); color: var(--aviso-texto); border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.4; margin-top: 10px;`;
+const ContinueBtn = styled.button`width: 100%; padding: 15px; background: ${BROWN}; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; &:hover { background: ${BROWN_DARK}; } &:disabled { background: var(--deshabilitado); cursor: not-allowed; }`;
 const Bloque = styled.div`margin-bottom: 32px;`;
 
 const Impresiones = () => {
@@ -184,7 +184,7 @@ const Impresiones = () => {
       <Content>
         <StepTitle>1. Elige el formato</StepTitle>
         {servicios.length === 0 ? (
-          <p style={{ color: '#999', fontSize: 14, marginBottom: 32 }}>No hay formatos disponibles. El admin los agrega en "Impresiones".</p>
+          <p style={{ color: 'var(--tinta-tenue)', fontSize: 14, marginBottom: 32 }}>No hay formatos disponibles. El admin los agrega en "Impresiones".</p>
         ) : (
           <SizesGrid>
             {servicios.map((s) => {
@@ -198,8 +198,8 @@ const Impresiones = () => {
                 onClick={() => { setServicioId(s._id); if (!s.allowsColor) setColor(false); }}
               >
                 <span>{s.name}</span>
-                <span style={{ fontSize: 11, color: '#999', fontWeight: 500 }}>{pxDesdeCm(s.widthCm)} × {pxDesdeCm(s.heightCm)} px</span>
-                <span style={{ fontSize: 12, color: '#888', fontWeight: 500 }}>${Number(s.pricePerCopy).toFixed(2)}/copia</span>
+                <span style={{ fontSize: 11, color: 'var(--tinta-tenue)', fontWeight: 500 }}>{pxDesdeCm(s.widthCm)} × {pxDesdeCm(s.heightCm)} px</span>
+                <span style={{ fontSize: 12, color: 'var(--tinta-tenue)', fontWeight: 500 }}>${Number(s.pricePerCopy).toFixed(2)}/copia</span>
                 {/* El motivo va DENTRO de la tarjeta, no en un aviso aparte:
                     se lee justo donde la persona está mirando y decidiendo. */}
                 {!disponible && <SinMaterial>{motivo}</SinMaterial>}
@@ -230,7 +230,7 @@ const Impresiones = () => {
               */}
               <SubidorArchivo
                 accept=".pdf,.jpg,.jpeg,.png"
-                maxMB={10}
+                maxMB={25}
                 onArchivo={seleccionarArchivo}
                 reinicio={enviosHechos}
                 alto={150}
@@ -248,7 +248,7 @@ const Impresiones = () => {
               )}
             </>
           ) : !servicio ? (
-            <p style={{ color: '#999', fontSize: 14 }}>Primero elige un formato para armar tu hoja.</p>
+            <p style={{ color: 'var(--tinta-tenue)', fontSize: 14 }}>Primero elige un formato para armar tu hoja.</p>
           ) : (
             <PrintComposer composer={composer} />
           )}
@@ -265,12 +265,12 @@ const Impresiones = () => {
                 poder), o se acabó el tóner (mañana quizás sí).
               */}
               {servicio && !servicio.allowsColor && (
-                <span style={{ display: 'block', fontSize: 11, color: '#999', fontWeight: 400 }}>
+                <span style={{ display: 'block', fontSize: 11, color: 'var(--tinta-tenue)', fontWeight: 400 }}>
                   Este formato es solo en blanco y negro
                 </span>
               )}
               {servicio?.allowsColor && !hayTintaDeColor && (
-                <span style={{ display: 'block', fontSize: 11, color: '#C0392B', fontWeight: 600 }}>
+                <span style={{ display: 'block', fontSize: 11, color: 'var(--peligro)', fontWeight: 600 }}>
                   Hoy no hay tinta de color
                 </span>
               )}

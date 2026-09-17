@@ -18,8 +18,8 @@ const Pill = styled.button`
   padding: 8px 20px;
   border-radius: 30px;
   border: ${props => props.$activo ? `2px solid ${BROWN}` : '1.5px solid var(--linea)'};
-  background: ${props => props.$activo ? BROWN_LIGHT : 'white'};
-  color: ${props => props.$activo ? BROWN : '#666'};
+  background: ${props => props.$activo ? BROWN_LIGHT : 'var(--papel)'};
+  color: ${props => props.$activo ? BROWN : 'var(--tinta-suave)'};
   font-weight: ${props => props.$activo ? '600' : '400'};
   font-size: 14px;
   cursor: pointer;
@@ -34,7 +34,7 @@ const Pill = styled.button`
    */
   &:hover {
     border-color: ${props => props.$activo ? BROWN : 'var(--linea)'};
-    background: ${props => props.$activo ? BROWN_LIGHT : '#fafafa'};
+    background: ${props => props.$activo ? BROWN_LIGHT : 'var(--papel-suave)'};
   }
 `;
 

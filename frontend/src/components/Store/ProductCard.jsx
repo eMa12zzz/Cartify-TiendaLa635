@@ -10,7 +10,7 @@ const BROWN = 'var(--marca-600)';
 const BROWN_DARK = 'var(--marca-700)';
 
 const Card = styled.div`
-  background: white;
+  background: var(--papel);
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
@@ -21,7 +21,7 @@ const Card = styled.div`
    * abajo, no un salto.
    */
   transition: background-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), border-color 300ms var(--ease-out), transform 350ms var(--ease-out), box-shadow 350ms var(--ease-out);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--linea);
   display: flex;
   flex-direction: column;
 
@@ -52,7 +52,7 @@ const Card = styled.div`
  * compara productos en vez de tropezar con las fotos.
  */
 const ImageWrapper = styled.div`
-  background: #F4F4F5;
+  background: var(--papel-gris);
   height: 165px;
   margin: 10px 10px 0;
   border-radius: 14px;
@@ -114,7 +114,7 @@ const ImageFallback = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #C4BDB6;
+  color: var(--tinta-tenue);
   user-select: none;
 `;
 
@@ -127,7 +127,7 @@ const WishlistButton = styled.button`
   position: absolute;
   top: 16px;
   right: 16px;
-  background: white;
+  background: var(--papel);
   border: none;
   font-size: 17px;
   cursor: pointer;
@@ -140,7 +140,7 @@ const WishlistButton = styled.button`
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   z-index: 2;
-  color: ${props => props.$liked ? '#ff4d6d' : '#ccc'};
+  color: ${props => props.$liked ? '#ff4d6d' : 'var(--tinta-apagada)'};
 
   /*
    * El corazón mide 34px porque a 34px se ve bien: más grande le robaría
@@ -206,7 +206,7 @@ const CardBody = styled.div`
 
 const ProductBrand = styled.div`
   font-size: 10px;
-  color: #aaa;
+  color: var(--tinta-tenue);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -216,7 +216,7 @@ const ProductBrand = styled.div`
 const ProductName = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 2px;
   line-height: 1.3;
 `;
@@ -247,7 +247,7 @@ const PriceBlock = styled.div`
 
 const OldPrice = styled.span`
   font-size: 11px;
-  color: #bbb;
+  color: var(--tinta-tenue);
   text-decoration: line-through;
   line-height: 1;
 `;
@@ -255,7 +255,7 @@ const OldPrice = styled.span`
 const NewPrice = styled.span`
   font-size: 18px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   line-height: 1.1;
 `;
 
@@ -302,7 +302,7 @@ const Marca18 = styled.span`
  */
 const AddButton = styled.button`
   background: var(--tinta);
-  color: white;
+  color: var(--sobre-tinta);
   border: none;
   width: 38px;
   height: 38px;
@@ -333,6 +333,7 @@ const AddButton = styled.button`
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       background: var(--marca-600);
+      color: #fff;
       transform: scale(1.08);
     }
   }

@@ -35,9 +35,9 @@ import { useAuth } from '../../hooks/useAuth';
 const BROWN = 'var(--marca-600)';
 
 const Barra = styled.header`
-  background: white;
+  background: var(--papel);
   padding: 0 28px;
-  border-bottom: 1px solid #ECE7E1;
+  border-bottom: 1px solid var(--linea);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -211,7 +211,7 @@ const Globo = styled.span`
   padding: 0 5px;
   border-radius: var(--radio-pill);
   background: var(--tinta);
-  color: #fff;
+  color: var(--sobre-tinta);
   font-size: 11px;
   font-weight: 700;
   display: flex;
@@ -288,7 +288,7 @@ const HeaderTienda = ({
             type="button"
             onClick={() => escribir('')}
             aria-label="Borrar la búsqueda"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 16, width: 32, height: 32 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--tinta-tenue)', fontSize: 16, width: 32, height: 32 }}
           >✕</button>
         )}
       </SearchBox>

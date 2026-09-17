@@ -55,7 +55,7 @@ const Zona = styled.div`
 /* El pin, que solo aparece cuando el texto ya no cabe. */
 const Pin = styled.span`
   display: none;
-  color: #555;
+  color: var(--tinta-suave);
 
   @media (max-width: 820px) { display: flex; }
 `;
@@ -106,14 +106,14 @@ const Textos = styled.span`
 
 const Arriba = styled.span`
   font-size: 11px;
-  color: #aaa;
+  color: var(--tinta-tenue);
   line-height: 1;
 `;
 
 const Nombre = styled.span`
   font-size: 14px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   line-height: 1.3;
   max-width: 165px;
   overflow: hidden;
@@ -126,8 +126,8 @@ const Panel = styled.div`
   top: calc(100% + 10px);
   left: 8px;
   width: 290px;
-  background: #fff;
-  border: 1px solid #ECE7E1;
+  background: var(--papel);
+  border: 1px solid var(--linea);
   border-radius: 16px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
   padding: 6px;
@@ -156,7 +156,7 @@ const Panel = styled.div`
 
 const Titulo = styled.p`
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--tinta-tenue);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -184,7 +184,7 @@ const Agregar = styled(Opcion)`
   font-weight: 700;
   font-size: 13px;
   align-items: center;
-  border-top: 1px solid #F4EEE8;
+  border-top: 1px solid var(--linea);
   border-radius: 0 0 11px 11px;
   margin-top: 4px;
 `;
@@ -204,11 +204,11 @@ const Aviso = styled.div`
   margin: 2px 6px 6px;
   padding: 9px 10px;
   border-radius: 11px;
-  background: #FFF6E9;
-  border: 1px solid #F3DFC0;
+  background: var(--aviso-fondo);
+  border: 1px solid var(--aviso-borde);
   font-size: 11.5px;
   line-height: 1.45;
-  color: #7A3E08;
+  color: var(--aviso-texto);
 `;
 
 const SinPunto = styled.span`
@@ -217,13 +217,13 @@ const SinPunto = styled.span`
   gap: 4px;
   font-size: 11px;
   font-weight: 700;
-  color: #B4590C;
+  color: var(--aviso-vivo);
   margin-top: 3px;
 `;
 
 const Vacio = styled.p`
   font-size: 12.5px;
-  color: #9CA3AF;
+  color: var(--tinta-tenue);
   line-height: 1.5;
   margin: 4px 10px 10px;
 `;
@@ -281,7 +281,7 @@ const SelectorDireccion = () => {
             <Arriba>Entregar en</Arriba>
             <Nombre>{etiqueta || 'Elegir dirección'}</Nombre>
           </Textos>
-          <ChevronDown size={16} strokeWidth={2.4} color="#777" />
+          <ChevronDown size={16} strokeWidth={2.4} color="var(--tinta-suave)" />
         </Detalle>
       </Boton>
 
@@ -313,20 +313,20 @@ const SelectorDireccion = () => {
                 <MapPin
                   size={16}
                   strokeWidth={2.2}
-                  color={i === indice ? BROWN : '#c9c2bb'}
+                  color={i === indice ? BROWN : 'var(--tinta-apagada)'}
                   style={{ flexShrink: 0, marginTop: 2 }}
                 />
                 <span style={{ minWidth: 0, flex: 1 }}>
                   {dir.nombre && (
-                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: '#1C1614' }}>
+                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: 'var(--tinta)' }}>
                       {dir.nombre}
                     </span>
                   )}
-                  <span style={{ display: 'block', fontSize: 12.5, color: '#6B7280', lineHeight: 1.4 }}>
+                  <span style={{ display: 'block', fontSize: 12.5, color: 'var(--tinta-suave)', lineHeight: 1.4 }}>
                     {dir.direccion}
                   </span>
                   {dir.referencia && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#9CA3AF', marginTop: 2 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--tinta-tenue)', marginTop: 2 }}>
                       <Signpost size={12} strokeWidth={2.2} style={{ flexShrink: 0 }} />
                       {dir.referencia}
                     </span>

@@ -143,7 +143,7 @@ const EstadoPedido = () => {
             <span
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full mb-3"
               style={{
-                color: cancelado ? '#dc2626' : '#16a34a',
+                color: cancelado ? 'var(--peligro)' : 'var(--exito-vivo)',
                 backgroundColor: cancelado ? 'rgba(220,38,38,.12)' : 'rgba(22,163,74,.14)',
               }}
             >
@@ -236,7 +236,7 @@ const EstadoPedido = () => {
                   borde="transparent"
                 />
                 <div className="px-4 py-3 flex items-center gap-2 text-sm font-semibold"
-                     style={{ color: seguimiento.yaCasi ? '#14663A' : '#173F94', background: c.cardBg }}>
+                     style={{ color: seguimiento.yaCasi ? 'var(--exito-texto)' : 'var(--info-texto)', background: c.cardBg }}>
                   <Bike className="w-4 h-4" />
                   {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
                   {seguimiento.distancia ? ` · a ${seguimiento.distancia}` : ''}
@@ -306,7 +306,7 @@ const EstadoPedido = () => {
           )}
           {descuento > 0 && (
             <div className="flex justify-between text-sm mb-2" style={{ color: c.textSecondary }}>
-              <span>Descuento por puntos</span><span style={{ color: '#16a34a' }}>−${descuento.toFixed(2)}</span>
+              <span>Descuento por puntos</span><span style={{ color: 'var(--exito-vivo)' }}>−${descuento.toFixed(2)}</span>
             </div>
           )}
 

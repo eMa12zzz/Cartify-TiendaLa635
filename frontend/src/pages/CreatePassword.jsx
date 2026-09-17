@@ -11,14 +11,14 @@ const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: white;
+  background: var(--papel);
   display: flex;
   flex-direction: column;
 `;
 
 const TopBar = styled.div`
   width: 100%;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--linea);
   padding: 12px 0;
   text-align: center;
 `;
@@ -26,7 +26,7 @@ const TopBar = styled.div`
 const BrandSmall = styled.span`
   display: block;
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
   line-height: 1.2;
 `;
 
@@ -34,7 +34,7 @@ const BrandName = styled.span`
   display: block;
   font-size: 18px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   line-height: 1.2;
 `;
 
@@ -56,7 +56,7 @@ const BackButton = styled.button`
   border: none;
   font-size: 22px;
   cursor: pointer;
-  color: #000;
+  color: var(--tinta);
   margin-bottom: 20px;
   padding: 0;
   display: block;
@@ -69,7 +69,7 @@ const BackButton = styled.button`
 const SectionTitle = styled.h2`
   font-size: 26px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   margin: 0 0 24px 0;
 `;
 
@@ -77,19 +77,19 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #000;
+  color: var(--tinta);
   margin-bottom: 8px;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 13px 14px;
-  border: 1.5px solid ${({ $error }) => ($error ? '#ff4d4f' : '#e0e0e0')};
+  border: 1.5px solid ${({ $error }) => ($error ? 'var(--peligro)' : 'var(--linea-fuerte)')};
   border-radius: 8px;
   font-size: 15px;
   box-sizing: border-box;
   outline: none;
-  color: #000;
+  color: var(--tinta);
   margin-bottom: 8px;
   transition: border-color 0.2s;
 
@@ -99,7 +99,7 @@ const Input = styled.input`
 `;
 
 const ErrorMsg = styled.div`
-  color: #ff4d4f;
+  color: var(--peligro);
   font-size: 13px;
   margin-bottom: 16px;
 `;
@@ -123,11 +123,11 @@ const Button = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #00283D;
+    background: var(--marca-700);
   }
   
   &:disabled {
-    background: #C9D4DB;
+    background: var(--deshabilitado);
     cursor: not-allowed;
   }
 `;

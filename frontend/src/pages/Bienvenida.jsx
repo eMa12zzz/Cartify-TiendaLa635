@@ -107,7 +107,7 @@ const Bajada = styled.p`
 const Tarjeta = styled.div`
   width: 100%;
   max-width: 520px;
-  background: rgba(255,255,255,0.97);
+  background: color-mix(in srgb, var(--papel) 97%, transparent);
   backdrop-filter: blur(10px);
   border-radius: 24px;
   padding: 22px;
@@ -118,7 +118,7 @@ const Etiqueta = styled.label`
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--tinta-suave);
   margin-bottom: 7px;
 `;
 
@@ -126,10 +126,10 @@ const Campo = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--linea);
   border-radius: 14px;
   padding: 0 12px;
-  background: #fff;
+  background: var(--papel);
 
   input {
     flex: 1;
@@ -138,7 +138,7 @@ const Campo = styled.div`
     padding: 13px 0;
     font-size: 14px;
     font-family: inherit;
-    color: #1C1614;
+    color: var(--tinta);
     background: transparent;
   }
 `;
@@ -168,16 +168,16 @@ const Boton = styled.button`
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;
-  border: 1px solid ${(p) => (p.$primario ? BROWN : '#e0e0e0')};
-  background: ${(p) => (p.$primario ? BROWN : '#fff')};
-  color: ${(p) => (p.$primario ? '#fff' : '#555')};
+  border: 1px solid ${(p) => (p.$primario ? BROWN : 'var(--linea-fuerte)')};
+  background: ${(p) => (p.$primario ? BROWN : 'var(--papel)')};
+  color: ${(p) => (p.$primario ? '#fff' : 'var(--tinta-suave)')};
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   transition: background-color var(--dur-press) var(--ease-out);
 
-  &:hover:not(:disabled) { background: ${(p) => (p.$primario ? BROWN_DARK : '#f7f7f7')}; }
+  &:hover:not(:disabled) { background: ${(p) => (p.$primario ? BROWN_DARK : 'var(--papel-suave)')}; }
   &:disabled { opacity: 0.6; }
 `;
 
@@ -198,7 +198,7 @@ const Ubicarme = styled.button`
 
 const Ayuda = styled.p`
   font-size: 12px;
-  color: #8b8b8b;
+  color: var(--tinta-tenue);
   margin: 10px 0 0;
   line-height: 1.5;
 `;

@@ -98,17 +98,17 @@ const ValoracionServicio = ({ order, c }) => {
 // Colores de estado (semánticos, fijos — no cambian con la paleta para que el
 // estado siempre se lea igual). Coinciden con los estados del modelo Order.
 const estadoInfo = {
-  pagado:     { label: 'Pagado',     color: '#2563eb', bg: 'rgba(37,99,235,.12)' },
-  preparando: { label: 'Preparando', color: '#d97706', bg: 'rgba(217,119,6,.14)' },
+  pagado:     { label: 'Pagado',     color: 'var(--info-vivo)', bg: 'rgba(37,99,235,.12)' },
+  preparando: { label: 'Preparando', color: 'var(--aviso-vivo)', bg: 'rgba(217,119,6,.14)' },
   /*
    * "En camino" FALTABA en esta lista, y el respaldo de abajo es `pagado`.
    * O sea: un pedido que ya iba en la moto se etiquetaba "Pagado" en la misma
    * tarjeta donde la linea de tiempo decia "En camino". Dos cosas distintas
    * sobre el mismo pedido, a diez centimetros una de la otra.
    */
-  en_camino:  { label: 'En camino',  color: '#1d4ed8', bg: 'rgba(29,78,216,.14)' },
-  entregado:  { label: 'Entregado',  color: '#16a34a', bg: 'rgba(22,163,74,.14)' },
-  cancelado:  { label: 'Cancelado',  color: '#dc2626', bg: 'rgba(220,38,38,.12)' },
+  en_camino:  { label: 'En camino',  color: 'var(--info-vivo)', bg: 'rgba(29,78,216,.14)' },
+  entregado:  { label: 'Entregado',  color: 'var(--exito-vivo)', bg: 'rgba(22,163,74,.14)' },
+  cancelado:  { label: 'Cancelado',  color: 'var(--peligro)', bg: 'rgba(220,38,38,.12)' },
 };
 
 const formatFecha = (iso) => {

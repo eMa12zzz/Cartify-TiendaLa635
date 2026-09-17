@@ -56,7 +56,7 @@ const Boton = styled.button`
   line-height: 1.05;
   transition: background-color var(--dur-press) var(--ease-out);
 
-  &:hover { background-color: rgba(0, 0, 0, 0.04); }
+  &:hover { background-color: var(--realce); }
 `;
 
 const Linea = styled.span`

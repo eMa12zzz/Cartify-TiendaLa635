@@ -43,6 +43,31 @@
     </script>
 
     <!--
+      Claro u oscuro, ANTES del primer cuadro.
+
+      El modo lo elige cada persona en Mi Cuenta → Preferencias y lo aplica
+      ModoContext, pero eso corre después de que React arranca: sin este
+      script, quien eligió oscuro vería la tienda blanca un instante en cada
+      carga. Es la misma lógica de utils/modo.js en pocas líneas; el panel
+      (las rutas de RUTAS_DEL_PANEL en utils/sesion.js) nunca se oscurece.
+    -->
+    <script>
+      (function () {
+        try {
+          var modo = localStorage.getItem('la635_modo');
+          var oscuro = modo === 'oscuro' ||
+            (modo === 'sistema' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var panel = /^\/(admin|dashboard|inventario|pedidos|modulos|marcas|empleados|clientes|proveedores|categorias|fidelidad|promociones|servicios-impresion|tarjetas|personalizacion|cuenta)(\/|$)/;
+          if (oscuro && !panel.test(location.pathname)) {
+            document.documentElement.setAttribute('data-modo', 'oscuro');
+          }
+        } catch (error) {
+          // Sin localStorage: se queda en claro.
+        }
+      })();
+    </script>
+
+    <!--
       Poppins: la sans geométrica del diseño. Se precarga el dominio para que
       el texto no salte al cargar. display=swap muestra la fuente del sistema
       mientras baja, en vez de dejar la pantalla en blanco.

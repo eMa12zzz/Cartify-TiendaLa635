@@ -34,6 +34,8 @@ const fundido = keyframes`
 /*
  * Tres paletas:
  *   - claro:  el resto de la app (Registro, Impresiones, de cara al cliente).
+ *             Va con los tokens de la tienda (--papel, --tinta, --marca-*),
+ *             así que también se oscurece con el modo oscuro de Preferencias.
  *   - oscuro: el panel izquierdo café oscuro de EmployeeFormModal, fijo a
  *             propósito — es un diseño propio del modal, no debe cambiar con
  *             la paleta de accesibilidad que el admin tenga elegida.
@@ -42,23 +44,23 @@ const fundido = keyframes`
  *             variables --theme-* de ThemeContext.jsx, así que se ve igual
  *             de oscura/clara/alto-contraste que el resto de esa pantalla.
  *
- * En claro y panel, el "vivo" (borde y fondo al pasar el mouse, arrastrar o
+ * En panel, el "vivo" (borde y fondo al pasar el mouse, arrastrar o
  * enfocar) usa var(--theme-primary) con el café de fábrica como respaldo —
  * no un hex clavado. --theme-primary lo pinta ThemeContext.jsx según la
- * paleta que el admin tenga elegida en SU navegador (incluida "Mi marca");
- * para cualquier otra persona que nunca tocó el selector, esa variable cae
- * sola al mismo color de marca que ya usa el resto de la tienda, así que no
- * cambia nada de cara al cliente.
+ * paleta que el admin tenga elegida en SU navegador (incluida "Mi marca").
+ * En claro usa --marca-600 de la tienda, que sigue a la temporada y al modo
+ * oscuro: el --theme-primary del panel se quedaba casi negro sobre el fondo
+ * oscuro de la tienda.
  */
 const PALETAS = {
   claro: {
-    borde: '#d8d8d8',
-    bordeVivo: 'var(--theme-primary, #003049)',
-    fondo: '#fafafa',
-    fondoVivo: 'var(--theme-primary-light, #DDECF3)',
-    texto: '#6B6560',
-    textoFuerte: '#1C1614',
-    lienzo: '#ffffff',
+    borde: 'var(--linea-fuerte)',
+    bordeVivo: 'var(--marca-600)',
+    fondo: 'var(--papel-suave)',
+    fondoVivo: 'var(--marca-100)',
+    texto: 'var(--tinta-suave)',
+    textoFuerte: 'var(--tinta)',
+    lienzo: 'var(--papel)',
     chip: 'rgba(28, 22, 20, 0.55)',
   },
   oscuro: {

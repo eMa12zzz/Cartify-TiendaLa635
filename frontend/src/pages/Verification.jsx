@@ -11,14 +11,14 @@ const BROWN = 'var(--marca-600)';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: white;
+  background: var(--papel);
   display: flex;
   flex-direction: column;
 `;
 
 const TopBar = styled.div`
   width: 100%;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--linea);
   padding: 12px 0;
   text-align: center;
 `;
@@ -26,7 +26,7 @@ const TopBar = styled.div`
 const BrandSmall = styled.span`
   display: block;
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
   line-height: 1.2;
 `;
 
@@ -34,7 +34,7 @@ const BrandName = styled.span`
   display: block;
   font-size: 18px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   line-height: 1.2;
 `;
 
@@ -56,7 +56,7 @@ const BackButton = styled.button`
   border: none;
   font-size: 22px;
   cursor: pointer;
-  color: #000;
+  color: var(--tinta);
   margin-bottom: 20px;
   padding: 0;
   display: block;
@@ -69,13 +69,13 @@ const BackButton = styled.button`
 const SectionTitle = styled.h2`
   font-size: 26px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   margin: 0 0 16px 0;
 `;
 
 const InfoBox = styled.div`
-  background: #f9f9f9;
-  border: 1px solid #efefef;
+  background: var(--papel-suave);
+  border: 1px solid var(--linea);
   border-radius: 10px;
   padding: 16px 20px;
   margin-bottom: 24px;
@@ -83,7 +83,7 @@ const InfoBox = styled.div`
 
 const InfoText = styled.p`
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
   margin: 0 0 4px 0;
   line-height: 1.5;
 `;
@@ -91,7 +91,7 @@ const InfoText = styled.p`
 const InfoPhone = styled.p`
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--tinta);
   margin: 0 0 16px 0;
 `;
 
@@ -108,10 +108,10 @@ const CodeInput = styled.input`
   text-align: center;
   font-size: 20px;
   font-weight: 700;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--linea-fuerte);
   border-radius: 8px;
   outline: none;
-  color: #000;
+  color: var(--tinta);
   transition: border-color 0.2s;
   text-transform: uppercase;
 
@@ -134,18 +134,18 @@ const Button = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #00283D;
+    background: var(--marca-700);
   }
   
   &:disabled {
-    background: #C9D4DB;
+    background: var(--deshabilitado);
     cursor: not-allowed;
   }
 `;
 
 const ResendRow = styled.div`
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
 `;
 
 const ResendLink = styled.span`
@@ -156,7 +156,7 @@ const ResendLink = styled.span`
 `;
 
 const ErrorMsg = styled.div`
-  color: #ff4d4f;
+  color: var(--peligro);
   font-size: 13px;
   margin-bottom: 12px;
 `;
