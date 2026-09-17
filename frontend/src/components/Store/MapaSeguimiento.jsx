@@ -1,6 +1,4 @@
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import { divIcon, latLngBounds } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import Mapa from '../Mapa/Mapa';
 
 /*
  * ============================================================
@@ -21,58 +19,14 @@ import 'leaflet/dist/leaflet.css';
  * ============================================================
  */
 
-const BROWN = 'var(--marca-600)';
-
-// Los dos puntos: quien trae el pedido y la casa a donde va.
-const pinRepartidor = divIcon({
-  className: '',
-  html: `<div style="
-    width:16px;height:16px;border-radius:50%;
-    background:#2563eb;border:3px solid #fff;
-    box-shadow:0 0 0 5px rgba(37,99,235,.22), 0 2px 6px rgba(0,0,0,.3);
-  "></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
-const pinCasa = divIcon({
-  className: '',
-  html: `<div style="
-    width:20px;height:20px;border-radius:50% 50% 50% 0;
-    background:${BROWN};transform:rotate(-45deg);
-    border:2.5px solid #fff;box-shadow:0 3px 7px rgba(0,0,0,.3);
-  "></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 20],
-});
-
 /*
- * Encuadra el mapa para que se vean los dos puntos a la vez.
- *
- * Centrado solo en el repartidor, la casa quedaba fuera y el mapa no
+ * El encuadre lo hace el mapa (`encuadrar`): se ven el repartidor y la casa a
+ * la vez. Centrado solo en el repartidor, la casa quedaba fuera y el mapa no
  * respondía la única pregunta que importa: ¿qué tan cerca va de mí? Conforme
- * se acerca, el encuadre se va cerrando solo, y ese apretarse cuenta el
- * avance sin necesidad de una barra de progreso.
+ * se acerca, el encuadre se va cerrando solo, y ese apretarse cuenta el avance
+ * sin necesidad de una barra de progreso. Con un solo punto (pedidos viejos
+ * sin destino, o nadie ha salido todavía) se centra en ese.
  */
-const Encuadre = ({ punto, destino }) => {
-  const mapa = useMap();
-
-  if (punto && destino) {
-    mapa.fitBounds(latLngBounds([punto.lat, punto.lng], [destino.lat, destino.lng]), {
-      padding: [34, 34],
-      maxZoom: 16,
-      animate: true,
-    });
-  } else if (punto) {
-    // Pedidos viejos, sin punto de destino guardado: al menos se ve al que viene.
-    mapa.setView([punto.lat, punto.lng], 15);
-  } else if (destino) {
-    // Todavía no ha salido nadie: se muestra a dónde le vamos a llevar.
-    mapa.setView([destino.lat, destino.lng], 15);
-  }
-
-  return null;
-};
 
 /*
  * @param punto   - dónde va el repartidor ahora ({lat,lng}), o null.
@@ -92,6 +46,12 @@ const MapaSeguimiento = ({ punto, destino, alto = 200, borde, interactivo = true
 
   const centro = punto || destino;
 
+  // La casa es la gota de la marca; el repartidor, el punto azul que late.
+  const pines = [
+    destino && { id: 'casa', lat: destino.lat, lng: destino.lng, tipo: 'gota', tamano: 20 },
+    punto && { id: 'repartidor', lat: punto.lat, lng: punto.lng, tipo: 'repartidor', tamano: 16 },
+  ].filter(Boolean);
+
   return (
     <div
       style={{
@@ -101,21 +61,13 @@ const MapaSeguimiento = ({ punto, destino, alto = 200, borde, interactivo = true
       }}
     >
       <div style={{ height: alto }}>
-        <MapContainer
-          center={[centro.lat, centro.lng]}
+        <Mapa
+          centro={centro}
           zoom={15}
-          zoomControl={false}
-          attributionControl={false}
-          dragging={interactivo}
-          scrollWheelZoom={interactivo}
-          doubleClickZoom={interactivo}
-          style={{ height: '100%', width: '100%' }}
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {destino && <Marker position={[destino.lat, destino.lng]} icon={pinCasa} />}
-          {punto && <Marker position={[punto.lat, punto.lng]} icon={pinRepartidor} />}
-          <Encuadre punto={punto} destino={destino} />
-        </MapContainer>
+          pines={pines}
+          encuadrar={[punto, destino]}
+          interactivo={interactivo}
+        />
       </div>
     </div>
   );

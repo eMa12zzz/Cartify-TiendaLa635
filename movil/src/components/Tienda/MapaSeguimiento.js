@@ -10,15 +10,15 @@ import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
  * ============================================================
  * Copia de `frontend/src/components/Store/MapaSeguimiento.jsx`: dónde va
  * quien trae el pedido y a qué casa va, en vivo. Mismos dos pines, mismo
- * encuadre, mismas teselas de OpenStreetMap — sin backend nuevo, sin llave
- * de Google Maps que pedir ni pagar.
+ * encuadre, mismo mapa de CARTO que la web — sin backend nuevo, sin llave de
+ * Google Maps que pedir ni pagar.
  *
- * ── Por qué un WebView con Leaflet, y no react-native-maps ──
+ * ── Por qué un WebView con MapLibre, y no react-native-maps ──
  * react-native-maps en Android SIEMPRE pasa por el SDK de Google Maps, tenga
  * o no tesela propia encima — hace falta su propia llave de API igual, con
- * su propio proyecto de facturación en Google Cloud. La web ya resolvió esto
- * sin ninguna llave, con Leaflet + OpenStreetMap; un WebView con esa misma
- * página adentro consigue el mismo mapa gratis, sin cuenta que crear.
+ * su propio proyecto de facturación en Google Cloud. La web resuelve esto
+ * sin ninguna llave con mapcn (MapLibre + CARTO); un WebView con MapLibre
+ * adentro consigue el mismo mapa gratis, sin cuenta que crear.
  *
  * ── Por qué no vive montado todo el tiempo ──
  * Es una page HTML completa cargándose adentro de la burbuja: uno por pedido

@@ -1,8 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import { divIcon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import styled from 'styled-components';
 import { LocateFixed, MapPin, Loader2, Home, Signpost } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../hooks/useUbicacion';
 import { clientService } from '../api/clientService';
 import { useAjustesCtx } from '../context/AjustesContext';
+import Mapa from '../components/Mapa/Mapa';
 
 /*
  * ============================================================
@@ -19,9 +17,9 @@ import { useAjustesCtx } from '../context/AjustesContext';
  * antes de empezar a comprar. Se puede omitir: pedir la dirección a alguien
  * que solo quiere ver precios es la forma más rápida de perderlo.
  *
- * El mapa es OpenStreetMap con Leaflet, no Google Maps: la llave de Google
- * del proyecto vence y Maps exige facturación con tarjeta. Esto es gratis y
- * sin llave.
+ * El mapa es mapcn (MapLibre con los mapas de CARTO), no Google Maps: la
+ * llave de Google del proyecto vence y Maps exige facturación con tarjeta.
+ * Esto es gratis y sin llave.
  * ============================================================
  */
 
@@ -34,14 +32,13 @@ const Pantalla = styled.div`
   width: 100%;
   overflow: hidden;
 
-  /* El mapa ocupa todo el fondo */
-  .leaflet-container {
-    position: absolute;
-    inset: 0;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-  }
+`;
+
+/* El mapa ocupa todo el fondo */
+const FondoMapa = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 `;
 
 /*
@@ -206,34 +203,6 @@ const Ayuda = styled.p`
   line-height: 1.5;
 `;
 
-/*
- * El pin se dibuja con HTML y no con la imagen que trae Leaflet: sus iconos
- * se cargan por ruta relativa y con Vite terminan rotos. Además así combina
- * con el resto de la tienda.
- */
-const pinCafe = divIcon({
-  className: '',
-  html: `<div style="
-    width:34px;height:34px;border-radius:50% 50% 50% 0;
-    background:${BROWN};transform:rotate(-45deg);
-    border:3px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.4);
-  "></div>`,
-  iconSize: [34, 34],
-  iconAnchor: [17, 34],
-});
-
-// Mueve el pin adonde toquen el mapa.
-const AlTocarElMapa = ({ onTocar }) => {
-  useMapEvents({ click: (e) => onTocar({ lat: e.latlng.lat, lng: e.latlng.lng }) });
-  return null;
-};
-
-// Recentra el mapa cuando aparece una posición nueva (el GPS, por ejemplo).
-const SeguirPosicion = ({ posicion }) => {
-  const mapa = useMap();
-  if (posicion) mapa.flyTo([posicion.lat, posicion.lng], 17, { duration: 0.8 });
-  return null;
-};
 
 const Bienvenida = () => {
   const navigate = useNavigate();
@@ -295,32 +264,22 @@ const Bienvenida = () => {
 
   return (
     <Pantalla>
-      <MapContainer
-        center={[centro.lat, centro.lng]}
-        zoom={posicion ? 17 : 13}
-        zoomControl={false}
-        attributionControl={false}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="&copy; OpenStreetMap"
+      {/*
+        Tocar el mapa mueve el pin, el pin se arrastra, y cuando aparece una
+        posición nueva (el GPS, por ejemplo) el mapa vuela hasta ella.
+      */}
+      <FondoMapa>
+        <Mapa
+          centro={centro}
+          zoom={posicion ? 17 : 13}
+          onTocar={marcarEn}
+          seguir={{ punto: posicion, zoomMinimo: 17, volar: true }}
+          pines={posicion ? [{
+            id: 'direccion', lat: posicion.lat, lng: posicion.lng,
+            tipo: 'gota', tamano: 34, arrastrable: true, onSoltar: marcarEn,
+          }] : []}
         />
-        <AlTocarElMapa onTocar={marcarEn} />
-        <SeguirPosicion posicion={posicion} />
-        {posicion && (
-          <Marker
-            position={[posicion.lat, posicion.lng]}
-            icon={pinCafe}
-            draggable
-            eventHandlers={{
-              dragend: (e) => {
-                const { lat, lng } = e.target.getLatLng();
-                marcarEn({ lat, lng });
-              },
-            }}
-          />
-        )}
-      </MapContainer>
+      </FondoMapa>
 
       <Velo />
 

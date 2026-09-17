@@ -89,7 +89,7 @@ const TERCEROS = [
   'El servicio donde se guardan las imágenes (Cloudinary): su foto de perfil, si subió una.',
   'El servicio de correo que manda los mensajes de verificación y recuperación: su correo.',
   'La base de datos donde vive la tienda (MongoDB Atlas): todo lo de la tabla de arriba.',
-  'El mapa (OpenStreetMap): cuando busca una dirección, se le manda el texto que escribió para encontrar el punto. Nunca su nombre ni su teléfono.',
+  'El mapa (OpenStreetMap y CARTO): cuando busca una dirección, se le manda a OpenStreetMap el texto que escribió para encontrar el punto, y las calles del mapa se descargan de CARTO. Nunca su nombre ni su teléfono.',
   'El asistente por voz (Google Gemini), y solo cuando la tienda no entendió sola: se le manda lo que usted dijo y la lista de productos, sin su nombre, su correo ni su dirección.',
 ];
 

@@ -7,14 +7,14 @@
  * debajo. Se usa en los dos mismos lugares que la web — Checkout y Mi
  * cuenta → Direcciones — como una sola hoja compartida, no dos copias.
  *
- * ── Por qué es un WebView con Leaflet, y no react-native-maps ──
- * La web dejó Google Maps por Nominatim/OpenStreetMap: la llave de Google
- * del proyecto ya no sirve (venció el trial) y Maps pide facturación con
- * tarjeta (ver `useUbicacion.js`). `react-native-maps` en Android SIEMPRE
- * dibuja con el motor de Google Maps por debajo — así que hubiera chocado
- * con el mismo problema que ya se evitó en la web. Un WebView que corre la
- * MISMA librería (Leaflet, mismas teselas OSM) no necesita ninguna llave.
- * El HTML que corre adentro está en `mapaLeafletHtml.js`; este archivo solo
+ * ── Por qué es un WebView con MapLibre, y no react-native-maps ──
+ * La web dejó Google Maps: la llave de Google del proyecto ya no sirve
+ * (venció el trial) y Maps pide facturación con tarjeta (ver
+ * `useUbicacion.js`). `react-native-maps` en Android SIEMPRE dibuja con el
+ * motor de Google Maps por debajo — así que hubiera chocado con el mismo
+ * problema. Un WebView que corre lo MISMO que la web (MapLibre con el estilo
+ * de CARTO, como mapcn) no necesita ninguna llave y se ve igual.
+ * El HTML que corre adentro está en `mapaDireccionHtml.js`; este archivo solo
  * pone el marco (la hoja, los campos, guardar/cancelar) y escucha los
  * mensajes que manda el mapa.
  *
@@ -30,7 +30,7 @@
  * tocado ese punto en el mapa. El mapa vive en el WebView y esto corre en
  * React Native, así que la posición se le manda al revés que un toque
  * normal: por `injectJavaScript`, llamando a `window.marcarPinExterno` (ver
- * mapaLeafletHtml.js) en vez de esperar un mensaje del mapa.
+ * mapaDireccionHtml.js) en vez de esperar un mensaje del mapa.
  * ============================================================
  */
 
@@ -53,7 +53,7 @@ import { COLORES } from '../../theme/colores';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
-import { crearHtmlMapa } from './mapaLeafletHtml';
+import { crearHtmlMapa } from './mapaDireccionHtml';
 import Boton from './Boton';
 import CampoTexto from './CampoTexto';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from './BarraInferior';
@@ -170,7 +170,9 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
   useEffect(() => {
     if (posicion) {
       webviewRef.current?.injectJavaScript(
-        `window.marcarPinExterno(${posicion.lat}, ${posicion.lng}); true;`
+        // Con guarda: si el GPS responde antes de que el mapa termine de
+        // cargar, la función todavía no existe.
+        `window.marcarPinExterno && window.marcarPinExterno(${posicion.lat}, ${posicion.lng}); true;`
       );
     }
   }, [posicion]);
