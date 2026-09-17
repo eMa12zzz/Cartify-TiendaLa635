@@ -20,8 +20,8 @@ import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
  *   1. El repartidor sale con un texto y sin saber a qué portón tocar. "Calle
  *      Principal 123" hay en media ciudad.
  *   2. El envío se cobra por DISTANCIA. Sin punto no hay distancia, así que
- *      cae a la tarifa plana — que le cobra de más al de la esquina y de menos
- *      al del otro lado del municipio.
+ *      se cobra solo la tarifa base — de menos para quien vive al otro lado
+ *      del municipio.
  *   3. El cliente no puede seguir su pedido en el mapa, porque no hay destino
  *      que dibujar.
  *

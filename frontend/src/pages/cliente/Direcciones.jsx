@@ -10,7 +10,7 @@ import MapaDireccion from '../../components/Store/MapaDireccion';
  *
  * Agregar es SIEMPRE con el mapa: escribir la dirección a ciegas en una caja
  * de texto daba direcciones que el repartidor después no encontraba, que se
- * cobraban a tarifa plana en vez de por distancia y que el cliente no podía
+ * cobraban solo la tarifa base en vez de por distancia y que el cliente no podía
  * seguir en el mapa. Ver MapaDireccion.jsx.
  *
  * El mapa se abre AQUÍ MISMO, en un panel. Antes mandaba a /bienvenida —otra

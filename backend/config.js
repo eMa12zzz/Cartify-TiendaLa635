@@ -3,6 +3,19 @@ import dotenv from "dotenv";
 //Ejecutamos la libreria dotenv
 dotenv.config();
 
+/*
+ * La tienda publicada. Es el respaldo de TIENDA_URL cuando el backend corre en
+ * Render sin esa variable: antes el respaldo era siempre localhost, así que el
+ * botón "Ver la promoción" de los correos llevaba a http://localhost:5173 —
+ * una dirección que en el teléfono del cliente no abre nada.
+ *
+ * Render define RENDER=true en todos sus servicios; en la computadora de
+ * desarrollo no existe, y ahí sí conviene el puerto de Vite.
+ */
+const TIENDA_PUBLICADA = "https://cartify-tienda-la635.vercel.app";
+const urlDeLaTienda =
+  process.env.TIENDA_URL || (process.env.RENDER ? TIENDA_PUBLICADA : "http://localhost:5173");
+
 export const config = {
   db: {
     URI: process.env.DB_URI,
@@ -54,7 +67,7 @@ export const config = {
    * hace falta configurarla: el valor por defecto es el puerto de Vite.
    */
   tienda: {
-    url: (process.env.TIENDA_URL || "http://localhost:5173").replace(/\/+$/, ""),
+    url: urlDeLaTienda.replace(/\/+$/, ""),
     nombre: process.env.TIENDA_NOMBRE || "Tienda la 635"
   }
 };

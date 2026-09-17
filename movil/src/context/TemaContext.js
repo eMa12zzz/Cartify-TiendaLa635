@@ -88,7 +88,16 @@ export const TemaProvider = ({ children }) => {
    * mientras mira la pantalla; si alguien deja la app abierta del 30 de
    * noviembre al 1 de diciembre, se pinta de Navidad la próxima vez que abra.
    */
-  const tema = useMemo(() => temaActivo(temporada), [temporada]);
+  const tema = useMemo(() => {
+    const base = temaActivo(temporada);
+    if (!base || base.propio) return base;
+    /*
+     * El saludo de fábrica se puede reescribir desde el panel web
+     * (Personalización → Apariencia). En blanco se queda el de siempre.
+     */
+    const propio = (temporada?.saludos?.[base.clave] || '').trim();
+    return propio ? { ...base, decoracion: { ...base.decoracion, saludo: propio } } : base;
+  }, [temporada]);
 
   const valor = useMemo(
     () => ({
@@ -98,8 +107,10 @@ export const TemaProvider = ({ children }) => {
       // La paleta ya resuelta: siempre completa, haya temporada o no.
       colores: tema ? { ...PALETA_BASE, ...tema.colores } : PALETA_BASE,
       decoracion: tema && decoracionEncendida ? tema.decoracion : null,
+      // El saludo de los días sin temporada. En blanco no sale cinta.
+      saludoNormal: (temporada?.saludoNormal || '').trim(),
     }),
-    [tema, decoracionEncendida]
+    [tema, decoracionEncendida, temporada]
   );
 
   return <TemaContext.Provider value={valor}>{children}</TemaContext.Provider>;

@@ -174,7 +174,7 @@ orderController.createOrder = async (req, res) => {
      */
     const ajustesTienda = await storeSettingsModel
       .findOne({ clave: CLAVE_UNICA })
-      .select("costoEnvio ubicacionTienda envioBase envioPorKm zonasEnvio servicioActivo servicioTipo servicioValor");
+      .select("ubicacionTienda envioBase envioPorKm zonasEnvio servicioActivo servicioTipo servicioValor");
     const shippingCost = entrega === "delivery"
       ? calcularEnvio(ajustesTienda || {}, { lat: deliveryLat, lng: deliveryLng }).costo
       : 0;

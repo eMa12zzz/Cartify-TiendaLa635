@@ -302,7 +302,8 @@ const HeaderTienda = ({
           <Mic size={18} strokeWidth={2.2} /> <Etiqueta>Asistente</Etiqueta>
         </Pill>
 
-        <Pill onClick={() => (onAbrirCarrito ? onAbrirCarrito() : navigate('/'))} title="Carrito">
+        {/* data-destino-carrito: a dónde vuela la foto al agregar (utils/volarAlCarrito.js). */}
+        <Pill data-destino-carrito onClick={() => (onAbrirCarrito ? onAbrirCarrito() : navigate('/'))} title="Carrito">
           <ShoppingBag size={18} strokeWidth={2.2} /> <Etiqueta>Carrito</Etiqueta>
           {/*
             El `key` con la cantidad es lo que hace que esto se vea.

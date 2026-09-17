@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
-import { Snowflake, Heart } from 'lucide-react';
+import { Snowflake, Heart, Star, Leaf } from 'lucide-react';
 
 /*
  * ============================================================
@@ -128,6 +128,12 @@ const repartir = (cantidad) =>
     opacidad: 0.16 + ((i % 4) * 0.05), // entre 0.16 y 0.31
   }));
 
+/*
+ * Las figuras que son iconos. Corazones y estrellas van rellenos (de contorno
+ * se ven como un dibujo a medio hacer); copos y hojas, de línea.
+ */
+const ICONOS = { corazon: Heart, estrella: Star, hoja: Leaf, copo: Snowflake };
+
 const DecoracionTemporada = ({ tema }) => {
   const decoracion = tema?.decoracion;
 
@@ -137,7 +143,7 @@ const DecoracionTemporada = ({ tema }) => {
     [decoracion?.cantidad]
   );
 
-  if (!decoracion) return null;
+  if (!decoracion || decoracion.figura === 'ninguna' || !figuras.length) return null;
 
   /*
    * Los colores salen del propio tema, no de una lista aparte: así el copo de
@@ -170,13 +176,14 @@ const DecoracionTemporada = ({ tema }) => {
           return <Murcielago key={f.indice} {...comunes} />;
         }
 
-        const Icono = decoracion.figura === 'corazon' ? Heart : Snowflake;
+        const Icono = ICONOS[decoracion.figura] || Snowflake;
+        const relleno = decoracion.figura === 'corazon' || decoracion.figura === 'estrella';
         return (
           <Figura key={f.indice} {...comunes}>
             <Icono
               size={f.tamano}
-              strokeWidth={decoracion.figura === 'corazon' ? 0 : 1.8}
-              fill={decoracion.figura === 'corazon' ? color : 'none'}
+              strokeWidth={relleno ? 0 : 1.8}
+              fill={relleno ? color : 'none'}
             />
           </Figura>
         );

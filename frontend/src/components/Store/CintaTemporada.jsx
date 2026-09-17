@@ -59,13 +59,21 @@ const Banda = styled.div`
 `;
 
 const CintaTemporada = () => {
-  const { tema, activo, conDecoracion } = useTemaCalculado();
+  const { tema, activo, conDecoracion, saludoNormal, enPanel } = useTemaCalculado();
 
-  // Sin temporada, o con la decoración apagada, no se pinta nada. Ni un div
-  // vacío: un contenedor invisible sigue empujando el contenido de abajo.
-  if (!activo || !conDecoracion || !tema?.decoracion?.saludo) return null;
+  // Hay temporada: su saludo, si la decoración está encendida.
+  if (activo) {
+    if (!conDecoracion || !tema?.decoracion?.saludo) return null;
+    return <Banda role="status">{tema.decoracion.saludo}</Banda>;
+  }
 
-  return <Banda role="status">{tema.decoracion.saludo}</Banda>;
+  /*
+   * Día normal: el saludo que el dueño haya escrito para el resto del año, del
+   * color de la casa. En blanco no se pinta nada — ni un div vacío: un
+   * contenedor invisible sigue empujando el contenido de abajo.
+   */
+  if (!enPanel && saludoNormal) return <Banda role="status">{saludoNormal}</Banda>;
+  return null;
 };
 
 export default CintaTemporada;

@@ -39,6 +39,39 @@ const seccionSchema = new Schema(
 );
 
 /*
+ * Una temporada creada desde el panel. Solo se guarda lo que el dueño elige:
+ * dos colores, las fechas, la figura y el saludo. La paleta completa (los
+ * tonos claros y oscuros de cada color) la deriva cada cliente —web y app—
+ * a partir de esos dos, igual que las de fábrica traen la suya ya resuelta.
+ *
+ * Las fechas son día y mes, sin año: se repiten cada año. Un rango puede
+ * cruzar el año (del 20 de diciembre al 6 de enero).
+ */
+const fechaSinAnioSchema = new Schema(
+  {
+    mes: { type: Number, required: true, min: 1, max: 12 },
+    dia: { type: Number, required: true, min: 1, max: 31 },
+  },
+  { _id: false }
+);
+
+export const FIGURAS_DE_TEMPORADA = ["ninguna", "confeti", "estrella", "corazon", "copo", "hoja", "murcielago"];
+
+const temporadaPropiaSchema = new Schema(
+  {
+    clave: { type: String, required: true, trim: true, maxlength: 60 },
+    nombre: { type: String, required: true, trim: true, maxlength: 40 },
+    desde: { type: fechaSinAnioSchema, required: true },
+    hasta: { type: fechaSinAnioSchema, required: true },
+    colorPrincipal: { type: String, required: true, match: /^#[0-9a-fA-F]{6}$/ },
+    colorAcento: { type: String, required: true, match: /^#[0-9a-fA-F]{6}$/ },
+    figura: { type: String, enum: FIGURAS_DE_TEMPORADA, default: "confeti" },
+    saludo: { type: String, default: "", trim: true, maxlength: 160 },
+  },
+  { _id: false }
+);
+
+/*
  * El tema de temporada (Navidad, Halloween...). Ver utils/temporadas.js.
  *
  *   modo 'automatico' → lo elige la fecha; en diciembre se pinta de Navidad
@@ -67,6 +100,17 @@ const temporadaSchema = new Schema(
      * (o con el texto en blanco) usa el saludo de fábrica.
      */
     saludos: { type: Schema.Types.Mixed, default: {} },
+    /*
+     * El saludo de los días sin temporada. En blanco no sale cinta, que es
+     * como se veía la tienda antes de que existiera.
+     */
+    saludoNormal: { type: String, default: "", trim: true, maxlength: 160 },
+    /*
+     * Las temporadas que crea el dueño ("Regreso a clases", "Día de la
+     * madre"...). Conviven con las de fábrica y se eligen igual: por fecha en
+     * automático, o a mano. Ver temporadaPropiaSchema.
+     */
+    personalizados: { type: [temporadaPropiaSchema], default: [] },
   },
   { _id: false }
 );
@@ -128,14 +172,6 @@ const storeSettingsSchema = new Schema(
     direccion: { type: String, default: "Calle Sevilla 635, Col. Providencia", trim: true },
 
     /*
-     * Costo del envío a domicilio, en dólares. Lo fija el panel y lo cobra el
-     * pedido. Antes estaba escrito a mano en el carrito (4.78) y —peor— el
-     * backend ni lo sumaba al total: se mostraba pero no se cobraba. Ahora es
-     * un solo número, editable, que manda tanto en la pantalla como en la cuenta.
-     */
-    costoEnvio: { type: Number, default: 4.78, min: 0 },
-
-    /*
      * ENVÍO POR DISTANCIA (+ ajustes por zona).
      *
      * El precio ya no es un solo número plano. Se calcula así, de más específico
@@ -144,10 +180,11 @@ const storeSettingsSchema = new Schema(
      *   2. Si no, y hay ubicacionTienda + coordenadas del cliente →
      *      envioBase + envioPorKm × distancia (redondeado).
      *   3. Si no se puede medir (falta la ubicación de la tienda o del cliente) →
-     *      se cae al costoEnvio plano de arriba, que es como funcionaba antes.
+     *      se cobra solo envioBase.
      *
-     * Así una tienda que no configure nada sigue cobrando su tarifa plana, y la
-     * que sí lo haga cobra justo por distancia con los ajustes que quiera.
+     * Ya no existe la "tarifa plana de respaldo" (costoEnvio): se cobraba sin
+     * que el panel la mostrara. Los documentos viejos todavía traen el campo,
+     * pero nadie lo lee.
      */
     ubicacionTienda: {
       lat: { type: Number, default: null }, // de dónde salen los repartos

@@ -37,13 +37,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 import { useTema } from '../../context/TemaContext';
-import { Confeti, Copo, Corazon, Murcielago } from '../UI/Iconos';
+import { Leaf } from 'lucide-react-native';
+import { Confeti, Copo, Corazon, Estrella, Murcielago } from '../UI/Iconos';
 
+// La hoja no tiene dibujo a mano: se usa la de lucide, la misma que la web.
+const Hoja = ({ size = 16, color = '#FFFFFF' }) => <Leaf size={size} color={color} strokeWidth={1.8} />;
+
+/*
+ * 'ninguna' no está a propósito: una temporada propia sin figuras se nota
+ * solo en los colores y la cinta, y sin figura esta capa no se pinta.
+ */
 const FIGURAS = {
   copo: Copo,
   murcielago: Murcielago,
   confeti: Confeti,
   corazon: Corazon,
+  estrella: Estrella,
+  hoja: Hoja,
 };
 
 /*
