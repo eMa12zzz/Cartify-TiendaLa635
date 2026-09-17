@@ -59,13 +59,13 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
 
   const campo = {
     width: '100%', padding: '10px 12px', borderRadius: 10,
-    border: '1px solid #e5e5e5', fontSize: 14, fontFamily: 'inherit',
-    background: '#fff', color: '#1C1614', outline: 'none',
+    border: '1px solid var(--linea)', fontSize: 14, fontFamily: 'inherit',
+    background: 'var(--papel)', color: 'var(--tinta)', outline: 'none',
   };
 
   return (
     <form onSubmit={guardar} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e5e5', position: 'relative' }}>
+      <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--linea)', position: 'relative' }}>
         <div style={{ height: alto }}>
           {/*
             Tocar el mapa mueve el pin (la forma natural de decir "aquí" con el
@@ -94,8 +94,8 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
         {!posicion && (
           <div style={{
             position: 'absolute', top: 8, left: 8, right: 8, zIndex: 500,
-            background: 'rgba(255,255,255,.94)', borderRadius: 8, padding: '7px 10px',
-            fontSize: 12.5, color: '#5a4a3c', textAlign: 'center', pointerEvents: 'none',
+            background: 'color-mix(in srgb, var(--papel) 94%, transparent)', borderRadius: 8, padding: '7px 10px',
+            fontSize: 12.5, color: 'var(--tinta-suave)', textAlign: 'center', pointerEvents: 'none',
           }}>
             Toque en el mapa dónde le dejamos su pedido
           </div>
@@ -109,7 +109,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           padding: '9px 14px', borderRadius: 999, border: `1.5px solid ${BROWN}`,
-          background: '#fff', color: BROWN, fontSize: 13, fontWeight: 700,
+          background: 'var(--papel)', color: BROWN, fontSize: 13, fontWeight: 700,
           fontFamily: 'inherit', cursor: localizando ? 'default' : 'pointer',
           opacity: localizando ? 0.6 : 1,
         }}
@@ -121,7 +121,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div>
-          <label htmlFor="mapa-direccion" style={{ fontSize: 12.5, fontWeight: 600, color: '#5a4a3c' }}>
+          <label htmlFor="mapa-direccion" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--tinta-suave)' }}>
             Dirección
           </label>
           <div style={{ position: 'relative' }}>
@@ -137,7 +137,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
               <Loader2
                 size={15}
                 className="animate-spin"
-                style={{ position: 'absolute', right: 11, top: 14, color: '#bbb' }}
+                style={{ position: 'absolute', right: 11, top: 14, color: 'var(--tinta-tenue)' }}
               />
             )}
           </div>
@@ -149,8 +149,8 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 140px' }}>
-            <label htmlFor="mapa-nombre" style={{ fontSize: 12.5, fontWeight: 600, color: '#5a4a3c' }}>
-              Nombre <span style={{ fontWeight: 400, color: '#9b8b7c' }}>(opcional)</span>
+            <label htmlFor="mapa-nombre" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--tinta-suave)' }}>
+              Nombre <span style={{ fontWeight: 400, color: 'var(--tinta-tenue)' }}>(opcional)</span>
             </label>
             <input
               id="mapa-nombre"
@@ -161,8 +161,8 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
             />
           </div>
           <div style={{ flex: '1 1 180px' }}>
-            <label htmlFor="mapa-referencia" style={{ fontSize: 12.5, fontWeight: 600, color: '#5a4a3c' }}>
-              Referencia <span style={{ fontWeight: 400, color: '#9b8b7c' }}>(opcional)</span>
+            <label htmlFor="mapa-referencia" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--tinta-suave)' }}>
+              Referencia <span style={{ fontWeight: 400, color: 'var(--tinta-tenue)' }}>(opcional)</span>
             </label>
             <input
               id="mapa-referencia"
@@ -181,8 +181,8 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
             type="button"
             onClick={onCancelar}
             style={{
-              padding: '10px 16px', borderRadius: 999, border: '1px solid #e5e5e5',
-              background: '#fff', color: '#5a4a3c', fontSize: 13, fontWeight: 700,
+              padding: '10px 16px', borderRadius: 999, border: '1px solid var(--linea)',
+              background: 'var(--papel)', color: 'var(--tinta-suave)', fontSize: 13, fontWeight: 700,
               fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
@@ -194,7 +194,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
           disabled={!listo}
           style={{
             flex: 1, padding: '10px 16px', borderRadius: 999, border: 'none',
-            background: listo ? BROWN : '#ddd', color: '#fff',
+            background: listo ? BROWN : 'var(--linea-fuerte)', color: '#fff',
             fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
             cursor: listo ? 'pointer' : 'not-allowed',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,

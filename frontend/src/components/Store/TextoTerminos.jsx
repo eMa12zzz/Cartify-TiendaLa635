@@ -102,7 +102,7 @@ const EnvolturaTabla = styled.div`
   border: 1px solid var(--linea);
   border-radius: 14px;
   overflow: hidden;
-  background: #fff;
+  background: var(--papel);
 `;
 
 /*
@@ -173,7 +173,7 @@ const BotonBorrado = styled.a`
   padding: 12px 20px;
   border-radius: var(--radio-pill);
   border: 1px solid var(--marca-600);
-  background: #fff;
+  background: var(--papel);
   color: var(--marca-700);
   font-size: 14px;
   font-weight: 600;

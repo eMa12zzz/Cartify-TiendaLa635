@@ -112,22 +112,22 @@ const Reparto = () => {
       {enViaje.length > 0 && (
         <div
           className="rounded-2xl p-3.5 mb-5 flex items-start gap-3"
-          style={{ backgroundColor: '#EFF5FF', border: '1px solid #CFE0FF' }}
+          style={{ backgroundColor: 'var(--info-fondo)', border: '1px solid var(--info-borde)' }}
         >
           <span className="relative flex-none mt-0.5">
-            <Radio className="w-5 h-5" style={{ color: '#1D4ED8' }} />
+            <Radio className="w-5 h-5" style={{ color: 'var(--info-vivo)' }} />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-bold" style={{ color: '#173F94' }}>
+            <p className="text-sm font-bold" style={{ color: 'var(--info-texto)' }}>
               Compartiendo su ubicación · {enViaje.length} {enViaje.length === 1 ? 'pedido' : 'pedidos'}
             </p>
-            <p className="text-xs mt-0.5" style={{ color: '#3E5FA3' }}>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--info-suave)' }}>
               {pantallaDespierta
                 ? 'La pantalla se mantendrá encendida mientras dure el viaje.'
                 : 'Deje la pantalla encendida: si el teléfono se bloquea, el cliente deja de verlo avanzar.'}
             </p>
             {pantallaDespierta && (
-              <p className="text-xs mt-1 inline-flex items-center gap-1" style={{ color: '#3E5FA3' }}>
+              <p className="text-xs mt-1 inline-flex items-center gap-1" style={{ color: 'var(--info-suave)' }}>
                 <Sun className="w-3.5 h-3.5" /> Pantalla activa
               </p>
             )}
@@ -138,10 +138,10 @@ const Reparto = () => {
       {errorGPS && (
         <div
           className="rounded-2xl p-3.5 mb-5 flex items-start gap-3"
-          style={{ backgroundColor: '#FFF6E9', border: '1px solid #F3DFC0' }}
+          style={{ backgroundColor: 'var(--aviso-fondo)', border: '1px solid var(--aviso-borde)' }}
         >
-          <TriangleAlert className="w-5 h-5 flex-none mt-0.5" style={{ color: '#B4590C' }} />
-          <p className="text-sm" style={{ color: '#7A3E08' }}>{errorGPS}</p>
+          <TriangleAlert className="w-5 h-5 flex-none mt-0.5" style={{ color: 'var(--aviso-vivo)' }} />
+          <p className="text-sm" style={{ color: 'var(--aviso-texto)' }}>{errorGPS}</p>
         </div>
       )}
 
@@ -206,8 +206,8 @@ const Reparto = () => {
                     <span
                       className="text-xs font-bold px-2.5 py-1 rounded-full flex-none"
                       style={{
-                        backgroundColor: p.status === 'en_camino' ? '#EFF5FF' : p.status === 'preparando' ? '#FFF4E5' : '#E8F1FF',
-                        color: p.status === 'en_camino' ? '#1D4ED8' : p.status === 'preparando' ? '#B4590C' : '#0F47AF',
+                        backgroundColor: p.status === 'en_camino' ? 'var(--info-fondo)' : p.status === 'preparando' ? 'var(--aviso-fondo)' : 'var(--info-fondo)',
+                        color: p.status === 'en_camino' ? 'var(--info-vivo)' : p.status === 'preparando' ? 'var(--aviso-vivo)' : 'var(--info-vivo)',
                       }}
                     >
                       {p.status === 'en_camino' ? 'En camino' : p.status === 'preparando' ? 'Preparando' : 'Por preparar'}
@@ -273,7 +273,7 @@ const Reparto = () => {
                         onClick={() => { salirEnCamino(p).catch(() => {}); }}
                         disabled={moviendo === p._id}
                         className="press flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold border"
-                        style={{ borderColor: '#1D4ED8', color: '#1D4ED8' }}
+                        style={{ borderColor: 'var(--info-vivo)', color: 'var(--info-vivo)' }}
                       >
                         <Bike className="w-4 h-4" /> {moviendo === p._id ? 'Marcando…' : 'Salí a repartir'}
                       </button>
@@ -283,7 +283,7 @@ const Reparto = () => {
                         onClick={() => setPedidoAEntregar(p)}
                         disabled={moviendo === p._id}
                         className="press flex-1 py-2.5 rounded-full text-sm font-bold border disabled:opacity-60"
-                        style={{ borderColor: '#16a34a', color: '#16a34a' }}
+                        style={{ borderColor: 'var(--exito-vivo)', color: 'var(--exito-vivo)' }}
                       >
                         {moviendo === p._id ? 'Marcando…' : 'Marcar entregado'}
                       </button>
@@ -303,7 +303,7 @@ const Reparto = () => {
                         <button
                           onClick={() => quitarDelViaje(p._id)}
                           className="press w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold border"
-                          style={{ borderColor: '#1D4ED8', color: '#1D4ED8', backgroundColor: '#EFF5FF' }}
+                          style={{ borderColor: 'var(--info-vivo)', color: 'var(--info-vivo)', backgroundColor: 'var(--info-fondo)' }}
                         >
                           <Radio className="w-4 h-4" /> Dejar de compartir
                         </button>

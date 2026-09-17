@@ -357,7 +357,7 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
                     width: i === activa ? 22 : 8,
                     height: 8,
                     borderRadius: 4,
-                    background: i === activa ? 'var(--marca-700)' : '#D9C7B4',
+                    background: i === activa ? 'var(--marca-700)' : 'var(--linea-fuerte)',
                     transition: 'width var(--dur-popover) var(--ease-out), background var(--dur-popover) var(--ease-out)',
                   }}
                 />
@@ -390,7 +390,7 @@ const flecha = {
   height: 44,
   borderRadius: '50%',
   border: '1px solid var(--linea)',
-  background: '#fff',
+  background: 'var(--papel)',
   color: 'var(--marca-700)',
   fontSize: 20,
   lineHeight: 1,

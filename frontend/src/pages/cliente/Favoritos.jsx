@@ -90,7 +90,7 @@ const Favoritos = () => {
                       title="Quitar de favoritos"
                       aria-label={`Quitar ${p.name} de favoritos`}
                       className="press p-2 rounded-full"
-                      style={{ border: `1px solid ${c.cardBorder}`, color: '#ef4444' }}
+                      style={{ border: `1px solid ${c.cardBorder}`, color: 'var(--peligro)' }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

@@ -76,7 +76,7 @@ const ALTO_PANTALLA = `
 
 /* Full-width panel for checkout & confirmation */
 const FullPanel = styled.div`
-  background: #f5f5f5;
+  background: var(--papel-gris);
   width: 100%;
   ${ALTO_PANTALLA}
   display: flex;
@@ -91,7 +91,7 @@ const FullPanel = styled.div`
 
 /* Slide-in cart panel */
 const CartPanel = styled.div`
-  background: white;
+  background: var(--papel);
   width: 100%;
   max-width: 440px;
   ${ALTO_PANTALLA}
@@ -106,8 +106,8 @@ const CartPanel = styled.div`
 
 /* ── SHARED TOP BAR ── */
 const PageTopBar = styled.div`
-  background: white;
-  border-bottom: 1px solid #f0f0f0;
+  background: var(--papel);
+  border-bottom: 1px solid var(--linea);
   padding: 14px 28px;
   display: flex;
   align-items: center;
@@ -130,7 +130,7 @@ const BackBtn = styled.button`
   border: none;
   cursor: pointer;
   font-size: 20px;
-  color: #555;
+  color: var(--tinta-suave);
   padding: 4px;
   display: flex;
   align-items: center;
@@ -151,11 +151,11 @@ const HelpBtn = styled.button`
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--linea-fuerte);
   border-radius: 30px;
-  background: white;
+  background: var(--papel);
   font-size: 12px;
-  color: #444;
+  color: var(--tinta-suave);
   cursor: pointer;
   flex-shrink: 0;
   min-height: 40px;
@@ -170,7 +170,7 @@ const HelpBtn = styled.button`
 /* ── CART PANEL elements ── */
 const CartHeader = styled.div`
   padding: 18px 22px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--linea);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -184,7 +184,7 @@ const CartHeader = styled.div`
 const CartTitle = styled.h2`
   font-size: 18px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   margin: 0;
   display: flex;
   align-items: center;
@@ -194,14 +194,14 @@ const CartTitle = styled.h2`
 const ItemCount = styled.span`
   font-size: 13px;
   font-weight: 400;
-  color: #888;
+  color: var(--tinta-tenue);
 `;
 
 const CloseButton = styled.button`
-  background: #f5f5f5;
+  background: var(--papel-gris);
   border: none;
   cursor: pointer;
-  color: #666;
+  color: var(--tinta-suave);
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -209,7 +209,7 @@ const CloseButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
-  &:hover { background: #ebebeb; color: #111; }
+  &:hover { background: var(--papel-gris); color: var(--tinta); }
 `;
 
 const CartItemsScroll = styled.div`
@@ -218,7 +218,7 @@ const CartItemsScroll = styled.div`
   overscroll-behavior: contain;
   padding: 10px 22px;
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: var(--linea-fuerte); border-radius: 4px; }
 
   @media (max-width: 480px) { padding: 10px 16px; }
 `;
@@ -228,7 +228,7 @@ const StoreName = styled.div`
   align-items: center;
   gap: 10px;
   padding: 12px 0 10px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--linea);
   margin-bottom: 6px;
 `;
 
@@ -244,14 +244,14 @@ const StoreIcon = styled.div`
 `;
 
 const StoreInfo = styled.div`
-  .name { font-size: 14px; font-weight: 600; color: #111; }
-  .sub { font-size: 11px; color: #888; }
+  .name { font-size: 14px; font-weight: 600; color: var(--tinta); }
+  .sub { font-size: 11px; color: var(--tinta-tenue); }
 `;
 
 const ProductsLabel = styled.div`
   font-size: 11px;
   font-weight: 600;
-  color: #aaa;
+  color: var(--tinta-tenue);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 8px 0 6px;
@@ -262,13 +262,13 @@ const CartItemRow = styled.div`
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #f7f7f7;
+  border-bottom: 1px solid var(--linea);
 `;
 
 const ItemImgBox = styled.div`
   width: 52px;
   height: 52px;
-  background: #F5F5F5;
+  background: var(--papel-gris);
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
@@ -289,7 +289,7 @@ const ItemInfo = styled.div`
 const ItemName = styled.div`
   font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 1px;
   white-space: nowrap;
   overflow: hidden;
@@ -305,7 +305,7 @@ const ItemPriceLine = styled.div`
 
 const ItemOldPrice = styled.span`
   font-size: 11px;
-  color: #bbb;
+  color: var(--tinta-tenue);
   text-decoration: line-through;
 `;
 
@@ -339,9 +339,9 @@ const QtyControls = styled.div`
 const QtyBtn = styled.button`
   width: 26px;
   height: 26px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--linea);
   border-radius: 7px;
-  background: white;
+  background: var(--papel);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -349,7 +349,7 @@ const QtyBtn = styled.button`
   position: relative;
   flex-shrink: 0;
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
-  color: #444;
+  color: var(--tinta-suave);
 
   @media (hover: hover) and (pointer: fine) {
     &:hover { background: ${BROWN_LIGHT}; border-color: ${BROWN}; color: ${BROWN}; }
@@ -367,7 +367,7 @@ const QtyBtn = styled.button`
 const QtyNum = styled.span`
   font-size: 13px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   min-width: 22px;
   text-align: center;
 `;
@@ -375,7 +375,7 @@ const QtyNum = styled.span`
 const ItemTotal = styled.div`
   font-size: 14px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   text-align: right;
   flex-shrink: 0;
 `;
@@ -383,7 +383,7 @@ const ItemTotal = styled.div`
 const RemoveBtn = styled.button`
   background: none;
   border: none;
-  color: #ddd;
+  color: var(--tinta-apagada);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -394,7 +394,7 @@ const RemoveBtn = styled.button`
   position: relative;
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: #ef4444; }
+    &:hover { color: var(--peligro); }
   }
 
   /*
@@ -422,17 +422,17 @@ const EmptyCart = styled.div`
   text-align: center;
   min-height: 60vh;      /* lo deja a media altura del panel, no pegado arriba */
   padding: 40px 20px;
-  color: #aaa;
-  .emoji { margin-bottom: 14px; color: #c9c2ba; }
-  .title { font-size: 16px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  color: var(--tinta-tenue);
+  .emoji { margin-bottom: 14px; color: var(--tinta-apagada); }
+  .title { font-size: 16px; font-weight: 600; color: var(--tinta-suave); margin-bottom: 6px; }
   .sub { font-size: 13px; }
 `;
 
 /* Cart footer */
 const CartFooter = styled.div`
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--linea);
   flex-shrink: 0;
-  background: white;
+  background: var(--papel);
 
   /*
    * El área segura del iPhone. Sin esto la barra de gestos de abajo se come el
@@ -452,7 +452,7 @@ const OrderSummaryBox = styled.div`
 const SummaryTitle = styled.div`
   font-size: 13px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 10px;
 `;
 
@@ -460,14 +460,14 @@ const SummaryRow = styled.div`
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #666;
+  color: var(--tinta-suave);
   margin-bottom: 6px;
-  span:last-child { color: #111; font-weight: 500; }
+  span:last-child { color: var(--tinta); font-weight: 500; }
 `;
 
 const Divider = styled.div`
   height: 1px;
-  background: #f0f0f0;
+  background: var(--papel-gris);
   margin: 10px 0;
 `;
 
@@ -477,8 +477,8 @@ const TotalRow = styled.div`
   align-items: baseline;
 `;
 
-const TotalLabel = styled.span`font-size: 15px; font-weight: 700; color: #111;`;
-const TotalPrice = styled.span`font-size: 22px; font-weight: 800; color: #111;`;
+const TotalLabel = styled.span`font-size: 15px; font-weight: 700; color: var(--tinta);`;
+const TotalPrice = styled.span`font-size: 22px; font-weight: 800; color: var(--tinta);`;
 
 const BtnRow = styled.div`
   padding: 0 22px 20px;
@@ -492,16 +492,16 @@ const ClearBtn = styled.button`
   padding: 13px 16px;
   min-height: 48px;
   flex-shrink: 0;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--linea);
   border-radius: 14px;
-  background: white;
-  color: #666;
+  background: var(--papel);
+  color: var(--tinta-suave);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
   white-space: nowrap;
-  &:hover { background: #fef2f2; border-color: #fca5a5; color: #ef4444; }
+  &:hover { background: var(--peligro-fondo); border-color: var(--peligro-borde); color: var(--peligro); }
 `;
 
 const CheckoutBtn = styled.button`
@@ -559,7 +559,7 @@ const CheckoutLayout = styled.div`
 const CheckoutLeft = styled.div``;
 
 const CheckoutCard = styled.div`
-  background: white;
+  background: var(--papel);
   border-radius: 16px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -570,16 +570,16 @@ const CheckoutSection = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--linea);
   cursor: pointer;
   &:last-child { border-bottom: none; }
-  &:hover { background: #fafafa; }
+  &:hover { background: var(--papel-suave); }
 `;
 
 const CheckoutSectionTitle = styled.div`
   font-size: 15px;
   font-weight: 600;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 2px;
 `;
 
@@ -602,11 +602,11 @@ const CheckoutIconBox = styled.div`
 `;
 
 const DeliveryBadge = styled.div`
-  background: #f0f0f0;
+  background: var(--papel-gris);
   border-radius: 8px;
   padding: 6px 14px;
   font-size: 12px;
-  color: #444;
+  color: var(--tinta-suave);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -634,7 +634,7 @@ const OrderThumbsRow = styled.div`
 const OrderThumb = styled.div`
   width: 48px;
   height: 48px;
-  background: #F5F5F5;
+  background: var(--papel-gris);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -660,7 +660,7 @@ const MoreBadge = styled.div`
 
 /* Checkout right: order summary */
 const SummaryCard = styled.div`
-  background: white;
+  background: var(--papel);
   border-radius: 16px;
   padding: 24px;
   position: sticky;
@@ -678,7 +678,7 @@ const SummaryCard = styled.div`
 const SummaryCardTitle = styled.div`
   font-size: 15px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 16px;
 `;
 
@@ -686,9 +686,9 @@ const SummaryCardRow = styled.div`
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #666;
+  color: var(--tinta-suave);
   margin-bottom: 8px;
-  span:last-child { color: #111; font-weight: 500; }
+  span:last-child { color: var(--tinta); font-weight: 500; }
 `;
 
 const TotalBig = styled.div`
@@ -698,26 +698,26 @@ const TotalBig = styled.div`
   margin-top: 4px;
   font-size: 15px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
 `;
 
 /* Tips */
 const TipsSection = styled.div`
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #f5f5f5;
+  border-top: 1px solid var(--linea);
 `;
 
 const TipsLabel = styled.div`
   font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 4px;
 `;
 
 const TipsSub = styled.div`
   font-size: 11px;
-  color: #888;
+  color: var(--tinta-tenue);
   margin-bottom: 10px;
 `;
 
@@ -729,10 +729,10 @@ const TipsRow = styled.div`
 
 const TipBtn = styled.button`
   padding: 6px 14px;
-  border: 1.5px solid ${props => props.$active ? BROWN : '#e0e0e0'};
+  border: 1.5px solid ${props => props.$active ? BROWN : 'var(--linea-fuerte)'};
   border-radius: 8px;
-  background: ${props => props.$active ? BROWN_LIGHT : 'white'};
-  color: ${props => props.$active ? BROWN : '#444'};
+  background: ${props => props.$active ? BROWN_LIGHT : 'var(--papel)'};
+  color: ${props => props.$active ? BROWN : 'var(--tinta-suave)'};
   font-size: 13px;
   font-weight: ${props => props.$active ? '700' : '400'};
   cursor: pointer;
@@ -742,7 +742,7 @@ const TipBtn = styled.button`
 const CouponRow = styled.div`
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid #f5f5f5;
+  border-top: 1px solid var(--linea);
 `;
 
 const CouponBtn = styled.button`
@@ -801,7 +801,7 @@ const ConfirmLayout = styled.div`
 `;
 
 const ConfirmCard = styled.div`
-  background: white;
+  background: var(--papel);
   border-radius: 16px;
   padding: 28px;
   margin-bottom: 16px;
@@ -814,8 +814,8 @@ const StatusBadge = styled.div`
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--exito-fondo);
+  color: var(--exito-texto);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
@@ -825,13 +825,13 @@ const StatusBadge = styled.div`
 const ConfirmTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   margin: 0 0 4px;
 `;
 
 const ConfirmDate = styled.div`
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
   margin-bottom: 24px;
 `;
 
@@ -850,7 +850,7 @@ const AcceptedMsg = styled.div`
   text-align: center;
   font-size: 16px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 24px;
 `;
 
@@ -872,7 +872,7 @@ const TimelineDot = styled.div`
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: ${props => props.$active ? BROWN : '#e0e0e0'};
+  background: ${props => props.$active ? BROWN : 'var(--linea-fuerte)'};
   margin: 0 auto 6px;
   position: relative;
   z-index: 1;
@@ -884,13 +884,13 @@ const TimelineLine = styled.div`
   left: 50%;
   right: -50%;
   height: 2px;
-  background: ${props => props.$active ? BROWN : '#e0e0e0'};
+  background: ${props => props.$active ? BROWN : 'var(--linea-fuerte)'};
   z-index: 0;
 `;
 
 const TimelineLabel = styled.div`
   font-size: 11px;
-  color: ${props => props.$active ? BROWN : '#aaa'};
+  color: ${props => props.$active ? BROWN : 'var(--tinta-tenue)'};
   font-weight: ${props => props.$active ? '600' : '400'};
 `;
 
@@ -901,10 +901,10 @@ const PTableHeader = styled.div`
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #888;
+  color: var(--tinta-tenue);
   font-weight: 600;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--linea);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 `;
@@ -914,13 +914,13 @@ const PTableRow = styled.div`
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #f7f7f7;
+  border-bottom: 1px solid var(--linea);
 `;
 
 const PImgBox = styled.div`
   width: 42px;
   height: 42px;
-  background: #F5F5F5;
+  background: var(--papel-gris);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -932,11 +932,11 @@ const PImgBox = styled.div`
   img { max-width: 100%; max-height: 100%; object-fit: contain; }
 `;
 
-const PName = styled.div`flex: 1; font-size: 13px; font-weight: 500; color: #111;`;
-const POldPrice = styled.div`font-size: 11px; color: #bbb; text-decoration: line-through;`;
-const PPrice = styled.div`font-size: 13px; color: #111; font-weight: 600;`;
+const PName = styled.div`flex: 1; font-size: 13px; font-weight: 500; color: var(--tinta);`;
+const POldPrice = styled.div`font-size: 11px; color: var(--tinta-tenue); text-decoration: line-through;`;
+const PPrice = styled.div`font-size: 13px; color: var(--tinta); font-weight: 600;`;
 
-const PQty = styled.div`font-size: 13px; color: #888; text-align: right; min-width: 32px;`;
+const PQty = styled.div`font-size: 13px; color: var(--tinta-tenue); text-align: right; min-width: 32px;`;
 
 const Pagination = styled.div`
   display: flex;
@@ -949,9 +949,9 @@ const Pagination = styled.div`
 const PageBtn = styled.button`
   width: 32px;
   height: 32px;
-  border: 1px solid ${props => props.$active ? BROWN : '#e0e0e0'};
-  background: ${props => props.$active ? BROWN_LIGHT : 'white'};
-  color: ${props => props.$active ? BROWN : '#444'};
+  border: 1px solid ${props => props.$active ? BROWN : 'var(--linea-fuerte)'};
+  background: ${props => props.$active ? BROWN_LIGHT : 'var(--papel)'};
+  color: ${props => props.$active ? BROWN : 'var(--tinta-suave)'};
   border-radius: 8px;
   font-size: 13px;
   font-weight: ${props => props.$active ? '700' : '400'};
@@ -963,7 +963,7 @@ const PageBtn = styled.button`
 
 /* Right panel for confirmation */
 const ConfirmSummaryCard = styled.div`
-  background: white;
+  background: var(--papel);
   border-radius: 16px;
   padding: 24px;
   position: sticky;
@@ -976,7 +976,7 @@ const ConfirmSummaryCard = styled.div`
 const ConfirmSummaryTitle = styled.div`
   font-size: 15px;
   font-weight: 700;
-  color: #111;
+  color: var(--tinta);
   margin-bottom: 4px;
 `;
 
@@ -995,10 +995,10 @@ const PayMethod = styled.div`
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #333;
+  color: var(--tinta);
   margin-top: 12px;
   padding: 12px 0;
-  border-top: 1px solid #f5f5f5;
+  border-top: 1px solid var(--linea);
 `;
 
 
@@ -1022,9 +1022,9 @@ const OpcionBtn = styled.button`
   gap: 10px;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1.5px solid ${p => (p.$activa ? BROWN : '#e5e5e5')};
-  background: ${p => (p.$activa ? BROWN_LIGHT : '#fff')};
-  color: ${p => (p.$activa ? BROWN : '#444')};
+  border: 1.5px solid ${p => (p.$activa ? BROWN : 'var(--linea)')};
+  background: ${p => (p.$activa ? BROWN_LIGHT : 'var(--papel)')};
+  color: ${p => (p.$activa ? BROWN : 'var(--tinta-suave)')};
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
@@ -1047,10 +1047,10 @@ const DeliveryAddress = styled.div`
   align-items: flex-start;
   gap: 8px;
   font-size: 13px;
-  color: #333;
+  color: var(--tinta);
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #f5f5f5;
+  border-top: 1px solid var(--linea);
 `;
 
 /* ── MAIN COMPONENT ── */
@@ -1480,7 +1480,7 @@ const ShoppingCart = ({
             <CheckoutLeft>
               <CheckoutCard>
                 {/* Header row */}
-                <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #f5f5f5' }}>
+                <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--linea)' }}>
                   {/*
                     Con flexWrap la franja de la fecha se baja de renglón en vez
                     de empujar el título fuera de la tarjeta: la tarjeta recorta
@@ -1493,7 +1493,7 @@ const ShoppingCart = ({
                     </CheckoutIconBox>
                     <div style={{ flex: '1 1 auto', minWidth: 0 }}>
                       {/* Antes decía "Checkout". Ver el botón del carrito. */}
-                      <div style={{ fontSize: 17, fontWeight: 700, color: '#111' }}>Finalizar compra</div>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--tinta)' }}>Finalizar compra</div>
                     </div>
                     {/* Se quitó el badge "Deliver Tomorrow…": era texto en inglés y una
                         franja horaria inventada. La tienda entrega el mismo día contra
@@ -1502,7 +1502,7 @@ const ShoppingCart = ({
                 </div>
 
                 {/* ── Cómo lo recibe ── */}
-                <div style={{ padding: '18px 20px', borderTop: '1px solid #f5f5f5' }}>
+                <div style={{ padding: '18px 20px', borderTop: '1px solid var(--linea)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                     <CheckoutIconBox><MapPin size={18} color={BROWN} /></CheckoutIconBox>
                     <CheckoutSectionTitle>¿Cómo lo recibe?</CheckoutSectionTitle>
@@ -1545,14 +1545,14 @@ const ShoppingCart = ({
                     <div style={{
                       display: 'flex', alignItems: 'flex-start', gap: 8,
                       marginTop: 10, padding: '10px 12px', borderRadius: 12,
-                      background: '#EFFAF1', border: '1px solid #D3EEDA',
+                      background: 'var(--exito-fondo)', border: '1px solid var(--exito-borde)',
                     }}>
-                      <Clock size={15} color="#14663A" style={{ flexShrink: 0, marginTop: 1 }} />
+                      <Clock size={15} color="var(--exito-texto)" style={{ flexShrink: 0, marginTop: 1 }} />
                       <div>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#14663A' }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--exito-texto)' }}>
                           {zona.texto} a {direccionElegida?.nombre || 'su dirección'}
                         </div>
-                        <div style={{ fontSize: 11, color: '#3C7A55', marginTop: 1 }}>
+                        <div style={{ fontSize: 11, color: 'var(--exito-suave)', marginTop: 1 }}>
                           {zona.respaldo}. No es una promesa: es lo que hemos tardado.
                         </div>
                       </div>
@@ -1570,10 +1570,10 @@ const ShoppingCart = ({
                     <div style={{ marginTop: 12 }}>
                       {direcciones.length === 0 && !agregandoDireccion ? (
                         <div style={{
-                          padding: '14px', border: '1px dashed #e0d3c4', borderRadius: 12,
+                          padding: '14px', border: '1px dashed var(--linea-fuerte)', borderRadius: 12,
                           background: 'var(--marca-50)', textAlign: 'center',
                         }}>
-                          <p style={{ fontSize: 13, color: '#7a6a5c', margin: '0 0 10px' }}>
+                          <p style={{ fontSize: 13, color: 'var(--tinta-suave)', margin: '0 0 10px' }}>
                             Todavía no tiene direcciones guardadas.
                           </p>
                           {/*
@@ -1609,22 +1609,22 @@ const ShoppingCart = ({
                                   style={{
                                     display: 'flex', alignItems: 'flex-start', gap: 10,
                                     padding: '11px 13px', borderRadius: 12, textAlign: 'left',
-                                    border: `1px solid ${elegida ? BROWN : '#e5e5e5'}`,
-                                    background: elegida ? 'var(--marca-50)' : '#fff',
+                                    border: `1px solid ${elegida ? BROWN : 'var(--linea)'}`,
+                                    background: elegida ? 'var(--marca-50)' : 'var(--papel)',
                                   }}
                                 >
-                                  <MapPin size={15} color={elegida ? BROWN : '#bbb'} style={{ marginTop: 2, flexShrink: 0 }} />
+                                  <MapPin size={15} color={elegida ? BROWN : 'var(--tinta-tenue)'} style={{ marginTop: 2, flexShrink: 0 }} />
                                   <span style={{ flex: 1, minWidth: 0 }}>
                                     {dir.nombre && (
-                                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1C1614' }}>
+                                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--tinta)' }}>
                                         {dir.nombre}
                                       </span>
                                     )}
-                                    <span style={{ display: 'block', fontSize: 12.5, color: '#666' }}>
+                                    <span style={{ display: 'block', fontSize: 12.5, color: 'var(--tinta-suave)' }}>
                                       {dir.direccion}
                                     </span>
                                     {dir.referencia && (
-                                      <span style={{ display: 'block', fontSize: 11, color: '#999', marginTop: 2 }}>
+                                      <span style={{ display: 'block', fontSize: 11, color: 'var(--tinta-tenue)', marginTop: 2 }}>
                                         {dir.referencia}
                                       </span>
                                     )}
@@ -1646,7 +1646,7 @@ const ShoppingCart = ({
                             <div
                               style={{
                                 marginTop: 10, padding: 12, borderRadius: 12,
-                                border: '1px solid #e0d3c4', background: 'var(--marca-50)',
+                                border: '1px solid var(--linea-fuerte)', background: 'var(--marca-50)',
                               }}
                             >
                               <MapaDireccion
@@ -1675,7 +1675,7 @@ const ShoppingCart = ({
                 </div>
 
                 {/* ── Con qué paga ── */}
-                <div style={{ padding: '18px 20px', borderTop: '1px solid #f5f5f5' }}>
+                <div style={{ padding: '18px 20px', borderTop: '1px solid var(--linea)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                     <CheckoutIconBox><CreditCard size={18} color={BROWN} /></CheckoutIconBox>
                     <CheckoutSectionTitle>¿Con qué paga?</CheckoutSectionTitle>
@@ -1736,8 +1736,8 @@ const ShoppingCart = ({
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, marginTop: 12,
                         padding: '12px 14px', borderRadius: 14, cursor: 'pointer',
-                        border: `1.5px solid ${usarPuntos ? BROWN : '#e5e5e5'}`,
-                        background: usarPuntos ? BROWN_LIGHT : '#fff',
+                        border: `1.5px solid ${usarPuntos ? BROWN : 'var(--linea)'}`,
+                        background: usarPuntos ? BROWN_LIGHT : 'var(--papel)',
                       }}
                     >
                       <input
@@ -1747,10 +1747,10 @@ const ShoppingCart = ({
                         style={{ accentColor: BROWN, width: 16, height: 16 }}
                       />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: usarPuntos ? BROWN : '#444' }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: usarPuntos ? BROWN : 'var(--tinta-suave)' }}>
                           Usar mis {puntosDisponibles} puntos
                         </div>
-                        <div style={{ fontSize: 11, color: '#888' }}>
+                        <div style={{ fontSize: 11, color: 'var(--tinta-tenue)' }}>
                           {usarPuntos
                             ? `Descuenta $${descuento.toFixed(2)} de este pedido`
                             : `Equivalen a $${(Math.min(puntosDisponibles, maxPuntosUtiles) / (redeemRate || 100)).toFixed(2)} en esta compra`}
@@ -1768,7 +1768,7 @@ const ShoppingCart = ({
                       aria-label="Código de tarjeta de regalo"
                       style={{
                         flex: 1, padding: '11px 14px', fontSize: 13, fontFamily: 'inherit',
-                        border: '1px solid #e5e5e5', borderRadius: 12, outline: 'none',
+                        border: '1px solid var(--linea)', borderRadius: 12, outline: 'none',
                         letterSpacing: '0.05em',
                       }}
                     />
@@ -1778,7 +1778,7 @@ const ShoppingCart = ({
                       className="press"
                       style={{
                         padding: '0 18px', borderRadius: 12, border: `1.5px solid ${BROWN}`,
-                        background: '#fff', color: BROWN, fontSize: 13, fontWeight: 600,
+                        background: 'var(--papel)', color: BROWN, fontSize: 13, fontWeight: 600,
                         fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
                         opacity: canjeando || !codigoTarjeta.trim() ? 0.5 : 1,
                       }}
@@ -1789,10 +1789,10 @@ const ShoppingCart = ({
                 </div>
 
                 {/* Order thumbnails */}
-                <div style={{ borderTop: '1px solid #f5f5f5' }}>
+                <div style={{ borderTop: '1px solid var(--linea)' }}>
                   <div style={{ padding: '14px 24px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <CheckoutSectionTitle>Orden ⓘ</CheckoutSectionTitle>
-                    <ChevronRight size={16} color="#aaa" />
+                    <ChevronRight size={16} color="var(--tinta-tenue)" />
                   </div>
                   <OrderThumbsRow>
                     {items.slice(0, 6).map(item => (
@@ -1826,7 +1826,7 @@ const ShoppingCart = ({
 
               {/* ── Usar puntos de fidelidad ── */}
               {puntosDisponibles > 0 && (
-                <div style={{ padding: '12px 0', borderTop: '1px solid #f0f0f0', marginTop: 8 }}>
+                <div style={{ padding: '12px 0', borderTop: '1px solid var(--linea)', marginTop: 8 }}>
                   <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: puedeCanjear ? 'pointer' : 'not-allowed', opacity: puedeCanjear ? 1 : 0.6 }}>
                     <input
                       type="checkbox"
@@ -1835,9 +1835,9 @@ const ShoppingCart = ({
                       onChange={(e) => setUsarPuntos(e.target.checked)}
                       style={{ marginTop: 3 }}
                     />
-                    <span style={{ fontSize: 13, color: '#333', lineHeight: 1.4 }}>
+                    <span style={{ fontSize: 13, color: 'var(--tinta)', lineHeight: 1.4 }}>
                       <strong>Usar mis puntos</strong><br />
-                      <span style={{ color: '#777' }}>
+                      <span style={{ color: 'var(--tinta-suave)' }}>
                         Tienes {puntosDisponibles} puntos
                         {puedeCanjear
                           ? ` = $${(puntosDisponibles / (redeemRate || 100)).toFixed(2)}`
@@ -1849,7 +1849,7 @@ const ShoppingCart = ({
               )}
 
               {descuento > 0 && (
-                <SummaryCardRow style={{ color: '#16a34a', fontWeight: 600 }}>
+                <SummaryCardRow style={{ color: 'var(--exito-vivo)', fontWeight: 600 }}>
                   <span>Descuento por puntos</span>
                   <span>−${descuento.toFixed(2)}</span>
                 </SummaryCardRow>
@@ -1861,7 +1861,7 @@ const ShoppingCart = ({
                 <span style={{ fontSize: 22 }}>${totalAPagar.toFixed(2)}</span>
               </TotalBig>
 
-              <p style={{ fontSize: 11, color: '#aaa', marginTop: 12, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 11, color: 'var(--tinta-tenue)', marginTop: 12, lineHeight: 1.5 }}>
                 Al realizar este pedido, usted acepta los Términos y Condiciones.
               </p>
 
@@ -2012,7 +2012,7 @@ const ShoppingCart = ({
                 <span>{envioReal > 0 ? `$${envioReal.toFixed(2)}` : 'Gratis'}</span>
               </SummaryCardRow>
               {Number(ordenCreada?.discount || descuento) > 0 && (
-                <SummaryCardRow style={{ color: '#16a34a', fontWeight: 600 }}>
+                <SummaryCardRow style={{ color: 'var(--exito-vivo)', fontWeight: 600 }}>
                   <span>Descuento por puntos</span>
                   <span>−${Number(ordenCreada?.discount || descuento).toFixed(2)}</span>
                 </SummaryCardRow>

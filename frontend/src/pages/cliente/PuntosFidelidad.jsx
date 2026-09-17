@@ -71,7 +71,7 @@ const PuntosFidelidad = () => {
       {expiringSoon > 0 && (
         <div
           className="flex items-center gap-2 rounded-xl px-4 py-3 mb-8 text-sm"
-          style={{ backgroundColor: 'rgba(217,119,6,.12)', color: '#b45309' }}
+          style={{ backgroundColor: 'rgba(217,119,6,.12)', color: 'var(--aviso-vivo)' }}
         >
           <AlertTriangle className="w-4 h-4 flex-none" />
           <span>Tienes <strong>{expiringSoon} puntos</strong> que vencen en los próximos 30 días. ¡Aprovéchalos!</span>

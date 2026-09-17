@@ -1,5 +1,6 @@
 import '../../lib/maplibreWorker';
 import { useEffect, useRef } from 'react';
+import { useModo } from '../../hooks/useModo';
 import { Map, MapMarker, MarkerContent, MapControls, useMap } from '../mapcn/map';
 
 /*
@@ -193,10 +194,12 @@ const MapaTienda = ({
   className,
 }) => {
   const inicio = valido(centro) ? centro : { lat: 13.6929, lng: -89.2182 };
+  // En modo oscuro, las calles oscuras de CARTO (no un mapa blanco en medio de la pantalla).
+  const { oscuro } = useModo();
 
   return (
     <Map
-      theme="light"
+      theme={oscuro ? 'dark' : 'light'}
       className={className}
       center={[Number(inicio.lng), Number(inicio.lat)]}
       zoom={zoom}

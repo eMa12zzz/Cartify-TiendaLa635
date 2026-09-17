@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { ImagePlus, Copy, Trash2, Plus, X, ImageOff } from 'lucide-react';
+import { ImagePlus, Copy, Trash2, Plus, X } from 'lucide-react';
 import { pxDesdeCm } from '../../utils/pxImpresion';
 
 /*
@@ -11,6 +11,14 @@ import { pxDesdeCm } from '../../utils/pxImpresion';
  * completo — no hay arrastre ni zoom: eso era lo que dejaba una foto chica
  * flotando en una hoja enorme. Se sube, cae en la siguiente celda vacía, y
  * listo.
+ *
+ * SOLO SE DIBUJAN LAS CELDAS QUE HACEN FALTA: las ya llenas, más UNA vacía
+ * para agregar la próxima — no las N que caben en la hoja completa. Con un
+ * formato chico (una estampa de 2×2 cm en una carta son más de cien celdas)
+ * pintar el cuadro entero desde el principio se sentía lento y mostraba un
+ * tablero vacío gigante. Así crece de a una, como el selector de fotos de
+ * Instagram: se ve lo que hay y un "+" para lo próximo, no la cuadrícula
+ * completa de una vez.
  */
 const BROWN = 'var(--marca-600)';
 
@@ -27,8 +35,8 @@ const PrintComposer = ({ composer }) => {
 
   const btn = {
     display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px',
-    borderRadius: 10, border: '1.5px solid #e0e0e0', background: '#fff',
-    cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#333',
+    borderRadius: 10, border: '1.5px solid var(--linea-fuerte)', background: 'var(--papel)',
+    cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--tinta)',
   };
 
   const haySeleccion = seleccionado?.pagina === paginaActiva;
@@ -44,8 +52,8 @@ const PrintComposer = ({ composer }) => {
         </button>
         <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
           onChange={(e) => { agregarImagenes(e.target.files); e.target.value = ''; }} />
-        <span style={{ fontSize: 12, color: '#999', alignSelf: 'center' }}>
-          Celda {pxDesdeCm(celdaAnchoCm)} × {pxDesdeCm(celdaAltoCm)} px — hoja {widthCm} × {heightCm} cm ({columnas * filas} por hoja)
+        <span style={{ fontSize: 12, color: 'var(--tinta-tenue)', alignSelf: 'center' }}>
+          Celda {pxDesdeCm(celdaAnchoCm)} × {pxDesdeCm(celdaAltoCm)} px — hasta {columnas * filas} por hoja
         </span>
       </div>
 
@@ -56,15 +64,15 @@ const PrintComposer = ({ composer }) => {
             <button type="button" onClick={() => { setPaginaActiva(i); setSeleccionado(null); }}
               style={{
                 ...btn, padding: '6px 12px', fontSize: 12,
-                background: i === paginaActiva ? 'var(--marca-100)' : '#fff',
-                borderColor: i === paginaActiva ? BROWN : '#e0e0e0',
-                color: i === paginaActiva ? BROWN : '#555',
+                background: i === paginaActiva ? 'var(--marca-100)' : 'var(--papel)',
+                borderColor: i === paginaActiva ? BROWN : 'var(--linea-fuerte)',
+                color: i === paginaActiva ? BROWN : 'var(--tinta-suave)',
               }}>
               Página {i + 1}
             </button>
             {paginas.length > 1 && (
               <button type="button" onClick={() => eliminarPagina(i)} title="Eliminar página"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '0 4px' }}>
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--peligro)', padding: '0 4px' }}>
                 <X size={14} />
               </button>
             )}
@@ -89,11 +97,21 @@ const PrintComposer = ({ composer }) => {
         const colsTemplate = `repeat(${columnas}, ${celdaAnchoCm}fr)` + (sobranteAncho > 0.05 ? ` ${sobranteAncho}fr` : '');
         const rowsTemplate = `repeat(${filas}, ${celdaAltoCm}fr)` + (sobranteAlto > 0.05 ? ` ${sobranteAlto}fr` : '');
 
+        /*
+         * Hasta dónde dibujar: la última celda llena, más una vacía para la
+         * próxima foto. Ni una casilla más — el resto de la hoja no se pinta
+         * hasta que haga falta.
+         */
+        const totalCeldas = pagina.celdas.length;
+        const ultimaLlena = pagina.celdas.reduce((max, c, i) => (c ? i : max), -1);
+        const hastaIndice = Math.min(ultimaLlena + 1, totalCeldas - 1);
+        const celdasAMostrar = pagina.celdas.slice(0, hastaIndice + 1);
+
         return (
           <div
             style={{
               width: '100%', aspectRatio: `${widthCm} / ${heightCm}`,
-              background: '#fff', border: '1px solid #ddd', borderRadius: 8,
+              background: 'var(--papel)', border: '1px solid var(--linea-fuerte)', borderRadius: 8,
               overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
               display: 'grid',
               gridTemplateColumns: colsTemplate,
@@ -101,24 +119,30 @@ const PrintComposer = ({ composer }) => {
               marginBottom: 12,
             }}
           >
-            {pagina.celdas.map((celda, i) => {
+            {celdasAMostrar.map((celda, i) => {
               const elegida = seleccionado?.pagina === paginaActiva && seleccionado?.celda === i;
               const col = i % columnas;
               const fil = Math.floor(i / columnas);
+              // La próxima vacía: tocarla abre el selector directo, como el
+              // "+" del selector de fotos de Instagram.
+              const esLaProxima = !celda && i === hastaIndice;
               return (
                 <div
                   key={i}
-                  onClick={() => setSeleccionado(celda ? { pagina: paginaActiva, celda: i } : null)}
+                  onClick={() => {
+                    if (celda) setSeleccionado({ pagina: paginaActiva, celda: i });
+                    else if (esLaProxima) inputRef.current?.click();
+                  }}
                   style={{
                     position: 'relative',
                     gridColumn: col + 1,
                     gridRow: fil + 1,
-                    borderRight: (col !== columnas - 1) ? '1px dashed #e5e5e5' : 'none',
-                    borderBottom: (fil !== filas - 1) ? '1px dashed #e5e5e5' : 'none',
+                    borderRight: (col !== columnas - 1) ? '1px dashed var(--linea)' : 'none',
+                    borderBottom: (fil !== filas - 1) ? '1px dashed var(--linea)' : 'none',
                     outline: elegida ? `2px solid ${BROWN}` : 'none',
                     outlineOffset: -2,
-                    cursor: celda ? 'pointer' : 'default',
-                    background: celda ? 'transparent' : '#fafafa',
+                    cursor: (celda || esLaProxima) ? 'pointer' : 'default',
+                    background: celda ? 'transparent' : 'var(--papel-suave)',
                   }}
                 >
                   {celda ? (
@@ -129,8 +153,8 @@ const PrintComposer = ({ composer }) => {
                       style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none' }}
                     />
                   ) : (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
-                      <ImageOff size={18} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tinta-apagada)' }}>
+                      <Plus size={18} />
                     </div>
                   )}
                 </div>
@@ -144,13 +168,13 @@ const PrintComposer = ({ composer }) => {
       {celdaSeleccionada && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
           <button type="button" style={btn} onClick={() => duplicar(seleccionado.pagina, seleccionado.celda)}><Copy size={16} /> Duplicar</button>
-          <button type="button" style={{ ...btn, color: '#ef4444', borderColor: '#fecaca' }} onClick={() => eliminar(seleccionado.pagina, seleccionado.celda)}>
+          <button type="button" style={{ ...btn, color: 'var(--peligro)', borderColor: 'var(--peligro-borde)' }} onClick={() => eliminar(seleccionado.pagina, seleccionado.celda)}>
             <Trash2 size={16} /> Quitar
           </button>
         </div>
       )}
       {!celdaSeleccionada && pagina.celdas.some(Boolean) && (
-        <p style={{ fontSize: 12, color: '#999', margin: 0 }}>Toca una foto para duplicarla o quitarla.</p>
+        <p style={{ fontSize: 12, color: 'var(--tinta-tenue)', margin: 0 }}>Toca una foto para duplicarla o quitarla.</p>
       )}
     </div>
   );

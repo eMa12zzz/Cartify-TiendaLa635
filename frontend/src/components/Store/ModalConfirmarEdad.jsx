@@ -43,7 +43,7 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#fff', width: '100%', maxWidth: 420,
+          background: 'var(--papel)', width: '100%', maxWidth: 420,
           borderRadius: 20, overflow: 'hidden', position: 'relative',
         }}
       >
@@ -51,8 +51,8 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
           type="button" onClick={cerrar} aria-label="Cerrar"
           style={{
             position: 'absolute', top: 12, right: 12, width: 34, height: 34,
-            borderRadius: '50%', border: '1px solid #eee', background: '#fff',
-            color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            borderRadius: '50%', border: '1px solid var(--linea)', background: 'var(--papel)',
+            color: 'var(--tinta-suave)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           }}
         >
           <X size={18} />
@@ -69,16 +69,16 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
             <ShieldAlert size={26} />
           </div>
 
-          <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: '#1C1614' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: 'var(--tinta)' }}>
             Producto para mayores de {EDAD_MINIMA}
           </h3>
-          <p style={{ margin: '0 0 18px', fontSize: 14, color: '#666', lineHeight: 1.5 }}>
+          <p style={{ margin: '0 0 18px', fontSize: 14, color: 'var(--tinta-suave)', lineHeight: 1.5 }}>
             Ingresá tu número de DUI para verlo. Al recibir el pedido se te pedirá el documento
             físico; sin él, este producto no se puede entregar.
           </p>
 
           <form onSubmit={enviar}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--tinta)', marginBottom: 6 }}>
               DUI
             </label>
             <input
@@ -90,12 +90,12 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
               onChange={(e) => { setDui(formatearDui(e.target.value)); setError(''); }}
               style={{
                 width: '100%', padding: '12px 14px', borderRadius: 10,
-                border: `1.5px solid ${error ? '#ef4444' : '#e0e0e0'}`,
-                fontSize: 15, color: '#111', outline: 'none', boxSizing: 'border-box', letterSpacing: '0.5px',
+                border: `1.5px solid ${error ? 'var(--peligro)' : 'var(--linea-fuerte)'}`,
+                fontSize: 15, color: 'var(--tinta)', outline: 'none', boxSizing: 'border-box', letterSpacing: '0.5px',
               }}
             />
             {error && (
-              <p style={{ color: '#dc2626', fontSize: 13, margin: '10px 0 0' }}>{error}</p>
+              <p style={{ color: 'var(--peligro)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>
             )}
 
             <button
@@ -109,7 +109,7 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
             </button>
           </form>
 
-          <p style={{ margin: '14px 0 0', fontSize: 11.5, color: '#9CA3AF', lineHeight: 1.45 }}>
+          <p style={{ margin: '14px 0 0', fontSize: 11.5, color: 'var(--tinta-tenue)', lineHeight: 1.45 }}>
             Solo se usa para habilitar la compra de productos restringidos. No se comparte.
           </p>
         </div>

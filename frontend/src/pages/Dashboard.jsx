@@ -10,14 +10,14 @@ const BROWN_DARK = '#00283D';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: white;
+  background: var(--papel);
   display: flex;
   flex-direction: column;
 `;
 
 const TopBar = styled.div`
   width: 100%;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--linea);
   padding: 10px 20px;
   display: flex;
   justify-content: center;
@@ -33,7 +33,7 @@ const BrandCenter = styled.div`
 const BrandSmall = styled.span`
   display: block;
   font-size: 13px;
-  color: #888;
+  color: var(--tinta-tenue);
   line-height: 1.2;
 `;
 
@@ -41,7 +41,7 @@ const BrandName = styled.span`
   display: block;
   font-size: 18px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   line-height: 1.2;
 `;
 
@@ -50,8 +50,8 @@ const LogoutBtn = styled.button`
   right: 20px;
   padding: 7px 14px;
   background: transparent;
-  color: #ff4d4f;
-  border: 1px solid #ff4d4f;
+  color: var(--peligro);
+  border: 1px solid var(--peligro);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
@@ -75,7 +75,7 @@ const Body = styled.div`
 const SectionTitle = styled.h2`
   font-size: 22px;
   font-weight: 700;
-  color: #000;
+  color: var(--tinta);
   margin: 0 0 20px 0;
 `;
 
@@ -115,7 +115,7 @@ const ServiceIcon = styled.div`
 `;
 
 const Vacio = styled.p`
-  color: #888;
+  color: var(--tinta-tenue);
   font-size: 14px;
   text-align: center;
   padding: 40px 0;
@@ -138,7 +138,7 @@ const Footer = styled.div`
   text-align: center;
   padding: 20px;
   font-size: 12px;
-  color: #ccc;
+  color: var(--tinta-apagada);
   margin-top: auto;
 `;
 

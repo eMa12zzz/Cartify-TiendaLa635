@@ -48,7 +48,7 @@ const Etiqueta = ({ htmlFor, color, children }) => (
 );
 
 const MensajeError = ({ texto }) => (texto ? (
-  <p className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: '#dc2626' }} role="alert">
+  <p className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: 'var(--peligro)' }} role="alert">
     <CircleAlert className="w-3.5 h-3.5 flex-none" /> {texto}
   </p>
 ) : null);
@@ -131,7 +131,7 @@ const MetodoPago = () => {
 
   const campo = (error) => ({
     backgroundColor: c.cardBg,
-    borderColor: error ? '#dc2626' : c.cardBorder,
+    borderColor: error ? 'var(--peligro)' : c.cardBorder,
     color: c.textPrimary,
   });
 
@@ -233,7 +233,7 @@ const MetodoPago = () => {
                     <div className="text-xs mt-0.5 truncate" style={{ color: c.textMuted }}>{detalle}</div>
                   </div>
                   {vencidaGuardada && (
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ color: '#b91c1c', backgroundColor: '#fee2e2' }}>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ color: 'var(--peligro)', backgroundColor: 'var(--peligro-fondo)' }}>
                       Vencida
                     </span>
                   )}
@@ -258,8 +258,8 @@ const MetodoPago = () => {
                       onClick={() => setPorQuitar(i)}
                       disabled={saving}
                       aria-label={`Quitar ${m.alias || 'método de pago'}`}
-                      className="p-2 rounded-lg transition-colors disabled:opacity-60 hover:bg-red-50"
-                      style={{ color: '#dc2626' }}
+                      className="p-2 rounded-lg transition-colors disabled:opacity-60 hover:bg-[var(--peligro-fondo)]"
+                      style={{ color: 'var(--peligro)' }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

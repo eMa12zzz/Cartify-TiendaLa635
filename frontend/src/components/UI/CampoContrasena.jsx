@@ -34,7 +34,7 @@ export const BotonOjo = ({ visible, onToggle, derecha = 14 }) => (
       padding: 0,
       display: 'flex',
       alignItems: 'center',
-      color: '#9ca3af',
+      color: 'var(--tinta-tenue)',
       zIndex: 2,
     }}
   >
@@ -64,7 +64,7 @@ const CampoContrasena = forwardRef(({ className = '', ...props }, ref) => {
         tabIndex={-1}
         aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
         title={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tinta-tenue)] hover:text-[var(--tinta-suave)] transition-colors"
       >
         {visible ? <EyeOff size={17} /> : <Eye size={17} />}
       </button>

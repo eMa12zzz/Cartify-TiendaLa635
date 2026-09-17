@@ -27,14 +27,19 @@ export const clientColors = {
    * web. El contenido se sigue distinguiendo por su borde, no por el color
    * del fondo.
    */
-  mainBg: '#ffffff',
-  topbarBg: '#ffffff',
-  cardBg: '#ffffff',
-  cardBorder: '#ebebeb',
-  sidebarBorder: '#ebebeb',
-  textPrimary: '#111111',
-  textSecondary: '#666666',
-  textMuted: '#9ca3af',
+  /*
+   * Y los neutros también son tokens: con el modo oscuro (Mi Cuenta →
+   * Preferencias) el blanco pasa a ser el fondo oscuro sin que ninguna página
+   * tenga que preguntar en qué modo está.
+   */
+  mainBg: 'var(--papel)',
+  topbarBg: 'var(--papel)',
+  cardBg: 'var(--papel)',
+  cardBorder: 'var(--linea)',
+  sidebarBorder: 'var(--linea)',
+  textPrimary: 'var(--tinta)',
+  textSecondary: 'var(--tinta-suave)',
+  textMuted: 'var(--tinta-tenue)',
 };
 
 export const useTheme = () => ({ palette: { colors: clientColors } });

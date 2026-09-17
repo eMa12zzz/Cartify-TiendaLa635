@@ -87,7 +87,7 @@ const BotonWhatsApp = () => {
         <div
           style={{
             position: 'relative',
-            background: '#fff',
+            background: 'var(--papel)',
             color: 'var(--tinta)',
             borderRadius: 14,
             padding: '10px 34px 10px 14px',

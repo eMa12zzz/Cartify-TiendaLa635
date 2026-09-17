@@ -44,7 +44,7 @@ const Recibidos = () => {
                   </div>
                   <div className="text-xs" style={{ color: c.textMuted }}>{formatFecha(order.createdAt)}</div>
                 </div>
-                <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#16a34a' }}>
+                <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--exito-vivo)' }}>
                   <CheckCircle2 className="w-4 h-4" /> Entregado
                 </span>
               </div>

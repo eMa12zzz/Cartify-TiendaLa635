@@ -8,6 +8,7 @@ import { DireccionProvider } from './context/DireccionContext';
 import { PedidoActivoProvider } from './context/PedidoActivoContext';
 import { AjustesProvider } from './context/AjustesContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ModoProvider } from './context/ModoContext';
 import { useTemporada } from './hooks/useTemporada';
 import { useEstiloAvisos } from './hooks/useEstiloAvisos';
 import DecoracionTemporada from './components/Store/DecoracionTemporada';
@@ -77,6 +78,7 @@ import Direcciones from './pages/cliente/Direcciones';
 import MetodoPago from './pages/cliente/MetodoPago';
 import Notificaciones from './pages/cliente/Notificaciones';
 import CentroAyuda from './pages/cliente/CentroAyuda';
+import Preferencias from './pages/cliente/Preferencias';
 
 
 /*
@@ -140,6 +142,12 @@ function App() {
           Ver AjustesContext.
         */}
         <AjustesProvider>
+        {/*
+          Claro u oscuro (Mi Cuenta → Preferencias). Va antes de la pintura de
+          temporada porque esa recalcula sus colores para el fondo oscuro.
+          Ver ModoContext.
+        */}
+        <ModoProvider>
         {/*
           ThemeProvider (paletas del PANEL, no de la tienda) va aquí adentro
           porque las pantallas de adentro leen los ajustes de la tienda. Ver
@@ -301,6 +309,8 @@ function App() {
               <Route path="/mi-cuenta/notificaciones" element={<Notificaciones />} />
               <Route path="/mi-cuenta/puntos"         element={<PuntosFidelidad />} />
               <Route path="/mi-cuenta/ayuda"       element={<CentroAyuda />} />
+              {/* Claro u oscuro. Ver ModoContext. */}
+              <Route path="/mi-cuenta/preferencias" element={<Preferencias />} />
             </Route>
           </Route>
 
@@ -323,6 +333,7 @@ function App() {
         </FavoritosProvider>
         </EdadProvider>
         </ThemeProvider>
+        </ModoProvider>
         </AjustesProvider>
       </AuthProvider>
     </BrowserRouter>
