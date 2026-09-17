@@ -172,7 +172,13 @@ export const useDetalleProducto = ({
   const { mayorConfirmado, pedirConfirmacion } = useEdad();
 
   const agregar = () => {
-    const meter = () => { onAgregarAlCarrito?.(producto, 1); cerrar(); };
+    const meter = () => {
+      // La foto grande del detalle es la que vuela al carrito. Se mide antes
+      // de cerrar: con la ventana ya cerrada no hay de dónde salir.
+      const origen = document.querySelector('[data-foto-detalle]');
+      onAgregarAlCarrito?.(producto, 1, { origen });
+      cerrar();
+    };
     if (soloAdultos && !mayorConfirmado) {
       pedirConfirmacion(meter);
       return;

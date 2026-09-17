@@ -144,8 +144,117 @@ export const TEMAS_DE_TEMPORADA = [
   },
 ];
 
-export const temaPorClave = (clave) =>
-  TEMAS_DE_TEMPORADA.find((t) => t.clave === clave) || null;
+/*
+ * ============================================================
+ * TEMPORADAS PROPIAS — las que crea el dueño desde el panel
+ * ============================================================
+ * "Regreso a clases", "Día de la madre", el aniversario de la tienda... Las de
+ * fábrica no pueden adivinar todas las fechas que le importan a un negocio.
+ *
+ * Del panel llegan solo dos colores (el principal y el de acento). Los tonos
+ * claros y oscuros que usa la tienda se DERIVAN aquí, mezclando el principal
+ * con blanco o con negro: pedirle al dueño seis colores que combinen es
+ * pedirle un trabajo de diseñador.
+ * ============================================================
+ */
+
+// Las figuras que puede elegir una temporada propia. La misma lista valida el
+// backend (models/storeSettings.js).
+export const FIGURAS_DE_TEMPORADA = [
+  { clave: 'confeti', nombre: 'Confeti' },
+  { clave: 'estrella', nombre: 'Estrellas' },
+  { clave: 'corazon', nombre: 'Corazones' },
+  { clave: 'copo', nombre: 'Copos' },
+  { clave: 'hoja', nombre: 'Hojas' },
+  { clave: 'murcielago', nombre: 'Murciélagos' },
+  { clave: 'ninguna', nombre: 'Sin figuras' },
+];
+
+export const NOMBRES_DE_MES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+
+const hexARgb = (hex) => {
+  const limpio = String(hex || '').replace('#', '');
+  const n = parseInt(limpio.length === 6 ? limpio : '003049', 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+const rgbAHex = (rgb) =>
+  `#${rgb.map((c) => Math.round(Math.min(255, Math.max(0, c))).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+
+// Mezcla `hex` con `con` en la proporción `cuanto` (0 = nada, 1 = todo `con`).
+const mezclar = (hex, con, cuanto) => {
+  const a = hexARgb(hex);
+  const b = hexARgb(con);
+  return rgbAHex(a.map((c, i) => c + (b[i] - c) * cuanto));
+};
+
+/*
+ * Qué tanto se lee el texto blanco encima de un color (contraste WCAG). Los
+ * botones de la tienda son blancos sobre --marca-600: por debajo de 4.5 el
+ * panel avisa que ese color no sirve para botones.
+ */
+export const contrasteConBlanco = (hex) => {
+  const lineal = hexARgb(hex).map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  const luminancia = 0.2126 * lineal[0] + 0.7152 * lineal[1] + 0.0722 * lineal[2];
+  return 1.05 / (luminancia + 0.05);
+};
+
+export const paletaDesdeColores = (principal, acento) => ({
+  '--marca-700': mezclar(principal, '#000000', 0.22),
+  '--marca-600': rgbAHex(hexARgb(principal)),
+  '--marca-400': mezclar(principal, '#FFFFFF', 0.35),
+  '--marca-100': mezclar(principal, '#FFFFFF', 0.86),
+  '--marca-50': mezclar(principal, '#FFFFFF', 0.95),
+  '--acento': rgbAHex(hexARgb(acento)),
+});
+
+// "Del 15 de enero al 10 de febrero".
+export const describirRango = (desde, hasta) =>
+  `Del ${desde.dia} de ${NOMBRES_DE_MES[desde.mes - 1]} al ${hasta.dia} de ${NOMBRES_DE_MES[hasta.mes - 1]}`;
+
+/*
+ * Una temporada propia, con la misma forma que las de fábrica: así el resto
+ * de la app (la pintura, la cinta, las figuras) no tiene que saber de dónde
+ * salió.
+ */
+export const temaDesdePropio = (propio) => {
+  const colores = paletaDesdeColores(propio.colorPrincipal, propio.colorAcento);
+  return {
+    clave: propio.clave,
+    nombre: propio.nombre,
+    descripcion: describirRango(propio.desde, propio.hasta),
+    propio: true,
+    desde: propio.desde,
+    hasta: propio.hasta,
+    colores,
+    muestras: [colores['--marca-600'], colores['--acento'], colores['--marca-100']],
+    decoracion: {
+      saludo: (propio.saludo || '').trim(),
+      figura: propio.figura || 'confeti',
+      cantidad: propio.figura === 'ninguna' ? 0 : 12,
+      caida: propio.figura === 'copo' ? 'lenta' : 'meciendo',
+    },
+  };
+};
+
+/*
+ * Todas las temporadas que puede usar la tienda: las propias primero. Si una
+ * propia cae en las mismas fechas que una de fábrica, gana la propia — la
+ * creó el dueño a propósito, así que es la que quiere ver.
+ */
+export const todosLosTemas = (temporada) => [
+  ...(Array.isArray(temporada?.personalizados) ? temporada.personalizados : []).map(temaDesdePropio),
+  ...TEMAS_DE_TEMPORADA,
+];
+
+export const temaPorClave = (clave, lista = TEMAS_DE_TEMPORADA) =>
+  lista.find((t) => t.clave === clave) || null;
 
 /*
  * ¿Cae esta fecha dentro del rango del tema?
@@ -154,10 +263,9 @@ export const temaPorClave = (clave) =>
  * años. El `mes - 1` de aquí es la única traducción al mes de JavaScript en
  * todo el archivo.
  *
- * Ojo con los rangos que cruzan diciembre-enero: hoy ninguno lo hace, pero si
- * algún día se agrega uno (una temporada de fin de año que vaya del 20 de
- * diciembre al 6 de enero), esta comparación da falso todo el rango. Habría
- * que partirlo en dos temas o comparar al revés cuando `desde > hasta`.
+ * Un rango que cruza el año (del 20 de diciembre al 6 de enero) tiene el
+ * inicio DESPUÉS del fin; ahí la fecha cae dentro si está pasado el inicio o
+ * antes del fin. Las de fábrica no cruzan el año, pero una propia sí puede.
  */
 const caeEnRango = (fecha, tema) => {
   const mes = fecha.getMonth() + 1;
@@ -165,11 +273,12 @@ const caeEnRango = (fecha, tema) => {
   const comoNumero = mes * 100 + dia;
   const inicio = tema.desde.mes * 100 + tema.desde.dia;
   const fin = tema.hasta.mes * 100 + tema.hasta.dia;
-  return comoNumero >= inicio && comoNumero <= fin;
+  if (inicio <= fin) return comoNumero >= inicio && comoNumero <= fin;
+  return comoNumero >= inicio || comoNumero <= fin;
 };
 
-export const temaDeLaFecha = (fecha = new Date()) =>
-  TEMAS_DE_TEMPORADA.find((tema) => caeEnRango(fecha, tema)) || null;
+export const temaDeLaFecha = (fecha = new Date(), lista = TEMAS_DE_TEMPORADA) =>
+  lista.find((tema) => caeEnRango(fecha, tema)) || null;
 
 /*
  * Qué tema toca AHORA, según lo que diga la configuración.
@@ -187,8 +296,9 @@ export const temaDeLaFecha = (fecha = new Date()) =>
 export const temaActivo = (temporada, fecha = new Date()) => {
   const modo = temporada?.modo || 'automatico';
   if (modo === 'ninguno') return null;
-  if (modo === 'manual') return temaPorClave(temporada?.tema);
-  return temaDeLaFecha(fecha);
+  const lista = todosLosTemas(temporada);
+  if (modo === 'manual') return temaPorClave(temporada?.tema, lista);
+  return temaDeLaFecha(fecha, lista);
 };
 
 /*

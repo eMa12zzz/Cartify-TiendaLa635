@@ -128,8 +128,57 @@ export const TEMAS_DE_TEMPORADA = [
   },
 ];
 
-export const temaPorClave = (clave) =>
-  TEMAS_DE_TEMPORADA.find((t) => t.clave === clave) || null;
+/*
+ * TEMPORADAS PROPIAS — las que crea el dueño desde el panel web
+ * ("Regreso a clases", "Día de la madre"...). Del panel llegan solo dos
+ * colores; los tonos claros y oscuros se derivan aquí mezclando el principal
+ * con blanco o negro, igual que en frontend/src/utils/temporadas.js.
+ */
+const hexARgb = (hex) => {
+  const limpio = String(hex || '').replace('#', '');
+  const n = parseInt(limpio.length === 6 ? limpio : '003049', 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+const rgbAHex = (rgb) =>
+  `#${rgb.map((c) => Math.round(Math.min(255, Math.max(0, c))).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+
+const mezclar = (hex, con, cuanto) => {
+  const a = hexARgb(hex);
+  const b = hexARgb(con);
+  return rgbAHex(a.map((c, i) => c + (b[i] - c) * cuanto));
+};
+
+const temaDesdePropio = (propio) => ({
+  clave: propio.clave,
+  nombre: propio.nombre,
+  propio: true,
+  desde: propio.desde,
+  hasta: propio.hasta,
+  colores: {
+    marcaOscuro: mezclar(propio.colorPrincipal, '#000000', 0.22),
+    marca: rgbAHex(hexARgb(propio.colorPrincipal)),
+    marcaClaro: mezclar(propio.colorPrincipal, '#FFFFFF', 0.35),
+    marcaSuave: mezclar(propio.colorPrincipal, '#FFFFFF', 0.86),
+    marcaTenue: mezclar(propio.colorPrincipal, '#FFFFFF', 0.95),
+    acento: rgbAHex(hexARgb(propio.colorAcento)),
+  },
+  decoracion: {
+    saludo: (propio.saludo || '').trim(),
+    figura: propio.figura || 'confeti',
+    cantidad: propio.figura === 'ninguna' ? 0 : 12,
+    caida: propio.figura === 'copo' ? 'lenta' : 'meciendo',
+  },
+});
+
+// Las propias primero: si comparten fechas con una de fábrica, gana la propia.
+export const todosLosTemas = (temporada) => [
+  ...(Array.isArray(temporada?.personalizados) ? temporada.personalizados : []).map(temaDesdePropio),
+  ...TEMAS_DE_TEMPORADA,
+];
+
+export const temaPorClave = (clave, lista = TEMAS_DE_TEMPORADA) =>
+  lista.find((t) => t.clave === clave) || null;
 
 /*
  * ¿Cae esta fecha dentro del rango del tema?
@@ -137,8 +186,9 @@ export const temaPorClave = (clave) =>
  * Se compara por mes y día, sin año, porque los rangos se repiten todos los
  * años. El `mes - 1` de JavaScript se corrige aquí y en ningún otro lado.
  *
- * Ojo con los rangos que cruzan diciembre-enero: hoy ninguno lo hace, pero si
- * algún día se agrega uno, esta comparación da falso todo el rango.
+ * Un rango que cruza el año (del 20 de diciembre al 6 de enero) tiene el
+ * inicio DESPUÉS del fin: ahí cae dentro lo que esté pasado el inicio o antes
+ * del fin. Las de fábrica no cruzan el año, pero una propia sí puede.
  */
 const caeEnRango = (fecha, tema) => {
   const mes = fecha.getMonth() + 1;
@@ -146,11 +196,12 @@ const caeEnRango = (fecha, tema) => {
   const comoNumero = mes * 100 + dia;
   const inicio = tema.desde.mes * 100 + tema.desde.dia;
   const fin = tema.hasta.mes * 100 + tema.hasta.dia;
-  return comoNumero >= inicio && comoNumero <= fin;
+  if (inicio <= fin) return comoNumero >= inicio && comoNumero <= fin;
+  return comoNumero >= inicio || comoNumero <= fin;
 };
 
-export const temaDeLaFecha = (fecha = new Date()) =>
-  TEMAS_DE_TEMPORADA.find((tema) => caeEnRango(fecha, tema)) || null;
+export const temaDeLaFecha = (fecha = new Date(), lista = TEMAS_DE_TEMPORADA) =>
+  lista.find((tema) => caeEnRango(fecha, tema)) || null;
 
 /*
  * Qué tema toca AHORA, según lo que diga la configuración de la tienda.
@@ -167,6 +218,7 @@ export const temaDeLaFecha = (fecha = new Date()) =>
 export const temaActivo = (temporada, fecha = new Date()) => {
   const modo = temporada?.modo || 'automatico';
   if (modo === 'ninguno') return null;
-  if (modo === 'manual') return temaPorClave(temporada?.tema);
-  return temaDeLaFecha(fecha);
+  const lista = todosLosTemas(temporada);
+  if (modo === 'manual') return temaPorClave(temporada?.tema, lista);
+  return temaDeLaFecha(fecha, lista);
 };

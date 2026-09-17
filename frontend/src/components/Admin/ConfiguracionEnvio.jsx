@@ -19,7 +19,8 @@ import { useAjustesCtx } from '../../context/AjustesContext';
  * resto de los mapas de la app.
  *
  * El cálculo vive en utils/envio.js y es el MISMO que usa el carrito y el
- * backend. Sin ubicación fijada, se cae a la tarifa plana de siempre.
+ * backend. Sin ubicación fijada (o si el cliente no marcó su punto) se cobra
+ * solo la tarifa base.
  * ============================================================
  */
 
@@ -165,8 +166,8 @@ const ConfiguracionEnvio = () => {
         </h2>
         <p className="text-xs mt-0.5" style={{ color: 'var(--theme-text-secondary)' }}>
           El precio del domicilio se calcula por la distancia real hasta el cliente: una tarifa
-          base más un precio por km. Fije abajo de dónde salen los repartos. Sin ubicación fijada,
-          se cobra la tarifa plana de respaldo.
+          base más un precio por km. Fije abajo de dónde salen los repartos. Mientras no haya
+          ubicación, se cobra solo la tarifa base.
         </p>
       </div>
 
@@ -219,11 +220,11 @@ const ConfiguracionEnvio = () => {
           className="text-xs font-semibold underline mb-5"
           style={{ color: 'var(--theme-text-muted)' }}
         >
-          Quitar la ubicación (volver a tarifa plana)
+          Quitar la ubicación
         </button>
       ) : (
         <p className="text-xs mb-5 font-semibold" style={{ color: '#d97706' }}>
-          Sin ubicación de la tienda se cobra la tarifa plana. Busque la dirección o toque el mapa.
+          Sin ubicación de la tienda se cobra solo la tarifa base. Busque la dirección o toque el mapa.
         </p>
       )}
 
@@ -244,7 +245,7 @@ const ConfiguracionEnvio = () => {
               style={inputStyle}
             />
           </div>
-          <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>Lo fijo que se cobra siempre.</p>
+          <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>Lo fijo que se cobra siempre (y lo único, si no se puede medir la distancia).</p>
         </div>
 
         <div className="space-y-1.5">

@@ -1,4 +1,4 @@
-import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
+import storeSettingsModel, { CLAVE_UNICA, FIGURAS_DE_TEMPORADA } from "../models/storeSettings.js";
 
 /*
  * ============================================================
@@ -32,14 +32,93 @@ const storeSettingsController = {};
 const CAMPOS_DE_TEXTO = ["nombreLinea1", "nombreLinea2", "lema", "direccion", "ubicacionTiendaTexto"];
 
 /*
- * Campos numéricos que el panel puede cambiar: el costo plano de respaldo y las
- * dos piezas del envío por distancia (tarifa base y precio por km). Se validan
+ * Campos numéricos que el panel puede cambiar: las dos piezas del envío por
+ * distancia (tarifa base y precio por km) y la tarifa de servicio. Se validan
  * aparte de los de texto porque un número mal formado o negativo tiene que
  * rebotar como error del cliente (400), no guardarse.
  */
-const CAMPOS_NUMERICOS = ["costoEnvio", "envioBase", "envioPorKm", "servicioValor"];
+const CAMPOS_NUMERICOS = ["envioBase", "envioPorKm", "servicioValor"];
 
 const MODOS_DE_TEMPORADA = ["automatico", "manual", "ninguno"];
+
+/*
+ * Las claves de las temporadas de fábrica (frontend/src/utils/temporadas.js).
+ * Una temporada creada por el dueño no puede llamarse igual: al elegirla a
+ * mano no se sabría cuál de las dos manda.
+ */
+const CLAVES_DE_FABRICA = ["navidad", "halloween", "independencia", "san-valentin"];
+const MAXIMO_DE_TEMPORADAS_PROPIAS = 12;
+const DIAS_POR_MES = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const ES_HEX = /^#[0-9a-fA-F]{6}$/;
+
+// "Regreso a clases" -> "regreso-a-clases". Sin tildes ni símbolos.
+const aSlug = (texto) =>
+  String(texto)
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40) || "temporada";
+
+const fechaValida = (f) => {
+  const mes = Number(f?.mes);
+  const dia = Number(f?.dia);
+  if (!Number.isInteger(mes) || mes < 1 || mes > 12) return null;
+  if (!Number.isInteger(dia) || dia < 1 || dia > DIAS_POR_MES[mes - 1]) return null;
+  return { mes, dia };
+};
+
+/*
+ * Revisa y limpia la lista de temporadas propias que manda el panel. Devuelve
+ * { lista } o { error } con un mensaje que dice cuál está mal y por qué.
+ *
+ * La CLAVE se conserva cuando ya existe: es lo que usa el modo manual para
+ * saber cuál está elegida, así que cambiarle el nombre a "Regreso a clases"
+ * no debe soltarla. Solo se inventa una para las nuevas.
+ */
+const limpiarTemporadasPropias = (entrada) => {
+  if (!Array.isArray(entrada)) return { error: "Las temporadas propias no son válidas" };
+  if (entrada.length > MAXIMO_DE_TEMPORADAS_PROPIAS) {
+    return { error: `Se pueden crear hasta ${MAXIMO_DE_TEMPORADAS_PROPIAS} temporadas propias` };
+  }
+
+  const usadas = new Set(CLAVES_DE_FABRICA);
+  const lista = [];
+
+  for (const t of entrada) {
+    if (!t || typeof t !== "object") continue;
+    const nombre = String(t.nombre ?? "").trim().slice(0, 40);
+    if (!nombre) return { error: "Cada temporada necesita un nombre" };
+
+    const desde = fechaValida(t.desde);
+    const hasta = fechaValida(t.hasta);
+    if (!desde || !hasta) return { error: `Las fechas de "${nombre}" no son válidas` };
+
+    if (!ES_HEX.test(t.colorPrincipal || "") || !ES_HEX.test(t.colorAcento || "")) {
+      return { error: `Los colores de "${nombre}" no son válidos` };
+    }
+
+    const figura = FIGURAS_DE_TEMPORADA.includes(t.figura) ? t.figura : "confeti";
+
+    let clave = /^propia-[a-z0-9-]{1,50}$/.test(t.clave || "") ? t.clave : `propia-${aSlug(nombre)}`;
+    // Dos con el mismo nombre no pueden compartir clave.
+    for (let n = 2; usadas.has(clave); n++) clave = `propia-${aSlug(nombre)}-${n}`;
+    usadas.add(clave);
+
+    lista.push({
+      clave,
+      nombre,
+      desde,
+      hasta,
+      colorPrincipal: t.colorPrincipal.toUpperCase(),
+      colorAcento: t.colorAcento.toUpperCase(),
+      figura,
+      saludo: String(t.saludo ?? "").trim().slice(0, 160),
+    });
+  }
+  return { lista };
+};
 
 // SELECT — Los ajustes actuales. Si no existen todavía, se crean con los
 // valores por defecto para que el frontend siempre reciba la misma forma.
@@ -127,7 +206,7 @@ storeSettingsController.updateSettings = async (req, res) => {
      * y deja en paz a la hermana, que es lo que prometen los guardas de abajo.
      */
     if (req.body.temporada && typeof req.body.temporada === "object") {
-      const { modo, tema, decoracion, saludos } = req.body.temporada;
+      const { modo, tema, decoracion, saludos, saludoNormal, personalizados } = req.body.temporada;
 
       if (modo !== undefined) {
         if (!MODOS_DE_TEMPORADA.includes(modo)) {
@@ -156,13 +235,36 @@ storeSettingsController.updateSettings = async (req, res) => {
         }
         cambios["temporada.saludos"] = limpios;
       }
+
+      if (saludoNormal !== undefined) {
+        cambios["temporada.saludoNormal"] = String(saludoNormal ?? "").trim().slice(0, 160);
+      }
+
+      if (personalizados !== undefined) {
+        const { lista, error } = limpiarTemporadasPropias(personalizados);
+        if (error) return res.status(400).json({ message: error });
+        cambios["temporada.personalizados"] = lista;
+
+        /*
+         * Si la que estaba elegida a mano se borró, se suelta la elección: un
+         * modo manual apuntando a una temporada que ya no existe deja la
+         * tienda sin colores y el panel sin nada marcado, sin explicar por qué.
+         */
+        if (tema === undefined) {
+          const actuales = await storeSettingsModel.findOne({ clave: CLAVE_UNICA }).select("temporada.tema").lean();
+          const elegida = actuales?.temporada?.tema || "";
+          if (elegida.startsWith("propia-") && !lista.some((t) => t.clave === elegida)) {
+            cambios["temporada.tema"] = "";
+          }
+        }
+      }
     }
 
     /*
      * Ubicación de la tienda (de dónde salen los repartos). Va con notación de
      * puntos por lo mismo que la temporada: es un subobjeto, y mandarlo entero
      * pisaría la mitad con los valores por defecto. Se acepta null/null para
-     * borrarla y volver a la tarifa plana.
+     * borrarla (sin ubicación se cobra solo la tarifa base).
      */
     if (req.body.ubicacionTienda && typeof req.body.ubicacionTienda === "object") {
       const { lat, lng } = req.body.ubicacionTienda;

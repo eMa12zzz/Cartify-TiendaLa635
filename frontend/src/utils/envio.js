@@ -7,7 +7,7 @@
  * no puede importar del backend, y tener dos números distintos (uno en pantalla,
  * otro en la cuenta) sería peor que repetir doce líneas.
  *
- * Precio de más específico a más general: zona → por km → plano.
+ * Precio de más específico a más general: zona → por km → solo la base.
  * ============================================================
  */
 
@@ -38,14 +38,13 @@ export const distanciaKm = (lat1, lng1, lat2, lng2) => {
 export const calcularEnvio = (ajustes = {}, destino = {}) => {
   const base = num(ajustes.envioBase, 1);
   const porKm = num(ajustes.envioPorKm, 0.5);
-  const plano = num(ajustes.costoEnvio, 4.78);
   const zonas = Array.isArray(ajustes.zonasEnvio) ? ajustes.zonasEnvio : [];
   const tienda = ajustes.ubicacionTienda || {};
   const lat = destino?.lat;
   const lng = destino?.lng;
 
   if (!hayCoord(lat, lng)) {
-    return { costo: redondear(plano), metodo: "plano", distanciaKm: null, zona: null };
+    return { costo: redondear(base), metodo: "base", distanciaKm: null, zona: null };
   }
 
   const dentro = zonas
@@ -65,5 +64,5 @@ export const calcularEnvio = (ajustes = {}, destino = {}) => {
     };
   }
 
-  return { costo: redondear(plano), metodo: "plano", distanciaKm: null, zona: null };
+  return { costo: redondear(base), metodo: "base", distanciaKm: null, zona: null };
 };

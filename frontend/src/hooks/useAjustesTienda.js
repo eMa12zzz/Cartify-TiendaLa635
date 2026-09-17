@@ -33,10 +33,8 @@ const DE_RESPALDO = {
   logoUrl: '',
   lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
-  costoEnvio: 4.78,
-  // Envío por distancia (ver utils/envio.js). Sin ubicación de la tienda, el
-  // cálculo cae al costoEnvio plano de arriba, así que estos defaults dejan la
-  // tienda funcionando igual que siempre hasta que el dueño los configure.
+  // Envío por distancia (ver utils/envio.js). Sin ubicación de la tienda se
+  // cobra solo la tarifa base.
   ubicacionTienda: { lat: null, lng: null },
   ubicacionTiendaTexto: '',
   envioBase: 1,
@@ -47,7 +45,7 @@ const DE_RESPALDO = {
   servicioTipo: 'fijo', // 'fijo' | 'porcentaje'
   servicioValor: 0,
   secciones: [],
-  temporada: { modo: 'automatico', tema: '', saludos: {} },
+  temporada: { modo: 'automatico', tema: '', saludos: {}, saludoNormal: '', personalizados: [] },
 };
 
 export const useAjustesTienda = () => {

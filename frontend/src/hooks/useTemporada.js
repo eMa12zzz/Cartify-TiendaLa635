@@ -55,6 +55,8 @@ export const useTemaCalculado = () => {
   const tema = useMemo(() => {
     const base = temaActivo(ajustes.temporada);
     if (!base) return base;
+    // Las temporadas propias ya traen el saludo que escribió el dueño.
+    if (base.propio) return base;
     /*
      * El saludo de fábrica se puede reescribir por tema desde Personalización
      * → Apariencia. En blanco (o sin entrada) se queda con el de siempre.
@@ -81,12 +83,20 @@ export const useTemaCalculado = () => {
    */
   const conDecoracion = ajustes.temporada?.decoracion !== false;
 
+  /*
+   * El saludo de los días sin temporada. No depende del interruptor de
+   * decoración: ese apaga lo de la fecha (la cinta de Navidad, los copos); si
+   * el dueño escribió un saludo para el resto del año, quiere verlo.
+   */
+  const saludoNormal = (ajustes.temporada?.saludoNormal || '').trim();
+
   return {
     tema,
     temaBase,
     enPanel,
     activo: !enPanel && !!tema,
     conDecoracion,
+    saludoNormal,
   };
 };
 
