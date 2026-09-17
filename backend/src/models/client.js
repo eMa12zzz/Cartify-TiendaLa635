@@ -81,6 +81,21 @@ Campos:
  *               last4:
  *                 type: string
  *                 example: "4242"
+ *               brand:
+ *                 type: string
+ *                 example: visa
+ *               cardType:
+ *                 type: string
+ *                 example: credito
+ *               holder:
+ *                 type: string
+ *                 example: MARIA LOPEZ
+ *               expMonth:
+ *                 type: number
+ *                 example: 8
+ *               expYear:
+ *                 type: number
+ *                 example: 2029
  *         favorites:
  *           type: string
  *           description: ObjectId del producto favorito (ref productModel).
@@ -356,14 +371,20 @@ const clientSchema = new Schema({
       aceptadoEn:       { type: Date },
       promociones:      { type: Boolean, default: false },
     },
-    // Métodos de pago guardados. SOLO datos NO sensibles: tipo, alias y los
-    // últimos 4 dígitos. NUNCA el número completo ni el CVV — el cobro real
-    // pasa por la pasarela de pago (Wompi).
+    // Métodos de pago guardados. SOLO datos NO sensibles: tipo, alias, marca,
+    // últimos 4 dígitos, titular y vencimiento. NUNCA el número completo ni el
+    // CVV — el cobro real pasa por la pasarela de pago (Wompi). Sin el número
+    // completo, el titular y el vencimiento no sirven para cobrar nada.
     paymentMethods: [
       {
-        type:  { type: String, default: 'tarjeta' },
-        alias: { type: String },
-        last4: { type: String },
+        type:     { type: String, default: 'tarjeta' },
+        alias:    { type: String },
+        last4:    { type: String },
+        brand:    { type: String },  // visa | mastercard | amex | discover | otra
+        cardType: { type: String },  // credito | debito
+        holder:   { type: String },  // el nombre como aparece en la tarjeta
+        expMonth: { type: Number },
+        expYear:  { type: Number },
       },
     ],
     /*
