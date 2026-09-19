@@ -99,9 +99,13 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
     alVerDetalle?.(producto);
   };
 
+  // De aquí sale la foto que vuela al carrito (ver utils/volarAlCarrito.js).
+  const marcoRef = useRef(null);
+
   const alTocarAgregar = () => {
-    if (tapado) { pedirConfirmacion(() => alAgregar?.(producto)); return; }
-    alAgregar?.(producto);
+    const conVuelo = () => alAgregar?.(producto, 1, { origenRef: marcoRef });
+    if (tapado) { pedirConfirmacion(conVuelo); return; }
+    conVuelo();
   };
 
   return (
@@ -122,7 +126,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
       }
       style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
     >
-      <View style={estilos.marcoImagen}>
+      <View ref={marcoRef} style={estilos.marcoImagen}>
         {producto.imagen && !fallóImagen ? (
           <Image
             source={{ uri: producto.imagen }}

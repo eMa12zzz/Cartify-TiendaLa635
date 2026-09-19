@@ -44,6 +44,10 @@
  * encima de la burbuja (y de cualquier pantalla del stack), y el último
  * hermano es el que gana esa pulseada — ver el comentario grande de
  * `pedidoAbierto` en `PedidoActivoContext.js`.
+ *
+ * `VueloAlCarrito` va al final por la misma pulseada de `elevation`, y
+ * porque una foto volando tapada por otra cosa se ve rota a medio vuelo —
+ * ver el comentario grande de `volarAlCarrito.js`.
  */
 
 import { StatusBar } from 'expo-status-bar';
@@ -62,6 +66,7 @@ import { navegarA } from './src/navigation/navigationRef';
 import RootNavigator from './src/navigation/RootNavigator';
 import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
 import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante';
+import VueloAlCarrito from './src/components/Tienda/VueloAlCarrito';
 
 export default function App() {
   return (
@@ -77,6 +82,7 @@ export default function App() {
                     <RootNavigator />
                     <BurbujaPedido />
                     <PedidoDetalleFlotante />
+                    <VueloAlCarrito />
                   </PedidoActivoProvider>
                 </TiendaProvider>
               </FavoritosProvider>

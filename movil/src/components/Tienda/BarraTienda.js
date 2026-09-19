@@ -37,16 +37,73 @@
  * ============================================================
  */
 
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Menu, Search, ShoppingBag } from 'lucide-react-native';
 import { COLORES } from '../../theme/colores';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
 import { Equis } from '../UI/Iconos';
 import MarcaTienda from '../UI/MarcaTienda';
+import { registrarDestinoCarrito, useAterrizajeCarrito } from '../../utils/volarAlCarrito';
+
+// Misma curva "back-out" que usa la web para el "globo-pop" del contador
+// (cubic-bezier(0.23, 1, 0.32, 1)): entra grande y se asienta, sin rebotar
+// de más.
+const CURVA_POP = Easing.bezier(0.23, 1, 0.32, 1);
 
 const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, alAbrirPasillos }) => {
   const { colores } = useTema();
+
+  /*
+   * El ícono del carrito es el destino de `volarAlCarrito.js`: se registra
+   * solo al montarse (y se borra al desmontarse) para que quien agregue
+   * desde CUALQUIER pantalla sepa hacia dónde volar, sin que esta barra
+   * tenga que recibir esa referencia por props. Ver el comentario grande de
+   * ese archivo para el porqué completo.
+   */
+  const botonCarritoRef = useRef(null);
+  useEffect(() => {
+    registrarDestinoCarrito(botonCarritoRef);
+    return () => registrarDestinoCarrito(null);
+  }, []);
+
+  // El sacudón: el ícono tiembla y el contador "pop" cada vez que un vuelo
+  // aterriza aquí. Calcado de `sacudir()` en volarAlCarrito.js (web).
+  const aterrizajes = useAterrizajeCarrito();
+  const primerRenderRef = useRef(true);
+  const sacudida = useRef(new Animated.Value(0)).current;
+  const pop = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (primerRenderRef.current) { primerRenderRef.current = false; return; }
+    sacudida.setValue(0);
+    Animated.timing(sacudida, {
+      toValue: 4,
+      duration: 560,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+    pop.setValue(0);
+    Animated.timing(pop, {
+      toValue: 2,
+      duration: 520,
+      easing: CURVA_POP,
+      useNativeDriver: true,
+    }).start();
+  }, [aterrizajes, sacudida, pop]);
+
+  const rotacion = sacudida.interpolate({
+    inputRange: [0, 1, 2, 3, 4],
+    outputRange: ['0deg', '-14deg', '9deg', '-4deg', '0deg'],
+  });
+  const escalaIcono = sacudida.interpolate({
+    inputRange: [0, 1, 2, 3, 4],
+    outputRange: [1, 1.06, 1, 1, 1],
+  });
+  const escalaContador = pop.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [1.7, 0.9, 1],
+  });
 
   return (
   <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
@@ -64,6 +121,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
 
       <View style={estilos.acciones}>
         <Pressable
+          ref={botonCarritoRef}
           onPress={alAbrirCarrito}
           accessibilityRole="button"
           accessibilityLabel={
@@ -77,19 +135,23 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
             pressed && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
           ]}
         >
-          <ShoppingBag size={21} color={COLORES.texto} strokeWidth={2.2} />
+          <Animated.View style={{ transform: [{ rotate: rotacion }, { scale: escalaIcono }] }}>
+            <ShoppingBag size={21} color={COLORES.texto} strokeWidth={2.2} />
+          </Animated.View>
           {/*
             El contador solo aparece cuando hay algo. Un "0" permanente sobre el
             icono se lee como un error del sistema, no como un carrito vacío.
           */}
           {cantidadItems > 0 && (
-            <View style={[estilos.contador, { backgroundColor: colores.marca }]}>
+            <Animated.View
+              style={[estilos.contador, { backgroundColor: colores.marca, transform: [{ scale: escalaContador }] }]}
+            >
               <Text style={estilos.contadorTexto}>
                 {/* Más de 99 no cabe en el círculo y tampoco aporta: a esas
                     alturas lo que importa es "muchos". */}
                 {cantidadItems > 99 ? '99+' : cantidadItems}
               </Text>
-            </View>
+            </Animated.View>
           )}
         </Pressable>
       </View>

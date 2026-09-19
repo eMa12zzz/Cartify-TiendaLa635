@@ -51,6 +51,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
   const { bottom } = useSafeAreaInsets();
   const paso = pasoDe(producto);
   const [cantidad, setCantidad] = useState(paso);
+  const marcoRef = useRef(null);
   /*
    * Defensa extra, no la puerta principal: la puerta es TarjetaProducto (ahí
    * se tapa la foto y no se llega hasta aquí). Pero esta ficha también se
@@ -215,7 +216,8 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
           </View>
 
           <ScrollView contentContainerStyle={estilos.contenido} bounces={false}>
-            <View style={estilos.marcoImagen}>
+            {/* De aquí sale la foto que vuela al carrito, ver utils/volarAlCarrito.js. */}
+            <View ref={marcoRef} style={estilos.marcoImagen}>
               {producto.imagen && !fallóImagen ? (
                 <Image
                   source={{ uri: producto.imagen }}
@@ -339,7 +341,10 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
               estilo={estilos.botonRedondo}
               alPresionar={() => {
                 const meter = () => {
-                  alAgregar(producto, cantidad);
+                  // Se mide ANTES de cerrar: con la hoja ya cerrándose no hay
+                  // de dónde volar. Mismo cuidado que useDetalleProducto.js
+                  // en la web.
+                  alAgregar(producto, cantidad, { origenRef: marcoRef });
                   cerrarConAnimacion();
                 };
                 if (esSoloAdultos(producto) && !mayorConfirmado) {
