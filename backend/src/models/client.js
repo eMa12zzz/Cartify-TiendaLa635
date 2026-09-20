@@ -353,6 +353,31 @@ const clientSchema = new Schema({
       pedidoCerca:     { type: Boolean, default: false },
     },
     /*
+     * LOS TELÉFONOS DONDE SUENA EL AVISO.
+     *
+     * Las preferencias de arriba dicen QUÉ quiere que le avisen; esto, A DÓNDE
+     * mandarlo cuando el aviso es un push y no un correo. Son los tokens que
+     * emite Expo ("ExponentPushToken[...]"), uno por instalación de la app.
+     *
+     * Es una LISTA y no un campo suelto porque la misma cuenta se abre en el
+     * teléfono y en la tablet de la casa, y con un solo hueco el segundo
+     * aparato le robaba el aviso al primero. Se agregan con $addToSet, así que
+     * reinstalar la app no deja duplicados.
+     *
+     * Se borran solos: cuando Expo contesta "DeviceNotRegistered" —la app se
+     * desinstaló o el permiso se revocó— ese token sale de aquí. Ver
+     * utils/pushExpo.js. Un token muerto que se queda es un aviso que se
+     * intenta mandar para siempre.
+     *
+     * No es un dato sensible, pero tampoco tiene por qué viajar: sale del
+     * `select` de las respuestas igual que la contraseña.
+     */
+    pushTokens: {
+      type: [String],
+      default: [],
+      select: false,
+    },
+    /*
      * El consentimiento, tal como se dio: qué versión de los términos aceptó y
      * cuándo.
      *
