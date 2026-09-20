@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "movil",
+    "name": "Tienda La 635",
     "slug": "movil",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#012D45"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
