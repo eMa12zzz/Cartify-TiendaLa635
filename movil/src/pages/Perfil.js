@@ -71,6 +71,8 @@ import Preferencias from './cuenta/Preferencias';
 import Puntos from './cuenta/Puntos';
 import Recibos from './cuenta/Recibos';
 import ModalConfirmar from '../components/UI/ModalConfirmar';
+import { registrarTokenPush } from '../api/clienteApi';
+import { tokenActual } from '../utils/notificaciones';
 
 /*
  * Los iconos son los mismos con los que la web pinta este menú (ver
@@ -113,6 +115,7 @@ const Perfil = () => {
 
   const [seccion, setSeccion] = useState(null);
   const [confirmarSalida, setConfirmarSalida] = useState(false);
+  const [saliendo, setSaliendo] = useState(false);
   const [cliente, setCliente] = useState(null);
 
   // Al personal no se le puede mostrar una cuenta de cliente: los endpoints de
@@ -254,11 +257,34 @@ const Perfil = () => {
           textoConfirmar="Cerrar sesión"
           textoCancelar="Quedarme"
           destructivo
-          alConfirmar={() => {
+          trabajando={saliendo}
+          alConfirmar={async () => {
+            setSaliendo(true);
+            /*
+             * Antes de soltar la sesión: que este teléfono deje de recibir los
+             * avisos de esta cuenta. No es un detalle de limpieza — sin esto,
+             * el próximo "su pedido va en camino" suena en un aparato donde ya
+             * entró otra persona.
+             *
+             * Va con un tope de tiempo y su catch porque cerrar sesión no
+             * puede quedarse colgado esperando a la red: si no se pudo dar de
+             * baja, el token se cae solo la primera vez que Expo conteste que
+             * ya no existe (ver pushExpo.js).
+             */
+            try {
+              const token = await Promise.race([
+                tokenActual(),
+                new Promise((listo) => setTimeout(() => listo(null), 2500)),
+              ]);
+              if (token && user?.id) await registrarTokenPush(user.id, token, false);
+            } catch {
+              // Se cierra igual: la sesión es de quien la está cerrando.
+            }
+            setSaliendo(false);
             setConfirmarSalida(false);
             logout();
           }}
-          alCerrar={() => setConfirmarSalida(false)}
+          alCerrar={() => (saliendo ? undefined : setConfirmarSalida(false))}
         />
       )}
     </View>

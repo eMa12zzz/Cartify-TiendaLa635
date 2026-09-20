@@ -28,6 +28,7 @@ import { identidadDeLaTienda } from "./avisosCliente.js";
 import { enlaceDeBaja, enlaceDeBajaUnClic } from "./tokenBaja.js";
 import { sendEmail } from "./sendMailMailjet.js";
 import { plantillaCorreoPromo } from "./plantillaCorreoPromo.js";
+import { dispositivosDe, enviarPushEnSegundoPlano } from "./pushExpo.js";
 
 /*
  * De los items de la promo a lo que la plantilla sabe pintar.
@@ -132,8 +133,31 @@ export const avisarPromoNueva = async (promoId) => {
   const items = armarItems(promo);
   if (!items.length) return { enviados: 0, fallidos: 0, motivo: "la promoción quedó sin productos" };
 
+  /*
+   * El volante, también al teléfono. Antes del corte de abajo porque tener la
+   * app y no tener correo verificado es perfectamente posible: es la misma
+   * preferencia ("promociones"), servida por dos canales.
+   *
+   * Sale una sola vez por promo igual que el correo — lo garantiza el
+   * `avisoEnviadoEn` de más arriba, que ya cortó si esta promo se anunció.
+   */
+  enviarPushEnSegundoPlano(await dispositivosDe("promociones"), {
+    titulo: promo.title || "Nueva promoción",
+    cuerpo: promo.promoDescription || "Aprovéchela en la tienda.",
+    datos: { tipo: "promo", promoId: String(promo._id || "") },
+  });
+
   const correos = await buscarDestinatarios();
-  if (!correos.length) return { enviados: 0, fallidos: 0, motivo: "nadie tiene las promociones encendidas" };
+  if (!correos.length) {
+    /*
+     * Sin nadie a quien escribirle, pero el push ya salió: la promo queda
+     * marcada igual. Sin esto, editarle una coma mañana la haría sonar de
+     * nuevo en todos los teléfonos — que es justo lo que el `avisoEnviadoEn`
+     * existe para evitar.
+     */
+    await promotionModel.findByIdAndUpdate(promoId, { $set: { avisoEnviadoEn: new Date() } });
+    return { enviados: 0, fallidos: 0, motivo: "nadie tiene las promociones encendidas por correo" };
+  }
 
   // El nombre, y el logo si el dueño cargó uno: el correo tiene que decir de
   // qué tienda es antes de decir qué ofrece.

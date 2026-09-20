@@ -170,11 +170,14 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     lineHeight: 21,
     color: COLORES.textoSuave,
   },
+  // Los dos juntos a la derecha, pero con aire entre ellos: pegados, el dedo
+  // que va a "no" cae al borde del botón peligroso. El hueco es la distancia
+  // de seguridad, y de paso corre el de cancelar hacia la izquierda.
   botones: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 8,
+    gap: 18,
     marginTop: 22,
   },
   boton: {

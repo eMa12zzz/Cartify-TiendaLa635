@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "movil",
+    "name": "Tienda La 635",
     "slug": "movil",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,11 +22,13 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#012D45"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.anonymous.movil"
     },
@@ -51,11 +53,24 @@
       "expo-font",
       "@react-native-google-signin/google-signin",
       [
+        "expo-notifications",
+        {
+          "color": "#012D45",
+          "defaultChannel": "avisos"
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Se usa para llenar su dirección con su ubicación actual."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b074da1e-1146-4d9f-8002-3f70706b211b"
+      }
+    },
+    "owner": "andrew12wwu"
   }
 }

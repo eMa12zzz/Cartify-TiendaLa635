@@ -300,6 +300,11 @@ router
   .route("/:id/notifications")
   .patch(duenoOPersonal("id"), clientController.updateNotifications);
 
+// El teléfono registra (o da de baja) el token con el que le llegan los avisos.
+router
+  .route("/:id/push-token")
+  .patch(duenoOPersonal("id"), clientController.updatePushToken);
+
 // El cliente gestiona sus métodos de pago (datos no sensibles).
 router
   .route("/:id/payment-methods")

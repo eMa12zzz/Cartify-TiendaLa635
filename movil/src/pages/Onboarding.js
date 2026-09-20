@@ -27,7 +27,8 @@
  *      (`scrollX`), y el titular.
  *   2. La escena, que sube desde abajo; sus piezas (fotos, tarjetas, aviso)
  *      entran una tras otra con resorte — cada escena maneja las suyas.
- *   3. El panel con la explicación, también de abajo hacia arriba.
+ *   3. La explicación, también de abajo hacia arriba, suelta sobre el
+ *      degradado.
  *   4. El botón para seguir, centrado, el último en aparecer.
  * Los cuatro comparten un solo `Animated.Value` por diapositiva
  * (`entradas[i]`, de 0 a 1) y cada uno mira una tajada distinta de ese
@@ -35,10 +36,11 @@
  * puedan desincronizar.
  *
  * ── "Liquid glass": vidrio de verdad, con `expo-blur` ──
- * El panel de la explicación y el botón son vidrio esmerilado real
- * (`BlurView`, `tint="dark"`): se ve el degradado desenfocado detrás. Encima
- * va un lavado blanco tenue para que el texto blanco mantenga contraste sin
- * importar qué tan clara u oscura salga la paleta de temporada.
+ * El botón es vidrio esmerilado real (`BlurView`, `tint="dark"`): se ve el
+ * degradado desenfocado detrás. Encima va un lavado blanco tenue para que su
+ * texto mantenga contraste sin importar qué tan clara u oscura salga la
+ * paleta de temporada. La explicación de arriba iba en ese mismo vidrio y
+ * ahora va suelta: dos recuadros seguidos competían con la escena.
  *
  * ── De dónde sale el "look", y por qué no es un onboarding genérico ──
  *   1. El ícono de marca de agua GIGANTE y tenue detrás del contenido: la
@@ -419,13 +421,11 @@ const Onboarding = ({ alTerminar }) => {
                   </Animated.View>
                 </View>
 
-                {/* 3. La explicación, en su panel de vidrio, de abajo hacia
-                    arriba. */}
-                <Animated.View style={[estilos.panelVidrio, animInfo]}>
-                  <BlurView intensity={34} tint="dark" style={estilos.vidrio}>
-                    <View style={estilos.vidrioTinte} pointerEvents="none" />
-                    <Text style={estilos.texto}>{d.texto}</Text>
-                  </BlurView>
+                {/* 3. La explicación, de abajo hacia arriba. Va suelta sobre
+                    el degradado, sin vidrio: el recuadro le disputaba la
+                    mirada a la escena, que es la que enseña la tienda. */}
+                <Animated.View style={animInfo}>
+                  <Text style={estilos.texto}>{d.texto}</Text>
                 </Animated.View>
 
                 {/* 4. El botón: centrado, el último en aparecer, del mismo
@@ -556,25 +556,6 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 6,
   },
-  // Sombra y radio afuera del BlurView (si el `overflow: hidden` que recorta
-  // el desenfoque estuviera aquí, se comería la sombra también).
-  panelVidrio: {
-    borderRadius: 24,
-    elevation: 5,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-  },
-  // El propio BlurView: acá sí va `overflow: hidden`, para que el
-  // desenfoque respete las esquinas redondas en vez de pintarlas cuadradas.
-  vidrio: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
   // Un lavado blanco muy tenue ENCIMA del desenfoque: sin esto el texto
   // blanco de siempre perdía contraste en las diapositivas de paleta más
   // clara. Con `tint="dark"` el vidrio ya sale oscurecido; este lavado es
@@ -583,16 +564,21 @@ const estilos = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.10)',
   },
+  // Sin el lavado del vidrio detrás, la explicación se apoya en la misma
+  // sombra que el titular para no perderse en las paletas más claras.
   texto: {
     fontSize: 14,
     lineHeight: 20,
-    color: 'rgba(255,255,255,0.94)',
+    color: '#FFFFFF',
     textAlign: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    textShadowColor: 'rgba(0,0,0,0.28)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 10,
   },
-  // El botón: CENTRADO (no estirado a lo ancho) y del mismo vidrio que el
-  // panel de arriba.
+  // El botón: CENTRADO (no estirado a lo ancho), el único que quedó de
+  // vidrio.
   zonaBoton: {
     alignItems: 'center',
     marginTop: 16,
