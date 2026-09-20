@@ -17,15 +17,15 @@
  * ============================================================
  */
 
-import { ESTILO_MAPA, MAPLIBRE_CSS, MAPLIBRE_JS, JS_PLEGAR_CREDITO, cssComun } from '../UI/mapaMapLibre';
+import { MAPLIBRE_CSS, MAPLIBRE_JS, JS_PLEGAR_CREDITO, cssComun, estiloMapa } from '../UI/mapaMapLibre';
 
-export const crearHtmlSeguimiento = ({ punto, destino, colorMarca, interactivo = false }) => `<!DOCTYPE html>
+export const crearHtmlSeguimiento = ({ punto, destino, colorMarca, interactivo = false, oscuro = false }) => `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="${MAPLIBRE_CSS}" />
-  <style>${cssComun(colorMarca)}</style>
+  <style>${cssComun(colorMarca, oscuro)}</style>
 </head>
 <body>
   <div id="mapa"></div>
@@ -40,7 +40,7 @@ export const crearHtmlSeguimiento = ({ punto, destino, colorMarca, interactivo =
 
     var mapa = new maplibregl.Map({
       container: 'mapa',
-      style: '${ESTILO_MAPA}',
+      style: '${estiloMapa(oscuro)}',
       center: [centro.lng, centro.lat],
       zoom: 15,
       interactive: interactivo,

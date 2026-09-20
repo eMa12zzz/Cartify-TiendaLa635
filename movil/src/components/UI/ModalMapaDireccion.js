@@ -49,7 +49,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LocateFixed, MapPin } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
@@ -70,6 +70,8 @@ const ALTO_MAPA = 260;
  */
 const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFlotante = false }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
   const {
     posicion,
@@ -149,7 +151,9 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
   // El HTML se arma una sola vez: si se reconstruyera en cada fotograma, el
   // WebView recargaría el mapa entero (y perdería el pin) en cada tecla que
   // se escribe en "Referencia".
-  const htmlMapa = useRef(crearHtmlMapa({ colorPin: colores.marca, centro: CENTRO_POR_DEFECTO })).current;
+  const htmlMapa = useRef(
+    crearHtmlMapa({ colorPin: colores.marca, centro: CENTRO_POR_DEFECTO, oscuro: COLORES.oscuro })
+  ).current;
 
   const alMensajeDelMapa = (evento) => {
     try {
@@ -316,7 +320,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
@@ -332,7 +336,7 @@ const estilos = StyleSheet.create({
   },
   panel: {
     maxHeight: '92%',
-    backgroundColor: COLORES.fondo,
+    backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
   },
@@ -372,14 +376,14 @@ const estilos = StyleSheet.create({
     top: 8,
     left: 8,
     right: 8,
-    backgroundColor: 'rgba(255,255,255,.94)',
+    backgroundColor: COLORES.papelVelado,
     borderRadius: 8,
     paddingVertical: 7,
     paddingHorizontal: 10,
   },
   avisoSobreMapTexto: {
     fontSize: 12.5,
-    color: '#5a4a3c',
+    color: COLORES.textoVentaja,
     textAlign: 'center',
   },
   botonUbicacion: {

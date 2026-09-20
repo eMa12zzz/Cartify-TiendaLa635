@@ -15,12 +15,13 @@
  */
 
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import TarjetaProducto from './TarjetaProducto';
 
 const FilaProductos = ({ seccion, alVerTodos, alVerDetalle, alAgregar }) => {
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const total = seccion.todos?.length || seccion.productos.length;
   // Solo se ofrece entrar si de verdad hay más de lo que ya se ve.
   const hayMas = total > seccion.productos.length;
@@ -64,7 +65,7 @@ const FilaProductos = ({ seccion, alVerTodos, alVerDetalle, alAgregar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   seccion: {
     marginTop: 26,
   },

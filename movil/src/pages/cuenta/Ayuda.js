@@ -20,7 +20,8 @@
 
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HelpCircle, MapPin, MessageCircle } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useEstilos } from '../../context/ModoContext';
+import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
 import { DIRECCION_EN_UNA_LINEA, enlaceWhatsApp } from '../../utils/tienda';
@@ -45,7 +46,10 @@ const FAQS = [
 ];
 
 const Ayuda = ({ alVolver }) => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
 
   const whatsapp = enlaceWhatsApp(SALUDO_WHATSAPP);
@@ -62,7 +66,7 @@ const Ayuda = ({ alVolver }) => {
     <View style={estilos.pantalla}>
       <BarraCuenta titulo="Ayuda y contacto" alVolver={alVolver} />
 
-      <ScrollView contentContainerStyle={estilos.cuerpo}>
+      <ScrollView contentContainerStyle={[estilos.cuerpo, { paddingBottom: aireAbajo }]}>
         {/* Sin WhatsApp configurado solo queda la dirección; sin ninguno de
             los dos, esta sección entera no se pinta. */}
         {(whatsapp || DIRECCION_EN_UNA_LINEA) && (
@@ -116,7 +120,7 @@ const Ayuda = ({ alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

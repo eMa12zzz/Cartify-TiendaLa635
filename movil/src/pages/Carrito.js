@@ -34,7 +34,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShoppingBag, Store, Trash2 } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
@@ -47,6 +47,8 @@ import { iconoDeModulo } from '../utils/modulos';
 import { avisarActividad } from '../utils/actividadUsuario';
 
 const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, colores }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const [fallóImagen, setFallóImagen] = useState(false);
   const paso = pasoDe(item);
   // Qué pasillo es este producto, para pintar su icono al frente de la fila
@@ -155,6 +157,8 @@ const Carrito = ({ irAInicio, irAPagar }) => {
   const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito, agregarAlCarrito, pasillos } =
     useTienda();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   // Igual que BarraInferior: sin esto "Ir a pagar" queda debajo de la franja
   // de gestos de Android, porque app.json trae edgeToEdgeEnabled.
   const { bottom } = useSafeAreaInsets();
@@ -301,7 +305,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -404,7 +408,7 @@ const estilos = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 12,
-    backgroundColor: '#F4F4F5',
+    backgroundColor: COLORES.papelGris,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 7,
@@ -430,7 +434,7 @@ const estilos = StyleSheet.create({
   },
   precioViejo: {
     fontSize: 11,
-    color: '#BBBBBB',
+    color: COLORES.marcador,
     textDecorationLine: 'line-through',
   },
   precioUnitario: {
@@ -469,7 +473,7 @@ const estilos = StyleSheet.create({
     marginLeft: 4,
   },
   botonQuitarPresionado: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: COLORES.peligroFondo,
   },
   botonPaso: {
     width: 30,
@@ -482,7 +486,7 @@ const estilos = StyleSheet.create({
   },
   botonPasoApagado: {
     borderColor: COLORES.linea,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: COLORES.papelSuave,
   },
   cantidad: {
     minWidth: 52,
@@ -507,7 +511,7 @@ const estilos = StyleSheet.create({
     backgroundColor: COLORES.fondo,
   },
   resumen: {
-    backgroundColor: '#FAFAF9',
+    backgroundColor: COLORES.papelSuave,
     borderRadius: 14,
     padding: 14,
   },
@@ -568,7 +572,7 @@ const estilos = StyleSheet.create({
   },
   botonVaciarPresionado: {
     borderColor: COLORES.error,
-    backgroundColor: '#FDECEC',
+    backgroundColor: COLORES.peligroFondo,
   },
   botonVaciarTexto: {
     fontSize: 15,

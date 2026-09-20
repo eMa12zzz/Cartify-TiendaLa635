@@ -29,7 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { FileUp, FileText, Image as ImagenIcono, AlertTriangle } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
@@ -51,6 +51,8 @@ const PAPELES = ['Normal', 'Fotográfico', 'Cartulina', 'Reciclado'];
 const Impresiones = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
   const { bottom } = useSafeAreaInsets();
 
@@ -280,7 +282,7 @@ const Impresiones = ({ alVolver }) => {
 
         {!!advertenciaCalce && (
           <View style={estilos.advertencia}>
-            <AlertTriangle size={15} color="#92400E" style={{ marginTop: 1 }} />
+            <AlertTriangle size={15} color={COLORES.avisoTexto} style={{ marginTop: 1 }} />
             <Text style={estilos.advertenciaTexto}>{advertenciaCalce}</Text>
           </View>
         )}
@@ -294,7 +296,7 @@ const Impresiones = ({ alVolver }) => {
                 <Text style={estilos.notaOpcion}>Este formato es solo en blanco y negro</Text>
               )}
               {formato?.allowsColor && !hayTintaDeColor && (
-                <Text style={[estilos.notaOpcion, { color: '#C0392B', fontWeight: '600' }]}>
+                <Text style={[estilos.notaOpcion, { color: COLORES.peligro, fontWeight: '600' }]}>
                   Hoy no hay tinta de color
                 </Text>
               )}
@@ -322,6 +324,7 @@ const Impresiones = ({ alVolver }) => {
                 value={String(copias)}
                 onChangeText={(t) => setCopias(Math.max(1, Number(t.replace(/[^0-9]/g, '')) || 1))}
                 keyboardType="number-pad"
+                keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                 style={estilos.inputCopias}
               />
               <Pressable
@@ -390,7 +393,7 @@ const Impresiones = ({ alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -449,7 +452,7 @@ const estilos = StyleSheet.create({
   },
   tarjetaApagada: {
     opacity: 0.5,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: COLORES.papelGris,
   },
   formatoNombre: {
     fontSize: 13.5,
@@ -469,7 +472,7 @@ const estilos = StyleSheet.create({
   sinMaterial: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#C0392B',
+    color: COLORES.peligro,
     textTransform: 'uppercase',
     marginTop: 2,
     textAlign: 'center',
@@ -508,7 +511,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: COLORES.papelGris,
   },
   previewNombre: {
     flex: 1,
@@ -519,9 +522,9 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: COLORES.avisoFondo,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: COLORES.avisoBorde,
     borderRadius: 10,
     padding: 12,
     marginTop: 10,
@@ -530,7 +533,7 @@ const estilos = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     lineHeight: 17,
-    color: '#92400E',
+    color: COLORES.avisoTexto,
   },
   tarjetaOpciones: {
     borderWidth: 1,
@@ -619,7 +622,7 @@ const estilos = StyleSheet.create({
   },
   error: {
     fontSize: 12.5,
-    color: '#EF4444',
+    color: COLORES.error,
     marginBottom: 12,
   },
   // Píldora completa, a juego con el resto de botones principales de la

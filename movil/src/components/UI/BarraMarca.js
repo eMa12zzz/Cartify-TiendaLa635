@@ -13,31 +13,36 @@
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Store } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import MarcaTienda from './MarcaTienda';
 
-const BarraMarca = ({ centrado = false, alTocarMarca, textoAccion, alPresionarAccion }) => (
-  <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 12 }, centrado && estilos.barraCentrada]}>
-    <Pressable onPress={alTocarMarca} disabled={!alTocarMarca} style={centrado && estilos.marcaCentrada}>
-      <MarcaTienda tamano={20} centrado={centrado} />
-    </Pressable>
+const BarraMarca = ({ centrado = false, alTocarMarca, textoAccion, alPresionarAccion }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
-    {textoAccion && (
-      <Pressable
-        onPress={alPresionarAccion}
-        style={({ pressed }) => [estilos.accion, pressed && estilos.accionPresionada]}
-        accessibilityRole="button"
-      >
-        {/* Mismo icono que la web: lucide `Store`, 15 px y trazo 2.2. */}
-        <Store size={15} color="#6B6B6B" strokeWidth={2.2} />
-        <Text style={estilos.textoAccion}>{textoAccion}</Text>
+  return (
+    <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 12 }, centrado && estilos.barraCentrada]}>
+      <Pressable onPress={alTocarMarca} disabled={!alTocarMarca} style={centrado && estilos.marcaCentrada}>
+        <MarcaTienda tamano={20} centrado={centrado} />
       </Pressable>
-    )}
-  </View>
-);
 
-const estilos = StyleSheet.create({
+      {textoAccion && (
+        <Pressable
+          onPress={alPresionarAccion}
+          style={({ pressed }) => [estilos.accion, pressed && estilos.accionPresionada]}
+          accessibilityRole="button"
+        >
+          {/* Mismo icono que la web: lucide `Store`, 15 px y trazo 2.2. */}
+          <Store size={15} color={COLORES.tintaSuave} strokeWidth={2.2} />
+          <Text style={estilos.textoAccion}>{textoAccion}</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+};
+
+const crearEstilos = (COLORES) => StyleSheet.create({
   barra: {
     width: '100%',
     borderBottomWidth: 1,
@@ -72,7 +77,7 @@ const estilos = StyleSheet.create({
   textoAccion: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: COLORES.tintaSuave,
   },
 });
 

@@ -31,7 +31,7 @@ import { StyleSheet, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bike, Check, Package } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
@@ -53,6 +53,8 @@ import ModalMapaSeguimiento from '../components/Tienda/ModalMapaSeguimiento';
  * nuevas y sin tocar el backend).
  */
 const FilaProducto = ({ item, imagen }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const [fallóImagen, setFallóImagen] = useState(false);
 
   return (
@@ -96,6 +98,8 @@ const fechaLarga = (iso) => {
 
 const Confirmacion = ({ respuesta, alCerrar }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   // Mismo caso que Carrito.js: sin esto "Volver a la tienda" queda debajo de
   // la franja de gestos de Android.
   const { bottom } = useSafeAreaInsets();
@@ -228,8 +232,13 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
             <View style={estilos.infoMapa}>
               {enCamino ? (
                 <>
-                  <Bike size={15} color={seguimiento.yaCasi ? '#14663A' : '#173F94'} strokeWidth={2.4} />
-                  <Text style={[estilos.infoMapaTexto, { color: seguimiento.yaCasi ? '#14663A' : '#173F94' }]}>
+                  <Bike size={15} color={seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto} strokeWidth={2.4} />
+                  <Text
+                    style={[
+                      estilos.infoMapaTexto,
+                      { color: seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto },
+                    ]}
+                  >
                     {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
                     {seguimiento.distancia ? ` · a ${seguimiento.distancia}` : ''}
                   </Text>
@@ -341,14 +350,18 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   );
 };
 
-const Fila = ({ etiqueta, valor, verde }) => (
-  <View style={estilos.fila}>
-    <Text style={estilos.filaEtiqueta}>{etiqueta}</Text>
-    <Text style={[estilos.filaValor, verde && estilos.filaValorVerde]}>{valor}</Text>
-  </View>
-);
+const Fila = ({ etiqueta, valor, verde }) => {
+  const estilos = useEstilos(crearEstilos);
 
-const estilos = StyleSheet.create({
+  return (
+    <View style={estilos.fila}>
+      <Text style={estilos.filaEtiqueta}>{etiqueta}</Text>
+      <Text style={[estilos.filaValor, verde && estilos.filaValorVerde]}>{valor}</Text>
+    </View>
+  );
+};
+
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -409,7 +422,7 @@ const estilos = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: COLORES.papelGris,
   },
   infoMapaTexto: {
     flex: 1,
@@ -476,7 +489,7 @@ const estilos = StyleSheet.create({
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F7F7F7',
+    backgroundColor: COLORES.papelGris,
     padding: 5,
   },
   miniaturaImagen: {
@@ -520,7 +533,7 @@ const estilos = StyleSheet.create({
     color: COLORES.textoVentaja,
   },
   filaValorVerde: {
-    color: '#16A34A',
+    color: COLORES.exitoVivo,
     fontWeight: '600',
   },
   filaTotal: {

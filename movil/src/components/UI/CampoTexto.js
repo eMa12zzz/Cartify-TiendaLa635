@@ -15,7 +15,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 
 const CampoTexto = ({
@@ -34,6 +34,8 @@ const CampoTexto = ({
 }) => {
   const [enfocado, setEnfocado] = useState(false);
   const [verTexto, setVerTexto] = useState(false);
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
   // El borde de foco se pinta con el color de la temporada, igual que la
   // tienda: en Navidad se enfoca en verde, en Independencia en azul. Fuera de
@@ -63,11 +65,18 @@ const CampoTexto = ({
             { borderColor: colorBorde },
             enfocado && !error && [estilos.campoEnfocado, { shadowColor: colores.marca }],
             esContrasena && estilos.campoConOjo,
+            // Un campo apagado (editable={false}) se ve apagado: sin esto
+            // parece que se puede escribir y no pasa nada al tocarlo. Lo usa
+            // el DUI de Mis datos, que espera a que la fecha de nacimiento
+            // diga que ya es mayor de edad.
+            props.editable === false && estilos.campoApagado,
           ]}
           value={valor}
           onChangeText={alCambiar}
           placeholder={marcador}
           placeholderTextColor={COLORES.marcador}
+          // El teclado de iOS del mismo color que la app.
+          keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
           secureTextEntry={esContrasena && !verTexto}
           onFocus={() => setEnfocado(true)}
           onBlur={() => setEnfocado(false)}
@@ -93,7 +102,11 @@ const CampoTexto = ({
             accessibilityRole="button"
             accessibilityLabel={verTexto ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
-            {verTexto ? <EyeOff size={17} color="#9CA3AF" /> : <Eye size={17} color="#9CA3AF" />}
+            {verTexto ? (
+              <EyeOff size={17} color={COLORES.tintaTenue} />
+            ) : (
+              <Eye size={17} color={COLORES.tintaTenue} />
+            )}
           </Pressable>
         )}
       </View>
@@ -103,7 +116,7 @@ const CampoTexto = ({
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   contenedor: {
     marginBottom: 16,
   },
@@ -164,6 +177,10 @@ const estilos = StyleSheet.create({
   },
   campoConOjo: {
     paddingRight: 44,
+  },
+  campoApagado: {
+    opacity: 0.6,
+    backgroundColor: COLORES.papelGris,
   },
   // El ojo tenía el mismo problema y se notaba más: desaparecía justo al
   // escribir la contraseña, que es cuando se necesita.

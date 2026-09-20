@@ -5,6 +5,7 @@ import { Bike, X, ChevronRight, Clock } from 'lucide-react-native';
 import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useArranqueResuelto } from '../../navigation/navigationRef';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
@@ -48,6 +49,8 @@ const BurbujaPedido = () => {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { orders, abrirPedido, cerrarPedidoAbierto } = usePedidoActivoCtx();
   // El pedido puede estar listo ANTES de que Splash termine de decidir a
   // dónde ir (sesión restaurada + Onboarding leído): sin esto, la burbuja se
@@ -409,14 +412,29 @@ const BurbujaPedido = () => {
                     alAgrandar={() => setMapaGrande(true)}
                   />
                 </View>
-                <View style={[estilos.bloqueInfo, { backgroundColor: seguimiento.yaCasi ? '#EFFAF1' : '#F7FAFF' }]}>
+                <View
+                  style={[
+                    estilos.bloqueInfo,
+                    { backgroundColor: seguimiento.yaCasi ? COLORES.exitoFondo : COLORES.infoFondo },
+                  ]}
+                >
                   <View style={estilos.filaIconoTexto}>
-                    <Bike size={15} color={seguimiento.yaCasi ? '#14663A' : '#173F94'} strokeWidth={2.4} />
-                    <Text style={[estilos.infoTitulo, { color: seguimiento.yaCasi ? '#14663A' : '#173F94' }]}>
+                    <Bike size={15} color={seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto} strokeWidth={2.4} />
+                    <Text
+                      style={[
+                        estilos.infoTitulo,
+                        { color: seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto },
+                      ]}
+                    >
                       {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
                     </Text>
                   </View>
-                  <Text style={[estilos.infoDetalle, { color: seguimiento.yaCasi ? '#3C7A55' : '#5B76B0' }]}>
+                  <Text
+                    style={[
+                      estilos.infoDetalle,
+                      { color: seguimiento.yaCasi ? COLORES.exitoSuave : COLORES.infoSuave },
+                    ]}
+                  >
                     {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
                     {seguimiento.distancia ? `a ${seguimiento.distancia} de su dirección` : 'Le llevan su pedido'}
                   </Text>
@@ -430,12 +448,12 @@ const BurbujaPedido = () => {
               distintos en la misma tarjeta solo confunden.
             */}
             {!enCamino && esDomicilio && zona.hayDatos && (
-              <View style={[estilos.bloqueInfo, { backgroundColor: '#F8FAF8' }]}>
+              <View style={[estilos.bloqueInfo, { backgroundColor: COLORES.exitoFondo }]}>
                 <View style={estilos.filaIconoTexto}>
-                  <Clock size={14} color="#14663A" strokeWidth={2.4} />
-                  <Text style={[estilos.infoTitulo, { color: '#14663A' }]}>{zona.texto}</Text>
+                  <Clock size={14} color={COLORES.exitoTexto} strokeWidth={2.4} />
+                  <Text style={[estilos.infoTitulo, { color: COLORES.exitoTexto }]}>{zona.texto}</Text>
                 </View>
-                <Text style={[estilos.infoDetalle, { color: '#6E8A78' }]}>{zona.respaldo}</Text>
+                <Text style={[estilos.infoDetalle, { color: COLORES.exitoSuave }]}>{zona.respaldo}</Text>
               </View>
             )}
 
@@ -540,7 +558,7 @@ const BurbujaPedido = () => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   contenedor: {
     position: 'absolute',
     zIndex: 900,
@@ -574,10 +592,10 @@ const estilos = StyleSheet.create({
   },
   tarjeta: {
     width: 290,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORES.papelAlto,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#ECE7E1',
+    borderColor: COLORES.lineaCard,
     overflow: 'hidden',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 10 },
@@ -607,7 +625,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#EDF2ED',
+    borderBottomColor: COLORES.linea,
   },
   filaIconoTexto: {
     flexDirection: 'row',
@@ -627,7 +645,7 @@ const estilos = StyleSheet.create({
   },
   notaPequena: {
     fontSize: 11.5,
-    color: '#9CA3AF',
+    color: COLORES.tintaTenue,
     marginTop: 10,
     lineHeight: 16,
   },
@@ -637,8 +655,8 @@ const estilos = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
-    backgroundColor: '#FFFFFF',
+    borderColor: COLORES.linea,
+    backgroundColor: COLORES.papelAlto,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

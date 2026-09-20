@@ -33,6 +33,9 @@
  * son los mismos pedidos de Pedidos.js, solo filtrados a los entregados —
  * ningún endpoint nuevo, salvo el de guardar métodos de pago.
  *
+ * Preferencias (claro, oscuro o automático) llegó con el modo oscuro de la
+ * web — ver Preferencias.js y context/ModoContext.js.
+ *
  * Ayuda también se sumó después (ver Ayuda.js): al principio se dejó afuera
  * porque su único canal real, el WhatsApp, salía de una variable de Vite que
  * en Expo no existe — ver el comentario grande de utils/tienda.js para la
@@ -46,12 +49,13 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import {
-  Bell, ChevronRight, CreditCard, Heart, HelpCircle, LogOut, MapPin, Receipt, Star, User,
+  Bell, ChevronRight, CreditCard, Heart, HelpCircle, LogOut, MapPin, Receipt, SlidersHorizontal, Star, User,
 } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
+import { useAireBarraFlotante } from '../components/UI/BarraInferior';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useBotonAtras } from '../hooks/useBotonAtras';
@@ -63,14 +67,17 @@ import Favoritos from './cuenta/Favoritos';
 import MisDatos from './cuenta/MisDatos';
 import Notificaciones from './cuenta/Notificaciones';
 import Pagos from './cuenta/Pagos';
+import Preferencias from './cuenta/Preferencias';
 import Puntos from './cuenta/Puntos';
 import Recibos from './cuenta/Recibos';
+import ModalConfirmar from '../components/UI/ModalConfirmar';
 
 /*
  * Los iconos son los mismos con los que la web pinta este menú (ver
- * ClienteLayout): User, Heart, MapPin, CreditCard, Bell, Star, Receipt y
- * HelpCircle. El orden también es el de allá, menos Pedidos (ver el
- * comentario de arriba) — Ayuda al final, igual que en la barra de la web.
+ * ClienteLayout): User, Heart, MapPin, CreditCard, Bell, Star, Receipt,
+ * SlidersHorizontal y HelpCircle. El orden también es el de allá, menos
+ * Pedidos (ver el comentario de arriba) — Ayuda al final, igual que en la
+ * barra de la web.
  */
 const SECCIONES = [
   { clave: 'datos', titulo: 'Mis datos', sub: 'Nombre, correo y teléfono', icono: User },
@@ -80,6 +87,7 @@ const SECCIONES = [
   { clave: 'avisos', titulo: 'Notificaciones', sub: 'Qué avisos quiere recibir', icono: Bell },
   { clave: 'puntos', titulo: 'Puntos de fidelidad', sub: 'Su saldo y cuánto valen', icono: Star },
   { clave: 'recibos', titulo: 'Recibos', sub: 'Sus pedidos ya entregados', icono: Receipt },
+  { clave: 'preferencias', titulo: 'Preferencias', sub: 'Modo claro u oscuro', icono: SlidersHorizontal },
   { clave: 'ayuda', titulo: 'Ayuda y contacto', sub: 'Preguntas frecuentes y cómo escribirnos', icono: HelpCircle },
 ];
 
@@ -91,14 +99,20 @@ const PANTALLAS = {
   avisos: Notificaciones,
   puntos: Puntos,
   recibos: Recibos,
+  preferencias: Preferencias,
   ayuda: Ayuda,
 };
 
 const Perfil = () => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { user, logout } = useAuth();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
   const [seccion, setSeccion] = useState(null);
+  const [confirmarSalida, setConfirmarSalida] = useState(false);
   const [cliente, setCliente] = useState(null);
 
   // Al personal no se le puede mostrar una cuenta de cliente: los endpoints de
@@ -136,16 +150,9 @@ const Perfil = () => {
     if (seccion === null) cargar();
   }, [seccion, cargar]);
 
-  const salir = () => {
-    Alert.alert(
-      '¿Cerrar sesión?',
-      'Tendrá que volver a escribir su correo y su contraseña para entrar de nuevo.',
-      [
-        { text: 'Quedarme', style: 'cancel' },
-        { text: 'Cerrar sesión', style: 'destructive', onPress: logout },
-      ]
-    );
-  };
+  // La pregunta la hace ModalConfirmar, con la cara de la app: el Alert del
+  // sistema era un cuadro gris de Android en medio de la tienda.
+  const salir = () => setConfirmarSalida(true);
 
   // ── Una de las pantallas de adentro ──
   if (seccion) {
@@ -177,7 +184,7 @@ const Perfil = () => {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={estilos.cuerpo}>
+      <ScrollView contentContainerStyle={[estilos.cuerpo, { paddingBottom: aireAbajo }]}>
         {/* Quién está dentro */}
         <View style={estilos.cabecera}>
           {cliente?.image ? (
@@ -239,11 +246,26 @@ const Perfil = () => {
           </View>
         )}
       </ScrollView>
+
+      {confirmarSalida && (
+        <ModalConfirmar
+          titulo="¿Cerrar sesión?"
+          mensaje="Tendrá que volver a escribir su correo y su contraseña para entrar de nuevo."
+          textoConfirmar="Cerrar sesión"
+          textoCancelar="Quedarme"
+          destructivo
+          alConfirmar={() => {
+            setConfirmarSalida(false);
+            logout();
+          }}
+          alCerrar={() => setConfirmarSalida(false)}
+        />
+      )}
     </View>
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -293,6 +315,7 @@ const estilos = StyleSheet.create({
     height: 58,
     borderRadius: 29,
   },
+  // Blanco también en oscuro: va sobre el color de la marca, no sobre el fondo.
   avatarTexto: {
     fontSize: 24,
     fontWeight: '800',

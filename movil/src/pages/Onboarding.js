@@ -182,7 +182,12 @@ const Textura = ({ ancho, alto }) => {
 };
 
 const Onboarding = ({ alTerminar }) => {
-  const { colores } = useTema();
+  /*
+   * La paleta clara también en modo oscuro: la introducción ya es un fondo
+   * hondo de marca con texto blanco, y la versión aclarada del modo oscuro
+   * le quitaba contraste. Es arte a sangre, como las tarjetas de promoción.
+   */
+  const { coloresClaros: colores } = useTema();
   const insets = useSafeAreaInsets();
 
   const diapositivas = diapositivasDe(colores);

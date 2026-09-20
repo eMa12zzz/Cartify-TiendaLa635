@@ -31,8 +31,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TriangleAlert } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
+import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useAuth } from '../../hooks/useAuth';
+import { useAjustesTienda } from '../../hooks/useAjustesTienda';
 import { useTema } from '../../context/TemaContext';
 import { getResumenPuntos, getConfigFidelidad } from '../../api/fidelidadApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
@@ -40,8 +42,16 @@ import Boton from '../../components/UI/Boton';
 import { Estrella } from '../../components/UI/Iconos';
 
 const Puntos = ({ alVolver }) => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
+  // El nombre de la tienda sale de los ajustes, no escrito a mano: si el dueño
+  // lo cambia en Personalización, el chip de la tarjeta cambia con él. Es lo
+  // que ya hacía la web (ver PuntosFidelidad.jsx) y lo que hace MarcaTienda.
+  const { ajustes } = useAjustesTienda();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
   const [resumen, setResumen] = useState({ available: 0, nextExpiry: null, expiringSoon: 0 });
   const [config, setConfig] = useState(null);
@@ -105,7 +115,7 @@ const Puntos = ({ alVolver }) => {
           </View>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={estilos.cuerpo}>
+        <ScrollView contentContainerStyle={[estilos.cuerpo, { paddingBottom: aireAbajo }]}>
           {/* ── La tarjeta ── */}
           <View style={estilos.tarjeta}>
             {/*
@@ -125,8 +135,8 @@ const Puntos = ({ alVolver }) => {
                 tarjeta de verdad. */}
             <View style={estilos.chip}>
               <View style={estilos.chipPunto} />
-              <Text style={estilos.chipTexto}>Tienda</Text>
-              <Text style={estilos.chipTexto}>la 635</Text>
+              <Text style={estilos.chipTexto}>{ajustes.nombreLinea1}</Text>
+              {!!ajustes.nombreLinea2 && <Text style={estilos.chipTexto}>{ajustes.nombreLinea2}</Text>}
             </View>
 
             <View style={estilos.tarjetaCuerpo}>
@@ -154,7 +164,7 @@ const Puntos = ({ alVolver }) => {
               perder: sin puntos por vencer sería una alarma sin incendio. */}
           {resumen.expiringSoon > 0 && (
             <View style={estilos.aviso}>
-              <TriangleAlert size={16} color="#B45309" strokeWidth={2} />
+              <TriangleAlert size={16} color={COLORES.avisoVivo} strokeWidth={2} />
               <Text style={estilos.avisoTexto}>
                 Tiene {resumen.expiringSoon} puntos que vencen en los próximos 30 días.
               </Text>
@@ -182,14 +192,18 @@ const Puntos = ({ alVolver }) => {
   );
 };
 
-const Pregunta = ({ titulo, texto }) => (
-  <View style={estilos.pregunta}>
-    <Text style={estilos.preguntaTitulo}>{titulo}</Text>
-    <Text style={estilos.preguntaTexto}>{texto}</Text>
-  </View>
-);
+const Pregunta = ({ titulo, texto }) => {
+  const estilos = useEstilos(crearEstilos);
 
-const estilos = StyleSheet.create({
+  return (
+    <View style={estilos.pregunta}>
+      <Text style={estilos.preguntaTitulo}>{titulo}</Text>
+      <Text style={estilos.preguntaTexto}>{texto}</Text>
+    </View>
+  );
+};
+
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -295,13 +309,13 @@ const estilos = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: '#FBF0DF',
+    backgroundColor: COLORES.avisoFondo,
   },
   avisoTexto: {
     flexShrink: 1,
     fontSize: 13,
     lineHeight: 19,
-    color: '#B45309',
+    color: COLORES.avisoVivo,
   },
   preguntas: {
     marginTop: 26,

@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Mic, Volume2, VolumeX } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
@@ -23,6 +23,8 @@ import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../components/UI/Barra
 
 const Asistente = () => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
   const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
   // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
@@ -107,7 +109,7 @@ const Asistente = () => {
                   estilos.burbuja,
                   m.tipo === 'user'
                     ? { alignSelf: 'flex-end', backgroundColor: colores.marca }
-                    : { alignSelf: 'flex-start', backgroundColor: '#F0F0F0' },
+                    : { alignSelf: 'flex-start', backgroundColor: COLORES.papelGris },
                 ]}
               >
                 <Text style={[estilos.burbujaTexto, m.tipo === 'user' && { color: '#fff' }]}>{m.texto}</Text>
@@ -158,7 +160,7 @@ const Asistente = () => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

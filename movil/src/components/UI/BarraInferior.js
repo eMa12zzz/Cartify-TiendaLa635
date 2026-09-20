@@ -45,7 +45,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Mic, Package, Store, User } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 
 // Las medidas de la píldora flotante, juntas porque las usa el StyleSheet
@@ -69,6 +69,24 @@ export const AIRE_ABAJO_MINIMO = 14;
 // píldora (que se pinta después, fuera del árbol de la hoja) y no el
 // renglón que se ve debajo.
 export const ALTURA_BARRA_FLOTANTE = RELLENO_VERTICAL_BARRA * 2 + ALTO_ICONO + AIRE_ARRIBA;
+
+/*
+ * Cuánto relleno ponerle ABAJO a una lista o a un ScrollView de un apartado
+ * para que su último renglón no se quede debajo de la píldora.
+ *
+ * La barra flota por encima a propósito (se ve la tienda pasar debajo), pero
+ * "flotar encima" solo funciona mientras haya hacia dónde seguir deslizando:
+ * al llegar al final, lo último quedaba tapado para siempre. Se notó en el
+ * menú de Mi cuenta —"Ayuda y contacto" debajo de la píldora— y le pasa igual
+ * a cualquier pantalla del Tab que termine justo donde termina su contenido.
+ *
+ * Es el mismo número que ya usaban las hojas (MenuPasillos, ModalProducto),
+ * sacado a un solo lugar para no repetir la cuenta en cada pantalla.
+ */
+export const useAireBarraFlotante = () => {
+  const { bottom } = useSafeAreaInsets();
+  return Math.max(bottom, AIRE_ABAJO_MINIMO) + ALTURA_BARRA_FLOTANTE;
+};
 
 /*
  * El orden importa y no es alfabético: la tienda primero porque es a lo que se
@@ -116,6 +134,8 @@ const useTecladoAbierto = () => {
 
 const BarraInferior = ({ apartado, alCambiar }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   /*
    * Lo que mide la franja de gestos de abajo (la rayita del iPhone, la barra de
    * navegación de Android). Hace falta de verdad y no es un adorno: `app.json`
@@ -225,7 +245,7 @@ const BarraInferior = ({ apartado, alCambiar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   // Absoluta: flota ENCIMA de la pantalla del apartado en vez de empujarla
   // a su propio renglón. Las pantallas ya no necesitan reservarle espacio.
   envoltorio: {
@@ -239,12 +259,15 @@ const estilos = StyleSheet.create({
   barra: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORES.fondo,
+    backgroundColor: COLORES.papelAlto,
     borderRadius: 30,
     paddingVertical: RELLENO_VERTICAL_BARRA,
     paddingHorizontal: RELLENO_HORIZONTAL_BARRA,
     // La sombra es lo que la hace leerse como que flota y no como una barra
-    // pegada al borde de siempre.
+    // pegada al borde de siempre. En oscuro una sombra negra sobre fondo casi
+    // negro no se ve: ahí la separa un filo.
+    borderWidth: COLORES.oscuro ? 1 : 0,
+    borderColor: COLORES.linea,
     elevation: 10,
     shadowColor: '#000000',
     shadowOpacity: 0.14,
@@ -275,11 +298,11 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // La misma forma que `pastillaIcono`, pero sin overflow:'hidden': ese
-  // truco hacía falta porque el backgroundColor de aquella vista CAMBIABA
-  // después del primer pintado (de transparente a marca). Esta píldora no
-  // — nace con colores.marca puesto y de ahí solo se mueve con transform
-  // — así que nunca dispara el bug de Android que el overflow arregla.
+  // La misma forma que `pastillaIcono`. Esta nace con colores.marca puesto
+  // y casi siempre solo se mueve con transform, pero el color SÍ le cambia
+  // después del primer pintado al pasar a modo oscuro (o al entrar una
+  // temporada) — el mismo caso del bug de Android que arregla el
+  // overflow:'hidden' de arriba, así que lo lleva también.
   pildoraActiva: {
     position: 'absolute',
     top: RELLENO_VERTICAL_BARRA + (ALTO_ICONO - ALTO_PILDORA) / 2,
@@ -287,6 +310,7 @@ const estilos = StyleSheet.create({
     width: ANCHO_PILDORA,
     height: ALTO_PILDORA,
     borderRadius: RADIO_PILDORA,
+    overflow: 'hidden',
   },
 });
 

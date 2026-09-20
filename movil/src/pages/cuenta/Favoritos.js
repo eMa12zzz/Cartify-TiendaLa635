@@ -28,7 +28,8 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { Heart } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
+import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useTema } from '../../context/TemaContext';
 import { useTienda } from '../../context/TiendaContext';
 import { useFavoritos } from '../../context/FavoritosContext';
@@ -38,7 +39,11 @@ import ModalProducto from '../../components/Tienda/ModalProducto';
 import { avisarActividad } from '../../utils/actividadUsuario';
 
 const Favoritos = ({ alVolver }) => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { productos, cargando, agregarAlCarrito } = useTienda();
   const { esFavorito } = useFavoritos();
 
@@ -71,7 +76,7 @@ const Favoritos = ({ alVolver }) => {
           keyExtractor={(p) => p.id}
           numColumns={2}
           columnWrapperStyle={estilos.fila}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: aireAbajo }]}
           onScrollBeginDrag={avisarActividad}
           ListHeaderComponent={
             <Text style={estilos.conteo}>
@@ -108,7 +113,7 @@ const Favoritos = ({ alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

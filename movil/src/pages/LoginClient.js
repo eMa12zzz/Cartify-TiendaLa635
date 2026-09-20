@@ -53,7 +53,7 @@ import { Lock, Mail } from 'lucide-react-native';
 import { googleLoginDB, loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 
 const LoginClient = ({ irARegistro, irATienda }) => {
@@ -61,6 +61,8 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   // La paleta de la temporada: el botón y los enlaces se pintan con ella, igual
   // que la tienda. Fuera de temporada es el café de la marca de siempre.
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const [valores, setValores] = useState({ email: '', password: '' });
   const [errores, setErrores] = useState({});
   const [avisoServidor, setAvisoServidor] = useState('');
@@ -274,7 +276,7 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -312,16 +314,16 @@ const estilos = StyleSheet.create({
     fontWeight: '600',
   },
   aviso: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: COLORES.peligroFondo,
     borderWidth: 1,
-    borderColor: '#FCD9DA',
+    borderColor: COLORES.peligroBorde,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginBottom: 14,
   },
   avisoTexto: {
-    color: '#B4231F',
+    color: COLORES.peligro,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -360,7 +362,7 @@ const estilos = StyleSheet.create({
     backgroundColor: COLORES.fondo,
   },
   botonGooglePresionado: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORES.papelGris,
   },
   botonGoogleInactivo: {
     opacity: 0.6,

@@ -48,7 +48,7 @@ import {
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, Clock, CreditCard, Gift, MapPin, Package, Store as Tienda, Wallet } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
@@ -77,50 +77,61 @@ const MINIATURAS = 6;
  * en renglones completos, que es donde el pulgar no falla, con el visto a la
  * derecha en vez del relleno de color.
  */
-const Opcion = ({ icono: Icono, titulo, detalle, activa, apagada, alTocar, colores }) => (
-  <Pressable
-    onPress={alTocar}
-    disabled={apagada}
-    accessibilityRole="radio"
-    accessibilityState={{ selected: activa, disabled: !!apagada }}
-    accessibilityLabel={`${titulo}. ${detalle}`}
-    style={({ pressed }) => [
-      estilos.opcion,
-      activa && { borderColor: colores.marca, backgroundColor: colores.marcaTenue },
-      pressed && !apagada && { backgroundColor: colores.marcaSuave },
-      apagada && estilos.opcionApagada,
-    ]}
-  >
-    <Icono size={18} color={activa ? colores.marca : COLORES.textoSuave} strokeWidth={2} />
-    <View style={estilos.opcionTextos}>
-      <Text style={[estilos.opcionTitulo, activa && { color: colores.marca }]}>{titulo}</Text>
-      <Text style={estilos.opcionDetalle}>{detalle}</Text>
-    </View>
-    {activa && (
-      <View style={[estilos.visto, { backgroundColor: colores.marca }]}>
-        <Check size={11} color="#FFFFFF" strokeWidth={3} />
-      </View>
-    )}
-  </Pressable>
-);
+const Opcion = ({ icono: Icono, titulo, detalle, activa, apagada, alTocar, colores }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
-const Seccion = ({ icono: Icono, titulo, colores, children }) => (
-  <View style={estilos.seccion}>
-    <View style={estilos.seccionCabecera}>
-      <View style={[estilos.cuadroIcono, { backgroundColor: colores.marcaSuave }]}>
-        <Icono size={17} color={colores.marca} strokeWidth={2} />
+  return (
+    <Pressable
+      onPress={alTocar}
+      disabled={apagada}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: activa, disabled: !!apagada }}
+      accessibilityLabel={`${titulo}. ${detalle}`}
+      style={({ pressed }) => [
+        estilos.opcion,
+        activa && { borderColor: colores.marca, backgroundColor: colores.marcaTenue },
+        pressed && !apagada && { backgroundColor: colores.marcaSuave },
+        apagada && estilos.opcionApagada,
+      ]}
+    >
+      <Icono size={18} color={activa ? colores.marca : COLORES.textoSuave} strokeWidth={2} />
+      <View style={estilos.opcionTextos}>
+        <Text style={[estilos.opcionTitulo, activa && { color: colores.marca }]}>{titulo}</Text>
+        <Text style={estilos.opcionDetalle}>{detalle}</Text>
       </View>
-      <Text style={estilos.seccionTitulo}>{titulo}</Text>
+      {activa && (
+        <View style={[estilos.visto, { backgroundColor: colores.marca }]}>
+          <Check size={11} color="#FFFFFF" strokeWidth={3} />
+        </View>
+      )}
+    </Pressable>
+  );
+};
+
+const Seccion = ({ icono: Icono, titulo, colores, children }) => {
+  const estilos = useEstilos(crearEstilos);
+
+  return (
+    <View style={estilos.seccion}>
+      <View style={estilos.seccionCabecera}>
+        <View style={[estilos.cuadroIcono, { backgroundColor: colores.marcaSuave }]}>
+          <Icono size={17} color={colores.marca} strokeWidth={2} />
+        </View>
+        <Text style={estilos.seccionTitulo}>{titulo}</Text>
+      </View>
+      {children}
     </View>
-    {children}
-  </View>
-);
+  );
+};
 
 const Checkout = ({ alVolver, alConfirmar }) => {
   const { user } = useAuth();
   const { colores } = useTema();
   const { avisar } = useAviso();
   const { carrito, totalCarrito } = useTienda();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { refrescar: refrescarPedidoActivo } = usePedidoActivoCtx();
   const { bottom } = useSafeAreaInsets();
 
@@ -411,7 +422,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                   que la persona se pregunta "¿y en cuánto me llega?". */}
               {zona?.hayDatos && (
                 <View style={estilos.tiempo}>
-                  <Clock size={15} color="#14663A" strokeWidth={2} />
+                  <Clock size={15} color={COLORES.exitoTexto} strokeWidth={2} />
                   <View style={estilos.tiempoTextos}>
                     <Text style={estilos.tiempoTitulo}>
                       {zona.tipico === zona.holgado
@@ -543,6 +554,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
               onChangeText={(v) => setCodigoTarjeta(v.toUpperCase())}
               placeholder="¿Tiene una tarjeta? 635-XXXX-XXXX"
               placeholderTextColor={COLORES.marcador}
+              keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
               style={[estilos.campo, estilos.campoCanje]}
               autoCapitalize="characters"
               autoCorrect={false}
@@ -634,27 +646,35 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   );
 };
 
-const Barra = ({ alVolver, colores }) => (
-  <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-    <Pressable
-      onPress={alVolver}
-      hitSlop={10}
-      accessibilityRole="button"
-      accessibilityLabel="Volver al carrito"
-      style={({ pressed }) => [estilos.botonVolver, pressed && { backgroundColor: colores.marcaSuave }]}
-    >
-      <ChevronIzquierda size={18} />
-    </Pressable>
-    <Text style={estilos.tituloBarra}>Confirmar pedido</Text>
-  </View>
-);
+const Barra = ({ alVolver, colores }) => {
+  const estilos = useEstilos(crearEstilos);
 
-const Fila = ({ etiqueta, valor, verde }) => (
-  <View style={estilos.fila}>
-    <Text style={estilos.filaEtiqueta}>{etiqueta}</Text>
-    <Text style={[estilos.filaValor, verde && estilos.filaValorVerde]}>{valor}</Text>
-  </View>
-);
+  return (
+    <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
+      <Pressable
+        onPress={alVolver}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Volver al carrito"
+        style={({ pressed }) => [estilos.botonVolver, pressed && { backgroundColor: colores.marcaSuave }]}
+      >
+        <ChevronIzquierda size={18} />
+      </Pressable>
+      <Text style={estilos.tituloBarra}>Confirmar pedido</Text>
+    </View>
+  );
+};
+
+const Fila = ({ etiqueta, valor, verde }) => {
+  const estilos = useEstilos(crearEstilos);
+
+  return (
+    <View style={estilos.fila}>
+      <Text style={estilos.filaEtiqueta}>{etiqueta}</Text>
+      <Text style={[estilos.filaValor, verde && estilos.filaValorVerde]}>{valor}</Text>
+    </View>
+  );
+};
 
 /*
  * Las direcciones viejas son texto suelto y las nuevas un objeto. Se normaliza
@@ -671,7 +691,7 @@ const normalizarDireccion = (item) =>
         lng: item?.lng ?? null,
       };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -782,9 +802,9 @@ const estilos = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 11,
-    backgroundColor: '#EFFAF1',
+    backgroundColor: COLORES.exitoFondo,
     borderWidth: 1,
-    borderColor: '#D3EEDA',
+    borderColor: COLORES.exitoBorde,
   },
   tiempoTextos: {
     flex: 1,
@@ -793,12 +813,12 @@ const estilos = StyleSheet.create({
   tiempoTitulo: {
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#14663A',
+    color: COLORES.exitoTexto,
   },
   tiempoSub: {
     fontSize: 11,
     lineHeight: 16,
-    color: '#3C7A55',
+    color: COLORES.exitoSuave,
   },
   direccion: {
     flexDirection: 'row',
@@ -915,7 +935,7 @@ const estilos = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORES.papelGris,
   },
   miniaturaMasTexto: {
     fontSize: 13,
@@ -945,7 +965,7 @@ const estilos = StyleSheet.create({
     color: COLORES.textoVentaja,
   },
   filaValorVerde: {
-    color: '#16A34A',
+    color: COLORES.exitoVivo,
     fontWeight: '600',
   },
   separador: {

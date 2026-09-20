@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTema } from '../../context/TemaContext';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 
 /*
@@ -16,6 +17,8 @@ import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
  */
 const PasosPedido = ({ deliveryType, estado }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const PASOS = pasosDe(deliveryType);
   const pasoActual = indiceDePaso(PASOS, estado);
 
@@ -30,13 +33,17 @@ const PasosPedido = ({ deliveryType, estado }) => {
               <View
                 style={[
                   estilos.icono,
-                  { backgroundColor: actual ? colores.marca : hecho ? colores.marcaSuave : '#F3F0ED' },
+                  { backgroundColor: actual ? colores.marca : hecho ? colores.marcaSuave : colores.marcaTenue },
                 ]}
               >
-                <p.Icono size={14} color={actual ? '#FFFFFF' : hecho ? colores.marca : '#C9C2BB'} strokeWidth={2.4} />
+                <p.Icono
+                  size={14}
+                  color={actual ? '#FFFFFF' : hecho ? colores.marca : COLORES.tintaApagada}
+                  strokeWidth={2.4}
+                />
               </View>
               {i < PASOS.length - 1 && (
-                <View style={[estilos.raya, { backgroundColor: hecho ? colores.marcaSuave : '#F3F0ED' }]} />
+                <View style={[estilos.raya, { backgroundColor: hecho ? colores.marcaSuave : colores.marcaTenue }]} />
               )}
             </View>
             <View style={{ paddingBottom: i < PASOS.length - 1 ? 12 : 0, flex: 1 }}>
@@ -50,7 +57,7 @@ const PasosPedido = ({ deliveryType, estado }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   fila: {
     flexDirection: 'row',
     gap: 10,
@@ -75,15 +82,15 @@ const estilos = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: COLORES.tintaSuave,
   },
   labelActual: {
     fontWeight: '800',
-    color: '#1C1614',
+    color: COLORES.tinta,
   },
   detalle: {
     fontSize: 11.5,
-    color: '#9CA3AF',
+    color: COLORES.tintaTenue,
   },
 });
 

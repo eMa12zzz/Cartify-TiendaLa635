@@ -20,7 +20,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../theme/colores';
+import { useEstilos } from './ModoContext';
 
 const AvisoContext = createContext(null);
 
@@ -29,6 +29,7 @@ const DURACION = 2600;
 
 export const AvisoProvider = ({ children }) => {
   const [aviso, setAviso] = useState(null); // { texto, tipo }
+  const estilos = useEstilos(crearEstilos);
   const opacidad = useRef(new Animated.Value(0)).current;
   const temporizador = useRef(null);
 
@@ -95,7 +96,7 @@ export const useAviso = () => {
   return ctx;
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   /*
    * `pointerEvents="none"` en la capa es lo que evita el peor error de este
    * patrón: un aviso invisible que se queda encima de la tienda comiéndose los
@@ -120,8 +121,10 @@ const estilos = StyleSheet.create({
   burbujaError: {
     backgroundColor: COLORES.error,
   },
+  // La burbuja es color tinta: casi negra en claro, casi blanca en oscuro.
+  // El texto va al revés.
   texto: {
-    color: '#FFFFFF',
+    color: COLORES.sobreTinta,
     fontSize: 13.5,
     fontWeight: '600',
     textAlign: 'center',
