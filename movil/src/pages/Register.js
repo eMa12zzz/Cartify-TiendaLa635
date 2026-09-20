@@ -64,7 +64,7 @@ import { Calendar, Camera, Hash, Lock, Mail, Phone, User } from 'lucide-react-na
 import { Equis } from '../components/UI/Iconos';
 import { registrarCliente } from '../api/authApi';
 import { useTema } from '../context/TemaContext';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { calcularEdad, esMayorDeEdad } from '../utils/edad';
 import {
   fechaISO,
@@ -133,6 +133,8 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   // La paleta de la temporada: el botón, los enlaces y la zona de foto se
   // pintan con ella, como la tienda. Fuera de temporada es el café de siempre.
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const [valores, setValores] = useState(VALORES_INICIALES);
   const [errores, setErrores] = useState({});
   const [avisoServidor, setAvisoServidor] = useState('');
@@ -443,7 +445,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -508,7 +510,7 @@ const estilos = StyleSheet.create({
   },
   textoFoto: {
     fontSize: 13.5,
-    color: '#6B6B6B',
+    color: COLORES.tintaSuave,
     fontWeight: '600',
   },
   ayudaFoto: {
@@ -542,16 +544,16 @@ const estilos = StyleSheet.create({
     marginTop: -4,
   },
   aviso: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: COLORES.peligroFondo,
     borderWidth: 1,
-    borderColor: '#FCD9DA',
+    borderColor: COLORES.peligroBorde,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginTop: 4,
   },
   avisoTexto: {
-    color: '#B4231F',
+    color: COLORES.peligro,
     fontSize: 13,
     lineHeight: 19,
   },

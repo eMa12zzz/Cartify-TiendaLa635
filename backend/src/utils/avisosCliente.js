@@ -27,6 +27,7 @@ import clientModel from "../models/client.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 import { sendEmail } from "./sendMailMailjet.js";
 import { plantillaProductosNuevos, plantillaPedidoEnCamino } from "./plantillasAviso.js";
+import { dispositivosDe, enviarPushEnSegundoPlano } from "./pushExpo.js";
 import { enlaceDeBaja, enlaceDeBajaUnClic } from "./tokenBaja.js";
 
 /*
@@ -137,13 +138,27 @@ const soltarLoteDeProductos = async () => {
 
   if (!productos.length) return { enviados: 0, fallidos: 0 };
 
+  const tienda = await identidadDeLaTienda();
+
+  /*
+   * El mismo aviso, empujado a los teléfonos. Va ANTES del corte de abajo a
+   * propósito: quien tiene la app instalada y ningún correo verificado sigue
+   * siendo alguien a quien avisarle. Son dos canales para la misma
+   * preferencia, no dos listas distintas.
+   */
+  const nombres = productos.map((p) => p.nombre).filter(Boolean);
+  enviarPushEnSegundoPlano(await dispositivosDe("nuevosProductos"), {
+    titulo: nombres.length > 1 ? `${nombres.length} productos nuevos` : "Llegó algo nuevo",
+    // Tres nombres y "y N más": en la barra de notificaciones no entra más.
+    cuerpo: nombres.slice(0, 3).join(", ") + (nombres.length > 3 ? ` y ${nombres.length - 3} más` : ""),
+    datos: { tipo: "productosNuevos" },
+  });
+
   const clientes = await destinatariosDe("nuevosProductos");
   if (!clientes.length) {
-    console.log("aviso de productos nuevos: nadie lo tiene encendido");
+    console.log("aviso de productos nuevos: nadie lo tiene encendido por correo");
     return { enviados: 0, fallidos: 0 };
   }
-
-  const tienda = await identidadDeLaTienda();
 
   return enviarEnFila(
     clientes,
@@ -196,10 +211,9 @@ export const avisarPedidoEnCamino = async (pedido) => {
 
   const cliente = await clientModel
     .findById(idCliente)
-    .select("email fullName notificationPrefs isActive")
+    .select("email fullName notificationPrefs isActive +pushTokens")
     .lean();
 
-  if (!cliente?.email) return { enviados: 0, motivo: "el cliente no tiene correo" };
   if (cliente.isActive === false) return { enviados: 0, motivo: "la cuenta está inactiva" };
 
   /*
@@ -212,6 +226,22 @@ export const avisarPedidoEnCamino = async (pedido) => {
   if (cliente.notificationPrefs?.pedidoCerca !== true) {
     return { enviados: 0, motivo: "no tiene encendido el aviso de pedido en camino" };
   }
+
+  /*
+   * El push primero: de los tres avisos, este es el único que la persona está
+   * esperando con el teléfono en la mano. Un correo que llega cuando el
+   * repartidor ya tocó el timbre no sirve de nada.
+   *
+   * `datos.pedidoId` es lo que lee la app para abrir ESE pedido al tocar la
+   * notificación, en vez de dejar a alguien buscándolo en la lista.
+   */
+  enviarPushEnSegundoPlano(cliente.pushTokens || [], {
+    titulo: "Su pedido va en camino",
+    cuerpo: "Ya salió de la tienda. Puede verlo en el mapa y saber cuándo salir a la puerta.",
+    datos: { tipo: "pedidoEnCamino", pedidoId: String(pedido._id || "") },
+  });
+
+  if (!cliente.email) return { enviados: 0, motivo: "el cliente no tiene correo" };
 
   const tienda = await identidadDeLaTienda();
 

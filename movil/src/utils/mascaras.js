@@ -71,3 +71,21 @@ export const fechaISO = (valor) => {
 
   return `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 };
+
+/*
+ * El camino de vuelta: lo que viene de la base ("2000-12-31", o una fecha ISO
+ * completa con hora) -> "31/12/2000", que es lo que muestra el campo. Cadena
+ * vacía si no hay fecha o no se entiende.
+ *
+ * Se parte el texto a mano en vez de usar `new Date()`: una fecha sin hora la
+ * lee el motor como UTC, y en El Salvador (UTC-6) eso devuelve el día
+ * ANTERIOR. Un cumpleaños que se corre un día cada vez que se abre la
+ * pantalla es un error que nadie perdona.
+ */
+export const fechaVisible = (valor) => {
+  if (!valor) return '';
+  const [fecha] = String(valor).split('T');
+  const [anio, mes, dia] = fecha.split('-');
+  if (!anio || !mes || !dia) return '';
+  return `${dia.padStart(2, '0')}/${mes.padStart(2, '0')}/${anio}`;
+};

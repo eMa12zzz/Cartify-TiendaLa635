@@ -17,22 +17,29 @@
  * devuelve a donde estaba y se avisa: quedarse encendido de mentira sería
  * prometer avisos que nunca van a llegar.
  *
- * ── De momento esto es una preferencia, no una notificación ──
+ * ── Dos cosas distintas: QUÉ quiere y A DÓNDE se lo mandamos ──
  *
- * Marcar la casilla guarda la preferencia en la cuenta; todavía no hay avisos
- * push saliendo hacia el teléfono, ni aquí ni en la web. Se dice tal cual abajo
- * de la lista: prometer "le avisamos cuando su pedido esté cerca" y que nunca
- * suene nada es peor que no ofrecerlo.
+ * El interruptor guarda la preferencia en la cuenta, igual que en la web. Lo
+ * que hace que además SUENE es el token de este teléfono, que se registra la
+ * primera vez que se enciende algo (ver utils/notificaciones.js) y que el
+ * backend cruza con la preferencia al mandar el aviso (utils/pushExpo.js).
+ *
+ * Son dos pasos y no uno porque el permiso del sistema puede faltar aunque la
+ * preferencia esté encendida: ahí la cuenta dice "sí quiero" y el teléfono
+ * dice "no me avises". El pie de la lista cuenta en cuál de los dos estados
+ * está, sin adornos — prometer "le avisamos cuando su pedido esté cerca" y que
+ * nunca suene nada es peor que no ofrecerlo.
  * ============================================================
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { ActivityIndicator, Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
-import { getCliente, actualizarNotificaciones } from '../../api/clienteApi';
+import { getCliente, actualizarNotificaciones, registrarTokenPush } from '../../api/clienteApi';
+import { HAY_PUSH, registrarParaAvisos, tokenActual } from '../../utils/notificaciones';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 
@@ -57,6 +64,8 @@ const DURACION_INTERRUPTOR = 160;
  * color) corre por un solo `Animated.Value` en el hilo de JS.
  */
 const Interruptor = ({ encendido, alTocar, color, etiqueta }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const progreso = useRef(new Animated.Value(encendido ? 1 : 0)).current;
 
   useEffect(() => {
@@ -105,6 +114,7 @@ const Interruptor = ({ encendido, alTocar, color, etiqueta }) => {
 const Notificaciones = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
 
   const [prefs, setPrefs] = useState(POR_DEFECTO);
@@ -128,6 +138,50 @@ const Notificaciones = ({ alVolver }) => {
     cargar();
   }, [cargar]);
 
+  /*
+   * En qué estado está ESTE teléfono: 'listo' si el aviso va a sonar, o el
+   * motivo por el que no. Empieza en null (todavía comprobando) para no
+   * mostrar una advertencia durante el medio segundo que tarda en saberse.
+   */
+  const [avisos, setAvisos] = useState(null);
+
+  /*
+   * Al entrar, sin molestar a nadie: si el permiso YA estaba dado, se vuelve a
+   * mandar el token al servidor. No es redundante — Expo puede rotarlo, y un
+   * token viejo es un aviso que no llega sin que nada parezca roto.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    tokenActual().then((token) => {
+      if (!token) return;
+      setAvisos('listo');
+      registrarTokenPush(user.id, token).catch(() => {
+        // Que falle el refresco no es algo que contarle a nadie: el token que
+        // ya estaba guardado sigue sirviendo.
+      });
+    });
+  }, [user?.id]);
+
+  /*
+   * Pide el permiso y registra el teléfono. Se llama al ENCENDER, no al
+   * entrar: el sistema muestra el cuadro de permiso una sola vez en la vida de
+   * la instalación, y gastarlo apenas se abre la pantalla —antes de que la
+   * persona haya pedido nada— es la forma más rápida de que lo rechace.
+   */
+  const asegurarAvisos = async () => {
+    const { token, motivo } = await registrarParaAvisos();
+    if (!token) {
+      setAvisos(motivo);
+      return;
+    }
+    try {
+      await registrarTokenPush(user.id, token);
+      setAvisos('listo');
+    } catch {
+      setAvisos('error');
+    }
+  };
+
   const alternar = async (clave) => {
     const antes = prefs;
     const despues = { ...prefs, [clave]: !prefs[clave] };
@@ -139,8 +193,37 @@ const Notificaciones = ({ alVolver }) => {
     } catch (e) {
       setPrefs(antes);
       avisar(e?.message || 'No se pudo guardar la preferencia', 'error');
+      return;
     }
+
+    /*
+     * Encender algo es el momento de pedir el permiso, y va DESPUÉS de guardar
+     * la preferencia: si el permiso se rechaza, lo que la persona eligió queda
+     * guardado igual. Mañana lo concede desde los ajustes y los avisos
+     * empiezan a llegar sin tener que volver a tocar el interruptor.
+     */
+    if (despues[clave] && avisos !== 'listo') asegurarAvisos();
   };
+
+  /*
+   * El pie dice la verdad de este teléfono. Cada estado lleva a un lugar
+   * distinto: el "no" del sistema se arregla en los ajustes, un emulador no se
+   * arregla, y sin proyecto de Expo configurado el que tiene que hacer algo es
+   * quien compila la app, no quien la usa.
+   */
+  const PIES = {
+    listo: 'Le avisamos en este teléfono.',
+    'sin-permiso': 'Este teléfono tiene los avisos bloqueados. Se cambia en los ajustes del sistema.',
+    emulador: 'Los avisos llegan a un teléfono de verdad; en el emulador no suena nada.',
+    'sin-proyecto': 'Esta versión de la app todavía no puede recibir avisos.',
+    'sin-token': 'No se pudo preparar este teléfono para los avisos.',
+    error: 'No se pudo preparar este teléfono para los avisos.',
+  };
+  const pie = avisos
+    ? PIES[avisos]
+    : HAY_PUSH
+      ? 'Encienda lo que quiera y le avisamos en este teléfono.'
+      : PIES['sin-proyecto'];
 
   return (
     <View style={estilos.pantalla}>
@@ -181,17 +264,22 @@ const Notificaciones = ({ alVolver }) => {
             </View>
           ))}
 
-          <Text style={estilos.pie}>
-            Por ahora esto queda guardado en su cuenta. Los avisos al teléfono todavía no están
-            encendidos.
-          </Text>
+          <Text style={estilos.pie}>{pie}</Text>
+
+          {avisos === 'sin-permiso' && (
+            <Pressable onPress={() => Linking.openSettings()} hitSlop={8}>
+              <Text style={[estilos.pie, estilos.pieEnlace, { color: colores.marca }]}>
+                Abrir los ajustes del teléfono
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
     </View>
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -246,6 +334,10 @@ const estilos = StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 18,
     color: COLORES.textoSuave,
+  },
+  pieEnlace: {
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   riel: {
     width: 46,

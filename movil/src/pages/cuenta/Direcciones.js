@@ -21,7 +21,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -29,7 +28,8 @@ import {
   View,
 } from 'react-native';
 import { MapPin, Signpost, Trash2 } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
+import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
@@ -37,6 +37,7 @@ import { getCliente, actualizarDirecciones } from '../../api/clienteApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import ModalMapaDireccion from '../../components/UI/ModalMapaDireccion';
+import ModalConfirmar from '../../components/UI/ModalConfirmar';
 
 /*
  * Las direcciones viejas son texto suelto y las nuevas son un objeto. Se
@@ -57,8 +58,12 @@ const normalizar = (item) => {
 };
 
 const Direcciones = ({ alVolver }) => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
 
   const [direcciones, setDirecciones] = useState([]);
@@ -67,6 +72,10 @@ const Direcciones = ({ alVolver }) => {
   const [error, setError] = useState('');
 
   const [mostrarMapa, setMostrarMapa] = useState(false);
+  // Cuál se está por quitar (su índice), o null. La pregunta la hace
+  // ModalConfirmar, que tiene la cara de la app; antes era el cuadro gris
+  // del sistema.
+  const [porQuitar, setPorQuitar] = useState(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -101,34 +110,20 @@ const Direcciones = ({ alVolver }) => {
     }
   };
 
-  const borrar = (indice) => {
-    const dir = direcciones[indice];
-
-    Alert.alert(
-      '¿Quitar esta dirección?',
-      `${dir.nombre || dir.direccion}\n\nPara volver a tenerla habrá que escribirla de nuevo al hacer un pedido.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Quitar',
-          style: 'destructive',
-          onPress: async () => {
-            const quedan = direcciones.filter((_, i) => i !== indice);
-            setGuardando(true);
-            try {
-              await actualizarDirecciones(user.id, quedan);
-              setDirecciones(quedan);
-              avisar('Dirección quitada');
-            } catch (e) {
-              // No se toca la lista: si el servidor no la borró, sigue estando.
-              avisar(e?.message || 'No se pudo quitar la dirección', 'error');
-            } finally {
-              setGuardando(false);
-            }
-          },
-        },
-      ]
-    );
+  const quitar = async () => {
+    const quedan = direcciones.filter((_, i) => i !== porQuitar);
+    setGuardando(true);
+    try {
+      await actualizarDirecciones(user.id, quedan);
+      setDirecciones(quedan);
+      setPorQuitar(null);
+      avisar('Dirección quitada');
+    } catch (e) {
+      // No se toca la lista: si el servidor no la borró, sigue estando.
+      avisar(e?.message || 'No se pudo quitar la dirección', 'error');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
@@ -156,7 +151,7 @@ const Direcciones = ({ alVolver }) => {
         <FlatList
           data={direcciones}
           keyExtractor={(_, i) => String(i)}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: aireAbajo }]}
           ListEmptyComponent={
             <View style={estilos.vacio}>
               <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />
@@ -191,7 +186,7 @@ const Direcciones = ({ alVolver }) => {
               </View>
 
               <Pressable
-                onPress={() => borrar(index)}
+                onPress={() => setPorQuitar(index)}
                 disabled={guardando}
                 hitSlop={8}
                 accessibilityRole="button"
@@ -217,11 +212,23 @@ const Direcciones = ({ alVolver }) => {
           conBarraFlotante
         />
       )}
+
+      {porQuitar !== null && (
+        <ModalConfirmar
+          titulo="¿Quitar esta dirección?"
+          mensaje={`${direcciones[porQuitar]?.nombre || direcciones[porQuitar]?.direccion}\n\nPara volver a tenerla habrá que escribirla de nuevo al hacer un pedido.`}
+          textoConfirmar="Quitar"
+          destructivo
+          trabajando={guardando}
+          alConfirmar={quitar}
+          alCerrar={() => setPorQuitar(null)}
+        />
+      )}
     </View>
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -317,7 +324,7 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
   },
   botonBorrarPresionado: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: COLORES.peligroFondo,
   },
   botonBorrarApagado: {
     opacity: 0.5,

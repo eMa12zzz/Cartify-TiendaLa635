@@ -32,7 +32,7 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Search } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import { useAuth } from '../hooks/useAuth';
@@ -52,6 +52,8 @@ import { avisarActividad } from '../utils/actividadUsuario';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { isAuthenticated, user } = useAuth();
   const nombre = user?.fullName || user?.userName;
   const {
@@ -323,7 +325,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

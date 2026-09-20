@@ -14,7 +14,7 @@
  */
 
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../theme/colores';
+import { useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { ChevronIzquierda } from '../components/UI/Iconos';
@@ -23,6 +23,7 @@ import { avisarActividad } from '../utils/actividadUsuario';
 
 const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const productos = seccion?.todos || seccion?.productos || [];
 
   return (
@@ -66,7 +67,7 @@ const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

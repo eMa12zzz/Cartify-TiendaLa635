@@ -23,10 +23,11 @@
  * entrar solo lo mueve `AuthWatcher`.
  */
 
-import { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { useEffect, useMemo, useState } from 'react';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
+import { useModo } from '../context/ModoContext';
 import { useTienda } from '../context/TiendaContext';
 import { useSplashTimer } from '../hooks/useSplashTimer';
 import { leer, guardar, llave } from '../utils/almacen';
@@ -221,23 +222,46 @@ const ImpresionesRoute = ({ navigation }) => (
   <Impresiones alVolver={() => navigation.goBack()} />
 );
 
-const RootNavigator = () => (
-  <NavigationContainer ref={navigationRef}>
-    <AuthWatcher />
-    <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Splash" component={SplashRoute} />
-      <Stack.Screen name="Onboarding" component={OnboardingRoute} />
-      <Stack.Screen name="Login" component={LoginRoute} />
-      <Stack.Screen name="Register" component={RegisterRoute} />
-      <Stack.Screen name="Verification" component={VerificationRoute} />
-      <Stack.Screen name="Tabs" component={TabMenu} />
-      <Stack.Screen name="Carrito" component={CarritoRoute} />
-      <Stack.Screen name="Checkout" component={CheckoutRoute} />
-      <Stack.Screen name="Confirmacion" component={ConfirmacionRoute} />
-      <Stack.Screen name="Seccion" component={SeccionRoute} />
-      <Stack.Screen name="Impresiones" component={ImpresionesRoute} />
-    </Stack.Navigator>
-  </NavigationContainer>
-);
+const RootNavigator = () => {
+  /*
+   * El fondo que react-navigation pone detrás de cada pantalla mientras
+   * entra o sale. Sin esto, en oscuro se ve un destello blanco en cada
+   * transición: las pantallas son oscuras, pero lo que asoma entre una y
+   * otra es el blanco de fábrica de la librería.
+   */
+  const { oscuro, colores } = useModo();
+  const tema = useMemo(() => {
+    const base = oscuro ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: colores.fondo,
+        card: colores.papelAlto,
+        text: colores.tituloFuerte,
+        border: colores.linea,
+      },
+    };
+  }, [oscuro, colores]);
+
+  return (
+    <NavigationContainer ref={navigationRef} theme={tema}>
+      <AuthWatcher />
+      <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Splash" component={SplashRoute} />
+        <Stack.Screen name="Onboarding" component={OnboardingRoute} />
+        <Stack.Screen name="Login" component={LoginRoute} />
+        <Stack.Screen name="Register" component={RegisterRoute} />
+        <Stack.Screen name="Verification" component={VerificationRoute} />
+        <Stack.Screen name="Tabs" component={TabMenu} />
+        <Stack.Screen name="Carrito" component={CarritoRoute} />
+        <Stack.Screen name="Checkout" component={CheckoutRoute} />
+        <Stack.Screen name="Confirmacion" component={ConfirmacionRoute} />
+        <Stack.Screen name="Seccion" component={SeccionRoute} />
+        <Stack.Screen name="Impresiones" component={ImpresionesRoute} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
 
 export default RootNavigator;

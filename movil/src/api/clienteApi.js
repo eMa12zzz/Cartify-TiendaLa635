@@ -61,6 +61,21 @@ export const actualizarNotificaciones = (clienteId, preferencias) =>
   peticion(`/client/${clienteId}/notifications`, { metodo: 'PATCH', cuerpo: preferencias });
 
 /*
+ * A DÓNDE mandar los avisos, que es distinto de CUÁLES quiere (eso es lo de
+ * arriba). El token lo emite Expo y vale para esta instalación de la app: ver
+ * utils/notificaciones.js.
+ *
+ * `activo: false` al cerrar sesión. El teléfono sigue siendo el mismo, pero ya
+ * no es de esta cuenta: seguir avisando ahí sería contarle a quien se quedó
+ * con el aparato que el pedido de otra persona va en camino.
+ */
+export const registrarTokenPush = (clienteId, token, activo = true) =>
+  peticion(`/client/${clienteId}/push-token`, {
+    metodo: 'PATCH',
+    cuerpo: { token, activo },
+  });
+
+/*
  * Igual que direcciones: la lista COMPLETA, no la que cambió. Y aunque se
  * manden más campos, el controlador solo guarda type/alias/last4 —nunca el
  * número completo ni el CVV, eso lo cobra la pasarela, que todavía no está

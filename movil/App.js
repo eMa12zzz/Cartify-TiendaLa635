@@ -11,6 +11,10 @@
  *   SafeAreaProvider  va afuera de todo: la barra de abajo le pregunta cuánto
  *                     mide la franja de gestos del teléfono, y un proveedor no
  *                     puede contestarle a quien no envuelve.
+ *   ModoProvider      claro u oscuro. Justo adentro, antes de todo lo que
+ *                     pinta: hasta el aviso flotante sale del color del modo.
+ *                     Y antes de TemaProvider, que calcula la versión oscura
+ *                     de la temporada.
  *   AvisoProvider     porque dibuja sus avisos DESPUÉS de sus hijos: así el
  *                     aviso queda encima de la tienda y de las hojas de
  *                     detalle. Envuelto al revés, quedaría debajo.
@@ -44,8 +48,13 @@
  * encima de la burbuja (y de cualquier pantalla del stack), y el último
  * hermano es el que gana esa pulseada — ver el comentario grande de
  * `pedidoAbierto` en `PedidoActivoContext.js`.
+ *
+ * `VueloAlCarrito` va al final por la misma pulseada de `elevation`, y
+ * porque una foto volando tapada por otra cosa se ve rota a medio vuelo —
+ * ver el comentario grande de `volarAlCarrito.js`.
  */
 
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 // Solo por su efecto secundario: deja GoogleSignin.configure() hecho desde
@@ -58,32 +67,64 @@ import { FavoritosProvider } from './src/context/FavoritosContext';
 import { TemaProvider } from './src/context/TemaContext';
 import { TiendaProvider } from './src/context/TiendaContext';
 import { PedidoActivoProvider } from './src/context/PedidoActivoContext';
-import { navegarA } from './src/navigation/navigationRef';
+import { irATabs, navegarA } from './src/navigation/navigationRef';
+import { escucharToques } from './src/utils/notificaciones';
 import RootNavigator from './src/navigation/RootNavigator';
 import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
 import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante';
+import VueloAlCarrito from './src/components/Tienda/VueloAlCarrito';
+import { ModoProvider, useModo } from './src/context/ModoContext';
+
+// La hora y la batería en oscuro sobre fondo claro, y al revés.
+const BarraDeEstado = () => {
+  const { oscuro } = useModo();
+  return <StatusBar style={oscuro ? 'light' : 'dark'} />;
+};
+
+/*
+ * Tocar un aviso tiene que llevar a donde el aviso prometía. El backend manda
+ * el tipo en la carga útil (ver backend/src/utils/pushExpo.js) y esto lo
+ * traduce a una pestaña: el de "su pedido va en camino" abre Pedidos, y los
+ * de promociones y productos nuevos, la tienda.
+ *
+ * No pinta nada — vive en el árbol solo para tener un sitio donde montar el
+ * oyente y quitarlo. Va DENTRO de los proveedores porque la navegación tiene
+ * que estar lista cuando llegue el toque.
+ */
+const AvisosTocados = () => {
+  useEffect(() => escucharToques((datos) => {
+    if (datos?.tipo === 'pedidoEnCamino') irATabs('pedidos');
+    else if (datos?.tipo === 'promo' || datos?.tipo === 'productosNuevos') irATabs('inicio');
+  }), []);
+
+  return null;
+};
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AvisoProvider>
-        <AuthProvider>
-          <TemaProvider>
-            <EdadProvider>
-              <FavoritosProvider alPedirSesion={() => navegarA('Login')}>
-                <TiendaProvider>
-                  <PedidoActivoProvider>
-                    <StatusBar style="dark" />
-                    <RootNavigator />
-                    <BurbujaPedido />
-                    <PedidoDetalleFlotante />
-                  </PedidoActivoProvider>
-                </TiendaProvider>
-              </FavoritosProvider>
-            </EdadProvider>
-          </TemaProvider>
-        </AuthProvider>
-      </AvisoProvider>
+      <ModoProvider>
+        <AvisoProvider>
+          <AuthProvider>
+            <TemaProvider>
+              <EdadProvider>
+                <FavoritosProvider alPedirSesion={() => navegarA('Login')}>
+                  <TiendaProvider>
+                    <PedidoActivoProvider>
+                      <BarraDeEstado />
+                      <AvisosTocados />
+                      <RootNavigator />
+                      <BurbujaPedido />
+                      <PedidoDetalleFlotante />
+                      <VueloAlCarrito />
+                    </PedidoActivoProvider>
+                  </TiendaProvider>
+                </FavoritosProvider>
+              </EdadProvider>
+            </TemaProvider>
+          </AuthProvider>
+        </AvisoProvider>
+      </ModoProvider>
     </SafeAreaProvider>
   );
 }

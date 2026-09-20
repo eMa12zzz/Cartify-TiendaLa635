@@ -9,19 +9,24 @@
  */
 
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 
-const PantallaCarga = () => (
-  <View style={estilos.contenedor}>
-    <View style={estilos.marca}>
-      <Text style={estilos.marcaNombre}>Tienda</Text>
-      <Text style={estilos.marcaNombre}>la 635</Text>
+const PantallaCarga = () => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
+
+  return (
+    <View style={estilos.contenedor}>
+      <View style={estilos.marca}>
+        <Text style={estilos.marcaNombre}>Tienda</Text>
+        <Text style={estilos.marcaNombre}>la 635</Text>
+      </View>
+      <ActivityIndicator size="large" color={COLORES.marca} style={estilos.indicador} />
     </View>
-    <ActivityIndicator size="large" color={COLORES.marca} style={estilos.indicador} />
-  </View>
-);
+  );
+};
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   contenedor: {
     flex: 1,
     alignItems: 'center',

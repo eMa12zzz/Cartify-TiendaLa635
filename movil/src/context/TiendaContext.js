@@ -33,6 +33,7 @@ import { armarSecciones } from '../utils/secciones';
 import { promosVisibles, promoEnModulo } from '../utils/promos';
 import { cantidadConUnidad } from '../utils/unidades';
 import { guardar, leer, borrar, llave } from '../utils/almacen';
+import { volarAlCarrito } from '../utils/volarAlCarrito';
 import { useAviso } from './AvisoContext';
 import { useAuth } from '../hooks/useAuth';
 
@@ -399,8 +400,15 @@ export const TiendaProvider = ({ children }) => {
     avisar(`De su carrito guardado, ${partes.join(' y ')}. Ya está corregido.`);
   }, [cargando, carritoLeido, productos, lineas, carrito, guardarCarrito, avisar]);
 
+  /*
+   * `origenRef` es la vista de la foto desde donde se tocó "+": si viene, y
+   * el carrito está a la vista, sale volando hasta él (ver
+   * utils/volarAlCarrito.js). Sin foto de origen —el asistente de voz agrega
+   * así— no hay de dónde volar, y no pasa nada más que el aviso de siempre.
+   * Mismo contrato que `agregarAlCarrito` de useStore.js, en la web.
+   */
   const agregarAlCarrito = useCallback(
-    (producto, cantidad = 1) => {
+    (producto, cantidad = 1, { origenRef } = {}) => {
       if (!producto?.id) return;
       const stock = Number(producto.stock) || 0;
       if (stock <= 0) {
@@ -422,6 +430,8 @@ export const TiendaProvider = ({ children }) => {
           ? carrito.map((item) => (item.id === producto.id ? { ...item, cantidad: nuevaCantidad } : item))
           : [...carrito, { id: producto.id, cantidad }]
       );
+
+      volarAlCarrito({ origenRef, uri: producto.imagen });
 
       /*
        * El aviso dice cuántas lleva, no solo que se agregó: al segundo toque el

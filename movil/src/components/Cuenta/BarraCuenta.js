@@ -16,13 +16,14 @@
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { useEstilos } from '../../context/ModoContext';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
 import { ChevronIzquierda } from '../UI/Iconos';
 
 const BarraCuenta = ({ titulo, alVolver }) => {
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
 
   return (
     <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
@@ -46,7 +47,7 @@ const BarraCuenta = ({ titulo, alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   barra: {
     flexDirection: 'row',
     alignItems: 'center',

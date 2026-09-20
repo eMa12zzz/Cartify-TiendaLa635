@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
 
@@ -22,6 +22,8 @@ import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
 
 const ModalMapaSeguimiento = ({ punto, destino, colorMarca, alCerrar }) => {
   const { top, bottom } = useSafeAreaInsets();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
   const opacidad = useRef(new Animated.Value(0)).current;
   const cerrandoRef = useRef(false);
@@ -46,8 +48,8 @@ const ModalMapaSeguimiento = ({ punto, destino, colorMarca, alCerrar }) => {
   // Mismo criterio que la miniatura: solo se recrea el HTML cuando el punto
   // se movió de verdad, no en cada segundo que pasa.
   const html = useMemo(
-    () => crearHtmlSeguimiento({ punto, destino, colorMarca, interactivo: true }),
-    [punto?.lat, punto?.lng, destino?.lat, destino?.lng, colorMarca]
+    () => crearHtmlSeguimiento({ punto, destino, colorMarca, interactivo: true, oscuro: COLORES.oscuro }),
+    [punto?.lat, punto?.lng, destino?.lat, destino?.lng, colorMarca, COLORES.oscuro]
   );
 
   return (
@@ -74,7 +76,7 @@ const ModalMapaSeguimiento = ({ punto, destino, colorMarca, alCerrar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     // Más alto que BurbujaPedido.js (zIndex 900 / elevation 12): se abre

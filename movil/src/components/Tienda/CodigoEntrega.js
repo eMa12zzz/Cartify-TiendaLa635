@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { ShieldCheck, Store as TiendaIcono, Bike } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 
 /*
@@ -18,6 +18,8 @@ import { useTema } from '../../context/TemaContext';
  */
 const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
   if (!codigo) return null;
   if (estado === 'entregado' || estado === 'cancelado') return null;
@@ -66,7 +68,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   filaCompacta: {
     flexDirection: 'row',
     alignItems: 'center',

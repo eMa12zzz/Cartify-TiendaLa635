@@ -1,5 +1,6 @@
 import clientModel from "../../models/client.js";
 import { leerTokenBaja } from "../../utils/tokenBaja.js";
+import { esTokenExpo } from "../../utils/pushExpo.js";
 import { v2 as cloudinary } from "cloudinary";
 import bcryptjs from "bcryptjs";
 
@@ -413,6 +414,50 @@ clientController.updateNotifications = async (req, res) => {
 
   } catch (error) {
     console.log("error updateNotifications: " + error);
+    return res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+};
+
+/*
+ * EL TELÉFONO DICE DÓNDE ENCONTRARLO.
+ *
+ * Lo llama la app al conceder el permiso de avisos, con el token que le dio
+ * Expo. Es el complemento de las preferencias de arriba: aquellas dicen QUÉ
+ * avisos quiere, esto A DÓNDE mandarlos.
+ *
+ * Se agrega con $addToSet y no con push: abrir la app diez veces no tiene por
+ * qué dejar diez veces el mismo token. Y se manda `activo: false` al cerrar
+ * sesión — el aparato sigue siendo el mismo, pero ya no es de esta cuenta, y
+ * seguir avisándole ahí sería contarle a quien se quedó con el teléfono que
+ * el pedido de otro va en camino.
+ */
+clientController.updatePushToken = async (req, res) => {
+  try {
+    const { token, activo = true } = req.body;
+
+    // Un token con otra cara no es de Expo: no se guarda. Ver esTokenExpo.
+    if (!esTokenExpo(token)) {
+      return res.status(400).json({ message: "Token de avisos inválido" });
+    }
+
+    const cambio = activo
+      ? { $addToSet: { pushTokens: token.trim() } }
+      : { $pull: { pushTokens: token.trim() } };
+
+    const updated = await clientModel.findByIdAndUpdate(req.params.id, cambio, { new: true });
+
+    if (!updated) {
+      return res.status(404).json({ message: "No se encontró el cliente" });
+    }
+
+    return res.status(200).json({
+      message: activo ? "Este teléfono va a recibir los avisos" : "Este teléfono ya no recibe avisos",
+    });
+
+  } catch (error) {
+    console.log("error updatePushToken: " + error);
     return res.status(500).json({
       message: "Error interno del servidor",
     });

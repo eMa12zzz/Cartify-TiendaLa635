@@ -25,34 +25,40 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Store, Check } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
 import { navegarA } from '../../navigation/navigationRef';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 
-const Opcion = ({ Icono, texto, activa, colores, onPress }) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="menuitem"
-    accessibilityState={{ selected: activa }}
-    style={({ pressed }) => [
-      estilos.opcion,
-      activa && { backgroundColor: colores.marcaSuave },
-      pressed && !activa && { backgroundColor: COLORES.linea },
-    ]}
-  >
-    <Icono size={18} strokeWidth={2.1} color={activa ? colores.marca : COLORES.textoSuave} />
-    <Text style={[estilos.opcionTexto, activa && { color: colores.marca }]} numberOfLines={1}>
-      {texto}
-    </Text>
-    {activa && <Check size={16} strokeWidth={2.6} color={colores.marca} />}
-  </Pressable>
-);
+const Opcion = ({ Icono, texto, activa, colores, onPress }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="menuitem"
+      accessibilityState={{ selected: activa }}
+      style={({ pressed }) => [
+        estilos.opcion,
+        activa && { backgroundColor: colores.marcaSuave },
+        pressed && !activa && { backgroundColor: COLORES.linea },
+      ]}
+    >
+      <Icono size={18} strokeWidth={2.1} color={activa ? colores.marca : COLORES.textoSuave} />
+      <Text style={[estilos.opcionTexto, activa && { color: colores.marca }]} numberOfLines={1}>
+        {texto}
+      </Text>
+      {activa && <Check size={16} strokeWidth={2.6} color={colores.marca} />}
+    </Pressable>
+  );
+};
 
 const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
 
   // La misma entrada y salida que ModalProducto: fondo que se aclara, hoja
@@ -188,7 +194,7 @@ const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 15,
@@ -196,14 +202,14 @@ const estilos = StyleSheet.create({
   },
   fondo: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: COLORES.velo,
     justifyContent: 'flex-end',
   },
   zonaCierre: {
     flex: 1,
   },
   panel: {
-    backgroundColor: COLORES.fondo,
+    backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     maxHeight: '75%',

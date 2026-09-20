@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import Boton from '../UI/Boton';
 import { Equis } from '../UI/Iconos';
@@ -33,6 +33,8 @@ import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 // SIEMPRE está detrás.
 const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, alAgregar }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
 
   /*
@@ -222,7 +224,7 @@ const TarjetaPromoAncho = ({ promo }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 10,
@@ -230,14 +232,14 @@ const estilos = StyleSheet.create({
   },
   fondo: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: COLORES.velo,
     justifyContent: 'flex-end',
   },
   zonaCierre: {
     flex: 1,
   },
   panel: {
-    backgroundColor: COLORES.fondo,
+    backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     maxHeight: '88%',

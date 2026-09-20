@@ -20,11 +20,30 @@ const VERSION = '5.24.0';
 export const MAPLIBRE_JS = `https://cdn.jsdelivr.net/npm/maplibre-gl@${VERSION}/dist/maplibre-gl.js`;
 export const MAPLIBRE_CSS = `https://cdn.jsdelivr.net/npm/maplibre-gl@${VERSION}/dist/maplibre-gl.css`;
 
-// El mismo estilo claro que usa mapcn en la web.
+/*
+ * Los mismos dos estilos que usa mapcn en la web: las calles claras de
+ * siempre y, en modo oscuro, las oscuras de CARTO — no un mapa blanco en
+ * medio de la pantalla.
+ */
 export const ESTILO_MAPA = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+export const ESTILO_MAPA_OSCURO = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+
+export const estiloMapa = (oscuro) => (oscuro ? ESTILO_MAPA_OSCURO : ESTILO_MAPA);
 
 // El color de fondo del mapa mientras cargan las calles.
 export const FONDO_MAPA = '#F2F1EE';
+export const FONDO_MAPA_OSCURO = '#1F2328';
+
+// En oscuro, los botones de zoom y el crédito también: cajitas blancas
+// encima de un mapa negro deslumbran.
+const cssControlesOscuros = `
+  .maplibregl-ctrl-group { background: #1A1D21 !important; }
+  .maplibregl-ctrl-group button + button { border-top-color: #2A2F35 !important; }
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1) brightness(.85); }
+  .maplibregl-ctrl-attrib { background: rgba(26,29,33,.85) !important; color: #A9B0B7; }
+  .maplibregl-ctrl-attrib a { color: #A9B0B7; }
+  .maplibregl-ctrl-attrib-button { filter: invert(1) brightness(.85); }
+`;
 
 /*
  * Los pines y el crédito, igual que en la web (MapaTienda.jsx):
@@ -32,8 +51,9 @@ export const FONDO_MAPA = '#F2F1EE';
  * - el repartidor: punto azul con halo que late;
  * - el crédito "© CARTO, © OpenStreetMap" plegado en su botón "i".
  */
-export const cssComun = (colorMarca) => `
-  html, body, #mapa { height: 100%; margin: 0; padding: 0; background: ${FONDO_MAPA}; }
+export const cssComun = (colorMarca, oscuro = false) => `
+  html, body, #mapa { height: 100%; margin: 0; padding: 0; background: ${oscuro ? FONDO_MAPA_OSCURO : FONDO_MAPA}; }
+  ${oscuro ? cssControlesOscuros : ''}
   .pin-gota-caja { width: 26px; height: 26px; display: flex; align-items: flex-start; justify-content: center; }
   .pin-gota {
     width: 20px; height: 20px; border-radius: 50% 50% 50% 0;
