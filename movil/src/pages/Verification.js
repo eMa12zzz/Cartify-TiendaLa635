@@ -18,7 +18,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import { useTema } from '../context/TemaContext';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
 import { verificarCodigoCorreo } from '../api/authApi';
 
 const LARGO = 6;
@@ -43,6 +43,8 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
   // La paleta de la temporada, para que las casillas del código y el botón
   // sigan el mismo color que la tienda. Fuera de temporada es el café de siempre.
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
+  const COLORES = useColores();
   const [codigo, setCodigo] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -117,6 +119,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
               autoCorrect={false}
               autoFocus
               caretHidden
+              keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
             />
           </Pressable>
         </View>
@@ -139,7 +142,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -164,9 +167,9 @@ const estilos = StyleSheet.create({
     marginBottom: 16,
   },
   caja: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: COLORES.papelSuave,
     borderWidth: 1,
-    borderColor: '#EFEFEF',
+    borderColor: COLORES.linea,
     borderRadius: 10,
     padding: 18,
     marginBottom: 20,
@@ -179,7 +182,7 @@ const estilos = StyleSheet.create({
   },
   correo: {
     fontWeight: '700',
-    color: '#333333',
+    color: COLORES.tinta,
   },
   casillas: {
     flexDirection: 'row',

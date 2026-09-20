@@ -40,7 +40,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Menu, Search, ShoppingBag } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
 import { Equis } from '../UI/Iconos';
@@ -54,6 +54,8 @@ const CURVA_POP = Easing.bezier(0.23, 1, 0.32, 1);
 
 const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, alAbrirPasillos }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
   /*
    * El ícono del carrito es el destino de `volarAlCarrito.js`: se registra
@@ -115,7 +117,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
         hitSlop={6}
         style={({ pressed }) => [estilos.marca, pressed && { backgroundColor: colores.marcaTenue }]}
       >
-        <Menu size={19} color="#6B7280" strokeWidth={2.2} />
+        <Menu size={19} color={COLORES.tintaSuave} strokeWidth={2.2} />
         <MarcaTienda tamano={20} />
       </Pressable>
 
@@ -171,6 +173,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
         // El teclado muestra "buscar" en vez de un salto de línea, y filtrar
         // ya pasa con cada letra, así que aceptar solo cierra el teclado.
         returnKeyType="search"
+        keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
         autoCorrect={false}
         autoCapitalize="none"
         // En iOS aparece su propia equis; se apaga para no tener dos.
@@ -196,7 +199,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   barra: {
     backgroundColor: COLORES.fondo,
     paddingHorizontal: 16,

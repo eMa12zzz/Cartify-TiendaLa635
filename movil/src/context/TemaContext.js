@@ -34,7 +34,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { getAjustes } from '../api/ajustesApi';
 import { COLORES } from '../theme/colores';
-import { temaActivo } from '../utils/temporadas';
+import { paletaOscura, temaActivo } from '../utils/temporadas';
+import { useModo } from './ModoContext';
 
 const TemaContext = createContext(null);
 
@@ -52,6 +53,9 @@ export const PALETA_BASE = {
 };
 
 export const TemaProvider = ({ children }) => {
+  // En modo oscuro la temporada (o la marca, si no hay) se pinta con su
+  // versión para fondo oscuro. Por eso TemaProvider va DENTRO de ModoProvider.
+  const { oscuro } = useModo();
   const [temporada, setTemporada] = useState(null);
   const [decoracionEncendida, setDecoracionEncendida] = useState(true);
 
@@ -99,19 +103,25 @@ export const TemaProvider = ({ children }) => {
     return propio ? { ...base, decoracion: { ...base.decoracion, saludo: propio } } : base;
   }, [temporada]);
 
-  const valor = useMemo(
-    () => ({
+  const valor = useMemo(() => {
+    // La paleta ya resuelta: siempre completa, haya temporada o no.
+    const clara = tema ? { ...PALETA_BASE, ...tema.colores } : PALETA_BASE;
+    return {
       // El tema crudo, para quien necesite su clave o su saludo.
       tema,
       activo: !!tema,
-      // La paleta ya resuelta: siempre completa, haya temporada o no.
-      colores: tema ? { ...PALETA_BASE, ...tema.colores } : PALETA_BASE,
+      colores: oscuro ? paletaOscura(clara) : clara,
+      /*
+       * La de siempre aunque rija el modo oscuro. Solo para lo que es arte a
+       * sangre con texto blanco encima (la introducción): ahí el azul hondo
+       * ya es el fondo oscuro, y aclararlo le quitaba contraste al texto.
+       */
+      coloresClaros: clara,
       decoracion: tema && decoracionEncendida ? tema.decoracion : null,
       // El saludo de los días sin temporada. En blanco no sale cinta.
       saludoNormal: (temporada?.saludoNormal || '').trim(),
-    }),
-    [tema, decoracionEncendida, temporada]
-  );
+    };
+  }, [tema, decoracionEncendida, temporada, oscuro]);
 
   return <TemaContext.Provider value={valor}>{children}</TemaContext.Provider>;
 };

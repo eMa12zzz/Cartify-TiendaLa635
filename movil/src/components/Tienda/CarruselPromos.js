@@ -26,6 +26,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTema } from '../../context/TemaContext';
+import { useEstilos } from '../../context/ModoContext';
 import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import TarjetaPromo from './TarjetaPromo';
 
@@ -40,6 +41,7 @@ const ANCHO_PILDORA = 22;
 
 const CarruselPromos = ({ promos, alElegirPromo }) => {
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const [activa, setActiva] = useState(0);
   const [anchoPantalla, setAnchoPantalla] = useState(Dimensions.get('window').width);
   const scrollRef = useRef(null);
@@ -181,7 +183,7 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   seccion: {
     paddingTop: 6,
     paddingBottom: 4,
@@ -202,7 +204,7 @@ const estilos = StyleSheet.create({
   punto: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#D9C7B4',
+    backgroundColor: COLORES.borde,
   },
 });
 

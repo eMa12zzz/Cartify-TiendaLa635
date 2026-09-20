@@ -20,13 +20,15 @@
  */
 
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { Equis } from './Iconos';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { FECHA_TERMINOS, SECCIONES, TABLA_DATOS, VERSION_TERMINOS } from '../../utils/terminos';
 
 const Bloque = ({ bloque }) => {
+  const estilos = useEstilos(crearEstilos);
+
   switch (bloque.tipo) {
     case 'destacado':
       return (
@@ -76,14 +78,20 @@ const Bloque = ({ bloque }) => {
   }
 };
 
-const Dato = ({ etiqueta, valor }) => (
-  <View style={estilos.dato}>
-    <Text style={estilos.datoEtiqueta}>{etiqueta}</Text>
-    <Text style={estilos.datoValor}>{valor}</Text>
-  </View>
-);
+const Dato = ({ etiqueta, valor }) => {
+  const estilos = useEstilos(crearEstilos);
+
+  return (
+    <View style={estilos.dato}>
+      <Text style={estilos.datoEtiqueta}>{etiqueta}</Text>
+      <Text style={estilos.datoValor}>{valor}</Text>
+    </View>
+  );
+};
 
 const HojaTerminos = ({ alCerrar }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   useBotonAtras(alCerrar);
 
   return (
@@ -119,7 +127,7 @@ const HojaTerminos = ({ alCerrar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORES.fondo,
@@ -208,7 +216,7 @@ const estilos = StyleSheet.create({
     color: COLORES.textoVentaja,
   },
   nota: {
-    backgroundColor: '#FAFAF9',
+    backgroundColor: COLORES.papelSuave,
     borderRadius: 10,
     padding: 12,
     marginTop: 4,

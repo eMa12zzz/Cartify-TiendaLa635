@@ -10,26 +10,30 @@
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { useEstilos } from '../../context/ModoContext';
 import { Check } from './Iconos';
 
-const Casilla = ({ marcada, alCambiar, etiqueta }) => (
-  <Pressable
-    onPress={() => alCambiar(!marcada)}
-    style={estilos.fila}
-    hitSlop={6}
-    accessibilityRole="checkbox"
-    accessibilityState={{ checked: marcada }}
-    accessibilityLabel={etiqueta}
-  >
-    <View style={[estilos.cuadro, marcada && estilos.cuadroMarcado]}>
-      {marcada && <Check size={12} />}
-    </View>
-    <Text style={estilos.etiqueta}>{etiqueta}</Text>
-  </Pressable>
-);
+const Casilla = ({ marcada, alCambiar, etiqueta }) => {
+  const estilos = useEstilos(crearEstilos);
 
-const estilos = StyleSheet.create({
+  return (
+    <Pressable
+      onPress={() => alCambiar(!marcada)}
+      style={estilos.fila}
+      hitSlop={6}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: marcada }}
+      accessibilityLabel={etiqueta}
+    >
+      <View style={[estilos.cuadro, marcada && estilos.cuadroMarcado]}>
+        {marcada && <Check size={12} />}
+      </View>
+      <Text style={estilos.etiqueta}>{etiqueta}</Text>
+    </Pressable>
+  );
+};
+
+const crearEstilos = (COLORES) => StyleSheet.create({
   fila: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -50,7 +54,7 @@ const estilos = StyleSheet.create({
   },
   etiqueta: {
     fontSize: 13,
-    color: '#555555',
+    color: COLORES.textoVentaja,
   },
 });
 

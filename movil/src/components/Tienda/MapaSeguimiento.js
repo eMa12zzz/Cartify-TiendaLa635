@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Maximize2 } from 'lucide-react-native';
+import { useModo } from '../../context/ModoContext';
 import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
 
 /*
@@ -56,16 +57,19 @@ import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
  *                     qué hacer (abrir ModalMapaSeguimiento.js).
  */
 const MapaSeguimiento = ({ punto, destino, alto = 132, colorMarca = '#8C5628', alAgrandar }) => {
+  // Calles oscuras de CARTO en modo oscuro, igual que la web.
+  const { oscuro } = useModo();
+
   // Sin ningún punto no hay mapa que valga la pena: ver el porqué en
   // BurbujaPedido.js, donde tampoco se monta sin esto.
   if (!punto && !destino) return null;
 
   const html = useMemo(
-    () => crearHtmlSeguimiento({ punto, destino, colorMarca, interactivo: false }),
+    () => crearHtmlSeguimiento({ punto, destino, colorMarca, interactivo: false, oscuro }),
     // Cambia de HTML solo cuando el punto se movió de verdad, no en cada
     // segundo que pasa: recrear el WebView entero por cada "tic" del reloj
     // haría parpadear el mapa en vez de solo mover el pin.
-    [punto?.lat, punto?.lng, destino?.lat, destino?.lng, colorMarca]
+    [punto?.lat, punto?.lng, destino?.lat, destino?.lng, colorMarca, oscuro]
   );
 
   return (

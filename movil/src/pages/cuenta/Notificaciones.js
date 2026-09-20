@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
@@ -57,6 +57,8 @@ const DURACION_INTERRUPTOR = 160;
  * color) corre por un solo `Animated.Value` en el hilo de JS.
  */
 const Interruptor = ({ encendido, alTocar, color, etiqueta }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const progreso = useRef(new Animated.Value(encendido ? 1 : 0)).current;
 
   useEffect(() => {
@@ -105,6 +107,7 @@ const Interruptor = ({ encendido, alTocar, color, etiqueta }) => {
 const Notificaciones = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
 
   const [prefs, setPrefs] = useState(POR_DEFECTO);
@@ -191,7 +194,7 @@ const Notificaciones = ({ alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

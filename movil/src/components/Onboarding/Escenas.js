@@ -135,7 +135,8 @@ const PRODUCTOS_TIENDA = [
 ];
 
 export const EscenaTienda = ({ activa }) => {
-  const { colores } = useTema();
+  // Maqueta dibujada: igual en los dos modos (ver coloresClaros en TemaContext).
+  const { coloresClaros: colores } = useTema();
   // 0 marco · 1-3 tarjetas · 4-6 fotos que flotan · 7 contador del carrito
   const pops = usarPops(8, activa);
   const flota = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
@@ -234,7 +235,8 @@ export const EscenaTienda = ({ activa }) => {
 const BARRAS = [0.4, 0.75, 0.55, 1, 0.65, 0.9, 0.5, 0.8, 0.45, 0.7, 0.35];
 
 export const EscenaVoz = ({ activa }) => {
-  const { colores } = useTema();
+  // Maqueta dibujada: igual en los dos modos (ver coloresClaros en TemaContext).
+  const { coloresClaros: colores } = useTema();
   // 0 orbe · 1 ondas · 2 frase · 3 carrito · 4-6 renglones
   const pops = usarPops(7, activa, { paso: 140 });
   const anillos = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
@@ -332,7 +334,8 @@ const FRACCIONES = LARGOS.reduce((acc, l) => [...acc, acc[acc.length - 1] + l / 
 const CODIGO = ['9', '2', '9', '4'];
 
 export const EscenaMapa = ({ activa }) => {
-  const { colores } = useTema();
+  // Maqueta dibujada: igual en los dos modos (ver coloresClaros en TemaContext).
+  const { coloresClaros: colores } = useTema();
   // 0 mapa · 1 aviso · 2 tienda · 3 casa · 4 tarjeta · 5-8 dígitos
   const pops = usarPops(9, activa, { paso: 120 });
   const avance = useRef(new Animated.Value(0)).current;
@@ -443,7 +446,8 @@ const FAVORITOS = [
 ];
 
 export const EscenaPuntos = ({ activa }) => {
-  const { colores } = useTema();
+  // Maqueta dibujada: igual en los dos modos (ver coloresClaros en TemaContext).
+  const { coloresClaros: colores } = useTema();
   // 0 aro · 1-2 favoritos · 3-4 corazones · 5 compra de hoy
   const pops = usarPops(6, activa, { paso: 130 });
   const progreso = useRef(new Animated.Value(0)).current;

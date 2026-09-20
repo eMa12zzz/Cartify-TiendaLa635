@@ -27,15 +27,15 @@
  * ============================================================
  */
 
-import { ESTILO_MAPA, MAPLIBRE_CSS, MAPLIBRE_JS, JS_PLEGAR_CREDITO, cssComun } from './mapaMapLibre';
+import { MAPLIBRE_CSS, MAPLIBRE_JS, JS_PLEGAR_CREDITO, cssComun, estiloMapa } from './mapaMapLibre';
 
-export const crearHtmlMapa = ({ colorPin, centro }) => `<!DOCTYPE html>
+export const crearHtmlMapa = ({ colorPin, centro, oscuro = false }) => `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="${MAPLIBRE_CSS}" />
-  <style>${cssComun(colorPin)}</style>
+  <style>${cssComun(colorPin, oscuro)}</style>
 </head>
 <body>
   <div id="mapa"></div>
@@ -45,7 +45,7 @@ export const crearHtmlMapa = ({ colorPin, centro }) => `<!DOCTYPE html>
 
     var mapa = new maplibregl.Map({
       container: 'mapa',
-      style: '${ESTILO_MAPA}',
+      style: '${estiloMapa(oscuro)}',
       center: [${centro.lng}, ${centro.lat}],
       zoom: 13,
       attributionControl: { compact: true },

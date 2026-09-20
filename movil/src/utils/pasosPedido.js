@@ -1,4 +1,5 @@
 import { Package, ChefHat, Bike, Check } from 'lucide-react-native';
+import { COLORES_OSCURO } from '../theme/colores';
 
 /*
  * ============================================================
@@ -58,3 +59,18 @@ export const ESTADOS_PEDIDO = {
   entregado: { texto: 'Entregado', color: '#16A34A', fondo: '#E4F5EA' },
   cancelado: { texto: 'Cancelado', color: '#DC2626', fondo: '#FBE7E7' },
 };
+
+/*
+ * En modo oscuro las chapas salen de los colores de estado de la paleta
+ * oscura: un fondo pastel sobre negro deslumbra, y un azul oscuro sobre fondo
+ * oscuro no se lee.
+ */
+const ESTADOS_PEDIDO_OSCURO = {
+  pagado: { texto: 'Pagado', color: COLORES_OSCURO.infoVivo, fondo: COLORES_OSCURO.infoFondo },
+  preparando: { texto: 'Preparando', color: COLORES_OSCURO.avisoVivo, fondo: COLORES_OSCURO.avisoFondo },
+  en_camino: { texto: 'En camino', color: COLORES_OSCURO.infoVivo, fondo: COLORES_OSCURO.infoFondo },
+  entregado: { texto: 'Entregado', color: COLORES_OSCURO.exitoVivo, fondo: COLORES_OSCURO.exitoFondo },
+  cancelado: { texto: 'Cancelado', color: COLORES_OSCURO.peligro, fondo: COLORES_OSCURO.peligroFondo },
+};
+
+export const estadosPedido = (oscuro) => (oscuro ? ESTADOS_PEDIDO_OSCURO : ESTADOS_PEDIDO);
