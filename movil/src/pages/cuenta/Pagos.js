@@ -28,11 +28,13 @@
  * cobro de verdad pasa por caja o al entregar; "tarjeta" aquí es la intención
  * de pagar con tarjeta, no un cargo. Mismo criterio que Checkout.js.
  *
- * ── Efectivo sigue estando ──
+ * ── Efectivo ya no se guarda desde aquí ──
  *
- * La web solo deja guardar tarjetas; aquí se conserva la tercera opción que
- * esta pantalla ya tenía, porque quien paga en efectivo también quiere dejarlo
- * anotado. Un método de efectivo es solo su nombre.
+ * Esta pantalla llegó a tener una tercera opción, "Efectivo", y se quitó: no
+ * es un método que haya que dejar anotado —se elige al pagar, en Checkout.js,
+ * que es donde sigue estando— y guardarlo solo llenaba la lista de renglones
+ * sin dato. Lo que SÍ se conserva es pintar y poder borrar un efectivo viejo
+ * de quien alcanzó a guardarlo: sale de la cuenta, no del formulario.
  *
  * ── Guardar (y borrar) es mandar la lista completa ──
  *
@@ -85,7 +87,6 @@ const FORM_VACIO = { tipo: 'credito', numero: '', titular: '', vencimiento: '', 
 const TIPOS = [
   { valor: 'credito', texto: 'Crédito', Icono: CreditCard },
   { valor: 'debito', texto: 'Débito', Icono: CreditCard },
-  { valor: 'efectivo', texto: 'Efectivo', Icono: Banknote },
 ];
 
 const Etiqueta = ({ children }) => {
@@ -176,7 +177,6 @@ const Pagos = ({ alVolver }) => {
   };
 
   /* ── Lo que dice el formulario de la tarjeta ── */
-  const esEfectivo = nuevo.tipo === 'efectivo';
   const digitos = soloDigitos(nuevo.numero);
   const marca = detectarMarca(digitos);
   const numeroCompleto = digitos.length === largoDe(marca);
@@ -217,12 +217,9 @@ const Pagos = ({ alVolver }) => {
             ? 'Esta tarjeta ya venció.'
             : '',
     titular: tocado.titular && !titularValido ? 'Escriba el nombre como aparece en la tarjeta.' : '',
-    alias: tocado.alias && esEfectivo && !nuevo.alias.trim() ? 'Póngale un nombre a este método.' : '',
   };
 
-  const listo = esEfectivo
-    ? !!nuevo.alias.trim()
-    : numeroValido && !!venc && !vencida && titularValido && !duplicada;
+  const listo = numeroValido && !!venc && !vencida && titularValido && !duplicada;
 
   const cambiar = (campo, valor) => setNuevo((f) => ({ ...f, [campo]: valor }));
   const tocar = (campo) => setTocado((t) => ({ ...t, [campo]: true }));
@@ -234,7 +231,7 @@ const Pagos = ({ alVolver }) => {
   };
 
   const agregar = async () => {
-    setTocado({ numero: true, vencimiento: true, titular: true, alias: true });
+    setTocado({ numero: true, vencimiento: true, titular: true });
     if (!listo) return;
 
     /*
@@ -242,18 +239,16 @@ const Pagos = ({ alVolver }) => {
      * nombre que espera el backend y el que lee la web — con el otro, una
      * tarjeta guardada desde el teléfono aparecía como "Efectivo" allá.
      */
-    const metodo = esEfectivo
-      ? { type: 'efectivo', alias: nuevo.alias.trim() }
-      : {
-          type: 'tarjeta',
-          alias: nuevo.alias.trim() || `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`,
-          last4: digitos.slice(-4),
-          brand: marca,
-          cardType: nuevo.tipo,
-          holder: nuevo.titular.trim().toUpperCase(),
-          expMonth: venc.mes,
-          expYear: venc.anio,
-        };
+    const metodo = {
+      type: 'tarjeta',
+      alias: nuevo.alias.trim() || `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`,
+      last4: digitos.slice(-4),
+      brand: marca,
+      cardType: nuevo.tipo,
+      holder: nuevo.titular.trim().toUpperCase(),
+      expMonth: venc.mes,
+      expYear: venc.anio,
+    };
 
     const lista = [...metodos, metodo];
     setGuardando(true);
@@ -261,7 +256,7 @@ const Pagos = ({ alVolver }) => {
       await actualizarMetodosPago(user.id, lista);
       setMetodos(lista);
       cerrarFormulario();
-      avisar(esEfectivo ? 'Método de pago guardado' : 'Tarjeta guardada');
+      avisar('Tarjeta guardada');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar el método de pago', 'error');
     } finally {
@@ -426,8 +421,8 @@ const Pagos = ({ alVolver }) => {
 
           {escribiendo ? (
             <View style={[estilos.formulario, { borderColor: colores.marcaSuave }]}>
-              {/* Crédito, débito o efectivo. Sin <select> nativo: tres píldoras
-                  hacen lo mismo con menos fricción en un teléfono. */}
+              {/* Crédito o débito. Sin <select> nativo: dos píldoras hacen lo
+                  mismo con menos fricción en un teléfono. */}
               <View
                 style={estilos.filaTipo}
                 accessibilityRole="radiogroup"
@@ -455,123 +450,111 @@ const Pagos = ({ alVolver }) => {
                 })}
               </View>
 
-              {!esEfectivo && (
-                <>
-                  {/* La tarjeta dibujada, que se va llenando con lo que escribe:
-                      es la forma más rápida de comparar con la que tiene en la mano. */}
-                  <VistaTarjeta
-                    numero={digitos}
-                    titular={nuevo.titular}
-                    vencimiento={nuevo.vencimiento}
-                    tipo={nuevo.tipo}
-                  />
-
-                  <View>
-                    <Etiqueta>Número de tarjeta</Etiqueta>
-                    <View>
-                      <TextInput
-                        value={formatearNumero(nuevo.numero)}
-                        onChangeText={(v) => {
-                          // Recortado al largo de la marca: pegar un número de
-                          // más no deja dígitos escondidos.
-                          const d = soloDigitos(v);
-                          cambiar('numero', d.slice(0, largoDe(detectarMarca(d))));
-                        }}
-                        onBlur={() => tocar('numero')}
-                        placeholder="1234 5678 9012 3456"
-                        placeholderTextColor={COLORES.marcador}
-                        keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
-                        keyboardType="number-pad"
-                        maxLength={LARGO_NUMERO}
-                        style={[estilos.campo, estilos.campoNumero, !!errores.numero && estilos.campoMal]}
-                        accessibilityLabel="Número de tarjeta"
-                      />
-                      {/* El logo de la red, dentro del campo y a la derecha. */}
-                      <View style={estilos.logoEnCampo} pointerEvents="none">
-                        {digitos ? (
-                          <MarcaTarjeta marca={marca} alto={22} />
-                        ) : (
-                          <CreditCard size={18} color={COLORES.marcador} />
-                        )}
-                      </View>
-                    </View>
-                    <MensajeError texto={errores.numero} />
-                  </View>
-
-                  <View>
-                    <Etiqueta>Nombre del titular</Etiqueta>
-                    <TextInput
-                      value={nuevo.titular}
-                      onChangeText={(v) => cambiar('titular', v)}
-                      onBlur={() => tocar('titular')}
-                      placeholder="Como aparece en la tarjeta"
-                      placeholderTextColor={COLORES.marcador}
-                      keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
-                      autoCapitalize="characters"
-                      autoCorrect={false}
-                      maxLength={40}
-                      style={[estilos.campo, !!errores.titular && estilos.campoMal]}
-                      accessibilityLabel="Nombre del titular"
-                    />
-                    <MensajeError texto={errores.titular} />
-                  </View>
-
-                  <View>
-                    <Etiqueta>Vencimiento</Etiqueta>
-                    <TextInput
-                      value={nuevo.vencimiento}
-                      onChangeText={(v) => cambiar('vencimiento', formatearVencimiento(v))}
-                      onBlur={() => tocar('vencimiento')}
-                      placeholder="MM/AA"
-                      placeholderTextColor={COLORES.marcador}
-                      keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
-                      keyboardType="number-pad"
-                      maxLength={LARGO_VENCIMIENTO}
-                      style={[estilos.campo, !!errores.vencimiento && estilos.campoMal]}
-                      accessibilityLabel="Vencimiento de la tarjeta"
-                    />
-                    <MensajeError texto={errores.vencimiento} />
-                  </View>
-                </>
-              )}
+              {/* La tarjeta dibujada, que se va llenando con lo que escribe:
+                  es la forma más rápida de comparar con la que tiene en la mano. */}
+              <VistaTarjeta
+                numero={digitos}
+                titular={nuevo.titular}
+                vencimiento={nuevo.vencimiento}
+                tipo={nuevo.tipo}
+              />
 
               <View>
-                <Etiqueta>
-                  {esEfectivo ? 'Nombre' : 'Nombre para reconocerla (opcional)'}
-                </Etiqueta>
+                <Etiqueta>Número de tarjeta</Etiqueta>
+                <View>
+                  <TextInput
+                    value={formatearNumero(nuevo.numero)}
+                    onChangeText={(v) => {
+                      // Recortado al largo de la marca: pegar un número de
+                      // más no deja dígitos escondidos.
+                      const d = soloDigitos(v);
+                      cambiar('numero', d.slice(0, largoDe(detectarMarca(d))));
+                    }}
+                    onBlur={() => tocar('numero')}
+                    placeholder="1234 5678 9012 3456"
+                    placeholderTextColor={COLORES.marcador}
+                    keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
+                    keyboardType="number-pad"
+                    maxLength={LARGO_NUMERO}
+                    style={[estilos.campo, estilos.campoNumero, !!errores.numero && estilos.campoMal]}
+                    accessibilityLabel="Número de tarjeta"
+                  />
+                  {/* El logo de la red, dentro del campo y a la derecha. */}
+                  <View style={estilos.logoEnCampo} pointerEvents="none">
+                    {digitos ? (
+                      <MarcaTarjeta marca={marca} alto={22} />
+                    ) : (
+                      <CreditCard size={18} color={COLORES.marcador} />
+                    )}
+                  </View>
+                </View>
+                <MensajeError texto={errores.numero} />
+              </View>
+
+              <View>
+                <Etiqueta>Nombre del titular</Etiqueta>
+                <TextInput
+                  value={nuevo.titular}
+                  onChangeText={(v) => cambiar('titular', v)}
+                  onBlur={() => tocar('titular')}
+                  placeholder="Como aparece en la tarjeta"
+                  placeholderTextColor={COLORES.marcador}
+                  keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={40}
+                  style={[estilos.campo, !!errores.titular && estilos.campoMal]}
+                  accessibilityLabel="Nombre del titular"
+                />
+                <MensajeError texto={errores.titular} />
+              </View>
+
+              <View>
+                <Etiqueta>Vencimiento</Etiqueta>
+                <TextInput
+                  value={nuevo.vencimiento}
+                  onChangeText={(v) => cambiar('vencimiento', formatearVencimiento(v))}
+                  onBlur={() => tocar('vencimiento')}
+                  placeholder="MM/AA"
+                  placeholderTextColor={COLORES.marcador}
+                  keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
+                  keyboardType="number-pad"
+                  maxLength={LARGO_VENCIMIENTO}
+                  style={[estilos.campo, !!errores.vencimiento && estilos.campoMal]}
+                  accessibilityLabel="Vencimiento de la tarjeta"
+                />
+                <MensajeError texto={errores.vencimiento} />
+              </View>
+
+              <View>
+                <Etiqueta>Nombre para reconocerla (opcional)</Etiqueta>
                 <TextInput
                   value={nuevo.alias}
                   onChangeText={(v) => cambiar('alias', v)}
-                  onBlur={() => tocar('alias')}
                   placeholder={
-                    esEfectivo
-                      ? 'Efectivo'
-                      : digitos
-                        ? `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`
-                        : 'Ej. Tarjeta del trabajo'
+                    digitos
+                      ? `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`
+                      : 'Ej. Tarjeta del trabajo'
                   }
                   placeholderTextColor={COLORES.marcador}
                   keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                   maxLength={40}
-                  style={[estilos.campo, !!errores.alias && estilos.campoMal]}
+                  style={estilos.campo}
                   accessibilityLabel="Nombre del método de pago"
                 />
-                <MensajeError texto={errores.alias} />
               </View>
 
-              {!esEfectivo && (
-                <View style={estilos.filaCandado}>
-                  <Lock size={13} color={COLORES.textoTenue} style={estilos.candado} />
-                  <Text style={estilos.notaCandado}>
-                    Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El
-                    número completo no sale de este formulario, y el código de seguridad se pide solo
-                    al pagar.
-                  </Text>
-                </View>
-              )}
+              <View style={estilos.filaCandado}>
+                <Lock size={13} color={COLORES.textoTenue} style={estilos.candado} />
+                <Text style={estilos.notaCandado}>
+                  Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El
+                  número completo no sale de este formulario, y el código de seguridad se pide solo
+                  al pagar.
+                </Text>
+              </View>
 
               <Boton
-                texto={guardando ? 'Guardando…' : esEfectivo ? 'Guardar método de pago' : 'Guardar tarjeta'}
+                texto={guardando ? 'Guardando…' : 'Guardar tarjeta'}
                 alPresionar={agregar}
                 cargando={guardando}
                 deshabilitado={!listo}
