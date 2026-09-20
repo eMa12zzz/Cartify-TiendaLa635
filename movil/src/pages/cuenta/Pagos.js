@@ -8,13 +8,31 @@
  * Checkout.js, con `getSaldo`/`canjearTarjeta`— y aquí se juntan en su
  * propio apartado, como en la web.
  *
+ * ── Agregar una tarjeta es como en cualquier tienda seria ──
+ *
+ * Número completo con la marca reconocida al vuelo, titular y vencimiento,
+ * con una tarjeta de vista previa que se va llenando (ver VistaTarjeta.js).
+ * El número se valida con el dígito verificador (Luhn) y el vencimiento no
+ * puede estar en el pasado — las mismas reglas de la web, en utils/tarjetas.js.
+ *
+ * Antes esta pantalla pedía "alias y los últimos 4 dígitos" a mano: había que
+ * mirar la tarjeta y transcribir, nadie validaba nada, y la lista no podía
+ * decir de qué marca era ni cuándo vencía.
+ *
  * ── No hay pasarela, ni aquí ni en la web ──
  *
- * Guardar un método de pago es solo tipo, alias y los últimos 4 dígitos —
- * nunca el número completo ni el CVV. El backend los recorta igual aunque
- * se mandaran (`updatePaymentMethods` en clientController.js). El cobro de
- * verdad pasa por caja o al entregar; "tarjeta" aquí es la intención de
- * pagar con tarjeta, no un cargo. Mismo criterio que Checkout.js.
+ * El número completo NUNCA sale de este formulario: al servidor viajan la
+ * marca, el tipo, los últimos 4, el titular y el vencimiento, y el CVV ni se
+ * pide (lo pide la pasarela al momento de pagar). El backend recorta igual lo
+ * que le manden de más (`updatePaymentMethods` en clientController.js). El
+ * cobro de verdad pasa por caja o al entregar; "tarjeta" aquí es la intención
+ * de pagar con tarjeta, no un cargo. Mismo criterio que Checkout.js.
+ *
+ * ── Efectivo sigue estando ──
+ *
+ * La web solo deja guardar tarjetas; aquí se conserva la tercera opción que
+ * esta pantalla ya tenía, porque quien paga en efectivo también quiere dejarlo
+ * anotado. Un método de efectivo es solo su nombre.
  *
  * ── Guardar (y borrar) es mandar la lista completa ──
  *
@@ -26,7 +44,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -34,21 +51,69 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Banknote, CreditCard, Gift, Trash2 } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { Banknote, CircleAlert, CreditCard, Gift, Lock, Trash2 } from 'lucide-react-native';
+import { useColores, useEstilos } from '../../context/ModoContext';
+import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
 import { getCliente, actualizarMetodosPago } from '../../api/clienteApi';
 import { getSaldo, canjearTarjeta } from '../../api/giftCardApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
+import MarcaTarjeta from '../../components/Cuenta/MarcaTarjeta';
+import VistaTarjeta from '../../components/Cuenta/VistaTarjeta';
 import Boton from '../../components/UI/Boton';
+import ModalConfirmar from '../../components/UI/ModalConfirmar';
+import {
+  LARGO_NUMERO,
+  LARGO_VENCIMIENTO,
+  NOMBRE_MARCA,
+  detectarMarca,
+  estaVencida,
+  formatearNumero,
+  formatearVencimiento,
+  largoDe,
+  leerVencimiento,
+  nombreMarcaTipo,
+  pasaLuhn,
+  soloDigitos,
+  vencimientoEnTexto,
+} from '../../utils/tarjetas';
 
-const ICONO_TIPO = { tarjeta: CreditCard, efectivo: Banknote };
+const FORM_VACIO = { tipo: 'credito', numero: '', titular: '', vencimiento: '', alias: '' };
+
+const TIPOS = [
+  { valor: 'credito', texto: 'Crédito', Icono: CreditCard },
+  { valor: 'debito', texto: 'Débito', Icono: CreditCard },
+  { valor: 'efectivo', texto: 'Efectivo', Icono: Banknote },
+];
+
+const Etiqueta = ({ children }) => {
+  const estilos = useEstilos(crearEstilos);
+  return <Text style={estilos.etiquetaCampo}>{children}</Text>;
+};
+
+// El error debajo de su campo, no un aviso flotante: hay que ir a arreglarlo ahí.
+const MensajeError = ({ texto }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
+  if (!texto) return null;
+
+  return (
+    <View style={estilos.filaError}>
+      <CircleAlert size={13} color={COLORES.peligro} />
+      <Text style={estilos.textoError}>{texto}</Text>
+    </View>
+  );
+};
 
 const Pagos = ({ alVolver }) => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
 
   const [saldo, setSaldo] = useState(0);
@@ -61,7 +126,13 @@ const Pagos = ({ alVolver }) => {
   const [canjeando, setCanjeando] = useState(false);
 
   const [escribiendo, setEscribiendo] = useState(false);
-  const [nuevo, setNuevo] = useState({ tipo: 'tarjeta', alias: '', last4: '' });
+  const [nuevo, setNuevo] = useState(FORM_VACIO);
+  // Un campo solo reclama DESPUÉS de tocarlo: nadie quiere ver "faltan
+  // dígitos" apenas escribió el primero.
+  const [tocado, setTocado] = useState({});
+  // Cuál se está por quitar (su índice), o null. Lo pregunta ModalConfirmar,
+  // que tiene la cara de la app; antes era el cuadro gris del sistema.
+  const [porQuitar, setPorQuitar] = useState(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -104,24 +175,93 @@ const Pagos = ({ alVolver }) => {
     }
   };
 
-  const agregar = async () => {
-    if (!nuevo.alias.trim()) {
-      avisar('Póngale un nombre a este método (Visa, BAC…)', 'error');
-      return;
-    }
-    if (nuevo.tipo === 'tarjeta' && !/^\d{4}$/.test(nuevo.last4.trim())) {
-      avisar('Los últimos 4 dígitos son 4 números', 'error');
-      return;
-    }
+  /* ── Lo que dice el formulario de la tarjeta ── */
+  const esEfectivo = nuevo.tipo === 'efectivo';
+  const digitos = soloDigitos(nuevo.numero);
+  const marca = detectarMarca(digitos);
+  const numeroCompleto = digitos.length === largoDe(marca);
+  const numeroValido = numeroCompleto && pasaLuhn(digitos);
+  const venc = leerVencimiento(nuevo.vencimiento);
+  const vencida = venc ? estaVencida(venc.mes, venc.anio) : false;
+  // Al menos tres letras: un titular de "A" o "123" no es un nombre.
+  const titularValido = nuevo.titular.trim().replace(/[^a-zA-ZÀ-ÿ]/g, '').length >= 3;
+  const duplicada =
+    numeroValido &&
+    venc &&
+    metodos.some(
+      (m) =>
+        m.type !== 'efectivo' &&
+        m.last4 === digitos.slice(-4) &&
+        m.brand === marca &&
+        Number(m.expMonth) === venc.mes &&
+        Number(m.expYear) === venc.anio
+    );
 
-    const lista = [...metodos, { ...nuevo, alias: nuevo.alias.trim(), last4: nuevo.last4.trim() }];
+  const errores = {
+    numero:
+      !tocado.numero || !digitos
+        ? ''
+        : !numeroCompleto
+          ? `Faltan dígitos: ${NOMBRE_MARCA[marca] === 'Tarjeta' ? 'la tarjeta' : NOMBRE_MARCA[marca]} lleva ${largoDe(marca)}.`
+          : !numeroValido
+            ? 'Revise el número: no corresponde a una tarjeta válida.'
+            : duplicada
+              ? 'Esa tarjeta ya está guardada.'
+              : '',
+    vencimiento:
+      !tocado.vencimiento || !nuevo.vencimiento
+        ? ''
+        : !venc
+          ? 'Use el formato MM/AA, con un mes entre 01 y 12.'
+          : vencida
+            ? 'Esta tarjeta ya venció.'
+            : '',
+    titular: tocado.titular && !titularValido ? 'Escriba el nombre como aparece en la tarjeta.' : '',
+    alias: tocado.alias && esEfectivo && !nuevo.alias.trim() ? 'Póngale un nombre a este método.' : '',
+  };
+
+  const listo = esEfectivo
+    ? !!nuevo.alias.trim()
+    : numeroValido && !!venc && !vencida && titularValido && !duplicada;
+
+  const cambiar = (campo, valor) => setNuevo((f) => ({ ...f, [campo]: valor }));
+  const tocar = (campo) => setTocado((t) => ({ ...t, [campo]: true }));
+
+  const cerrarFormulario = () => {
+    setEscribiendo(false);
+    setNuevo(FORM_VACIO);
+    setTocado({});
+  };
+
+  const agregar = async () => {
+    setTocado({ numero: true, vencimiento: true, titular: true, alias: true });
+    if (!listo) return;
+
+    /*
+     * Lo que se guarda: nunca el número completo. `type` (y no `tipo`) es el
+     * nombre que espera el backend y el que lee la web — con el otro, una
+     * tarjeta guardada desde el teléfono aparecía como "Efectivo" allá.
+     */
+    const metodo = esEfectivo
+      ? { type: 'efectivo', alias: nuevo.alias.trim() }
+      : {
+          type: 'tarjeta',
+          alias: nuevo.alias.trim() || `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`,
+          last4: digitos.slice(-4),
+          brand: marca,
+          cardType: nuevo.tipo,
+          holder: nuevo.titular.trim().toUpperCase(),
+          expMonth: venc.mes,
+          expYear: venc.anio,
+        };
+
+    const lista = [...metodos, metodo];
     setGuardando(true);
     try {
       await actualizarMetodosPago(user.id, lista);
       setMetodos(lista);
-      setNuevo({ tipo: 'tarjeta', alias: '', last4: '' });
-      setEscribiendo(false);
-      avisar('Método de pago guardado');
+      cerrarFormulario();
+      avisar(esEfectivo ? 'Método de pago guardado' : 'Tarjeta guardada');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar el método de pago', 'error');
     } finally {
@@ -129,33 +269,19 @@ const Pagos = ({ alVolver }) => {
     }
   };
 
-  const borrar = (indice) => {
-    const metodo = metodos[indice];
-
-    Alert.alert(
-      '¿Quitar este método?',
-      `${metodo.alias}\n\nEsto no lo cobra ni lo devuelve — solo lo saca de esta lista.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Quitar',
-          style: 'destructive',
-          onPress: async () => {
-            const quedan = metodos.filter((_, i) => i !== indice);
-            setGuardando(true);
-            try {
-              await actualizarMetodosPago(user.id, quedan);
-              setMetodos(quedan);
-              avisar('Método de pago quitado');
-            } catch (e) {
-              avisar(e?.message || 'No se pudo quitar el método de pago', 'error');
-            } finally {
-              setGuardando(false);
-            }
-          },
-        },
-      ]
-    );
+  const quitar = async () => {
+    const quedan = metodos.filter((_, i) => i !== porQuitar);
+    setGuardando(true);
+    try {
+      await actualizarMetodosPago(user.id, quedan);
+      setMetodos(quedan);
+      setPorQuitar(null);
+      avisar('Método de pago quitado');
+    } catch (e) {
+      avisar(e?.message || 'No se pudo quitar el método de pago', 'error');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
@@ -180,7 +306,7 @@ const Pagos = ({ alVolver }) => {
           </View>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={estilos.cuerpo}>
+        <ScrollView contentContainerStyle={[estilos.cuerpo, { paddingBottom: aireAbajo }]} keyboardShouldPersistTaps="handled">
           {/* ── Saldo digital ── */}
           <View style={[estilos.tarjetaSaldo, { backgroundColor: colores.marcaSuave }]}>
             <View style={estilos.filaSaldo}>
@@ -201,6 +327,7 @@ const Pagos = ({ alVolver }) => {
                 onChangeText={(v) => setCodigoTarjeta(v.toUpperCase())}
                 placeholder="¿Tiene una tarjeta? 635-XXXX-XXXX"
                 placeholderTextColor={COLORES.marcador}
+                keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                 style={estilos.campoCanje}
                 autoCapitalize="characters"
                 autoCorrect={false}
@@ -225,25 +352,61 @@ const Pagos = ({ alVolver }) => {
           <Text style={estilos.tituloSeccion}>Métodos guardados</Text>
 
           {metodos.length === 0 && !escribiendo && (
-            <Text style={estilos.vacioTexto}>Sin métodos de pago guardados todavía.</Text>
+            <Text style={estilos.vacioTexto}>
+              Sin métodos de pago guardados todavía. Guarde su tarjeta una vez y la tendrá a mano en
+              su próxima compra.
+            </Text>
           )}
 
           <View style={estilos.lista}>
             {metodos.map((metodo, indice) => {
-              const Icono = ICONO_TIPO[metodo.type] || CreditCard;
+              const efectivo = metodo.type === 'efectivo';
+              const yaVencida = !efectivo && estaVencida(Number(metodo.expMonth), Number(metodo.expYear));
+              const vence = vencimientoEnTexto(metodo.expMonth, metodo.expYear);
+              /*
+               * El renglón de abajo: "Visa crédito · •••• 4242 · Vence 08/29".
+               * El nombre de la marca solo si el alias no lo dice ya, que
+               * "Mastercard débito" dos veces se lee como un error.
+               */
+              const detalle = efectivo
+                ? 'Efectivo'
+                : [
+                    nombreMarcaTipo(metodo) !== metodo.alias && nombreMarcaTipo(metodo),
+                    `•••• ${metodo.last4 || '••••'}`,
+                    vence && `Vence ${vence}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+
               return (
-                <View key={`${metodo.alias}-${indice}`} style={estilos.tarjetaMetodo}>
-                  <Icono size={19} color={colores.marca} strokeWidth={2} />
+                <View key={`${metodo.last4 || metodo.alias}-${indice}`} style={estilos.tarjetaMetodo}>
+                  {efectivo ? (
+                    <View style={estilos.iconoEfectivo}>
+                      <Banknote size={19} color={colores.marca} strokeWidth={2} />
+                    </View>
+                  ) : (
+                    <MarcaTarjeta marca={metodo.brand || 'otra'} alto={30} />
+                  )}
 
                   <View style={estilos.datosMetodo}>
-                    <Text style={estilos.aliasMetodo}>{metodo.alias}</Text>
-                    {!!metodo.last4 && (
-                      <Text style={estilos.detalleMetodo}>Termina en {metodo.last4}</Text>
-                    )}
+                    <Text style={estilos.aliasMetodo} numberOfLines={1}>
+                      {metodo.alias || (efectivo ? 'Efectivo' : 'Tarjeta')}
+                    </Text>
+                    <Text style={estilos.detalleMetodo} numberOfLines={1}>
+                      {detalle}
+                    </Text>
                   </View>
 
+                  {/* Una tarjeta vencida sigue en la lista, pero avisa: al pagar
+                      no va a servir, y enterarse en la caja es peor. */}
+                  {yaVencida && (
+                    <View style={estilos.chapaVencida}>
+                      <Text style={estilos.chapaVencidaTexto}>Vencida</Text>
+                    </View>
+                  )}
+
                   <Pressable
-                    onPress={() => borrar(indice)}
+                    onPress={() => setPorQuitar(indice)}
                     disabled={guardando}
                     hitSlop={8}
                     accessibilityRole="button"
@@ -263,18 +426,21 @@ const Pagos = ({ alVolver }) => {
 
           {escribiendo ? (
             <View style={[estilos.formulario, { borderColor: colores.marcaSuave }]}>
-              {/* Sin <select> nativo: dos píldoras hacen lo mismo con menos
-                  fricción en un teléfono. */}
-              <View style={estilos.filaTipo}>
-                {[
-                  { valor: 'tarjeta', texto: 'Tarjeta', Icono: CreditCard },
-                  { valor: 'efectivo', texto: 'Efectivo', Icono: Banknote },
-                ].map(({ valor, texto, Icono }) => {
+              {/* Crédito, débito o efectivo. Sin <select> nativo: tres píldoras
+                  hacen lo mismo con menos fricción en un teléfono. */}
+              <View
+                style={estilos.filaTipo}
+                accessibilityRole="radiogroup"
+                accessibilityLabel="Tipo de método de pago"
+              >
+                {TIPOS.map(({ valor, texto, Icono }) => {
                   const activo = nuevo.tipo === valor;
                   return (
                     <Pressable
                       key={valor}
-                      onPress={() => setNuevo((m) => ({ ...m, tipo: valor }))}
+                      onPress={() => cambiar('tipo', valor)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: activo }}
                       style={[
                         estilos.pildoraTipo,
                         activo && { borderColor: colores.marca, backgroundColor: colores.marcaTenue },
@@ -289,42 +455,130 @@ const Pagos = ({ alVolver }) => {
                 })}
               </View>
 
-              <TextInput
-                value={nuevo.alias}
-                onChangeText={(v) => setNuevo((m) => ({ ...m, alias: v }))}
-                placeholder="Nombre (Visa, BAC, Efectivo…)"
-                placeholderTextColor={COLORES.marcador}
-                style={estilos.campo}
-                accessibilityLabel="Nombre del método de pago"
-              />
+              {!esEfectivo && (
+                <>
+                  {/* La tarjeta dibujada, que se va llenando con lo que escribe:
+                      es la forma más rápida de comparar con la que tiene en la mano. */}
+                  <VistaTarjeta
+                    numero={digitos}
+                    titular={nuevo.titular}
+                    vencimiento={nuevo.vencimiento}
+                    tipo={nuevo.tipo}
+                  />
 
-              {nuevo.tipo === 'tarjeta' && (
+                  <View>
+                    <Etiqueta>Número de tarjeta</Etiqueta>
+                    <View>
+                      <TextInput
+                        value={formatearNumero(nuevo.numero)}
+                        onChangeText={(v) => {
+                          // Recortado al largo de la marca: pegar un número de
+                          // más no deja dígitos escondidos.
+                          const d = soloDigitos(v);
+                          cambiar('numero', d.slice(0, largoDe(detectarMarca(d))));
+                        }}
+                        onBlur={() => tocar('numero')}
+                        placeholder="1234 5678 9012 3456"
+                        placeholderTextColor={COLORES.marcador}
+                        keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
+                        keyboardType="number-pad"
+                        maxLength={LARGO_NUMERO}
+                        style={[estilos.campo, estilos.campoNumero, !!errores.numero && estilos.campoMal]}
+                        accessibilityLabel="Número de tarjeta"
+                      />
+                      {/* El logo de la red, dentro del campo y a la derecha. */}
+                      <View style={estilos.logoEnCampo} pointerEvents="none">
+                        {digitos ? (
+                          <MarcaTarjeta marca={marca} alto={22} />
+                        ) : (
+                          <CreditCard size={18} color={COLORES.marcador} />
+                        )}
+                      </View>
+                    </View>
+                    <MensajeError texto={errores.numero} />
+                  </View>
+
+                  <View>
+                    <Etiqueta>Nombre del titular</Etiqueta>
+                    <TextInput
+                      value={nuevo.titular}
+                      onChangeText={(v) => cambiar('titular', v)}
+                      onBlur={() => tocar('titular')}
+                      placeholder="Como aparece en la tarjeta"
+                      placeholderTextColor={COLORES.marcador}
+                      keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      maxLength={40}
+                      style={[estilos.campo, !!errores.titular && estilos.campoMal]}
+                      accessibilityLabel="Nombre del titular"
+                    />
+                    <MensajeError texto={errores.titular} />
+                  </View>
+
+                  <View>
+                    <Etiqueta>Vencimiento</Etiqueta>
+                    <TextInput
+                      value={nuevo.vencimiento}
+                      onChangeText={(v) => cambiar('vencimiento', formatearVencimiento(v))}
+                      onBlur={() => tocar('vencimiento')}
+                      placeholder="MM/AA"
+                      placeholderTextColor={COLORES.marcador}
+                      keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
+                      keyboardType="number-pad"
+                      maxLength={LARGO_VENCIMIENTO}
+                      style={[estilos.campo, !!errores.vencimiento && estilos.campoMal]}
+                      accessibilityLabel="Vencimiento de la tarjeta"
+                    />
+                    <MensajeError texto={errores.vencimiento} />
+                  </View>
+                </>
+              )}
+
+              <View>
+                <Etiqueta>
+                  {esEfectivo ? 'Nombre' : 'Nombre para reconocerla (opcional)'}
+                </Etiqueta>
                 <TextInput
-                  value={nuevo.last4}
-                  onChangeText={(v) => setNuevo((m) => ({ ...m, last4: v.replace(/\D/g, '').slice(0, 4) }))}
-                  placeholder="Últimos 4 dígitos"
+                  value={nuevo.alias}
+                  onChangeText={(v) => cambiar('alias', v)}
+                  onBlur={() => tocar('alias')}
+                  placeholder={
+                    esEfectivo
+                      ? 'Efectivo'
+                      : digitos
+                        ? `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`
+                        : 'Ej. Tarjeta del trabajo'
+                  }
                   placeholderTextColor={COLORES.marcador}
-                  style={estilos.campo}
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  accessibilityLabel="Últimos 4 dígitos de la tarjeta"
+                  keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
+                  maxLength={40}
+                  style={[estilos.campo, !!errores.alias && estilos.campoMal]}
+                  accessibilityLabel="Nombre del método de pago"
                 />
+                <MensajeError texto={errores.alias} />
+              </View>
+
+              {!esEfectivo && (
+                <View style={estilos.filaCandado}>
+                  <Lock size={13} color={COLORES.textoTenue} style={estilos.candado} />
+                  <Text style={estilos.notaCandado}>
+                    Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El
+                    número completo no sale de este formulario, y el código de seguridad se pide solo
+                    al pagar.
+                  </Text>
+                </View>
               )}
 
               <Boton
-                texto="Guardar método de pago"
+                texto={guardando ? 'Guardando…' : esEfectivo ? 'Guardar método de pago' : 'Guardar tarjeta'}
                 alPresionar={agregar}
                 cargando={guardando}
+                deshabilitado={!listo}
                 color={colores.marca}
                 colorPresionado={colores.marcaOscuro}
               />
-              <Pressable
-                onPress={() => {
-                  setEscribiendo(false);
-                  setNuevo({ tipo: 'tarjeta', alias: '', last4: '' });
-                }}
-                hitSlop={8}
-              >
+              <Pressable onPress={cerrarFormulario} hitSlop={8}>
                 <Text style={estilos.enlaceTenue}>Cancelar</Text>
               </Pressable>
             </View>
@@ -337,11 +591,23 @@ const Pagos = ({ alVolver }) => {
           )}
         </ScrollView>
       )}
+
+      {porQuitar !== null && (
+        <ModalConfirmar
+          titulo="¿Quitar este método?"
+          mensaje={`${metodos[porQuitar]?.alias || 'Este método'}\n\nEsto no lo cobra ni lo devuelve — solo lo saca de esta lista.`}
+          textoConfirmar="Quitar"
+          destructivo
+          trabajando={guardando}
+          alConfirmar={quitar}
+          alCerrar={() => setPorQuitar(null)}
+        />
+      )}
     </View>
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -438,6 +704,7 @@ const estilos = StyleSheet.create({
   },
   vacioTexto: {
     fontSize: 13.5,
+    lineHeight: 20,
     color: COLORES.textoSuave,
   },
   lista: {
@@ -452,6 +719,14 @@ const estilos = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
   },
+  // El cuadrito del efectivo mide lo mismo que un logo de marca, para que los
+  // renglones de la lista no bailen entre una tarjeta y un efectivo.
+  iconoEfectivo: {
+    width: 45,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   datosMetodo: {
     flex: 1,
     gap: 1,
@@ -465,6 +740,17 @@ const estilos = StyleSheet.create({
     fontSize: 12.5,
     color: COLORES.textoSuave,
   },
+  chapaVencida: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: COLORES.peligroFondo,
+  },
+  chapaVencidaTexto: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORES.peligro,
+  },
   botonBorrar: {
     width: 34,
     height: 34,
@@ -473,7 +759,7 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
   },
   botonBorrarPresionado: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: COLORES.peligroFondo,
   },
   botonBorrarApagado: {
     opacity: 0.5,
@@ -504,6 +790,12 @@ const estilos = StyleSheet.create({
     fontWeight: '600',
     color: COLORES.textoSuave,
   },
+  etiquetaCampo: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: COLORES.tituloVentaja,
+    marginBottom: 5,
+  },
   campo: {
     borderWidth: 1,
     borderColor: COLORES.borde,
@@ -514,6 +806,46 @@ const estilos = StyleSheet.create({
     color: COLORES.texto,
     backgroundColor: COLORES.fondo,
     paddingVertical: 0,
+  },
+  // Sitio para el logo de la red, que va encima del campo a la derecha.
+  campoNumero: {
+    paddingRight: 52,
+    letterSpacing: 1,
+  },
+  campoMal: {
+    borderColor: COLORES.peligro,
+  },
+  logoEnCampo: {
+    position: 'absolute',
+    right: 11,
+    top: 11,
+  },
+  filaError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 5,
+  },
+  textoError: {
+    flexShrink: 1,
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: COLORES.peligro,
+  },
+  filaCandado: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 7,
+    marginTop: 2,
+  },
+  candado: {
+    marginTop: 2,
+  },
+  notaCandado: {
+    flex: 1,
+    fontSize: 11.5,
+    lineHeight: 16.5,
+    color: COLORES.textoTenue,
   },
   enlace: {
     fontSize: 13,

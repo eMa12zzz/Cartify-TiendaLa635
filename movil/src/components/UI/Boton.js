@@ -16,7 +16,7 @@
  */
 
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { useEstilos } from '../../context/ModoContext';
 
 const Boton = ({
   texto,
@@ -28,6 +28,7 @@ const Boton = ({
   color,
   colorPresionado,
 }) => {
+  const estilos = useEstilos(crearEstilos);
   const inactivo = cargando || deshabilitado;
 
   return (
@@ -56,7 +57,7 @@ const Boton = ({
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   boton: {
     width: '100%',
     paddingVertical: 13,

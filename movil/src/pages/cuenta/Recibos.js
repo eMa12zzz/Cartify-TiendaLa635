@@ -24,7 +24,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { CircleCheck, Receipt } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
+import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
 import { getPedidosDeCliente } from '../../api/pedidosApi';
@@ -51,51 +52,60 @@ const fechaCorta = (iso) => {
 // Mismo criterio que Pedidos.js: los 6 últimos del id de Mongo, en mayúsculas.
 const numeroCorto = (id) => String(id || '').slice(-6).toUpperCase();
 
-const TarjetaRecibo = ({ pedido, colores }) => (
-  <View style={estilos.tarjeta}>
-    <View style={estilos.cabecera}>
-      <View style={estilos.identidad}>
-        <Text style={estilos.numero}>Recibo #{numeroCorto(pedido._id)}</Text>
-        <Text style={estilos.fecha}>{fechaCorta(pedido.createdAt)}</Text>
-      </View>
+const TarjetaRecibo = ({ pedido, colores }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
-      <View style={[estilos.chapa, { backgroundColor: '#E4F5EA' }]}>
-        <CircleCheck size={12} color="#16A34A" strokeWidth={2.4} />
-        <Text style={estilos.chapaTexto}>Entregado</Text>
-      </View>
-    </View>
-
-    <View style={estilos.lineas}>
-      {(pedido.items || []).map((item, i) => (
-        <View key={i} style={estilos.linea}>
-          <Text style={estilos.lineaNombre} numberOfLines={1}>
-            {item.amount}× {item.name || item.productId?.name || 'Producto'}
-          </Text>
-          <Text style={estilos.lineaPrecio}>
-            ${(Number(item.price) * Number(item.amount)).toFixed(2)}
-          </Text>
+  return (
+    <View style={estilos.tarjeta}>
+      <View style={estilos.cabecera}>
+        <View style={estilos.identidad}>
+          <Text style={estilos.numero}>Recibo #{numeroCorto(pedido._id)}</Text>
+          <Text style={estilos.fecha}>{fechaCorta(pedido.createdAt)}</Text>
         </View>
-      ))}
-    </View>
 
-    <View style={estilos.pie}>
-      <View style={estilos.filaPie}>
-        <Text style={estilos.pago}>Pago: {PAGO[pedido.paymentMethod] || pedido.paymentMethod}</Text>
-        {pedido.pointsEarned > 0 && (
-          <View style={estilos.puntos}>
-            <Estrella size={12} color={colores.marca} />
-            <Text style={[estilos.puntosTexto, { color: colores.marca }]}>+{pedido.pointsEarned}</Text>
-          </View>
-        )}
+        <View style={[estilos.chapa, { backgroundColor: COLORES.exitoFondo }]}>
+          <CircleCheck size={12} color={COLORES.exitoVivo} strokeWidth={2.4} />
+          <Text style={estilos.chapaTexto}>Entregado</Text>
+        </View>
       </View>
-      <Text style={estilos.total}>Total: ${Number(pedido.total).toFixed(2)}</Text>
+
+      <View style={estilos.lineas}>
+        {(pedido.items || []).map((item, i) => (
+          <View key={i} style={estilos.linea}>
+            <Text style={estilos.lineaNombre} numberOfLines={1}>
+              {item.amount}× {item.name || item.productId?.name || 'Producto'}
+            </Text>
+            <Text style={estilos.lineaPrecio}>
+              ${(Number(item.price) * Number(item.amount)).toFixed(2)}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={estilos.pie}>
+        <View style={estilos.filaPie}>
+          <Text style={estilos.pago}>Pago: {PAGO[pedido.paymentMethod] || pedido.paymentMethod}</Text>
+          {pedido.pointsEarned > 0 && (
+            <View style={estilos.puntos}>
+              <Estrella size={12} color={colores.marca} />
+              <Text style={[estilos.puntosTexto, { color: colores.marca }]}>+{pedido.pointsEarned}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={estilos.total}>Total: ${Number(pedido.total).toFixed(2)}</Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const Recibos = ({ alVolver }) => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
 
   const [recibos, setRecibos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -152,7 +162,7 @@ const Recibos = ({ alVolver }) => {
         <FlatList
           data={recibos}
           keyExtractor={(p) => String(p._id)}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: aireAbajo }]}
           renderItem={({ item }) => <TarjetaRecibo pedido={item} colores={colores} />}
         />
       )}
@@ -160,7 +170,7 @@ const Recibos = ({ alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -240,7 +250,7 @@ const estilos = StyleSheet.create({
   chapaTexto: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#16A34A',
+    color: COLORES.exitoVivo,
   },
   lineas: {
     gap: 5,

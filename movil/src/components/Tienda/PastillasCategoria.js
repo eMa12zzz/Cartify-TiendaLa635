@@ -12,30 +12,35 @@
  */
 
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
-import { COLORES } from '../../theme/colores';
+import { useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 
-const Pastilla = ({ texto, activa, alPresionar, colores }) => (
-  <Pressable
-    onPress={alPresionar}
-    accessibilityRole="button"
-    accessibilityState={{ selected: activa }}
-    style={({ pressed }) => [
-      estilos.pastilla,
-      // La activa es el color de la temporada, SÓLIDO. Es la pieza donde más
-      // se nota el tema: son cinco pastillas en fila arriba de todo.
-      activa && { backgroundColor: colores.marca, borderColor: colores.marca },
-      pressed && !activa && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
-    ]}
-  >
-    <Text style={[estilos.texto, activa && estilos.textoActivo]} numberOfLines={1}>
-      {texto}
-    </Text>
-  </Pressable>
-);
+const Pastilla = ({ texto, activa, alPresionar, colores }) => {
+  const estilos = useEstilos(crearEstilos);
+
+  return (
+    <Pressable
+      onPress={alPresionar}
+      accessibilityRole="button"
+      accessibilityState={{ selected: activa }}
+      style={({ pressed }) => [
+        estilos.pastilla,
+        // La activa es el color de la temporada, SÓLIDO. Es la pieza donde más
+        // se nota el tema: son cinco pastillas en fila arriba de todo.
+        activa && { backgroundColor: colores.marca, borderColor: colores.marca },
+        pressed && !activa && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
+      ]}
+    >
+      <Text style={[estilos.texto, activa && estilos.textoActivo]} numberOfLines={1}>
+        {texto}
+      </Text>
+    </Pressable>
+  );
+};
 
 const PastillasCategoria = ({ categorias, seleccionada, alSeleccionar }) => {
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
 
   return (
     <ScrollView
@@ -64,7 +69,7 @@ const PastillasCategoria = ({ categorias, seleccionada, alSeleccionar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   fila: {
     paddingHorizontal: 16,
     paddingVertical: 12,

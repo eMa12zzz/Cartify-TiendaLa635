@@ -27,7 +27,7 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 // se sirven desde Cloudinary en .webp. Ver AGENTS.md y los docs de SDK 54.
 import { Image } from 'expo-image';
 import { Lock } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useFavoritos } from '../../context/FavoritosContext';
 import { useEdad } from '../../context/EdadContext';
@@ -64,6 +64,8 @@ const TOPE_RETRASO = 8;
 const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { esFavorito, alternar } = useFavoritos();
 
   const entrada = useRef(new Animated.Value(0)).current;
@@ -99,9 +101,13 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
     alVerDetalle?.(producto);
   };
 
+  // De aquí sale la foto que vuela al carrito (ver utils/volarAlCarrito.js).
+  const marcoRef = useRef(null);
+
   const alTocarAgregar = () => {
-    if (tapado) { pedirConfirmacion(() => alAgregar?.(producto)); return; }
-    alAgregar?.(producto);
+    const conVuelo = () => alAgregar?.(producto, 1, { origenRef: marcoRef });
+    if (tapado) { pedirConfirmacion(conVuelo); return; }
+    conVuelo();
   };
 
   return (
@@ -122,7 +128,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
       }
       style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
     >
-      <View style={estilos.marcoImagen}>
+      <View ref={marcoRef} style={estilos.marcoImagen}>
         {producto.imagen && !fallóImagen ? (
           <Image
             source={{ uri: producto.imagen }}
@@ -181,7 +187,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
         }
         style={({ pressed }) => [estilos.corazon, pressed && estilos.corazonPresionado]}
       >
-        <Corazon size={16} color={marcado ? ROJO_FAVORITO : '#D2CCC6'} />
+        <Corazon size={16} color={marcado ? ROJO_FAVORITO : COLORES.tintaApagada} />
       </Pressable>
 
       <View style={estilos.cuerpo}>
@@ -251,7 +257,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
               producto.stock === 0 && estilos.botonMasApagado,
             ]}
           >
-            <Mas size={15} color="#FFFFFF" />
+            <Mas size={15} color={COLORES.sobreTinta} />
           </Pressable>
         </View>
       </View>
@@ -260,12 +266,12 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   tarjeta: {
     backgroundColor: COLORES.fondo,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: COLORES.linea,
     overflow: 'hidden',
     /*
      * `width: '100%'` y NO `flex: 1`, aunque flex sea lo que uno escribe.
@@ -290,7 +296,7 @@ const estilos = StyleSheet.create({
    * todas igual, la vista compara productos en vez de tropezar con las fotos.
    */
   marcoImagen: {
-    backgroundColor: '#F4F4F5',
+    backgroundColor: COLORES.papelGris,
     height: 130,
     margin: 8,
     marginBottom: 0,
@@ -345,7 +351,7 @@ const estilos = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORES.papelAlto,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -371,7 +377,7 @@ const estilos = StyleSheet.create({
   },
   marca: {
     fontSize: 9.5,
-    color: '#AAAAAA',
+    color: COLORES.iconoCampo,
     fontWeight: '700',
     letterSpacing: 0.5,
     marginBottom: 3,
@@ -384,16 +390,18 @@ const estilos = StyleSheet.create({
   nombre: {
     fontSize: 13.5,
     fontWeight: '600',
-    color: '#111111',
+    color: COLORES.tinta,
     lineHeight: 17,
     flexShrink: 1,
   },
   /*
    * El +18 va en el rojo de los avisos y no en el café de la marca: no es una
    * característica que se presume, es una condición para poder comprarlo.
+   * Fijo también en oscuro: con el texto blanco encima, el rojo aclarado del
+   * modo oscuro ya no se lee.
    */
   marca18: {
-    backgroundColor: COLORES.error,
+    backgroundColor: '#FF4D4F',
     borderRadius: 999,
     paddingHorizontal: 5,
     paddingVertical: 1,
@@ -409,7 +417,7 @@ const estilos = StyleSheet.create({
   stock: {
     fontSize: 10.5,
     fontWeight: '500',
-    color: '#D8542C',
+    color: COLORES.alerta,
     marginTop: 3,
   },
   filaPrecio: {
@@ -425,13 +433,13 @@ const estilos = StyleSheet.create({
   },
   precioViejo: {
     fontSize: 10.5,
-    color: '#BBBBBB',
+    color: COLORES.marcador,
     textDecorationLine: 'line-through',
   },
   precio: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111111',
+    color: COLORES.tinta,
   },
   // El "/lb" más chico y más tenue que el número: acompaña al precio, no
   // compite con él. Del mismo tamaño se leería como parte de la cifra.
@@ -454,8 +462,9 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // En oscuro el botón es claro, y lo que responde al dedo se ilumina.
   botonMasPresionado: {
-    backgroundColor: '#000000',
+    backgroundColor: COLORES.oscuro ? '#FFFFFF' : '#000000',
     transform: [{ scale: 0.95 }],
   },
   /*
@@ -465,7 +474,7 @@ const estilos = StyleSheet.create({
    * "apagado": se lee como un color suelto que nadie eligió.
    */
   botonMasApagado: {
-    backgroundColor: '#D6D3D1',
+    backgroundColor: COLORES.tintaApagada,
   },
 });
 

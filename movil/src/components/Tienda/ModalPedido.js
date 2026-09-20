@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { Equis, Estrella, Paquete } from '../UI/Iconos';
-import { ESTADOS_PEDIDO } from '../../utils/pasosPedido';
+import { estadosPedido } from '../../utils/pasosPedido';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
+import ValoracionPedido from '../Cuenta/ValoracionPedido';
+import ValoracionServicio from '../Cuenta/ValoracionServicio';
 
 /*
  * Una fila por producto, con su propio estado de "la imagen no cargó": cada
@@ -18,6 +20,8 @@ import PasosPedido from './PasosPedido';
  * URLs de Cloudinary que ya usa el catálogo, ver utils/catalogo.js.
  */
 const FilaProducto = ({ item }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const [fallóImagen, setFallóImagen] = useState(false);
   const imagenBruta = item.productId?.image;
   const imagen = Array.isArray(imagenBruta) ? imagenBruta[0] : imagenBruta;
@@ -81,6 +85,8 @@ const fechaLarga = (iso) => {
 
 const ModalPedido = ({ pedido, alCerrar }) => {
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
 
   const fondoOpacidad = useRef(new Animated.Value(0)).current;
@@ -145,10 +151,21 @@ const ModalPedido = ({ pedido, alCerrar }) => {
 
   if (!pedido) return null;
 
-  const estado = ESTADOS_PEDIDO[pedido.status] || ESTADOS_PEDIDO.pagado;
+  const estados = estadosPedido(COLORES.oscuro);
+  const estado = estados[pedido.status] || estados.pagado;
   const numero = String(pedido._id || '').slice(-6).toUpperCase();
   const items = Array.isArray(pedido.items) ? pedido.items : [];
   const esCancelado = pedido.status === 'cancelado';
+
+  /*
+   * Los números del desglose. Los pedidos viejos (de antes de que existieran
+   * el envío y la tarifa) no traen estos campos: ahí el subtotal cae al total
+   * y las demás líneas quedan en cero, que es justo lo que había que cobrar.
+   */
+  const subtotal = Number(pedido.subtotal ?? pedido.total ?? 0);
+  const envio = Number(pedido.shippingCost || 0);
+  const servicio = Number(pedido.serviceFee || 0);
+  const descuento = Number(pedido.discount || 0);
 
   return (
     <View style={estilos.capa}>
@@ -206,6 +223,47 @@ const ModalPedido = ({ pedido, alCerrar }) => {
                 <FilaProducto key={i} item={item} />
               ))}
               <View style={estilos.separador} />
+
+              {/*
+                El desglose, igual que el "Resumen del pedido" de la web: qué
+                era producto, qué era envío y qué descontaron los puntos. Antes
+                aquí solo estaba el Total, y un total sin desglose deja al
+                cliente sumando a mano para entender por qué pagó eso.
+
+                Las líneas que valen cero no se pintan (salvo el envío, que
+                dice "Gratis" porque eso sí es una buena noticia).
+              */}
+              <View style={estilos.filaResumen}>
+                <Text style={estilos.resumenEtiqueta}>Productos</Text>
+                <Text style={estilos.resumenValor}>${subtotal.toFixed(2)}</Text>
+              </View>
+
+              {pedido.deliveryType === 'delivery' && (
+                <View style={estilos.filaResumen}>
+                  <Text style={estilos.resumenEtiqueta}>Gastos de envío</Text>
+                  <Text style={estilos.resumenValor}>
+                    {envio > 0 ? `$${envio.toFixed(2)}` : 'Gratis'}
+                  </Text>
+                </View>
+              )}
+
+              {servicio > 0 && (
+                <View style={estilos.filaResumen}>
+                  <Text style={estilos.resumenEtiqueta}>Tarifa de servicio</Text>
+                  <Text style={estilos.resumenValor}>${servicio.toFixed(2)}</Text>
+                </View>
+              )}
+
+              {descuento > 0 && (
+                <View style={estilos.filaResumen}>
+                  <Text style={estilos.resumenEtiqueta}>Descuento por puntos</Text>
+                  <Text style={[estilos.resumenValor, estilos.resumenDescuento]}>
+                    −${descuento.toFixed(2)}
+                  </Text>
+                </View>
+              )}
+
+              <View style={estilos.separador} />
               <View style={estilos.filaTotal}>
                 <Text style={estilos.totalEtiqueta}>Total</Text>
                 <Text style={estilos.totalValor}>${Number(pedido.total || 0).toFixed(2)}</Text>
@@ -231,6 +289,15 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               </View>
             </View>
 
+            {/*
+              Las dos formas de calificar que ya tenía la web: el reparto (solo
+              domicilios entregados) y el pedido en sí, que se guarda como
+              reseña de cada producto. Cada bloque decide solo si le toca
+              aparecer.
+            */}
+            <ValoracionServicio pedido={pedido} />
+            <ValoracionPedido pedido={pedido} />
+
             {pedido.pointsEarned > 0 && (
               <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
                 <Estrella size={14} color={colores.marca} />
@@ -246,7 +313,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     /*
@@ -261,14 +328,14 @@ const estilos = StyleSheet.create({
   },
   fondo: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: COLORES.velo,
     justifyContent: 'flex-end',
   },
   zonaCierre: {
     flex: 1,
   },
   panel: {
-    backgroundColor: COLORES.fondo,
+    backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     maxHeight: '88%',
@@ -342,7 +409,7 @@ const estilos = StyleSheet.create({
   notaCancelado: {
     fontSize: 13.5,
     color: COLORES.textoSuave,
-    backgroundColor: '#FBE7E7',
+    backgroundColor: COLORES.peligroFondo,
     borderRadius: 12,
     padding: 12,
     marginBottom: 14,
@@ -379,7 +446,7 @@ const estilos = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#F4F4F5',
+    backgroundColor: COLORES.papelGris,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 5,
@@ -401,6 +468,24 @@ const estilos = StyleSheet.create({
     height: 1,
     backgroundColor: COLORES.lineaCard,
     marginVertical: 2,
+  },
+  filaResumen: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  resumenEtiqueta: {
+    fontSize: 13,
+    color: COLORES.textoSuave,
+  },
+  resumenValor: {
+    fontSize: 13,
+    color: COLORES.textoVentaja,
+  },
+  resumenDescuento: {
+    color: COLORES.exitoVivo,
+    fontWeight: '600',
   },
   filaTotal: {
     flexDirection: 'row',

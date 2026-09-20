@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
-import { COLORES } from '../../theme/colores';
+import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useEdad } from '../../context/EdadContext';
 import Boton from '../UI/Boton';
@@ -48,9 +48,12 @@ import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false }) => {
   const [fallóImagen, setFallóImagen] = useState(false);
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
   const paso = pasoDe(producto);
   const [cantidad, setCantidad] = useState(paso);
+  const marcoRef = useRef(null);
   /*
    * Defensa extra, no la puerta principal: la puerta es TarjetaProducto (ahí
    * se tapa la foto y no se llega hasta aquí). Pero esta ficha también se
@@ -215,7 +218,8 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
           </View>
 
           <ScrollView contentContainerStyle={estilos.contenido} bounces={false}>
-            <View style={estilos.marcoImagen}>
+            {/* De aquí sale la foto que vuela al carrito, ver utils/volarAlCarrito.js. */}
+            <View ref={marcoRef} style={estilos.marcoImagen}>
               {producto.imagen && !fallóImagen ? (
                 <Image
                   source={{ uri: producto.imagen }}
@@ -339,7 +343,10 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
               estilo={estilos.botonRedondo}
               alPresionar={() => {
                 const meter = () => {
-                  alAgregar(producto, cantidad);
+                  // Se mide ANTES de cerrar: con la hoja ya cerrándose no hay
+                  // de dónde volar. Mismo cuidado que useDetalleProducto.js
+                  // en la web.
+                  alAgregar(producto, cantidad, { origenRef: marcoRef });
                   cerrarConAnimacion();
                 };
                 if (esSoloAdultos(producto) && !mayorConfirmado) {
@@ -356,7 +363,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     // Por encima de la tienda, por debajo del aviso (que se dibuja después,
@@ -366,14 +373,14 @@ const estilos = StyleSheet.create({
   },
   fondo: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: COLORES.velo,
     justifyContent: 'flex-end',
   },
   zonaCierre: {
     flex: 1,
   },
   panel: {
-    backgroundColor: COLORES.fondo,
+    backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     // Tope de alto: el detalle es una hoja que sube, no una pantalla entera.
@@ -422,7 +429,7 @@ const estilos = StyleSheet.create({
     paddingBottom: 18,
   },
   marcoImagen: {
-    backgroundColor: '#F4F4F5',
+    backgroundColor: COLORES.papelGris,
     height: 210,
     borderRadius: 16,
     alignItems: 'center',
@@ -436,7 +443,7 @@ const estilos = StyleSheet.create({
   },
   marca: {
     fontSize: 11,
-    color: '#AAAAAA',
+    color: COLORES.iconoCampo,
     fontWeight: '700',
     letterSpacing: 0.6,
     marginBottom: 4,
@@ -454,8 +461,10 @@ const estilos = StyleSheet.create({
     letterSpacing: -0.3,
     flexShrink: 1,
   },
+  // El rojo fijo también en oscuro: con el texto blanco encima, el rojo
+  // aclarado del modo oscuro ya no se lee.
   marca18: {
-    backgroundColor: COLORES.error,
+    backgroundColor: '#FF4D4F',
     borderRadius: 999,
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -473,7 +482,7 @@ const estilos = StyleSheet.create({
   },
   precioViejo: {
     fontSize: 14,
-    color: '#BBBBBB',
+    color: COLORES.marcador,
     textDecorationLine: 'line-through',
   },
   precio: {
@@ -502,14 +511,14 @@ const estilos = StyleSheet.create({
     marginTop: 14,
   },
   estadoAgotado: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: COLORES.peligroFondo,
   },
   estadoTexto: {
     fontSize: 12,
     fontWeight: '700',
   },
   estadoTextoAgotado: {
-    color: '#C0392B',
+    color: COLORES.peligro,
   },
   tituloSeccion: {
     fontSize: 14,
@@ -539,10 +548,10 @@ const estilos = StyleSheet.create({
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F6F5F4',
+    backgroundColor: COLORES.papelGris,
   },
   botonPasoApagado: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: COLORES.papelSuave,
   },
   cantidad: {
     minWidth: 66,

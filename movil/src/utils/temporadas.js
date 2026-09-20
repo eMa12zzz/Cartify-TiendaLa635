@@ -149,6 +149,95 @@ const mezclar = (hex, con, cuanto) => {
   return rgbAHex(a.map((c, i) => c + (b[i] - c) * cuanto));
 };
 
+const luminanciaDe = (hex) => {
+  const [r, g, b] = hexARgb(hex).map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+const rgbAHsl = ([r, g, b]) => {
+  const [R, G, B] = [r / 255, g / 255, b / 255];
+  const max = Math.max(R, G, B);
+  const min = Math.min(R, G, B);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === R ? (G - B) / d + (G < B ? 6 : 0) : max === G ? (B - R) / d + 2 : (R - G) / d + 4;
+  return [h / 6, s, l];
+};
+
+const hslAHex = ([h, s, l]) => {
+  if (s === 0) return rgbAHex([l * 255, l * 255, l * 255]);
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const canal = (t) => {
+    let x = t;
+    if (x < 0) x += 1;
+    if (x > 1) x -= 1;
+    if (x < 1 / 6) return p + (q - p) * 6 * x;
+    if (x < 1 / 2) return q;
+    if (x < 2 / 3) return p + (q - p) * (2 / 3 - x) * 6;
+    return p;
+  };
+  return rgbAHex([canal(h + 1 / 3) * 255, canal(h) * 255, canal(h - 1 / 3) * 255]);
+};
+
+/*
+ * El mismo tono, con la luz justa para `objetivo` (luminancia WCAG). Se mueve
+ * la luminosidad en HSL y no se mezcla con blanco: mezclar lava el color y el
+ * azul de la casa quedaba gris.
+ */
+const conLuminancia = (hex, objetivo) => {
+  const [h, s0] = rgbAHsl(hexARgb(hex));
+  const s = Math.min(s0, 0.85);
+  let bajo = 0;
+  let alto = 1;
+  for (let i = 0; i < 24; i++) {
+    const medio = (bajo + alto) / 2;
+    if (luminanciaDe(hslAHex([h, s, medio])) < objetivo) bajo = medio;
+    else alto = medio;
+  }
+  return hslAHex([h, s, (bajo + alto) / 2]);
+};
+
+// El fondo del modo oscuro. El mismo de `fondo` en COLORES_OSCURO (theme/colores.js).
+export const FONDO_OSCURO = '#121417';
+
+/*
+ * LA MARCA EN MODO OSCURO. Copia de `paletaOscura()` de la web, con los
+ * nombres de la paleta de aquí.
+ *
+ * El azul de la casa (#003049) es casi negro: sobre el fondo oscuro los
+ * botones desaparecían. En oscuro el principal sube hasta donde el texto
+ * blanco del botón se sigue leyendo (luminancia ~0.19, contraste de 4.4 con
+ * el blanco y de 4.3 con el fondo), el tono de "presionado" pasa a ser MÁS
+ * claro —en oscuro lo que se ilumina es lo que responde— y los fondos suaves
+ * (marcaSuave/marcaTenue) dejan de ser pastel y pasan a ser el fondo teñido
+ * del color.
+ *
+ * Recibe la paleta clara ya armada, así sirve igual para la marca, las
+ * temporadas de fábrica y las que crea el dueño.
+ */
+export const paletaOscura = (colores) => {
+  const base = colores.marca;
+  const lum = luminanciaDe(base);
+  const principal =
+    lum < 0.16 ? conLuminancia(base, 0.19) : lum > 0.26 ? conLuminancia(base, 0.24) : rgbAHex(hexARgb(base));
+  const acento =
+    luminanciaDe(colores.acento) < 0.24 ? conLuminancia(colores.acento, 0.3) : rgbAHex(hexARgb(colores.acento));
+  return {
+    marcaOscuro: conLuminancia(principal, 0.27),
+    marca: principal,
+    marcaClaro: conLuminancia(principal, 0.42),
+    marcaSuave: mezclar(principal, FONDO_OSCURO, 0.74),
+    marcaTenue: mezclar(principal, FONDO_OSCURO, 0.86),
+    acento,
+  };
+};
+
 const temaDesdePropio = (propio) => ({
   clave: propio.clave,
   nombre: propio.nombre,

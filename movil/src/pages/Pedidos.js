@@ -22,7 +22,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Package } from 'lucide-react-native';
-import { COLORES } from '../theme/colores';
+import { useColores, useEstilos } from '../context/ModoContext';
+import { useAireBarraFlotante } from '../components/UI/BarraInferior';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
@@ -31,7 +32,7 @@ import { getPedidosDeCliente } from '../api/pedidosApi';
 // Los estados y su color viven en utils/pasosPedido.js: este historial y
 // ModalPedido necesitan la misma chapa, y ya hubo un bug antes por tenerla
 // copiada en dos archivos que un día dejaron de decir lo mismo.
-import { ESTADOS_PEDIDO as ESTADOS } from '../utils/pasosPedido';
+import { estadosPedido } from '../utils/pasosPedido';
 import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import PastillasCategoria from '../components/Tienda/PastillasCategoria';
@@ -90,6 +91,9 @@ const fechaCorta = (iso) => {
 const numeroCorto = (id) => String(id || '').slice(-6).toUpperCase();
 
 const TarjetaPedido = ({ pedido, alPresionar }) => {
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
+  const ESTADOS = estadosPedido(COLORES.oscuro);
   const estado = ESTADOS[pedido.status] || ESTADOS.pagado;
 
   return (
@@ -149,8 +153,12 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
 };
 
 const Pedidos = () => {
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
   const { colores } = useTema();
+  const COLORES = useColores();
+  const estilos = useEstilos(crearEstilos);
   // El detalle (ModalPedido) se pinta en un solo lugar para toda la app —
   // ver el comentario grande de `pedidoAbierto` en PedidoActivoContext.js —
   // así que aquí solo se pide abrirlo, no se dibuja.
@@ -265,7 +273,7 @@ const Pedidos = () => {
         <FlatList
           data={pedidosFiltrados}
           keyExtractor={(p) => String(p._id)}
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: aireAbajo }]}
           onScrollBeginDrag={avisarActividad}
           renderItem={({ item }) => (
             <TarjetaPedido pedido={item} alPresionar={() => abrirPedido(item)} />
@@ -276,7 +284,7 @@ const Pedidos = () => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

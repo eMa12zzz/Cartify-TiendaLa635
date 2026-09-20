@@ -1,8 +1,8 @@
 /*
  * ============================================================
- * MIS DATOS — nombre, usuario, correo y teléfono
+ * MIS DATOS — nombre, usuario, correo, teléfono, fecha y DUI
  * ============================================================
- * El equivalente de `frontend/src/pages/cliente/DetallesCuenta.jsx`: los cuatro
+ * El equivalente de `frontend/src/pages/cliente/DetallesCuenta.jsx`: los
  * campos que el cliente puede cambiar de su propia cuenta.
  *
  * ── La foto se sube aparte, tocando el círculo ──
@@ -13,13 +13,16 @@
  * cliente ya vio la foto puesta en el círculo — parecería que se subió y en
  * realidad quedó esperando a que toque otro botón.
  *
- * ── El DUI se ve pero no se toca ──
+ * ── La fecha de nacimiento y el DUI ──
  *
- * Igual que en la web: se muestra debajo del avatar cuando existe, y no hay
- * campo para editarlo. El endpoint (`PATCH /client/:id/profile`) tampoco lo
- * acepta — solo mira fullName, userName, email y phoneNumber. Un campo editable
- * que el servidor ignora en silencio es la peor clase de campo: se escribe, se
- * guarda, dice "Datos actualizados" y no cambió nada.
+ * Los mismos dos campos que la web, con su misma regla: el DUI solo se habilita
+ * cuando la fecha dice que ya es mayor de edad, porque en El Salvador el DUI se
+ * emite a los 18. Los dos son opcionales y el endpoint
+ * (`PATCH /client/:id/profile`) los acepta — vacíos, los borra.
+ *
+ * Guardar un DUI aquí además LEVANTA el candado de los productos +18 sin tener
+ * que volver a escribirlo en el modal de la tienda: por eso se avisa a la
+ * sesión con `actualizarUsuario` (ver EdadContext, que mira `user.dui`).
  *
  * ── Se valida antes de mandar ──
  *
@@ -34,8 +37,10 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { AtSign, Camera, Mail, Phone, User } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+// Los mismos iconos que el registro (y que la web): fecha `Calendar`, DUI `Hash`.
+import { AtSign, Calendar, Camera, Hash, Mail, Phone, User } from 'lucide-react-native';
+import { useEstilos } from '../../context/ModoContext';
+import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
@@ -43,23 +48,67 @@ import { getCliente, actualizarPerfil, actualizarFotoPerfil } from '../../api/cl
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import CampoTexto from '../../components/UI/CampoTexto';
 import Boton from '../../components/UI/Boton';
-import { formatearDui, formatearTelefono, LARGO_TELEFONO } from '../../utils/mascaras';
-import { requerido, validarCorreo, validarTelefono, validarFormulario, sinErrores } from '../../utils/validaciones';
+import {
+  fechaISO,
+  fechaVisible,
+  formatearDui,
+  formatearFecha,
+  formatearTelefono,
+  LARGO_DUI,
+  LARGO_FECHA,
+  LARGO_TELEFONO,
+} from '../../utils/mascaras';
+import { calcularEdad, EDAD_MINIMA, esMayorDeEdad } from '../../utils/edad';
+import {
+  requerido,
+  validarCorreo,
+  validarDui,
+  validarTelefono,
+  validarFormulario,
+  sinErrores,
+} from '../../utils/validaciones';
+
+/*
+ * La fecha es OPCIONAL aquí (en el registro sí es obligatoria): quien se
+ * registró antes de que existiera el campo tiene la cuenta sin fecha, y
+ * obligarlo a ponerla para cambiar su teléfono sería cobrarle un peaje.
+ * Vacía pasa; escrita, tiene que ser una fecha de calendario real y de una
+ * persona viva.
+ */
+const validarFechaOpcional = (valor) => {
+  if (!String(valor || '').trim()) return null;
+  const iso = fechaISO(valor);
+  if (!iso) return 'Esa fecha no es válida';
+  const edad = calcularEdad(iso);
+  if (edad < 0 || edad > 120) return 'Revise la fecha';
+  return null;
+};
 
 const REGLAS = {
   fullName: (v) => requerido(v, 'El nombre es requerido'),
   userName: (v) => requerido(v, 'El usuario es requerido'),
   email: validarCorreo,
   phoneNumber: validarTelefono,
+  fechaNacimiento: validarFechaOpcional,
+  dui: validarDui,
 };
 
 const MisDatos = ({ alVolver }) => {
-  const { user } = useAuth();
+  // Lo que hay que dejarle libre abajo a la píldora flotante.
+  const aireAbajo = useAireBarraFlotante();
+  const { user, actualizarUsuario } = useAuth();
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
 
-  const [form, setForm] = useState({ fullName: '', userName: '', email: '', phoneNumber: '' });
-  const [dui, setDui] = useState('');
+  const [form, setForm] = useState({
+    fullName: '',
+    userName: '',
+    email: '',
+    phoneNumber: '',
+    fechaNacimiento: '',
+    dui: '',
+  });
   const [foto, setFoto] = useState(null);
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(true);
@@ -80,8 +129,10 @@ const MisDatos = ({ alVolver }) => {
           // El teléfono llega crudo de la base y se muestra con guion, igual
           // que en la web: 7890-1234.
           phoneNumber: formatearTelefono(cliente?.phoneNumber || ''),
+          // La base guarda la fecha en ISO; el campo la enseña como DD/MM/AAAA.
+          fechaNacimiento: fechaVisible(cliente?.fechaNacimiento),
+          dui: formatearDui(cliente?.dui || ''),
         });
-        setDui(cliente?.dui || '');
         setFoto(cliente?.image || null);
       } catch (e) {
         if (vivo) avisar(e?.message || 'No se pudieron cargar sus datos', 'error');
@@ -136,6 +187,10 @@ const MisDatos = ({ alVolver }) => {
     }
   };
 
+  // El DUI solo se habilita si la fecha dice que ya es mayor: en El Salvador
+  // el DUI se emite a los 18, así que un menor cargándolo no tendría sentido.
+  const mayorDeEdad = esMayorDeEdad(fechaISO(form.fechaNacimiento));
+
   const guardar = async () => {
     const fallos = validarFormulario(form, REGLAS);
     if (!sinErrores(fallos)) {
@@ -143,9 +198,27 @@ const MisDatos = ({ alVolver }) => {
       return;
     }
 
+    /*
+     * La fecha viaja en ISO, que es lo que guarda la base (y lo que ya manda
+     * el <input type="date"> de la web). Si por lo que sea no es mayor, no se
+     * manda un DUI que no debería tener — mismo criterio que DetallesCuenta.
+     */
+    const dui = mayorDeEdad ? form.dui.trim() : '';
+    const datos = {
+      ...form,
+      fechaNacimiento: fechaISO(form.fechaNacimiento) || '',
+      dui,
+    };
+
     setGuardando(true);
     try {
-      await actualizarPerfil(user.id, form);
+      await actualizarPerfil(user.id, datos);
+      /*
+       * Que la sesión se entere del DUI: es lo que mira el candado de los +18
+       * (ver EdadContext). Sin esto habría que volver a escribirlo en el modal
+       * de la tienda aunque acabe de guardarlo aquí.
+       */
+      actualizarUsuario({ dui });
       avisar('Sus datos quedaron guardados');
       alVolver?.();
     } catch (e) {
@@ -168,7 +241,7 @@ const MisDatos = ({ alVolver }) => {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={estilos.cuerpo}
+          contentContainerStyle={[estilos.cuerpo, { paddingBottom: aireAbajo }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
@@ -198,7 +271,7 @@ const MisDatos = ({ alVolver }) => {
             </Pressable>
             {/* Sin DUI no se pinta el renglón: es opcional, y una etiqueta
                 vacía solo hace ruido (mismo criterio que la web). */}
-            {!!dui && <Text style={estilos.dui}>DUI: {formatearDui(dui)}</Text>}
+            {!!form.dui && <Text style={estilos.dui}>DUI: {form.dui}</Text>}
           </View>
 
           <CampoTexto
@@ -247,6 +320,38 @@ const MisDatos = ({ alVolver }) => {
             maxLength={LARGO_TELEFONO}
           />
 
+          {/* Fecha de nacimiento: es la que habilita los productos +18. Campo
+              de texto con máscara, el mismo del registro — un selector de
+              calendario sería un paquete nuevo para escribir ocho dígitos. */}
+          <CampoTexto
+            etiqueta="Fecha de nacimiento"
+            icono={Calendar}
+            valor={form.fechaNacimiento}
+            alCambiar={(v) => escribir('fechaNacimiento', formatearFecha(v))}
+            marcador="DD/MM/AAAA"
+            error={errores.fechaNacimiento}
+            keyboardType="number-pad"
+            maxLength={LARGO_FECHA}
+          />
+          <Text style={estilos.ayuda}>
+            Con ella se habilitan los productos para mayores de {EDAD_MINIMA}. El documento se
+            revisa igual al entregar el pedido.
+          </Text>
+
+          {/* DUI: opcional, y solo se puede escribir cuando la fecha ya dice
+              que es mayor de edad. Igual que en la web. */}
+          <CampoTexto
+            etiqueta="DUI (opcional)"
+            icono={Hash}
+            valor={form.dui}
+            alCambiar={(v) => escribir('dui', formatearDui(v))}
+            marcador={mayorDeEdad ? '00000000-0' : `Se habilita al indicar ${EDAD_MINIMA} años o más`}
+            error={errores.dui}
+            keyboardType="number-pad"
+            maxLength={LARGO_DUI}
+            editable={mayorDeEdad}
+          />
+
           <View style={estilos.boton}>
             <Boton
               texto="Guardar cambios"
@@ -263,7 +368,7 @@ const MisDatos = ({ alVolver }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,
@@ -317,6 +422,15 @@ const estilos = StyleSheet.create({
   },
   dui: {
     fontSize: 12,
+    color: COLORES.textoTenue,
+  },
+  // La explicación debajo de la fecha. Sube un poco porque el campo de arriba
+  // ya trae su propio margen de 16.
+  ayuda: {
+    marginTop: -10,
+    marginBottom: 16,
+    fontSize: 12,
+    lineHeight: 17,
     color: COLORES.textoTenue,
   },
   boton: {

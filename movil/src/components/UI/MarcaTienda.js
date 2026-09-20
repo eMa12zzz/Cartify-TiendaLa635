@@ -22,8 +22,12 @@
 import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { useAjustesTienda } from '../../hooks/useAjustesTienda';
+import { useColores } from '../../context/ModoContext';
 
-const MarcaTienda = ({ tamano = 20, alto, color = '#111111', centrado = false }) => {
+const MarcaTienda = ({ tamano = 20, alto, color: colorPedido, centrado = false }) => {
+  // Casi negro en claro, casi blanco en oscuro — el color del texto principal.
+  const COLORES = useColores();
+  const color = colorPedido || COLORES.tinta;
   const { ajustes } = useAjustesTienda();
   const [logoFallo, setLogoFallo] = useState(false);
   const altoLogo = alto || tamano * 2;

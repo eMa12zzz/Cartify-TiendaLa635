@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShieldAlert } from 'lucide-react-native';
-import { COLORES } from '../../theme/colores';
+import { useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import Boton from '../UI/Boton';
@@ -31,6 +31,7 @@ import { EDAD_MINIMA } from '../../utils/edad';
 
 const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   const { colores } = useTema();
+  const estilos = useEstilos(crearEstilos);
   // Sin esto, "No se comparte" (la última línea) quedaba debajo de la franja
   // de gestos de Android en un teléfono real — mismo caso que Carrito.js y
   // Confirmacion.js, y esta hoja no tiene ScrollView que lo disimule.
@@ -187,7 +188,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const crearEstilos = (COLORES) => StyleSheet.create({
   capa: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
@@ -202,7 +203,7 @@ const estilos = StyleSheet.create({
     flex: 1,
   },
   panel: {
-    backgroundColor: COLORES.fondo,
+    backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
   },
