@@ -17,6 +17,11 @@ const router = express.Router();
 router.route("/promo-copy")
     .post(soloPersonal, aiController.generarCopyPromo);
 
+// El asistente la toca al abrirse: despierta el servidor (Render se duerme)
+// y deja el catálogo en memoria antes de que la persona hable. No gasta IA.
+router.route("/listo")
+    .get(aiController.listo);
+
 // Descifra lo que pidió el cliente por voz cuando las reglas no lo entienden.
 router.route("/entender")
     .post(aiController.entenderPedido);

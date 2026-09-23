@@ -49,3 +49,10 @@ export const enlaceWhatsApp = (mensaje) =>
   WHATSAPP
     ? `https://wa.me/${WHATSAPP}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ''}`
     : null;
+
+/*
+ * La página de presentación de la tienda (la landing). Es un proyecto aparte,
+ * con su propio Vercel, y se enlaza desde el pie. Se puede cambiar desde el
+ * .env (VITE_LANDING_URL) sin tocar código, por si algún día se muda.
+ */
+export const LANDING_URL = import.meta.env.VITE_LANDING_URL || 'https://cartify-tienda-la635-landingpage.vercel.app/';

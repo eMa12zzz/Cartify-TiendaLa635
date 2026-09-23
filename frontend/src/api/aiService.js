@@ -18,14 +18,33 @@ export const aiService = {
    * Nunca lanza error: si la IA no está disponible devuelve entendido:false y
    * el asistente sigue como siempre, pidiendo que le repitan.
    */
-  entenderPedido: async ({ frase, productos, carrito }) => {
+  /*
+   * El catálogo lo arma el servidor con lo que tiene existencias (ver
+   * aiController, EL CATÁLOGO QUE VE EL ASISTENTE); `productos` solo sigue
+   * viajando para un backend viejo que todavía lo use. Lo nuevo es
+   * `historial`, lo último que se dijo, para que entienda un "sí" o un
+   * "mejor dos" que dependen de lo anterior.
+   */
+  entenderPedido: async ({ frase, productos, carrito, historial }) => {
     try {
       // enSilencio: si la IA no contesta, el asistente pide que le repitan y
       // ya. Ni aviso rojo ni sesión cerrada. Ver api.js.
-      const response = await api.post('/ai/entender', { frase, productos, carrito }, { enSilencio: true });
+      // Y con tope: alguien está esperando parado; si el servidor no contesta
+      // en 15 s, mejor decirlo que dejarlo mirando la pantalla.
+      const response = await api.post('/ai/entender', { frase, productos, carrito, historial }, { enSilencio: true, timeout: 15000 });
       return response.data;
     } catch {
       return { accion: 'ninguna', entendido: false, origen: 'sin-red' };
     }
+  },
+
+  /*
+   * Despierta el servidor apenas se abre el asistente. Render lo duerme si no
+   * hay tráfico y la primera pregunta tardaba medio minuto; así arranca
+   * mientras la persona todavía está leyendo la pantalla. No gasta IA y no
+   * importa si falla.
+   */
+  despertar: () => {
+    api.get('/ai/listo', { enSilencio: true }).catch(() => {});
   },
 };
