@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
+import EncabezadoAcceso from '../components/Store/EncabezadoAcceso';
 import { Mail, Phone, User, Hash, Lock, Calendar } from 'lucide-react';
 import { EsperaMascota } from '../components/UI/Mascota';
 import { GoogleLogin } from '@react-oauth/google';
@@ -25,28 +26,6 @@ const Container = styled.div`
   background: var(--papel);
   display: flex;
   flex-direction: column;
-`;
-
-const TopBar = styled.div`
-  width: 100%;
-  border-bottom: 1px solid var(--linea);
-  padding: 12px 0;
-  text-align: center;
-`;
-
-const BrandSmall = styled.span`
-  display: block;
-  font-size: 13px;
-  color: var(--tinta-tenue);
-  line-height: 1.2;
-`;
-
-const BrandName = styled.span`
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--tinta);
-  line-height: 1.2;
 `;
 
 const Body = styled.div`
@@ -365,10 +344,8 @@ const Register = () => {
 
   return (
     <Container>
-      <TopBar>
-        <BrandSmall>Tienda</BrandSmall>
-        <BrandName>la 635</BrandName>
-      </TopBar>
+      {/* La misma barra que el login. Ver EncabezadoAcceso. */}
+      <EncabezadoAcceso />
 
       <Body>
         <Card>

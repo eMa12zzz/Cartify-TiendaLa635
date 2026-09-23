@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Lock, ArrowRight, Store as StoreIcon, Star, Bike, Heart } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Star, Bike, Heart } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { loginClientDB, googleLoginDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { BotonOjo } from '../components/UI/CampoContrasena';
-import MarcaTienda from '../components/Store/MarcaTienda';
+import EncabezadoAcceso from '../components/Store/EncabezadoAcceso';
 import { EsperaMascota } from '../components/UI/Mascota';
 import MascotaColgada from '../components/UI/MascotaColgada';
 import { consumirRecienRegistrado } from '../utils/primerIngreso';
@@ -75,59 +75,9 @@ const Percha = styled.div`
 `;
 
 /*
- * La barra de arriba: SOLO el nombre y la salida a la tienda.
- *
- * No es el HeaderTienda completo a propósito —aquí no hacen falta el buscador
- * ni los pasillos— pero se viste igual que él: mismo alto de 64px, misma línea
- * de abajo y el mismo relleno lateral, para que pasar de la tienda al login no
- * se sienta como cambiar de sitio.
- *
- * Lo que sí se arregló: el nombre estaba escrito a mano ("Tienda" / "la 635"),
- * así que si el dueño le cambiaba el nombre al negocio, esta pantalla —la
- * primera que ve quien va a entregar su correo— seguía diciendo el viejo.
- * Ahora sale de los ajustes, igual que en el encabezado de verdad.
+ * La barra de arriba vive en EncabezadoAcceso: la comparten todas las
+ * pantallas de acceso (login, registro, verificación y contraseñas).
  */
-const TopBar = styled.header`
-  background: var(--papel);
-  border-bottom: 1px solid var(--linea);
-  padding: 0 28px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-
-  @media (max-width: 700px) { padding: 0 16px; }
-`;
-
-/* La marca (nombre o logo) se mudo a MarcaTienda.jsx, que la pinta igual en
-   todas las barras de la aplicacion. */
-
-/* La misma pastilla que los botones del encabezado de la tienda. */
-const VolverTienda = styled.button`
-  background: var(--papel);
-  border: 1px solid var(--linea);
-  color: var(--tinta-suave);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 16px;
-  height: 44px;
-  border-radius: var(--radio-pill);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: border-color var(--dur-press) var(--ease-out),
-              color var(--dur-press) var(--ease-out),
-              transform var(--dur-press) var(--ease-out);
-
-  @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-600); }
-  }
-  &:active { transform: scale(0.97); }
-`;
 
 const Body = styled.div`
   flex: 1;
@@ -592,13 +542,7 @@ const LoginClient = () => {
 
   return (
     <Container>
-      <TopBar>
-        {/* La misma marca que el menú (antes iba a 17px). Ver MarcaTienda. */}
-        <MarcaTienda tamano={19} alto={38} onClick={() => navigate('/')} titulo="Ir a la tienda" />
-        <VolverTienda type="button" onClick={() => navigate('/')}>
-          <StoreIcon size={16} strokeWidth={2.2} /> Seguir viendo la tienda
-        </VolverTienda>
-      </TopBar>
+      <EncabezadoAcceso />
 
       {/* La mascota colgando de la línea del encabezado, pendiente del formulario. */}
       <Percha>

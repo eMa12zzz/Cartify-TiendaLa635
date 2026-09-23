@@ -125,6 +125,26 @@ export const AuthProvider = ({ children }) => {
    */
   const area = areaDeRuta(pathname);
   /*
+   * ¿Puede ESTA persona pasar a modo trabajo?
+   *
+   * Bastaba con que hubiera cualquier sesión de personal en el navegador, y
+   * eso mezclaba a dos personas: en la computadora del mostrador, con el
+   * dueño conectado al panel, un cliente que abría su cuenta veía "Estoy
+   * trabajando"… y al tocarlo quedaba adentro con la sesión del dueño,
+   * viendo el reparto con las direcciones de todos.
+   *
+   * El modo trabajo es para el repartidor que ADEMÁS es cliente — la misma
+   * persona con dos cuentas. Lo que las une es el correo. Si no coinciden, o
+   * falta alguno, no se ofrece: ante la duda, cada quien con la suya. Sin
+   * sesión de cliente no hay a quién confundir.
+   */
+  const correo = (s) => (s?.email || '').trim().toLowerCase();
+  const puedeTrabajar =
+    !!sesiones.personal &&
+    (!sesiones.cliente || (!!correo(sesiones.cliente) && correo(sesiones.cliente) === correo(sesiones.personal)));
+  const enModoTrabajo = trabajando && puedeTrabajar;
+
+  /*
    * En la tienda manda el cliente… SALVO que la persona haya dicho que está
    * trabajando. Ahí manda su sesión de personal aunque tenga la de cliente
    * abierta, que es justamente el caso del repartidor que compra en la tienda
@@ -133,7 +153,7 @@ export const AuthProvider = ({ children }) => {
   const activa =
     area === 'personal'
       ? sesiones.personal
-      : (trabajando && sesiones.personal) || sesiones.cliente || sesiones.personal;
+      : (enModoTrabajo && sesiones.personal) || sesiones.cliente || sesiones.personal;
 
   /*
    * El área, también en una referencia.
@@ -302,12 +322,14 @@ export const AuthProvider = ({ children }) => {
       haySesionDeCliente: !!sesiones.cliente,
       /*
        * Para el menú de Mi Cuenta, que en modo trabajo se reduce a Reparto.
-       * Solo tiene sentido si de verdad hay una sesión de personal detrás.
+       * Solo tiene sentido si la sesión de personal es de la misma persona
+       * que la de cliente. Ver `puedeTrabajar` arriba.
        */
-      trabajando: trabajando && !!sesiones.personal,
+      puedeTrabajar,
+      trabajando: enModoTrabajo,
       setTrabajando,
     }),
-    [activa, login, logout, logoutTodo, actualizarUsuario, loading, sesiones.personal, sesiones.cliente, trabajando, setTrabajando]
+    [activa, login, logout, logoutTodo, actualizarUsuario, loading, sesiones.personal, sesiones.cliente, puedeTrabajar, enModoTrabajo, setTrabajando]
   );
 
   // 5- No se pintan los hijos hasta saber si hay sesión, para evitar el
