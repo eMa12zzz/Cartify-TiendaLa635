@@ -1,8 +1,9 @@
 import { Component } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { AlertTriangle, RotateCcw, Store } from 'lucide-react';
+import { RotateCcw, Store } from 'lucide-react';
 import { areaDeRuta } from '../../utils/sesion';
+import Mascota from './Mascota';
 
 /*
  * ============================================================
@@ -54,30 +55,26 @@ const Pantalla = styled.div`
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: ${(p) => (p.$panel ? "var(--theme-main-bg, #F1F6F9)" : "var(--marca-50, #F1F6F9)")};
+  background: ${(p) => (p.$panel ? "var(--theme-main-bg, #F1F6F9)" : "var(--papel, #fff)")};
 `;
 
-const Tarjeta = styled.div`
+/*
+ * Directo sobre el fondo, sin tarjeta: la mascota, el texto y los botones se
+ * separan con aire. Antes iba en un recuadro blanco con sombra que no
+ * agrupaba nada que no estuviera ya agrupado por estar solo en la pantalla.
+ */
+const Contenido = styled.div`
   width: 100%;
-  max-width: 520px;
-  background: ${(p) => (p.$panel ? "var(--theme-card-bg, #fff)" : "var(--papel, #fff)")};
-  border: 1px solid ${(p) => (p.$panel ? "var(--theme-card-border, #ECE7E1)" : "var(--linea, #ECE7E1)")};
-  border-radius: 20px;
-  padding: 32px 28px;
+  max-width: 460px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,48,73,0.08), 0 12px 28px rgba(0,48,73,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
-const Icono = styled.div`
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  background: ${(p) => (p.$panel ? "var(--theme-primary-light, #DDECF3)" : "var(--marca-100, #DDECF3)")};
-  color: ${(p) => (p.$panel ? "var(--theme-primary, #003049)" : "var(--marca-600, #003049)")};
-  display: flex;
-  align-items: center;
-  justify-content: center;
+// La mascota caída, con el cordón cortado.
+const Ilustracion = styled.div`
+  margin-bottom: 18px;
 `;
 
 const Titulo = styled.h1`
@@ -129,6 +126,7 @@ const Boton = styled.button`
 
 /* Solo en desarrollo: el mensaje crudo, para no tener que abrir la consola. */
 const Detalle = styled.pre`
+  align-self: stretch;
   margin: 22px 0 0;
   padding: 12px 14px;
   border-radius: 12px;
@@ -177,8 +175,8 @@ class LimiteDeError extends Component {
 
     return (
       <Pantalla role="alert" $panel={panel}>
-        <Tarjeta $panel={panel}>
-          <Icono $panel={panel}><AlertTriangle size={26} strokeWidth={1.9} /></Icono>
+        <Contenido>
+          <Ilustracion><Mascota pose="error" alto={180} /></Ilustracion>
           <Titulo $panel={panel}>Algo se nos rompió acá</Titulo>
           <Texto $panel={panel}>
             No fue culpa suya. Esta pantalla no cargó bien; ya quedó anotado.
@@ -196,7 +194,7 @@ class LimiteDeError extends Component {
           {import.meta.env.DEV && (
             <Detalle>{error?.stack || String(error)}</Detalle>
           )}
-        </Tarjeta>
+        </Contenido>
       </Pantalla>
     );
   }

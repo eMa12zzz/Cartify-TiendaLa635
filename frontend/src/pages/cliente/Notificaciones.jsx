@@ -1,5 +1,6 @@
 import { useTheme } from '../../hooks/useClientTheme';
 import { useNotifications } from '../../hooks/useNotifications';
+import { CargandoMascota } from '../../components/UI/Mascota';
 
 /*
  * Notificaciones — el cliente activa/desactiva sus avisos (área "Mi Cuenta").
@@ -42,7 +43,7 @@ const Notificaciones = () => {
       <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Notificaciones</h1>
 
       {loading ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tus preferencias…</p>
+        <CargandoMascota texto="Cargando tus preferencias…" />
       ) : (
         <div className="flex flex-col gap-2">
           {opciones.map((op) => (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Check, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift, Clock } from 'lucide-react';
+import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
@@ -17,6 +17,7 @@ import SeguimientoConfirmacion from './SeguimientoConfirmacion';
 import CodigoEntrega from './CodigoEntrega';
 import MapaDireccion from './MapaDireccion';
 import MarcaTienda from './MarcaTienda';
+import Mascota, { EsperaMascota } from '../UI/Mascota';
 // El nombre de la tienda sale de los ajustes; el carrito y el recibo se habían
 // quedado con el escrito a mano. Ver AjustesContext.
 import { useAjustesCtx } from '../../context/AjustesContext';
@@ -423,7 +424,7 @@ const EmptyCart = styled.div`
   min-height: 60vh;      /* lo deja a media altura del panel, no pegado arriba */
   padding: 40px 20px;
   color: var(--tinta-tenue);
-  .emoji { margin-bottom: 14px; color: var(--tinta-apagada); }
+  .mascota { margin-bottom: 18px; }
   .title { font-size: 16px; font-weight: 600; color: var(--tinta-suave); margin-bottom: 6px; }
   .sub { font-size: 13px; }
 `;
@@ -770,6 +771,11 @@ const PlaceOrderBtn = styled.button`
   font-weight: 700;
   cursor: pointer;
   margin-top: 18px;
+  /* En flex para que la mascota de "Procesando…" quede al lado del texto. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   transition: background-color var(--dur-press) var(--ease-out),
               transform var(--dur-press) var(--ease-out);
 
@@ -835,15 +841,10 @@ const ConfirmDate = styled.div`
   margin-bottom: 24px;
 `;
 
-const CheckCircle = styled.div`
-  width: 60px;
-  height: 60px;
-  background: #22c55e;
-  border-radius: 50%;
+const Festejo = styled.div`
   display: flex;
-  align-items: center;
   justify-content: center;
-  margin: 0 auto 16px;
+  margin: 4px 0 14px;
 `;
 
 const AcceptedMsg = styled.div`
@@ -1370,7 +1371,7 @@ const ShoppingCart = ({
           <CartItemsScroll>
             {items.length === 0 ? (
               <EmptyCart>
-                <div className="emoji"><ShoppingBag size={44} strokeWidth={1.3} /></div>
+                <Mascota pose="vacio" alto={130} />
                 <div className="title">Tu carrito está vacío</div>
                 <div className="sub">¡Agrega productos para comenzar!</div>
               </EmptyCart>
@@ -1866,7 +1867,7 @@ const ShoppingCart = ({
               </p>
 
               <PlaceOrderBtn onClick={handlePlaceOrder} disabled={procesando}>
-                {procesando ? 'Procesando...' : 'Realizar pedido'}
+                {procesando ? <><EsperaMascota sobre="color" /> Procesando…</> : 'Realizar pedido'}
               </PlaceOrderBtn>
             </SummaryCard>
           </CheckoutLayout>
@@ -1916,9 +1917,8 @@ const ShoppingCart = ({
                 <ConfirmTitle>Orden en curso</ConfirmTitle>
                 <ConfirmDate>Pedido recibido el {orderDate}</ConfirmDate>
 
-                <CheckCircle>
-                  <Check size={30} color="white" strokeWidth={3} />
-                </CheckCircle>
+                {/* La mascota festejando en lugar del círculo verde con el ✓. */}
+                <Festejo><Mascota pose="fiesta" alto={130} /></Festejo>
                 <AcceptedMsg>Tu orden ha sido aceptada</AcceptedMsg>
 
                 {/* Seguimiento en vivo: el avance del pedido y, a domicilio, el

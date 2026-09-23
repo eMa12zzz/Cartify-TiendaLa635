@@ -1,6 +1,7 @@
 import { Receipt, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useMyOrders } from '../../hooks/useMyOrders';
+import { CargandoMascota } from '../../components/UI/Mascota';
 
 /*
  * Recibidos — "Recibos": los pedidos ya ENTREGADOS del cliente, como
@@ -22,7 +23,7 @@ const Recibidos = () => {
       <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Recibos</h1>
 
       {loading ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tus recibos…</p>
+        <CargandoMascota texto="Cargando tus recibos…" />
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Receipt className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />

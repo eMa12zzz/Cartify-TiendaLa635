@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { CUERPO, AGUJERO, CORDON } from '../UI/mascotaFormas';
 
 /*
  * MascotaAsistente — la etiqueta del logo con cara. En el asistente de voz es
@@ -21,14 +22,6 @@ import { useEffect, useRef } from 'react';
  *   compacta: la versión chiquita de la píldora de segundo plano, sin confeti
  *           ni signo de pregunta.
  */
-
-const CUERPO =
-  'M183,127 Q200,110 217,127 L261.6,171.6 Q280,190 280,216 C284,258 284,302 280,344 ' +
-  'Q280,380 244,380 C215,383 185,383 156,380 Q120,380 120,344 C116,302 116,258 120,216 ' +
-  'Q120,190 138.4,171.6 Z';
-// El agujero va recortado del cuerpo (fill-rule evenodd): se ve el fondo a través.
-const AGUJERO = ' M212,160 A12,12 0 1 0 188,160 A12,12 0 1 0 212,160 Z';
-const CORDON = 'M200,160 C200,126 216,118 223,96 C230,74 212,64 219,44';
 
 const BLANCO = '#FFFFFF';
 const NAVY = '#003049';

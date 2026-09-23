@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, Package, Trash2 } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useFavoritosCtx } from '../../context/FavoritosContext';
+import { CargandoMascota } from '../../components/UI/Mascota';
 
 /*
  * Favoritos — los productos que el cliente marcó con el corazón.
@@ -24,7 +25,7 @@ const Favoritos = () => {
       <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Mis favoritos</h1>
 
       {cargando ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando sus favoritos…</p>
+        <CargandoMascota texto="Cargando sus favoritos…" />
       ) : productos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Heart className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />

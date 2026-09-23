@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Star, ChevronRight } from 'lucide-react';
+import { Star, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useMyOrders } from '../../hooks/useMyOrders';
 import { orderService } from '../../api/orderService';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import SeguimientoCompacto from '../../components/Store/SeguimientoCompacto';
+import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
 
 /*
  * MisPedidos — historial de pedidos del cliente (área "Mi Cuenta").
@@ -127,11 +128,11 @@ const MisPedidos = () => {
       <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Mis pedidos</h1>
 
       {loading ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tus pedidos…</p>
+        <CargandoMascota texto="Cargando tus pedidos…" />
       ) : orders.length === 0 ? (
         // Estado vacío: una invitación, no una disculpa.
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Package className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
+          <div className="mb-4"><Mascota pose="vacio" alto={120} /></div>
           <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>Aún no tienes pedidos</p>
           <p className="text-sm" style={{ color: c.textSecondary }}>Cuando compres en la tienda, tus pedidos aparecerán aquí.</p>
         </div>

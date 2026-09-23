@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
@@ -14,6 +14,7 @@ import PromoDetailModal from '../components/Store/PromoDetailModal';
 import FilaProductos from '../components/Store/FilaProductos';
 import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
+import Mascota from '../components/UI/Mascota';
 import { useFilaDeslizable } from '../hooks/useFilaDeslizable';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import { useRastroTienda } from '../hooks/useRastroTienda';
@@ -432,12 +433,38 @@ const ProductsGrid = styled.div`
   }
 `;
 
+/* Vacío o error: la mascota y dos líneas, directo sobre el fondo. */
 const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 60px 20px;
-  color: var(--tinta-tenue);
-  font-size: 16px;
-  .icon { font-size: 48px; margin-bottom: 12px; }
+  padding: 48px 20px 60px;
+  gap: 6px;
+
+  .mascota { margin-bottom: 14px; }
+  strong { font-size: 17px; font-weight: 700; color: var(--tinta); }
+  span { font-size: 14px; color: var(--tinta-suave); max-width: 340px; line-height: 1.5; }
+`;
+
+const BotonReintentar = styled.button`
+  margin-top: 14px;
+  padding: 11px 24px;
+  border: none;
+  border-radius: var(--radio-pill);
+  background: var(--marca-600);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--dur-press) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: var(--marca-700); }
+  }
+  &:active { transform: scale(0.97); }
 `;
 
 /* ─── Component ─── */
@@ -465,6 +492,9 @@ const Store = () => {
     productosDelPasillo,
     // Para no confundir "todavía no sé" con "no hay". Ver más abajo.
     cargando,
+    // Y "no hay" con "no se pudo traer".
+    errorCarga,
+    reintentarCarga,
     agregarAlCarrito,
     eliminarDelCarrito,
     actualizarCantidad,
@@ -814,19 +844,46 @@ const Store = () => {
             <ProductsGrid>
               <EsqueletoProductos />
             </ProductsGrid>
+          ) : errorCarga ? (
+            /*
+              No llegó el catálogo. Se dice que fue la conexión y se ofrece
+              reintentar aquí mismo, sin recargar la página (el carrito sigue
+              donde estaba).
+            */
+            <EmptyState role="alert">
+              <Mascota pose="error" alto={170} />
+              <strong>Ups, algo salió mal</strong>
+              <span>No pudimos cargar los productos. Revisa tu conexión e inténtalo otra vez.</span>
+              <BotonReintentar type="button" onClick={reintentarCarga}>Reintentar</BotonReintentar>
+            </EmptyState>
           ) : productosFiltrados.length === 0 ? (
             <EmptyState>
-              <div className="icon"><Search size={34} strokeWidth={1.6} /></div>
               {/*
+                Buscó algo y no está: la mascota con la lupa. Un pasillo o una
+                tienda sin productos todavía no es una búsqueda fallida: ahí
+                mira para los lados.
+
                 Un pasillo recién creado está vacío hasta que le carguen
                 productos. Decir 'No hay productos para ""' hacía parecer que
                 la tienda estaba rota.
               */}
-              {terminoBusqueda || categoriaSeleccionada
-                ? `No hay productos para "${terminoBusqueda || categoriaSeleccionada}"`
-                : nombrePasillo
-                  ? `${nombrePasillo} todavía no tiene productos`
-                  : 'Todavía no hay productos en la tienda'}
+              <Mascota pose={terminoBusqueda || categoriaSeleccionada ? 'buscando' : 'perdida'} alto={150} />
+              <strong>
+                {terminoBusqueda
+                  ? `No encontramos “${terminoBusqueda}”`
+                  : categoriaSeleccionada
+                    ? `No hay productos en “${categoriaSeleccionada}”`
+                    : nombrePasillo
+                      ? `${nombrePasillo} todavía no tiene productos`
+                      : 'Todavía no hay productos en la tienda'}
+              </strong>
+              <span>
+                {terminoBusqueda
+                  ? 'Revisa cómo lo escribiste o prueba con otra palabra.'
+                  : categoriaSeleccionada
+                    ? 'Prueba con otra categoría.'
+                    : 'Pronto van a ir llegando.'}
+              </span>
             </EmptyState>
           ) : (
             <ProductsGrid>
