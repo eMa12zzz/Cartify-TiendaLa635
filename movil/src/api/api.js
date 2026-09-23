@@ -76,13 +76,21 @@ const RESPALDO_POR_ESTADO = {
  * está apagado hace perder media hora buscando el error en el lugar
  * equivocado.
  */
-export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras } = {}) => {
+export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras, tiempoMaximo } = {}) => {
   let respuesta;
 
   // Un FormData (la foto de perfil) va tal cual: ni se convierte a JSON ni se
   // le pone Content-Type a mano, que si no fetch no agrega el boundary del
   // multipart y el backend no puede separar los campos.
   const esFormData = cuerpo instanceof FormData;
+
+  /*
+   * `tiempoMaximo` (ms), para lo que no puede quedarse esperando para
+   * siempre: el asistente de voz tiene a alguien parado mirando el teléfono.
+   * fetch no trae tope propio, así que se corta a mano.
+   */
+  const corte = tiempoMaximo ? new AbortController() : null;
+  const reloj = corte ? setTimeout(() => corte.abort(), tiempoMaximo) : null;
 
   try {
     respuesta = await fetch(`${URL_API}${ruta}`, {
@@ -94,12 +102,17 @@ export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras } = {})
         ...cabeceras,
       },
       body: esFormData ? cuerpo : cuerpo ? JSON.stringify(cuerpo) : undefined,
+      signal: corte?.signal,
     });
   } catch {
     throw new ErrorApi(
-      `No se pudo conectar con el servidor (${URL_API}). Revise que el backend esté encendido.`,
+      corte?.signal.aborted
+        ? 'El servidor tardó demasiado en contestar.'
+        : `No se pudo conectar con el servidor (${URL_API}). Revise que el backend esté encendido.`,
       0
     );
+  } finally {
+    if (reloj) clearTimeout(reloj);
   }
 
   // Un 500 puede devolver HTML en vez de JSON; que eso no tumbe la pantalla.

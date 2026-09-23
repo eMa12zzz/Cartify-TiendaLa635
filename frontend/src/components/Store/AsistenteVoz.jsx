@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { useKiosco } from '../../hooks/useKiosco';
 import { orderService } from '../../api/orderService';
+import { aiService } from '../../api/aiService';
 import MascotaAsistente from './MascotaAsistente';
 
 /*
@@ -182,6 +183,9 @@ const AsistenteVoz = ({
    */
   useEffect(() => {
     toast.dismiss();
+    // Despierta el servidor mientras la persona lee la pantalla: si estaba
+    // dormido, la primera pregunta ya no tarda medio minuto. Ver aiService.
+    aiService.despertar();
   }, []);
 
   // Lo último que entró al carrito queda a la vista.

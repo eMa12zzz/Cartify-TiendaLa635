@@ -234,6 +234,13 @@ export const useVoiceAssistant = ({
   const ultimoSiguesRef = useRef(0);    // cuándo preguntó "¿sigue ahí?" por última vez
   const sugeridoRef = useRef(false);     // ya hicimos upsell esta sesión
   const idRef = useRef(0);
+  /*
+   * La memoria de la charla, al día en el mismo instante: el estado
+   * `historial` se actualiza en el próximo render, y la pregunta a la IA sale
+   * antes. Es lo que viaja con cada pregunta para que entienda un "sí" o un
+   * "mejor dos" que dependen de lo anterior.
+   */
+  const memoriaRef = useRef([]);
 
   const soportado =
     typeof window !== 'undefined' &&
@@ -241,6 +248,7 @@ export const useVoiceAssistant = ({
 
   // Agrega un mensaje al historial (limita a los últimos 8).
   const registrar = (tipo, texto) => {
+    memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
     setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto }]);
   };
 
@@ -414,9 +422,30 @@ export const useVoiceAssistant = ({
     try {
       const idea = await aiService.entenderPedido({
         frase,
+        /*
+         * El servidor nuevo arma su propio catálogo e ignora esto. Se sigue
+         * mandando mientras haya un backend viejo desplegado que todavía lo
+         * necesita; se puede quitar cuando producción tenga la ruta nueva.
+         */
         productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })),
         carrito: carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
+        /*
+         * Lo que se habló ANTES de esta frase (la última de la memoria es la
+         * frase misma, que ya va aparte). Con esto la IA sabe a qué se
+         * refiere un "sí" o un "mejor dos".
+         */
+        historial: memoriaRef.current.slice(0, -1).slice(-6).map((m) => ({
+          quien: m.tipo === 'user' ? 'cliente' : 'asistente',
+          texto: m.texto,
+        })),
       });
+
+      // No hubo red o el servidor no contestó a tiempo: decirlo tal cual,
+      // no fingir que no se entendió lo que se dijo bien.
+      if (idea?.origen === 'sin-red') {
+        hablarRef.current?.('Perdón, se me cortó la conexión. ¿Me lo repite?');
+        return;
+      }
 
       /*
        * La IA no pudo —sin llave, sin cuota, o de verdad no entendió—.
@@ -447,6 +476,12 @@ export const useVoiceAssistant = ({
         fns.agregarAlCarrito?.(prod, idea.cantidad || 1);
       } else if (idea.accion === 'quitar' && prod) {
         fns.eliminarDelCarrito?.(prod.id);
+      } else if (idea.accion === 'cambiar' && prod) {
+        // "Mejor que sean dos": deja la cantidad exacta. Si todavía no estaba
+        // en el carrito, se agrega con esa cantidad.
+        const enCarrito = carrito.find((i) => i.id === prod.id);
+        if (enCarrito) fns.actualizarCantidad?.(prod.id, idea.cantidad || 1);
+        else fns.agregarAlCarrito?.(prod, idea.cantidad || 1);
       } else if (idea.accion === 'vaciar') {
         fns.limpiarCarrito?.();
       }
@@ -569,15 +604,34 @@ export const useVoiceAssistant = ({
     // ── Agregar (varios por frase) ──
     const partes = t.split(/\s+y\s+|,|\s+tambien\s+|\s+ademas\s+/).map((s) => s.trim()).filter(Boolean);
     const agregados = [];
+    /*
+     * Lo que se pidió pero está agotado. Antes se "agregaba" igual: el
+     * carrito lo rechazaba en silencio y el asistente decía "Agregué 1 leche"
+     * sobre una leche que nunca entró. Ahora se dice que se acabó.
+     */
+    const agotados = [];
     const vistos = new Set();
     for (const parte of partes) {
       const prod = buscarProducto(parte);
       if (prod && !vistos.has(prod.id)) {
+        vistos.add(prod.id);
+        if ((Number(prod.stock) || 0) <= 0) {
+          agotados.push(prod.nombre);
+          continue;
+        }
         const cant = cantidadExplicita(parte) ?? 1;
         fns.agregarAlCarrito?.(prod, cant);
         agregados.push(`${cant} ${prod.nombre}`);
-        vistos.add(prod.id);
       }
+    }
+
+    const seAcabo = agotados.length
+      ? `Hoy se nos ${agotados.length === 1 ? 'acabó' : 'acabaron'} ${agotados.join(' y ')}.`
+      : '';
+
+    if (agregados.length === 0 && agotados.length) {
+      hablar(`${seAcabo} ¿Le busco otra cosa?`);
+      return;
     }
 
     if (agregados.length === 0) {
@@ -596,13 +650,15 @@ export const useVoiceAssistant = ({
     }
 
     let mensaje = agregados.length === 1
-      ? `Agregué ${agregados[0]}. ¿Algo más?`
-      : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}. ¿Algo más?`;
+      ? `Agregué ${agregados[0]}.`
+      : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}.`;
+    mensaje += seAcabo ? ` ${seAcabo} ¿Algo más?` : ' ¿Algo más?';
 
-    // Upsell (una sola vez): sugiere un producto en oferta que no esté en el carrito.
+    // Upsell (una sola vez): sugiere un producto en oferta que no esté en el carrito
+    // (y que haya: ofrecer un agotado es invitar a pedir algo que no se puede).
     if (!sugeridoRef.current) {
       const promo = productos.find((p) =>
-        p.esMasVendido && p.precioAnterior > p.precio &&
+        p.esMasVendido && p.precioAnterior > p.precio && (Number(p.stock) || 0) > 0 &&
         !vistos.has(p.id) && !carrito.some((i) => i.id === p.id));
       if (promo) {
         sugeridoRef.current = true;
