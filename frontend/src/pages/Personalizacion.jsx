@@ -6,6 +6,8 @@ import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
 import ServicioTarifa from '../components/Admin/ServicioTarifa';
 import TemporadasPropias from '../components/Admin/TemporadasPropias';
 import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo, todosLosTemas } from '../utils/temporadas';
+import Mascota from '../components/UI/Mascota';
+import { disfrazDeTema, NOMBRE_DEL_DISFRAZ } from '../utils/disfracesTiqui';
 
 /*
  * Los apartados de la izquierda. Antes todo era un scroll largo de tarjetas que
@@ -491,6 +493,8 @@ const Personalizacion = () => {
                 const elegido = temporada.modo === 'manual' && temporada.tema === tema.clave;
                 const esElDeHoy = porCalendario?.clave === tema.clave;
                 const seleccionable = temporada.modo === 'manual';
+                // Cómo se viste Tiqui en esta temporada. Ver utils/disfracesTiqui.js.
+                const disfraz = disfrazDeTema(tema);
 
                 return (
                   <button
@@ -505,6 +509,9 @@ const Personalizacion = () => {
                       opacity: seleccionable || esElDeHoy ? 1 : 0.6,
                     }}
                   >
+                    {/* Tiqui con el disfraz de esta temporada, quieto: son varias juntas. */}
+                    <Mascota pose="posando" alto={64} disfraz={disfraz} />
+
                     <div className="flex gap-1 flex-none">
                       {tema.muestras.map((color) => (
                         <span
@@ -533,6 +540,11 @@ const Personalizacion = () => {
                         {tema.descripcion}
                         {esElDeHoy && ' · es la de hoy'}
                       </div>
+                      {disfraz && (
+                        <div className="text-xs mt-0.5" style={{ color: 'var(--theme-text-muted)' }}>
+                          Tiqui se pone {NOMBRE_DEL_DISFRAZ[disfraz.tipo]}
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
