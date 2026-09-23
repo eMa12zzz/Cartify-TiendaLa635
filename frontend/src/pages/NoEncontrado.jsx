@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Compass, ArrowLeft, Store, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, Store, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import Mascota from '../components/UI/Mascota';
 
 /*
  * ============================================================
@@ -38,34 +39,22 @@ const Caja = styled.div`
 `;
 
 /*
- * El color de marca real, inyectado por el propio componente (ver
- * escalaMarca en NoEncontrado, más abajo) en vez de leído de --marca-* en
- * :root — este 404 se puede pisar desde CUALQUIER dirección mal escrita,
- * incluida una del panel (/inventario/algo-que-no-existe), y ahí
- * useTemporada() apaga esa variable a propósito (ver SinPermiso.jsx, mismo
- * caso). Con el valor puesto localmente en el envoltorio, estas reglas se
- * quedan tal cual sin que la ruta les afecte.
+ * El "404" con la mascota haciendo de cero: perdida, mirando para un lado.
+ * Para un lector de pantalla todo el bloque es una imagen llamada "Error 404".
  */
-const Icono = styled.div`
-  width: 74px;
-  height: 74px;
-  margin: 0 auto 22px;
-  border-radius: 50%;
-  background: var(--marca-50);
-  border: 1px solid var(--linea);
+const Cuatro = styled.p`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--marca-600);
-`;
+  gap: 4px;
+  margin: 0 0 22px;
+  font-size: 108px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--tinta);
 
-const Codigo = styled.p`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  color: var(--tinta-tenue);
-  margin: 0 0 10px;
+  @media (max-width: 420px) { font-size: 84px; }
 `;
 
 const Titulo = styled.h1`
@@ -153,9 +142,11 @@ const NoEncontrado = () => {
   return (
     <Fondo>
       <Caja>
-        <Icono><Compass size={32} strokeWidth={1.7} /></Icono>
-
-        <Codigo>Error 404</Codigo>
+        <Cuatro role="img" aria-label="Error 404">
+          <span>4</span>
+          <Mascota pose="perdida" alto="1.45em" />
+          <span>4</span>
+        </Cuatro>
         <Titulo>Esta página no existe</Titulo>
         <Texto>
           Puede que la dirección esté mal escrita, o que la página se haya

@@ -6,6 +6,7 @@ import { useViajeEnVivo } from '../../hooks/useViajeEnVivo';
 import { useAjustesCtx } from '../../context/AjustesContext';
 import ModalCodigoEntrega from '../../components/Admin/ModalCodigoEntrega';
 import Mapa from '../../components/Mapa/Mapa';
+import { CargandoMascota } from '../../components/UI/Mascota';
 
 /*
  * Reparto — los pedidos a domicilio pendientes, para quien los lleva.
@@ -146,7 +147,7 @@ const Reparto = () => {
       )}
 
       {cargando ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando los pedidos…</p>
+        <CargandoMascota texto="Cargando los pedidos…" />
       ) : pedidos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Package className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />

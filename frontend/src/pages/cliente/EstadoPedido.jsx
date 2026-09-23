@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Package, Bike, MapPin, CreditCard,
-  Wallet, Banknote, Hash, Store as StoreFront, X,
+  Wallet, Banknote, Hash, Store as StoreFront,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { orderService } from '../../api/orderService';
@@ -11,6 +11,7 @@ import MapaSeguimiento from '../../components/Store/MapaSeguimiento';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import ValoracionPedido from '../../components/Store/ValoracionPedido';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
+import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
 
 /*
  * ============================================================
@@ -83,12 +84,12 @@ const EstadoPedido = () => {
   const seguimiento = useSeguimientoEnVivo(pedido?._id, !!enCurso);
 
   if (cargando) {
-    return <p className="text-sm p-2" style={{ color: c.textSecondary }}>Cargando su pedido…</p>;
+    return <CargandoMascota texto="Cargando su pedido…" />;
   }
   if (error || !pedido) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <X className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
+        <div className="mb-4"><Mascota pose="buscando" alto={130} /></div>
         <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>No encontramos ese pedido</p>
         <button
           type="button"

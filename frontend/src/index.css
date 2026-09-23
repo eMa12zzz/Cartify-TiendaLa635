@@ -94,6 +94,16 @@
   --peligro-borde: #FECACA;
   --peligro:       #DC2626;
 
+  /*
+    La mascota (Mascota.jsx): la etiqueta del logo con cara. Va en el azul de
+    la casa y NO en --marca-600, porque esa cambia con la temporada y la
+    mascota es siempre la misma. En modo oscuro se voltea: etiqueta blanca con
+    rasgos navy, igual que el logo.
+  */
+  --mascota-cuerpo: #003049;
+  --mascota-rasgo:  #FFFFFF;
+  --mascota-cordon: #009AEB;
+
   /* Radios: en el diseño casi todo es pill; las tarjetas son suaves. */
   --radio-pill: 999px;
   --radio-tarjeta: 14px;
@@ -170,6 +180,9 @@
   --peligro-fondo: #331719;
   --peligro-borde: #5C2629;
   --peligro:       #F87171;
+
+  --mascota-cuerpo: #FFFFFF;
+  --mascota-rasgo:  #003049;
 
   --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
   --sombra-flotante: 0 8px 30px rgba(0, 0, 0, 0.55);
@@ -593,6 +606,117 @@ input:disabled {
 }
 .aviso-carrito-entra { animation: avisoCarritoEntra 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .aviso-carrito-sale  { animation: avisoCarritoSale 260ms ease-in both; }
+
+/*
+  ==========================================
+  MASCOTA (Mascota.jsx)
+  ==========================================
+  Cómo se mueve la etiqueta en cada ilustración. Las coordenadas de
+  transform-origin son del dibujo (lienzo de 400 × 470), no de la pantalla:
+  200px 0px es de donde cuelga el cordón, 200px 382px la base de la etiqueta
+  y 200px 110px su punta.
+*/
+.mascota-pendulo { transform-origin: 200px 0px; animation: mascotaPendulo 1.7s ease-in-out infinite alternate; }
+.mascota-pendulo-corto { transform-origin: 200px 0px; animation: mascotaPenduloCorto 1.2s ease-in-out infinite alternate; }
+.mascota-balanceo { transform-origin: 200px 382px; animation: mascotaBalanceo 2.6s ease-in-out infinite alternate; }
+.mascota-respira { transform-origin: 200px 382px; animation: mascotaRespira 2.8s ease-in-out infinite alternate; }
+.mascota-salta { transform-origin: 200px 382px; animation: mascotaSalta 900ms cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.mascota-saluda { transform-origin: 200px 110px; animation: mascotaSaluda 2.4s ease-in-out infinite; }
+.mascota-antena { transform-origin: 200px 158px; animation: mascotaAntena 2.4s ease-in-out infinite alternate; }
+.mascota-cabo { transform-origin: 200px 0px; animation: mascotaCabo 2.6s ease-in-out infinite alternate; }
+.mascota-parpadeo { animation: mascotaParpadeo 3.8s infinite; }
+.mascota-chispa { animation: mascotaChispa 1s steps(2, jump-none) infinite; }
+
+@keyframes mascotaPendulo { from { transform: rotate(12deg); } to { transform: rotate(-12deg); } }
+@keyframes mascotaPenduloCorto { from { transform: rotate(7deg); } to { transform: rotate(-7deg); } }
+@keyframes mascotaBalanceo { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@keyframes mascotaRespira { from { transform: scale(1, 1); } to { transform: scale(1.02, 0.985); } }
+@keyframes mascotaSalta {
+  0%, 100% { transform: translateY(0) scale(1.05, 0.94); }
+  18%, 82% { transform: translateY(0) scale(1, 1); }
+  50%      { transform: translateY(-34px) scale(0.98, 1.03); }
+}
+@keyframes mascotaSaluda {
+  0%, 55%, 100% { transform: rotate(0); }
+  10% { transform: rotate(12deg); }
+  22% { transform: rotate(-9deg); }
+  34% { transform: rotate(8deg); }
+  45% { transform: rotate(-3deg); }
+}
+@keyframes mascotaAntena { from { transform: rotate(-5deg); } to { transform: rotate(6deg); } }
+@keyframes mascotaCabo { from { transform: rotate(5deg); } to { transform: rotate(-5deg); } }
+@keyframes mascotaParpadeo { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes mascotaChispa { from { opacity: 1; } to { opacity: 0.15; } }
+
+/*
+  Las cargas de pantalla entera aparecen con un poco de retraso: si los datos
+  llegan en un pestañeo, la mascota no alcanza a verse y no queda un parpadeo
+  de algo que sale y se va.
+*/
+.mascota-aparece { animation: mascotaAparece 220ms ease-out 280ms both; }
+@keyframes mascotaAparece { from { opacity: 0; } to { opacity: 1; } }
+
+/*
+  MASCOTA COLGADA (MascotaColgada.jsx, en el inicio de sesión). Cuelga del
+  broche en (200, 0), así que el vaivén gira desde ahí; el "no" con la cabeza
+  gira desde el agujero del cordón (200, 160).
+*/
+.mascota-colgada .colgada-vaiven { transform-origin: 200px 0px; animation: colgadaVaiven 3.4s ease-in-out infinite alternate; }
+.mascota-colgada[data-estado="entrando"] .colgada-vaiven { animation-duration: 0.8s; }
+@keyframes colgadaVaiven { from { transform: rotate(3deg); } to { transform: rotate(-3deg); } }
+.colgada-cuerpo { transform-origin: 200px 160px; }
+.mascota-colgada[data-estado="error"] .colgada-cuerpo { animation: colgadaNiega 520ms ease-in-out 2; }
+@keyframes colgadaNiega {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-9deg); }
+  50% { transform: rotate(8deg); }
+  80% { transform: rotate(-4deg); }
+}
+.colgada-cara, .colgada-ojos { transition: transform 220ms ease-out; }
+.colgada-abiertos, .colgada-cerrados, .colgada-rubor, .colgada-boca, .colgada-cejas { transition: opacity 150ms ease-out; }
+.colgada-cejas, .colgada-boca { opacity: 0; }
+.mascota-colgada[data-estado="error"] .colgada-cejas { opacity: 1; }
+/* Sonríe, salvo cuando espía (sonrisa de lado) o cuando algo no cuadró. */
+.mascota-colgada .colgada-b-sonrisa { opacity: 1; }
+.mascota-colgada[data-estado="error"] .colgada-b-sonrisa,
+.mascota-colgada[data-mirada="espia"] .colgada-b-sonrisa { opacity: 0; }
+.mascota-colgada[data-estado="error"] .colgada-b-ondulada { opacity: 1; }
+.mascota-colgada[data-mirada="espia"]:not([data-estado="error"]) .colgada-b-lado { opacity: 1; }
+
+/*
+  El aviso de sin conexión (AvisoSinConexion.jsx). Flota abajo al centro,
+  entre la burbuja del pedido y la de WhatsApp, y por encima de las dos:
+  quedarse sin internet es lo más importante que está pasando.
+*/
+.aviso-conexion {
+  position: fixed;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 9990;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 22px 12px 14px;
+  border-radius: 22px;
+  background: var(--papel-alto);
+  box-shadow: var(--sombra-flotante);
+  --mascota-fondo: var(--papel-alto);
+  animation: avisoConexionEntra 320ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.aviso-conexion-texto { display: flex; flex-direction: column; gap: 2px; }
+.aviso-conexion-texto strong { font-size: 14.5px; font-weight: 700; color: var(--tinta); }
+.aviso-conexion-texto span { font-size: 13px; color: var(--tinta-suave); }
+@keyframes avisoConexionEntra {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascota *, .mascota-aparece, .aviso-conexion { animation: none !important; }
+}
 
 /*
   ==========================================

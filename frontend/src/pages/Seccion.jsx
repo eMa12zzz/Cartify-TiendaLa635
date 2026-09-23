@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { ArrowLeft, PackageOpen } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import Mascota from '../components/UI/Mascota';
 import { useStore } from '../hooks/useStore';
 import { useVolver } from '../hooks/useVolver';
 import { useMyOrders } from '../hooks/useMyOrders';
@@ -133,11 +134,14 @@ const Cuadricula = styled.div`
 `;
 
 const Vacio = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 70px 20px;
+  padding: 56px 20px 70px;
   color: var(--tinta-suave);
 
-  svg { color: var(--tinta-tenue); margin-bottom: 14px; }
+  .mascota { margin-bottom: 18px; }
   h2 { font-size: 19px; color: var(--tinta); margin: 0 0 8px; }
   p { font-size: 14px; margin: 0 0 22px; }
 `;
@@ -219,7 +223,8 @@ const Seccion = () => {
           </Cuadricula>
         ) : !seccion ? (
           <Vacio>
-            <PackageOpen size={44} strokeWidth={1.5} />
+            {/* Perdida, mirando para un lado: la sección que buscaba ya no está. */}
+            <Mascota pose="perdida" alto={140} />
             <h2>Esta sección ya no está</h2>
             <p>
               Las secciones se arman con lo que hay en existencia, así que
