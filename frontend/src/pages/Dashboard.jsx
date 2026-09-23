@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import HeaderTienda from '../components/Store/HeaderTienda';
 import { useModulos } from '../hooks/useModulos';
 import { useAuth } from '../hooks/useAuth';
 import { iconoDeModulo, flujoDeModulo } from '../utils/modulos';
@@ -13,54 +14,6 @@ const Container = styled.div`
   background: var(--papel);
   display: flex;
   flex-direction: column;
-`;
-
-const TopBar = styled.div`
-  width: 100%;
-  border-bottom: 1px solid var(--linea);
-  padding: 10px 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-`;
-
-const BrandCenter = styled.div`
-  text-align: center;
-  cursor: pointer;
-`;
-
-const BrandSmall = styled.span`
-  display: block;
-  font-size: 13px;
-  color: var(--tinta-tenue);
-  line-height: 1.2;
-`;
-
-const BrandName = styled.span`
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--tinta);
-  line-height: 1.2;
-`;
-
-const LogoutBtn = styled.button`
-  position: absolute;
-  right: 20px;
-  padding: 7px 14px;
-  background: transparent;
-  color: var(--peligro);
-  border: 1px solid var(--peligro);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
-
-  &:hover {
-    background: #ff4d4f;
-    color: white;
-  }
 `;
 
 const Body = styled.div`
@@ -152,34 +105,13 @@ const Dashboard = () => {
    * llave 'token' aquí dejaba esta pantalla mandando al login para siempre,
    * porque esa llave ya no existe. Ver AuthContext.
    */
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/iniciar-sesion?volver=/tienda-dashboard');
     }
   }, [isAuthenticated, navigate]);
-
-  // Cerrar sesión deja en la tienda, que ahora es pública. Y cierra SOLO la
-  // de esta área: un localStorage.clear() se llevaba de paso el carrito, las
-  // direcciones guardadas y la sesión del panel.
-  const handleLogout = () => {
-    /*
-     * Se cierra el cajón de QUIEN está dentro, no el que adivine la ruta.
-     *
-     * /tienda-dashboard es área de CLIENTE, así que un logout() a secas
-     * borraba el cajón de cliente. Cuando quien estaba dentro era personal
-     * —el dueño o un empleado mirando la tienda desde el teléfono, que ahí
-     * entra por el cajón del personal— se borraba un cajón vacío y su token
-     * seguía vivo: tocaba "Cerrar sesión", se le decía que había salido, y
-     * seguía dentro con el panel entero abierto.
-     *
-     * Es la misma fuga que ya se había arreglado en ClienteLayout.jsx; esta
-     * pantalla se quedó con la versión vieja.
-     */
-    logout(user?.type === 'client' ? 'cliente' : 'personal');
-    navigate('/');
-  };
 
   /*
    * A dónde lleva cada módulo. Los pasillos normales van a la MISMA tienda,
@@ -196,13 +128,13 @@ const Dashboard = () => {
 
   return (
     <Container>
-      <TopBar>
-        <BrandCenter onClick={() => navigate('/tienda-dashboard')}>
-          <BrandSmall>Tienda</BrandSmall>
-          <BrandName>la 635</BrandName>
-        </BrandCenter>
-        <LogoutBtn onClick={handleLogout}>Cerrar Sesión</LogoutBtn>
-      </TopBar>
+      {/*
+        El MISMO encabezado de la tienda. Aquí había una barra propia con el
+        nombre escrito a mano y centrado y un "Cerrar Sesión" en rojo: sin
+        buscador, sin carrito y sin logo, parecía otro sitio. Salir de la cuenta
+        sigue a un toque, en Mi Cuenta, como en el resto de la tienda.
+      */}
+      <HeaderTienda />
 
       <Body>
         <SectionTitle>Servicios</SectionTitle>

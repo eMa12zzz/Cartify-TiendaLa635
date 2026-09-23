@@ -910,9 +910,9 @@ const Store = () => {
 
       {/* ── Modals ── */}
       {/*
-        Detalle de la promo. Se abre con la misma animación que un producto,
-        así el click al banner se siente igual de vivo que el click a una
-        tarjeta; antes solo filtraba la lista de abajo, sin aviso.
+        Detalle de la promo, a pantalla completa como la ficha de un producto
+        y con el mismo encabezado. Al dar Enter en el buscador se cierra: de
+        nada sirve filtrar una lista que está tapada por la promo.
       */}
       {promoDetalle && (
         <PromoDetailModal
@@ -922,6 +922,16 @@ const Store = () => {
           onVerEnTienda={() => verPromoEnTienda(promoDetalle)}
           onVerProducto={handleAbrirDetalle}
           onAgregarAlCarrito={agregarAlCarrito}
+          header={{
+            moduloSeleccionado,
+            onElegirModulo: (modulo) => { setModuloSeleccionado(modulo); cerrarPromo(); },
+            terminoBusqueda,
+            onBuscar: setTerminoBusqueda,
+            onEnviarBusqueda: cerrarPromo,
+            cantidadItems,
+            onAbrirCarrito: () => setMostrarCarrito(true),
+            onAbrirAsistente: () => setMostrarAsistente(true),
+          }}
         />
       )}
 
