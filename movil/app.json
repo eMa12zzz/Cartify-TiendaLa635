@@ -65,6 +65,12 @@
         {
           "locationWhenInUsePermission": "Se usa para llenar su dirección con su ubicación actual."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Se usa para escuchar lo que pide por voz."
+        }
       ]
     ],
     "extra": {

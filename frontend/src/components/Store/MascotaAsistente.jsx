@@ -21,6 +21,9 @@ import { CUERPO, AGUJERO, CORDON } from '../UI/mascotaFormas';
  *           cambio, mientras escucha, asiente.
  *   compacta: la versión chiquita de la píldora de segundo plano, sin confeti
  *           ni signo de pregunta.
+ *   vozReal: suena la voz de Tiqui (utils/vozTiqui.js). La boca deja la
+ *           animación en bucle y se abre con el volumen del audio, que llega
+ *           en la variable CSS --voz-tiqui: se cierra en las pausas de verdad.
  */
 
 const BLANCO = '#FFFFFF';
@@ -63,7 +66,7 @@ const CONFETI = [
   { x: 318, y: 150, c: '#F0707F', d: '-1.1s' },
 ];
 
-const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compacta = false, className = '' }) => {
+const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compacta = false, vozReal = false, className = '' }) => {
   const raizRef = useRef(null);
   const caraRef = useRef(null);
   const ojosRef = useRef(null);
@@ -138,6 +141,7 @@ const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compact
       data-mov={r.mov}
       data-antena={r.antena}
       data-animo={animo}
+      data-voz-real={vozReal ? 'si' : undefined}
       aria-hidden="true"
       style={{ overflow: 'visible' }}
     >

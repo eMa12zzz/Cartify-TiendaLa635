@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { useKiosco } from '../../hooks/useKiosco';
 import { orderService } from '../../api/orderService';
-import { aiService } from '../../api/aiService';
 import MascotaAsistente from './MascotaAsistente';
 
 /*
@@ -40,7 +39,7 @@ const ORBE = 'radial-gradient(circle at 34% 28%, #29a3e6, #003049 68%)';
  * Lo que dice la mascota antes de que le hablen. Va escrito y NO hablado: al
  * abrir, el asistente espera a que la persona toque (ver más abajo).
  */
-const SALUDO = '¡Hola! Toque el botón y dígame qué necesita. Por ejemplo: “quiero una manzana y dos galletas”.';
+const SALUDO = '¡Hola! Soy Tiqui. Toca el botón y dime qué necesitas. Por ejemplo: “quiero una manzana y dos galletas” o “¿qué ofertas hay?”.';
 
 /*
  * La cara que pone la mascota según lo último que dijo.
@@ -51,9 +50,9 @@ const SALUDO = '¡Hola! Toque el botón y dígame qué necesita. Por ejemplo: �
  * ponga cara normal.
  */
 const animoDe = (texto = '') => {
-  if (/^¡Listo/.test(texto)) return 'feliz'; // la compra quedó cerrada
-  if (/^Agregué/.test(texto)) return 'contento';
-  if (/^(No le entendí|No encontré|No tienes|No pude|Tu navegador no)/.test(texto)) return 'confundido';
+  if (/(Pasa a caja|Lleva tu carrito a caja)/.test(texto)) return 'feliz'; // la compra quedó cerrada
+  if (/^(Agregué|Te agregué|¡Listo|Listo)/.test(texto)) return 'contento';
+  if (/^(No te entendí|No encontré|No tienes|No pude|Tu navegador no|Perdón, se me cortó|Uy, me distraje)/.test(texto)) return 'confundido';
   return 'normal';
 };
 
@@ -90,7 +89,7 @@ const AsistenteVoz = ({
   const {
     activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
     iniciar, detener, toggleMute, hablar, soportado, interrumpir,
-    voces, vozActual, cambiarVoz,
+    voces, vozActual, cambiarVoz, vozTiqui, sonandoTiqui,
   } = useVoiceAssistant({
     productos, carrito, totalCarrito,
     agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
@@ -128,7 +127,7 @@ const AsistenteVoz = ({
     const cliente = kiosco.cliente;
 
     if (!cliente) {
-      hablarRef.current?.('¡Listo! Lleve su carrito a caja, un empleado le ayudará a pagar. ¡Gracias!');
+      hablarRef.current?.('¡Listo! Lleva tu carrito a caja y alguien de la tienda te ayuda a pagar. ¡Gracias!');
       return;
     }
 
@@ -161,12 +160,12 @@ const AsistenteVoz = ({
       });
 
       hablarRef.current?.(
-        `¡Listo, ${cliente.nombre}! Su pedido quedó a su nombre y sus puntos ya están sumados. Pase a caja a pagar.`
+        `¡Listo, ${cliente.nombre}! Tu pedido quedó a tu nombre y tus puntos ya están sumados. Pasa a caja a pagar.`
       );
       limpiarCarrito?.();
     } catch {
       // El pedido no se pudo crear: se lo decimos, no se lo inventamos.
-      hablarRef.current?.('No pude registrar su pedido. Pase a caja y un empleado le ayuda.');
+      hablarRef.current?.('No pude registrar tu pedido. Pasa a caja y alguien de la tienda te ayuda.');
     } finally {
       // El código muere aquí, con pedido o sin él.
       kiosco.cerrar();
@@ -181,11 +180,9 @@ const AsistenteVoz = ({
    * y a veces hablaba encima de quien ya sabía qué pedir. La instrucción de qué
    * hacer ya está escrita grande en la pantalla.
    */
+  // Despertar el servidor (y preguntar si hay voz de Tiqui) lo hace el hook al abrir.
   useEffect(() => {
     toast.dismiss();
-    // Despierta el servidor mientras la persona lee la pantalla: si estaba
-    // dormido, la primera pregunta ya no tarda medio minuto. Ver aiService.
-    aiService.despertar();
   }, []);
 
   // Lo último que entró al carrito queda a la vista.
@@ -201,10 +198,10 @@ const AsistenteVoz = ({
    * se colgó. Decirlo convierte la espera en algo que está pasando.
    */
   const estadoTexto = pensando
-    ? 'Buscando productos…'
-    : hablando ? 'Toque para interrumpir'
-    : !activo ? 'Toque para hablarle'
-    : escuchando ? 'Le escucho…' : 'Un momento…';
+    ? 'Pensando…'
+    : hablando ? 'Toca para interrumpirme'
+    : !activo ? 'Toca para hablarme'
+    : escuchando ? 'Te escucho…' : 'Un momento…';
 
   // Qué hace la mascota, con el mismo orden que el texto de arriba.
   const estadoMascota = pensando ? 'pensando'
@@ -253,10 +250,10 @@ const AsistenteVoz = ({
       >
         {/* La misma mascota, en chico: sigue escuchando con su cara. */}
         <span className="grid place-items-center w-9 h-11 flex-none">
-          <MascotaAsistente compacta estado={estadoMascota} animo={animo} latido={transcripcion} className="h-11 w-auto" />
+          <MascotaAsistente compacta estado={estadoMascota} animo={animo} latido={transcripcion} vozReal={sonandoTiqui} className="h-11 w-auto" />
         </span>
         <span className="text-sm font-semibold whitespace-nowrap">
-          Asistente {escuchando ? 'escuchando…' : 'activo'}
+          Tiqui {escuchando ? 'te escucha…' : 'está contigo'}
         </span>
         {items > 0 && (
           <span className="min-w-[24px] h-6 px-1.5 rounded-full text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#8ecbe8', color: '#001a29' }}>
@@ -341,6 +338,7 @@ const AsistenteVoz = ({
                   estado={estadoMascota}
                   animo={animo}
                   latido={transcripcion}
+                  vozReal={sonandoTiqui}
                   className="w-full h-auto block"
                 />
               </button>
@@ -355,7 +353,7 @@ const AsistenteVoz = ({
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
                 {pensando
-                  ? <span className="masc-puntos" aria-label="El asistente está pensando"><i /><i /><i /></span>
+                  ? <span className="masc-puntos" aria-label="Tiqui está pensando"><i /><i /><i /></span>
                   : (ultimoBot?.texto || SALUDO)}
               </motion.div>
             </div>
@@ -402,14 +400,15 @@ const AsistenteVoz = ({
             </p>
 
             {/*
-              Quién habla. Solo aparece si el sistema tiene más de una voz en
-              español: con una sola, un selector de un elemento es un botón que
-              no hace nada.
+              Quién habla cuando NO está la voz de Tiqui (el servidor no la
+              tiene o falló): la del sistema. Solo aparece si hay más de una
+              voz en español: con una sola, un selector de un elemento es un
+              botón que no hace nada.
 
               Al elegir se escucha de una vez — los nombres ("Sabina", "Jorge")
               no le dicen nada a nadie hasta que la oye.
             */}
-            {voces.length > 1 && (
+            {!vozTiqui && voces.length > 1 && (
               <label className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full text-sm cursor-pointer" style={VIDRIO}>
                 <Volume2 className="w-4 h-4" style={{ color: '#6fb3d9' }} />
                 <span className="sr-only">Voz del asistente</span>
@@ -430,7 +429,7 @@ const AsistenteVoz = ({
 
             {!soportado && (
               <p className="mt-3 text-sm" style={{ color: '#fca5a5' }}>
-                Su navegador no reconoce la voz. Use Chrome o Edge.
+                Tu navegador no reconoce la voz. Usa Chrome o Edge.
               </p>
             )}
 
@@ -441,7 +440,7 @@ const AsistenteVoz = ({
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="flex items-center gap-2 text-sm md:text-base" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                  <ShoppingCart className="w-5 h-5" /> Su carrito ({items})
+                  <ShoppingCart className="w-5 h-5" /> Tu carrito ({items})
                 </span>
                 <span className="text-xl font-bold tabular-nums" style={{ color: '#8ecbe8' }}>
                   ${totalCarrito.toFixed(2)}
@@ -450,7 +449,7 @@ const AsistenteVoz = ({
 
               {carrito.length === 0 ? (
                 <p className="text-sm py-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  Todavía no hay nada. Dígale al asistente qué quiere.
+                  Todavía no hay nada. Dime qué quieres llevar.
                 </p>
               ) : (
                 <div ref={carritoRef} className="flex flex-col max-h-48 overflow-y-auto">
@@ -483,7 +482,7 @@ const AsistenteVoz = ({
               )}
 
               <p className="text-xs mt-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                Diga <span className="text-white font-semibold">“comprar”</span> cuando termine — un empleado le ayudará a pagar.
+                Di <span className="text-white font-semibold">“comprar”</span> cuando termines — alguien de la tienda te ayuda a pagar.
               </p>
             </div>
           </div>
@@ -510,7 +509,7 @@ const AsistenteVoz = ({
             <div className="text-left">
               <div className="text-sm font-bold">{kiosco.cliente.nombre}</div>
               <div className="text-xs opacity-80">
-                Sus puntos se le acreditan solos · {kiosco.cliente.puntos} pts
+                Tus puntos se suman solos · {kiosco.cliente.puntos} pts
               </div>
             </div>
             <button
@@ -525,7 +524,7 @@ const AsistenteVoz = ({
           <div className="p-3 rounded-2xl bg-white shadow-lg text-center" style={{ width: 190 }}>
             <img src={kiosco.imagenQR} alt={`Código ${kiosco.codigo}`} className="w-full rounded-lg" />
             <p className="text-[11px] mt-1.5 font-semibold" style={{ color: '#1C1614' }}>
-              Escanee para sumar sus puntos
+              Escanea para sumar tus puntos
             </p>
             {/* El código escrito es el plan B: si la cámara no agarra, se
                 puede teclear en el teléfono. */}
@@ -541,7 +540,7 @@ const AsistenteVoz = ({
             style={VIDRIO}
           >
             <QrCode className="w-5 h-5" style={{ color: '#6fb3d9' }} />
-            {kiosco.abriendo ? 'Generando…' : '¿Tiene cuenta? Sume sus puntos'}
+            {kiosco.abriendo ? 'Generando…' : '¿Tienes cuenta? Suma tus puntos'}
           </button>
         )}
       </div>

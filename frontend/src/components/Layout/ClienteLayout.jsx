@@ -7,6 +7,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
 import MarcaTienda from '../Store/MarcaTienda';
+import HeaderTienda from '../Store/HeaderTienda';
 
 /*
  * ClienteLayout — el "marco" compartido del área "Mi Cuenta" del cliente.
@@ -43,7 +44,7 @@ const navItems = [
 const ClienteLayout = () => {
   const { palette } = useTheme();
   const c = palette.colors;
-  const { user, logout, trabajando, setTrabajando, haySesionDePersonal } = useAuth();
+  const { user, logout, trabajando, setTrabajando, puedeTrabajar } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
@@ -116,12 +117,18 @@ const ClienteLayout = () => {
     <div className="min-h-screen" style={{ backgroundColor: c.mainBg, color: c.textPrimary }}>
       {/*
         ── Barra superior ──
-        Misma altura, mismo blanco pegajoso y mismos botones-píldora que el
-        encabezado de la tienda (HeaderTienda.jsx) — adaptada: acá no hay
-        buscador, dirección ni carrito porque no aplican en "Mi cuenta", así
-        que la barra se queda con lo que sí tiene sentido: el nombre y la
-        vuelta a comprar.
+        La MISMA de la tienda. Antes Mi Cuenta tenía una barra propia —nombre,
+        foto y "Ir a la tienda"— y era la única pantalla del cliente sin
+        buscador ni carrito: entrar a la cuenta se sentía como salirse del
+        negocio, y para volver a comprar había que buscar la salida. Con
+        HeaderTienda el carrito y el buscador siguen donde siempre (llevan a la
+        tienda, igual que en Impresiones).
+
+        En modo trabajo se queda la barra simple: es una herramienta de
+        reparto, y un repartidor en la calle no viene a buscar productos ni a
+        llenar un carrito.
       */}
+      {!trabajando ? <HeaderTienda /> : (
       <nav
         className="h-16 px-4 sm:px-7 flex items-center justify-between gap-3 sticky top-0 z-30"
         style={{ backgroundColor: c.topbarBg, borderBottom: `1px solid ${c.sidebarBorder}` }}
@@ -164,6 +171,7 @@ const ClienteLayout = () => {
           </Link>
         </div>
       </nav>
+      )}
 
       {/*
         ── Cuerpo: sidebar + contenido ──
@@ -238,14 +246,16 @@ const ClienteLayout = () => {
           {/*
             EL INTERRUPTOR DE TRABAJO.
 
-            Solo aparece si hay una sesión de personal detrás: a un cliente
-            normal no se le ofrece "estoy repartiendo" porque no significa nada
-            para él. Ver LLAVE_MODO_TRABAJO en utils/sesion.js.
+            Solo aparece si hay una sesión de personal detrás Y es de la misma
+            persona (mismo correo): a un cliente normal no se le ofrece "estoy
+            repartiendo" porque no significa nada para él, y menos si esa
+            sesión de personal es la de otro. Ver `puedeTrabajar` en
+            AuthContext.
 
             Va junto a Ayuda y Salir y no entre las secciones porque no es un
             lugar a donde ir: es un cambio de qué está haciendo la persona.
           */}
-          {haySesionDePersonal && (
+          {puedeTrabajar && (
             <button
               onClick={cambiarModo}
               title={trabajando

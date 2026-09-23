@@ -839,6 +839,15 @@ input:disabled {
   62% { transform: scaleY(0.25); }
   80% { transform: scaleY(0.8); }
 }
+/*
+ * Con la voz de Tiqui la boca sigue al audio de verdad: vozTiqui.js deja el
+ * volumen (0 a 1) en --voz-tiqui y la boca se abre con él. Así se cierra en
+ * las pausas en vez de moverse en bucle mientras no dice nada.
+ */
+.masc[data-voz-real="si"] .masc-habla {
+  animation: none;
+  transform: scaleY(calc(0.22 + var(--voz-tiqui, 0) * 0.85));
+}
 
 /* No entendió: un signo de pregunta. Compra cerrada: confeti. */
 .masc-pregunta {

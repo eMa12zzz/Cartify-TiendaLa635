@@ -2,7 +2,7 @@ import api from './api';
 
 /*
  * SERVICIO DE IA — aiService.js
- * Por ahora solo redacta promociones; aquí irá lo demás que le pidamos a Claude.
+ * Redacta promociones y atiende a Tiqui, el asistente de voz.
  */
 export const aiService = {
   generarCopyPromo: async (payload) => {
@@ -11,40 +11,72 @@ export const aiService = {
   },
 
   /*
-   * Descifra lo que pidió el cliente por voz. Se llama SOLO cuando las reglas
-   * del asistente no entendieron: el caso común ("quiero dos manzanas") se
-   * resuelve al instante sin salir a internet.
+   * Tiqui: descifra lo que dijo el cliente y devuelve qué hacer (acciones) y
+   * qué decir. Se llama cuando las reglas rápidas del asistente no alcanzan
+   * ("quiero dos manzanas" se resuelve al instante sin salir a internet).
    *
-   * Nunca lanza error: si la IA no está disponible devuelve entendido:false y
-   * el asistente sigue como siempre, pidiendo que le repitan.
+   * El catálogo, las promociones y los datos de la tienda los pone el
+   * servidor; aquí solo viaja lo que sabe el navegador: el carrito y lo
+   * último que se habló (para entender un "sí" o un "mejor dos").
+   *
+   * Nunca lanza error: sin red devuelve origen 'sin-red' y el asistente lo
+   * dice tal cual.
+   *
+   * `productos` NO viaja en la pregunta normal: solo hace falta si el
+   * servidor todavía es el viejo (ver abajo).
    */
-  /*
-   * El catálogo lo arma el servidor con lo que tiene existencias (ver
-   * aiController, EL CATÁLOGO QUE VE EL ASISTENTE); `productos` solo sigue
-   * viajando para un backend viejo que todavía lo use. Lo nuevo es
-   * `historial`, lo último que se dijo, para que entienda un "sí" o un
-   * "mejor dos" que dependen de lo anterior.
-   */
-  entenderPedido: async ({ frase, productos, carrito, historial }) => {
+  asistente: async ({ frase, carrito, historial, productos = [] }) => {
     try {
-      // enSilencio: si la IA no contesta, el asistente pide que le repitan y
-      // ya. Ni aviso rojo ni sesión cerrada. Ver api.js.
-      // Y con tope: alguien está esperando parado; si el servidor no contesta
-      // en 15 s, mejor decirlo que dejarlo mirando la pantalla.
-      const response = await api.post('/ai/entender', { frase, productos, carrito, historial }, { enSilencio: true, timeout: 15000 });
+      // enSilencio: si la IA no contesta, ni aviso rojo ni sesión cerrada
+      // (ver api.js). Y con tope: alguien está esperando parado.
+      const response = await api.post('/ai/asistente', { frase, carrito, historial }, { enSilencio: true, timeout: 15000 });
       return response.data;
+    } catch (error) {
+      /*
+       * El servidor todavía no tiene Tiqui (404): pasa mientras la web ya se
+       * actualizó y Render no. Antes eso se decía "se me cortó la conexión",
+       * que era mentira. Ahora se usa la ruta vieja, que contesta una acción
+       * por turno y necesita que le mandemos los productos.
+       */
+      if (error?.response?.status === 404) return aiService.asistenteViejo({ frase, carrito, historial, productos });
+      return { acciones: [], respuesta: '', entendido: false, origen: 'sin-red' };
+    }
+  },
+
+  // La ruta de antes de Tiqui, con su respuesta traducida a la forma nueva.
+  asistenteViejo: async ({ frase, carrito, historial, productos }) => {
+    try {
+      const { data } = await api.post(
+        '/ai/entender',
+        { frase, carrito, historial, productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })) },
+        { enSilencio: true, timeout: 15000 }
+      );
+      const hayAccion = data?.accion && data.accion !== 'ninguna';
+      return {
+        acciones: hayAccion ? [{ tipo: data.accion, producto: data.producto, cantidad: data.cantidad }] : [],
+        respuesta: data?.respuesta || '',
+        entendido: Boolean(data?.entendido),
+        origen: data?.origen || 'ia',
+      };
     } catch {
-      return { accion: 'ninguna', entendido: false, origen: 'sin-red' };
+      return { acciones: [], respuesta: '', entendido: false, origen: 'sin-red' };
     }
   },
 
   /*
-   * Despierta el servidor apenas se abre el asistente. Render lo duerme si no
-   * hay tráfico y la primera pregunta tardaba medio minuto; así arranca
-   * mientras la persona todavía está leyendo la pantalla. No gasta IA y no
-   * importa si falla.
+   * Despierta el servidor apenas se abre el asistente (Render lo duerme si no
+   * hay tráfico) y pregunta si hay voz de Tiqui. Nunca falla: sin respuesta,
+   * `voz` es false y se habla con la voz del sistema.
    */
-  despertar: () => {
-    api.get('/ai/listo', { enSilencio: true }).catch(() => {});
+  despertar: async () => {
+    try {
+      const response = await api.get('/ai/listo', { enSilencio: true, timeout: 45000 });
+      return { voz: Boolean(response.data?.voz) };
+    } catch {
+      return { voz: false };
+    }
   },
+
+  // Dónde está el audio de una frase dicha por Tiqui (ver backend utils/vozTiqui.js).
+  urlVoz: (texto) => `${api.defaults.baseURL}/ai/voz?t=${encodeURIComponent(texto)}`,
 };

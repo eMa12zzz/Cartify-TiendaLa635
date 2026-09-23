@@ -1,18 +1,23 @@
 import { useRef, useState, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { aiService } from '../api/aiService';
+import { decirConTiqui, callarTiqui } from '../utils/vozTiqui';
 
 /*
- * useVoiceAssistant — el "cerebro" del asistente por voz (Modo Kiosco).
+ * useVoiceAssistant — el "cerebro" de Tiqui, el asistente por voz (Modo Kiosco).
  *
  * Funciones:
  *   - Escucha continua (manos libres) + transcripción en vivo.
- *   - Voz bidireccional con barge-in, MUTE y VELOCIDAD configurable.
- *   - Matcher local con SINÓNIMOS y VARIOS productos por frase.
+ *   - Habla con la VOZ DE TIQUI (la del video, desde el servidor) y, si no
+ *     está disponible, con la del sistema. Barge-in, MUTE y VELOCIDAD.
+ *   - Reglas rápidas con SINÓNIMOS y VARIOS productos por frase para lo
+ *     común; lo demás (ofertas, recomendaciones, preguntas) lo resuelve la IA.
  *   - No dice el total al agregar (solo cuando lo piden).
  *   - CONFIRMA antes de comprar ("¿seguro? di sí").
  *   - UPSELL: sugiere un producto en oferta (una vez).
  *   - RE-PREGUNTA si hay silencio.
  *   - Guarda el HISTORIAL de la conversación (para el chat en pantalla).
+ *
+ * Tiqui habla en primera persona y TUTEA, como en su video: nada de "usted".
  */
 
 const NUMEROS = {
@@ -130,6 +135,15 @@ const suscribirVoces = (avisar) => {
 
 const SIN_VOCES = [];
 
+/*
+ * Si la persona no eligió ninguna, una latinoamericana antes que una de
+ * España: la primera de la lista en Windows suele ser Helena (es-ES), que
+ * suena lejos de la tienda y de la voz de Tiqui.
+ */
+const ACENTOS_PREFERIDOS = ['es-SV', 'es-MX', 'es-US', 'es-419', 'es-GT', 'es-CO'];
+const vozPreferida = (lista) =>
+  ACENTOS_PREFERIDOS.map((l) => lista.find((v) => v.lang === l)).find(Boolean) || lista[0];
+
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const normalizar = (s) => sinAcentos(s).toLowerCase().trim();
 const contarItems = (lista) => lista.reduce((a, i) => a + i.cantidad, 0);
@@ -164,18 +178,50 @@ const expandirSinonimos = (t) => {
  * "llévame a Puntos de fidelidad", dice "cuántos puntos llevo".
  */
 const DESTINOS_CUENTA = [
-  { ruta: '/mi-cuenta/pedidos',        palabras: /\b(mis pedidos|mi pedido|pedidos|ordenes|compras)\b/, nombre: 'sus pedidos' },
-  { ruta: '/mi-cuenta/puntos',         palabras: /\b(puntos|fidelidad|premios)\b/,                      nombre: 'sus puntos' },
-  { ruta: '/mi-cuenta/favoritos',      palabras: /\b(favoritos|guardados|me gusta)\b/,                  nombre: 'sus favoritos' },
-  { ruta: '/mi-cuenta/direcciones',    palabras: /\b(direcciones|direccion|donde vivo)\b/,              nombre: 'sus direcciones' },
-  { ruta: '/mi-cuenta/pagos',          palabras: /\b(pagos|tarjetas|saldo|metodos de pago)\b/,          nombre: 'sus métodos de pago' },
-  { ruta: '/mi-cuenta/recibidos',      palabras: /\b(recibos|facturas|comprobantes)\b/,                 nombre: 'sus recibos' },
-  { ruta: '/mi-cuenta/notificaciones', palabras: /\b(notificaciones|avisos|alertas)\b/,                 nombre: 'sus avisos' },
-  { ruta: '/mi-cuenta',                palabras: /\b(mi cuenta|mis datos|mi perfil)\b/,                 nombre: 'su cuenta' },
+  { seccion: 'pedidos',     ruta: '/mi-cuenta/pedidos',        palabras: /\b(mis pedidos|mi pedido|pedidos|ordenes|compras)\b/, nombre: 'tus pedidos' },
+  { seccion: 'puntos',      ruta: '/mi-cuenta/puntos',         palabras: /\b(puntos|fidelidad|premios)\b/,                      nombre: 'tus puntos' },
+  { seccion: 'favoritos',   ruta: '/mi-cuenta/favoritos',      palabras: /\b(favoritos|guardados|me gusta)\b/,                  nombre: 'tus favoritos' },
+  { seccion: 'direcciones', ruta: '/mi-cuenta/direcciones',    palabras: /\b(direcciones|direccion|donde vivo)\b/,              nombre: 'tus direcciones' },
+  { seccion: 'pagos',       ruta: '/mi-cuenta/pagos',          palabras: /\b(pagos|tarjetas|saldo|metodos de pago)\b/,          nombre: 'tus métodos de pago' },
+  { seccion: 'recibos',     ruta: '/mi-cuenta/recibidos',      palabras: /\b(recibos|facturas|comprobantes)\b/,                 nombre: 'tus recibos' },
+  { seccion: 'avisos',      ruta: '/mi-cuenta/notificaciones', palabras: /\b(notificaciones|avisos|alertas)\b/,                 nombre: 'tus avisos' },
+  { seccion: 'cuenta',      ruta: '/mi-cuenta',                palabras: /\b(mi cuenta|mis datos|mi perfil)\b/,                 nombre: 'tu cuenta' },
 ];
 
 // Cómo pide la gente que la lleven a algún lado.
 const PIDE_IR = /\b(ver|vamos|llevame|llévame|muestrame|muéstrame|enseñame|enséñame|abrir|abre|quiero ver|busca|buscar|donde esta|dónde está|ir a)\b/;
+
+/*
+ * Vaciar el carrito. Antes solo entendía "vaciar" o "borra todo": "borra el
+ * carrito" caía en la regla de QUITAR un producto, buscaba uno llamado "el
+ * carrito" y contestaba "no encontré ese producto".
+ */
+const PIDE_VACIAR = /\b(vaciar|vacia|vacialo|empezar de nuevo|borra todo|borrar todo|quita todo|quitar todo)\b|\b(borra|borrar|limpia|limpiar|quita|quitar|elimina|eliminar|saca|sacar|vacia|vaciar)\s+(todo\s+)?(el|mi)\s+carrito\b/;
+
+/*
+ * Cuánto lleva. Antes bastaba la palabra suelta "va", y "¿cómo va mi pedido?"
+ * contestaba el total del carrito.
+ */
+const PIDE_TOTAL = /\b(cuanto llevo|cuanto va|cuanto debo|cuanto sale todo|el total|mi total|total)\b|^cuanto (es|seria)( todo)?$/;
+
+/*
+ * Una pregunta, no un pedido: precios, ofertas, recomendaciones, si hay algo.
+ * Lo que la regla de agregar NO debe tocar (ver "Preguntas" en procesar).
+ */
+const ES_PREGUNTA = /\b(que|cual|cuales|cuanto cuesta|cuanto vale|cuanto sale|precio|hay|tienen|tienes|esta en|estan en|recomienda|recomiendas|recomiendame|sugiere|sugieres|oferta|ofertas|promo|promocion|promociones|descuento|descuentos|donde|como|por que)\b/;
+// …salvo que en la misma frase pida algo: "quiero leche, ¿hay descuento?".
+const PIDE_AGREGAR = /\b(quiero|dame|deme|agrega|agregame|agregue|pon|ponme|echa|echame|me das|me llevo|llevo|anota|anotame)\b/;
+
+// Las secciones que la IA puede pedir abrir (ver HERRAMIENTAS_TIQUI en el backend).
+const RUTA_DE_SECCION = Object.fromEntries(DESTINOS_CUENTA.map((d) => [d.seccion, d]));
+
+/*
+ * Terminar la compra. "Listo" solo cuenta si es casi todo lo que dijo: en
+ * "¿ya está listo mi pedido?" no quiere pagar.
+ */
+const PIDE_COMPRAR = (t) =>
+  /\b(comprar|pagar|finalizar|terminar|es todo|eso es todo)\b/.test(t) ||
+  (/^(ya\s+)?listo\b/.test(t) && t.split(' ').length <= 3);
 
 export const useVoiceAssistant = ({
   productos = [], carrito = [], totalCarrito = 0,
@@ -209,6 +255,13 @@ export const useVoiceAssistant = ({
   // interrumpirlo en vez de detenerlo.
   const [hablando, setHablando] = useState(false);
   const [historial, setHistorial] = useState([]);
+  /*
+   * La voz de Tiqui: `vozTiqui` si el servidor la tiene (hay llave de
+   * ElevenLabs), `sonandoTiqui` mientras suena de verdad — la mascota mueve
+   * la boca con el volumen del audio en vez de la animación en bucle.
+   */
+  const [vozTiqui, setVozTiqui] = useState(false);
+  const [sonandoTiqui, setSonandoTiqui] = useState(false);
 
   const dataRef = useRef({ productos, carrito, totalCarrito, categorias });
   dataRef.current = { productos, carrito, totalCarrito, categorias };
@@ -226,6 +279,10 @@ export const useVoiceAssistant = ({
   // El que habla se lee por ref: quien pronuncia se decide al momento de
   // hablar, no cuando se registró la función.
   const vozRef = useRef(''); vozRef.current = vozElegida;
+  const vozTiquiRef = useRef(false);
+  // Fallas seguidas de la voz de Tiqui: con dos, se deja de intentar en esta
+  // charla para no hacer esperar cuatro segundos cada vez.
+  const fallasVozRef = useRef(0);
   const ultimaRespuestaRef = useRef('');
   const procesarRef = useRef(null);
   const hablarRef = useRef(null);
@@ -252,9 +309,30 @@ export const useVoiceAssistant = ({
     setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto }]);
   };
 
+  /*
+   * Al abrir: despierta el servidor (Render lo duerme) y pregunta si tiene la
+   * voz de Tiqui. Mientras no conteste, se habla con la del sistema.
+   */
+  useEffect(() => {
+    let vivo = true;
+    aiService.despertar().then(({ voz }) => {
+      if (!vivo) return;
+      vozTiquiRef.current = voz;
+      setVozTiqui(voz);
+    });
+    return () => { vivo = false; };
+  }, []);
+
+  // Calla cualquier voz: la de Tiqui y la del sistema.
+  const callarTodo = () => {
+    callarTiqui();
+    setSonandoTiqui(false);
+    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+  };
+
   const arrancarReconocimiento = useCallback(() => {
     if (!soportado || !activoRef.current) return;
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    callarTodo();
     hablandoRef.current = false;
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -306,6 +384,39 @@ export const useVoiceAssistant = ({
     try { rec.start(); } catch { /* ya estaba iniciado */ }
   }, [soportado]);
 
+  /*
+   * La voz del sistema: la que tenga el navegador en español. Es el respaldo
+   * de la de Tiqui, y la única si el servidor no la tiene.
+   */
+  const decirConElSistema = (texto, continuar) => {
+    if (!window.speechSynthesis) {
+      continuar();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = 'es-SV';
+    u.rate = rateRef.current;
+    /*
+     * La voz que eligió la persona; si esa ya no está (cambió de computadora,
+     * la desinstalaron), se cae a una latinoamericana (suena más cerca de la
+     * de Tiqui) o a la primera en español, en vez de quedarse muda o hablar
+     * en inglés.
+     */
+    const enEspanol = leerVocesDelSistema();
+    const elegida = enEspanol.find((v) => v.name === vozRef.current);
+    const voz = elegida || vozPreferida(enEspanol);
+    if (voz) {
+      u.voice = voz;
+      // El idioma tiene que ir con la voz: dejar es-SV con una voz de España
+      // hace que algunos navegadores la ignoren y hablen en inglés.
+      u.lang = voz.lang;
+    }
+    u.onend = continuar;
+    u.onerror = continuar;
+    window.speechSynthesis.speak(u);
+  };
+
   const hablar = useCallback((texto) => {
     ultimaRespuestaRef.current = texto;
     registrar('bot', texto);
@@ -316,34 +427,40 @@ export const useVoiceAssistant = ({
       if (activoRef.current) setTimeout(() => arrancarReconocimiento(), 350);
     };
 
-    if (muteRef.current || typeof window === 'undefined' || !window.speechSynthesis) {
+    if (muteRef.current || typeof window === 'undefined') {
       continuar();
       return;
     }
 
-    window.speechSynthesis.cancel();
+    callarTodo();
     hablandoRef.current = true;
     setHablando(true);
-    const u = new SpeechSynthesisUtterance(texto);
-    u.lang = 'es-SV';
-    u.rate = rateRef.current;
-    /*
-     * La voz que eligió la persona; si esa ya no está (cambió de computadora,
-     * la desinstalaron), se cae a la primera en español en vez de quedarse
-     * muda o hablar en inglés.
-     */
-    const enEspanol = leerVocesDelSistema();
-    const elegida = enEspanol.find((v) => v.name === vozRef.current);
-    const voz = elegida || enEspanol[0];
-    if (voz) {
-      u.voice = voz;
-      // El idioma tiene que ir con la voz: dejar es-SV con una voz de España
-      // hace que algunos navegadores la ignoren y hablen en inglés.
-      u.lang = voz.lang;
+
+    // Con la voz de Tiqui, si el servidor la tiene. Si no arranca, la del sistema.
+    if (vozTiquiRef.current) {
+      decirConTiqui(aiService.urlVoz(texto), {
+        // 0,95 es la velocidad "Normal" de la voz del sistema; el audio va a 1.
+        velocidad: rateRef.current / 0.95,
+        alEmpezar: () => setSonandoTiqui(true),
+        alTerminar: () => {
+          fallasVozRef.current = 0;
+          setSonandoTiqui(false);
+          continuar();
+        },
+        alFallar: () => {
+          setSonandoTiqui(false);
+          fallasVozRef.current += 1;
+          if (fallasVozRef.current >= 2) {
+            vozTiquiRef.current = false;
+            setVozTiqui(false);
+          }
+          decirConElSistema(texto, continuar);
+        },
+      });
+      return;
     }
-    u.onend = continuar;
-    u.onerror = continuar;
-    window.speechSynthesis.speak(u);
+
+    decirConElSistema(texto, continuar);
   }, [arrancarReconocimiento]);
 
   /*
@@ -408,27 +525,28 @@ export const useVoiceAssistant = ({
   };
 
   /*
-   * El plan B: preguntarle a la IA qué quiso decir.
+   * Lo que no entienden las reglas rápidas se lo pregunta a Tiqui (la IA).
+   *
+   * El servidor ya decidió qué hacer: devuelve una LISTA de acciones (puede
+   * traer varias: "dos manzanas y una leche") y la frase que hay que decir.
+   * Aquí solo se ejecutan, con las MISMAS funciones del carrito que usan las
+   * reglas: la IA decide, pero quien toca el carrito sigue siendo el código
+   * de siempre, que ya sabe de precios y de existencias.
    *
    * Mientras piensa, el micrófono queda apagado a propósito: si siguiera
    * escuchando, cualquier "¿aló?" del cliente entraría como una frase nueva y
    * se le encimarían dos respuestas. Se enciende de nuevo al hablar.
    */
   const preguntarALaIA = useCallback(async (frase) => {
-    const { productos, carrito } = dataRef.current;
     const fns = fnRef.current;
 
     setPensando(true);
     try {
-      const idea = await aiService.entenderPedido({
+      const idea = await aiService.asistente({
         frase,
-        /*
-         * El servidor nuevo arma su propio catálogo e ignora esto. Se sigue
-         * mandando mientras haya un backend viejo desplegado que todavía lo
-         * necesita; se puede quitar cuando producción tenga la ruta nueva.
-         */
-        productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })),
-        carrito: carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
+        // Solo se usan si el servidor todavía es el viejo (ver aiService).
+        productos: dataRef.current.productos,
+        carrito: dataRef.current.carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
         /*
          * Lo que se habló ANTES de esta frase (la última de la memoria es la
          * frase misma, que ya va aparte). Con esto la IA sabe a qué se
@@ -443,50 +561,109 @@ export const useVoiceAssistant = ({
       // No hubo red o el servidor no contestó a tiempo: decirlo tal cual,
       // no fingir que no se entendió lo que se dijo bien.
       if (idea?.origen === 'sin-red') {
-        hablarRef.current?.('Perdón, se me cortó la conexión. ¿Me lo repite?');
+        hablarRef.current?.('Perdón, se me cortó la conexión. ¿Me lo repites?');
+        return;
+      }
+
+      // La IA está saturada o no contestó a tiempo: no es que no se haya
+      // entendido, así que se pide de nuevo sin hacerlo sentir culpable.
+      if (idea?.origen === 'error') {
+        hablarRef.current?.('Uy, me distraje un segundo. ¿Me lo repites?');
         return;
       }
 
       /*
-       * La IA no pudo —sin llave, sin cuota, o de verdad no entendió—.
-       *
-       * Antes esto decía SIEMPRE "no encontré ese producto", aunque la
-       * pregunta nunca hubiera sido sobre un producto ("¿tienen wifi?",
-       * "¿cuál es la dirección?"). Sonaba a que el asistente ignoraba
-       * cualquier cosa fuera de sus comandos. Este mensaje es el respaldo
-       * de última línea —cuando ni las reglas ni la IA entendieron nada—,
-       * así que tiene que quedar neutro: no inventa que buscó un producto
-       * que nunca se pidió.
+       * De verdad no se entendió. Es el respaldo de última línea —ni las
+       * reglas ni la IA sacaron nada—, así que queda neutro: no inventa que
+       * buscó un producto que nunca se pidió, y dice qué sí sabe hacer.
        */
       if (!idea?.entendido) {
-        hablarRef.current?.('No le entendí bien. Puedo ayudarle a agregar productos, ver su total o llevarlo a una sección de la tienda.');
+        hablarRef.current?.('No te entendí bien. Puedo agregarte productos, contarte las ofertas o llevarte a una sección de la tienda.');
         return;
       }
 
-      /*
-       * La acción se ejecuta con las MISMAS funciones del carrito que usan
-       * las reglas. La IA decide qué hacer; quien lo hace sigue siendo el
-       * código de siempre, que ya sabe de precios y de existencias.
-       */
-      const prod = idea.producto
-        ? productos.find((p) => p.nombre === idea.producto)
-        : null;
+      const { productos, carrito } = dataRef.current;
+      let pideTotal = false;
+      let pideComprar = false;
 
-      if (idea.accion === 'agregar' && prod) {
-        fns.agregarAlCarrito?.(prod, idea.cantidad || 1);
-      } else if (idea.accion === 'quitar' && prod) {
-        fns.eliminarDelCarrito?.(prod.id);
-      } else if (idea.accion === 'cambiar' && prod) {
-        // "Mejor que sean dos": deja la cantidad exacta. Si todavía no estaba
-        // en el carrito, se agrega con esa cantidad.
-        const enCarrito = carrito.find((i) => i.id === prod.id);
-        if (enCarrito) fns.actualizarCantidad?.(prod.id, idea.cantidad || 1);
-        else fns.agregarAlCarrito?.(prod, idea.cantidad || 1);
-      } else if (idea.accion === 'vaciar') {
-        fns.limpiarCarrito?.();
+      for (const accion of Array.isArray(idea.acciones) ? idea.acciones : []) {
+        const prod = accion.producto ? productos.find((p) => p.nombre === accion.producto) : null;
+
+        switch (accion.tipo) {
+          case 'agregar':
+            if (prod) fns.agregarAlCarrito?.(prod, accion.cantidad || 1);
+            break;
+          case 'quitar': {
+            const enCarrito = prod && carrito.find((i) => i.id === prod.id);
+            if (!enCarrito) break;
+            if (accion.cantidad && accion.cantidad < enCarrito.cantidad) {
+              fns.actualizarCantidad?.(prod.id, enCarrito.cantidad - accion.cantidad);
+            } else {
+              fns.eliminarDelCarrito?.(prod.id);
+            }
+            break;
+          }
+          case 'cambiar': {
+            // "Mejor que sean dos": deja la cantidad exacta. Si todavía no
+            // estaba en el carrito, se agrega con esa cantidad.
+            if (!prod) break;
+            if (carrito.some((i) => i.id === prod.id)) fns.actualizarCantidad?.(prod.id, accion.cantidad || 1);
+            else fns.agregarAlCarrito?.(prod, accion.cantidad || 1);
+            break;
+          }
+          case 'vaciar':
+            fns.limpiarCarrito?.();
+            break;
+          case 'mostrar':
+            if (prod) fns.irAProducto?.(prod);
+            break;
+          case 'categoria': {
+            const buscada = normalizar(accion.categoria);
+            const cat = (dataRef.current.categorias || []).find((c) => normalizar(String(c)) === buscada);
+            if (cat) fns.irACategoria?.(cat);
+            break;
+          }
+          case 'seccion': {
+            const destino = RUTA_DE_SECCION[accion.seccion];
+            if (destino) fns.irARuta?.(destino.ruta);
+            break;
+          }
+          case 'total':
+            pideTotal = true;
+            break;
+          case 'comprar':
+            pideComprar = true;
+            break;
+          default:
+            break;
+        }
       }
 
-      hablarRef.current?.(idea.respuesta);
+      /*
+       * El monto en dólares NUNCA sale de lo que dijo la IA: se arma aquí con
+       * `totalCarrito`, que es la cuenta exacta de la tienda. Pedirle
+       * aritmética de dinero a un modelo de lenguaje es invitarlo a redondear
+       * mal.
+       *
+       * Se espera un instante: agregar y quitar actualizan el carrito en el
+       * próximo render, y "dos manzanas y cuánto llevo" en la misma frase
+       * tiene que decir el total CON las manzanas.
+       */
+      setTimeout(() => {
+        const { carrito: ahora, totalCarrito } = dataRef.current;
+        let dice = idea.respuesta;
+        if (pideComprar) {
+          if (!ahora.length) {
+            dice = 'Tu carrito está vacío. ¿Qué te gustaría llevar?';
+          } else {
+            confirmandoRef.current = true;
+            dice = `Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(ahora)} productos. ¿Confirmas la compra? Di sí para confirmar.`;
+          }
+        } else if (pideTotal) {
+          dice = `Llevas $${totalCarrito.toFixed(2)} en ${contarItems(ahora)} productos.`;
+        }
+        hablarRef.current?.(dice);
+      }, 0);
     } finally {
       setPensando(false);
     }
@@ -517,26 +694,26 @@ export const useVoiceAssistant = ({
     }
 
     if (/\b(ayuda|que puedo decir|comandos|no se|no entiendo)\b/.test(t)) {
-      hablar('Puedes decir: quiero una manzana y dos galletas, quita una manzana, cuánto llevo, vaciar carrito, o comprar.');
+      hablar('Puedes decirme: quiero una manzana y dos galletas, qué ofertas hay, quita una manzana, cuánto llevo, borra el carrito o comprar.');
       return;
     }
     if (/\b(repite|repetir|otra vez|que dijiste)\b/.test(t)) {
       hablar(ultimaRespuestaRef.current || 'No he dicho nada todavía.');
       return;
     }
-    if (/\b(vaciar|vacia|vacía|limpiar|empezar de nuevo|borra todo)\b/.test(t)) {
+    if (PIDE_VACIAR.test(t)) {
       fns.limpiarCarrito?.();
       hablar('Vacié tu carrito. ¿Qué te gustaría llevar?');
       return;
     }
     // Comprar → pide confirmación (no compra de una).
-    if (/\b(comprar|pagar|finalizar|listo|terminar|es todo)\b/.test(t)) {
+    if (PIDE_COMPRAR(t)) {
       if (!carrito.length) { hablar('Tu carrito está vacío. ¿Qué te gustaría llevar?'); return; }
       confirmandoRef.current = true;
       hablar(`Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(carrito)} productos. ¿Confirmas la compra? Di sí para confirmar.`);
       return;
     }
-    if (/\b(cuanto|total|llevo|va)\b/.test(t)) {
+    if (PIDE_TOTAL.test(t)) {
       hablar(`Llevas $${totalCarrito.toFixed(2)} en ${contarItems(carrito)} productos.`);
       return;
     }
@@ -572,7 +749,7 @@ export const useVoiceAssistant = ({
       const destino = DESTINOS_CUENTA.find((d) => d.palabras.test(t));
       if (destino && fns.irARuta) {
         fns.irARuta(destino.ruta);
-        hablar(`Le abro ${destino.nombre}.`);
+        hablar(`Te abro ${destino.nombre}.`);
         return;
       }
 
@@ -591,12 +768,25 @@ export const useVoiceAssistant = ({
       });
       if (cat && fns.irACategoria) {
         fns.irACategoria(cat);
-        hablar(`Le muestro ${cat}.`);
+        hablar(`Te muestro ${cat}.`);
         return;
       }
 
       // Pidió ver algo que no se encontró: que lo descifre la IA, que para
       // eso está — quizá pidió "lo de la limpieza" y hay una categoría así.
+      preguntarALaIA(texto);
+      return;
+    }
+
+    /*
+     * ── Preguntas: a Tiqui, nunca al carrito ──
+     * "¿La leche está en oferta?" nombra un producto, y la regla de agregar
+     * de abajo la metía al carrito. Si suena a pregunta y no pide nada, la
+     * contesta la IA, que sabe de precios, ofertas y recomendaciones.
+     */
+    // Con signos de pregunta va a la IA aunque también pida algo: ella agrega Y contesta.
+    const conSignos = /[¿?]/.test(texto);
+    if ((conSignos || ES_PREGUNTA.test(t)) && (conSignos || !PIDE_AGREGAR.test(t))) {
       preguntarALaIA(texto);
       return;
     }
@@ -630,7 +820,7 @@ export const useVoiceAssistant = ({
       : '';
 
     if (agregados.length === 0 && agotados.length) {
-      hablar(`${seAcabo} ¿Le busco otra cosa?`);
+      hablar(`${seAcabo} ¿Te busco otra cosa?`);
       return;
     }
 
@@ -689,9 +879,7 @@ export const useVoiceAssistant = ({
    * interrumpir; esto es lo mismo.
    */
   const interrumpir = useCallback(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
+    callarTodo();
     hablandoRef.current = false;
     setHablando(false);
     activoRef.current = true;
@@ -704,12 +892,12 @@ export const useVoiceAssistant = ({
     setActivo(false);
     setEscuchando(false);
     recognitionRef.current?.stop();
-    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+    callarTodo();
   }, []);
 
   const toggleMute = useCallback(() => {
     setMuteado((m) => !m);
-    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+    callarTodo();
   }, []);
 
   const cambiarVelocidad = useCallback(() => {
@@ -723,8 +911,9 @@ export const useVoiceAssistant = ({
       const teniaSesion = activoRef.current;
       activoRef.current = false;
       recognitionRef.current?.stop();
-      if (teniaSesion && typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
+      if (teniaSesion) {
+        callarTiqui();
+        if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
       }
     };
   }, []);
@@ -744,7 +933,7 @@ export const useVoiceAssistant = ({
     if (!voz) return;
 
     window.speechSynthesis.cancel();
-    const prueba = new SpeechSynthesisUtterance('Hola, así sueno. ¿Qué le doy?');
+    const prueba = new SpeechSynthesisUtterance('¡Hola! Así sueno. ¿Qué te llevas hoy?');
     prueba.voice = voz;
     prueba.lang = voz.lang;
     prueba.rate = rateRef.current;
@@ -762,13 +951,15 @@ export const useVoiceAssistant = ({
     pais: paisDeVoz(v),
   }));
 
-  // Cuál está sonando: la guardada, o la primera si esa ya no existe.
-  const vozActual = voces.find((v) => v.nombre === vozElegida)?.nombre || voces[0]?.nombre || '';
+  // Cuál está sonando: la guardada, o la preferida si esa ya no existe.
+  const vozActual = voces.find((v) => v.nombre === vozElegida)?.nombre || vozPreferida(vocesDelSistema)?.name || '';
 
   return {
     activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
     velLabel: VELOCIDADES[velIndex].label,
     iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado, interrumpir,
     voces, vozActual, cambiarVoz,
+    // La voz de Tiqui: si el servidor la tiene, y si está sonando ahora.
+    vozTiqui, sonandoTiqui,
   };
 };
