@@ -22,12 +22,26 @@ import { Package, ChefHat, Bike, Check } from 'lucide-react';
  * ============================================================
  */
 
+/*
+ * `pose` es la ilustración de la mascota para ese paso (ver
+ * components/UI/Mascota.jsx). El ícono sigue para la línea de tiempo, donde
+ * todo tiene que caber en un círculo chico.
+ */
 export const PASOS_TODOS = [
-  { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package },
-  { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat },
-  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike },
-  { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check },
+  { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package, pose: 'recibido' },
+  { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat, pose: 'preparando' },
+  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike, pose: 'en-camino' },
+  { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check, pose: 'entregado' },
 ];
+
+/*
+ * La ilustración de un estado cualquiera, incluido "cancelado", que no es un
+ * paso de la lista (un pedido cancelado no avanza a ningún lado).
+ */
+export const poseDeEstado = (estado) =>
+  estado === 'cancelado'
+    ? 'cancelado'
+    : (PASOS_TODOS.find((p) => p.id === estado) || PASOS_TODOS[0]).pose;
 
 /*
  * Los pasos que le tocan a ESTE pedido.
