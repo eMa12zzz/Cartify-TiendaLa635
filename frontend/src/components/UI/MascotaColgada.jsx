@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { CUERPO, AGUJERO } from './mascotaFormas';
+import DisfrazTiqui from './DisfrazTiqui';
+import { useDisfrazTiqui } from '../../hooks/useDisfrazTiqui';
+import { sinSombrero } from '../../utils/disfracesTiqui';
 
 /*
  * ============================================================
@@ -61,6 +64,8 @@ const MascotaColgada = ({ mirada = 'formulario', progreso = 0, estado = 'reposo'
   const [mx, my] = mirarA(mirada, progreso, abajo);
   const ojosCerrados = mirada === 'tapada';
   const espia = mirada === 'espia';
+  // Sin sombrero: colgando junto al título, crecería hacia el texto. Ver sinSombrero.
+  const disfraz = sinSombrero(useDisfrazTiqui());
 
   return (
     <svg
@@ -109,6 +114,9 @@ const MascotaColgada = ({ mirada = 'formulario', progreso = 0, estado = 'reposo'
               <path className="colgada-boca colgada-b-lado" d="M188,292 Q204,297 214,286" stroke={RASGO} strokeWidth="7" {...trazo} />
               <path className="colgada-boca colgada-b-ondulada" d="M180,292 q5,-7 10,0 q5,7 10,0 q5,-7 10,0 q5,7 10,0" stroke={RASGO} strokeWidth="6.5" {...trazo} />
             </g>
+
+            {/* Lo de la temporada, siempre en el cuello (bufanda o corbatín). */}
+            <DisfrazTiqui disfraz={disfraz} />
           </g>
         </g>
       </g>
