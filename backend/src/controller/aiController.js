@@ -1,6 +1,13 @@
 import { FunctionCallingConfigMode, Type } from "@google/genai";
 import productModel from "../models/product.js";
-import { getIA, generarConIA } from "../utils/iaClient.js";
+// Se importan aunque no se usen por nombre: el catálogo de Tiqui hace populate
+// de la categoría y la marca, y eso exige que los modelos estén registrados.
+import "../models/productType.js";
+import "../models/brand.js";
+import promotionModel from "../models/promotion.js";
+import storeSettingsModel from "../models/storeSettings.js";
+import { getIA, generarConIA, generarConCobertura } from "../utils/iaClient.js";
+import { vozDisponible, paraDecir, frasePrevia, guardarFrase, pedirVoz } from "../utils/vozTiqui.js";
 import { generarCopyPlantilla } from "../utils/plantillasPromo.js";
 import { esFamiliaValida, LISTA_PARA_IA } from "../utils/familias.js";
 
@@ -259,16 +266,25 @@ const leerCatalogo = async () => {
     return catalogoEnMemoria.lista;
   }
   const productos = await productModel
-    .find({ isActive: { $ne: false } }, "name salePrice stock")
+    .find({ isActive: { $ne: false } }, "name salePrice stock typeId brandId unidadVenta soloAdultos")
+    .populate("typeId", "type")
+    .populate("brandId", "name")
     .sort({ _id: -1 })
     .lean();
   const lista = productos
     .filter((p) => p.name)
     .map((p) => ({
+      id: String(p._id),
       nombre: p.name,
       precio: p.salePrice,
       stock: Number(p.stock) || 0,
-      clave: aTextoPlano(p.name),
+      // Con esto Tiqui puede recomendar por pasillo ("algo de limpieza") y
+      // decir "la libra" cuando el producto se vende por peso.
+      categoria: p.typeId?.type || "",
+      marca: p.brandId?.name || "",
+      porLibra: p.unidadVenta === "libra",
+      soloAdultos: Boolean(p.soloAdultos),
+      clave: aTextoPlano(`${p.name} ${p.typeId?.type || ""} ${p.brandId?.name || ""}`),
     }));
   catalogoEnMemoria = { en: Date.now(), lista };
   return lista;
@@ -366,11 +382,13 @@ const REGLAS_DE_CHARLA = [
  */
 aiController.listo = async (req, res) => {
   try {
-    await leerCatalogo();
+    await Promise.all([leerCatalogo(), leerOfertas(), leerTienda()]);
   } catch {
     // Si la base tarda, igual se contesta: el objetivo era despertar el servidor.
   }
-  return res.status(200).json({ listo: true });
+  // `voz`: si hay llave de ElevenLabs. Sin ella, los clientes hablan con la
+  // voz del sistema y ni intentan pedir el audio.
+  return res.status(200).json({ listo: true, voz: vozDisponible() });
 };
 
 /*
@@ -548,115 +566,281 @@ aiController.entenderPedido = async (req, res) => {
 
 /*
  * ============================================================
- * ENTENDER CON HERRAMIENTAS (tool calling) — el asistente de voz móvil
+ * TIQUI — el asistente de voz (web y app)
  * ============================================================
- * Mismo trabajo que `entenderPedido` de arriba (plan B cuando las reglas del
- * asistente no entendieron la frase), pero con function calling de Gemini en
- * vez de un `responseSchema` de un solo campo. La diferencia no es de gusto:
- * `entenderPedido` solo puede devolver UN producto por turno, así que "dame
- * dos manzanas y una leche" le entendía nada más la mitad. Con herramientas
- * el modelo puede llamar `agregar_producto` dos veces en la misma respuesta.
+ * Un solo cerebro para los dos lados. Lo que el cliente dice le llega a
+ * Gemini con TODO lo que hace falta para contestar en una sola vuelta:
  *
- * Es una ruta APARTE y no un cambio en `/entender` porque esa la sigue
- * usando la web (`frontend/src/hooks/useVoiceAssistant.js`) tal como está;
- * esta es solo para el asistente de móvil.
+ *   - el catálogo con existencias, con categoría, marca y precio de oferta;
+ *   - las promociones vigentes;
+ *   - los datos de la tienda (dirección, envío);
+ *   - lo que lleva en el carrito y lo último que se habló.
  *
- * Cada "herramienta" es una acción que el CLIENTE sabe ejecutar (agregar al
- * carrito, quitarlo, etc.) — el backend nunca toca el carrito, que vive en
- * el teléfono. Gemini elige qué llamar y con qué argumentos; el backend solo
- * valida esas llamadas (que el producto exista de verdad en la lista) y se
- * las devuelve al móvil como una lista de acciones para que las ejecute.
+ * Por qué uno solo y no "varios agentes": cada agente es otra consulta al
+ * modelo, una detrás de otra. En una conversación por voz cada consulta se
+ * nota (medio segundo a un segundo), y el asistente ya pecaba de lento. Lo
+ * que lo hacía limitado no era tener una sola IA, sino que veía muy poco
+ * (nombre, precio y existencias) y podía hacer muy poco.
  *
- * `responder` es una herramienta más, no un campo aparte: así TODO lo que
- * hace el modelo —mutar el carrito y hablar— es una llamada a función, sin
- * mezclar partes de texto suelto con partes de función en la respuesta.
- * `functionCallingConfig: { mode: ANY }` obliga a que SIEMPRE conteste con
- * llamadas a estas herramientas, nunca con un texto libre que habría que
- * parsear a mano.
+ * Cada "herramienta" es algo que el CLIENTE sabe ejecutar (el carrito vive en
+ * el navegador o en el teléfono): el servidor solo valida lo que pidió el
+ * modelo —que el producto o la categoría existan de verdad— y lo devuelve
+ * como una lista de acciones. `responder` es una herramienta más, así que
+ * todo lo que hace el modelo es una llamada a función (modo ANY).
+ *
+ * Reemplaza a /entender-herramientas, que queda apuntando aquí para las
+ * versiones de la app que ya están instaladas (las acciones nuevas que no
+ * conocen, simplemente no las ejecutan).
+ * ============================================================
  */
-const HERRAMIENTAS_ASISTENTE = [
+
+/*
+ * Las promociones vigentes, ya traducidas a lo que se dice: "oferta $0.40
+ * (20% menos)". El precio de oferta se calcula igual que en avisoPromo.js,
+ * que es el que se cobra. Se guardan 30 s, como el catálogo.
+ */
+let ofertasEnMemoria = { en: 0, datos: null };
+
+const plata = (n) => `$${Number(n).toFixed(2)}`;
+
+const leerOfertas = async () => {
+  if (ofertasEnMemoria.datos && Date.now() - ofertasEnMemoria.en < VIGENCIA_CATALOGO_MS) {
+    return ofertasEnMemoria.datos;
+  }
+  const ahora = new Date();
+  const promos = await promotionModel
+    .find(
+      { isActive: { $ne: false }, $or: [{ endsAt: null }, { endsAt: { $gt: ahora } }] },
+      "title promoDescription type items buyQty payQty endsAt etiqueta"
+    )
+    .populate("items.productId", "name salePrice")
+    .lean();
+
+  const porProducto = new Map();
+  const resumen = [];
+
+  for (const promo of promos) {
+    const nombres = [];
+    for (const item of promo.items || []) {
+      const producto = item.productId;
+      // Un producto borrado deja su item huérfano: se salta.
+      if (!producto?.name) continue;
+      const precio = Number(producto.salePrice) || 0;
+
+      let oferta = "";
+      if (promo.type === "descuento" && Number(item.discount) > 0) {
+        oferta = `oferta ${plata(precio * (1 - Number(item.discount) / 100))} (${Number(item.discount)}% menos)`;
+      } else if (promo.type === "precio_fijo" && item.fixedPrice != null && item.fixedPrice !== "") {
+        oferta = `oferta ${plata(item.fixedPrice)}`;
+      } else if (promo.type === "nxm") {
+        oferta = `lleva ${Number(promo.buyQty) || 2} y paga ${Number(promo.payQty) || 1}`;
+      }
+
+      if (oferta) porProducto.set(String(producto._id), oferta);
+      nombres.push(oferta ? `${producto.name} (${oferta})` : producto.name);
+    }
+
+    const categorias = (promo.items || [])
+      .filter((item) => !item.productId && item.categoryName)
+      .map((item) => item.categoryName);
+    const hasta = promo.endsAt
+      ? ` Termina el ${new Date(promo.endsAt).toLocaleDateString("es-SV", { day: "numeric", month: "long" })}.`
+      : "";
+
+    resumen.push(
+      `- ${promo.title || promo.etiqueta || "Promoción"}: ${String(promo.promoDescription || "").replace(/\s+/g, " ").slice(0, 160)}` +
+        (nombres.length ? ` Productos: ${nombres.slice(0, 8).join(", ")}.` : "") +
+        (categorias.length ? ` Categorías: ${categorias.join(", ")}.` : "") +
+        hasta
+    );
+  }
+
+  const datos = { porProducto, resumen };
+  ofertasEnMemoria = { en: Date.now(), datos };
+  return datos;
+};
+
+/*
+ * Los datos de la tienda que Tiqui puede decir. El horario y el WhatsApp no
+ * están guardados en el servidor, así que no se los inventa (ver MODO_TIQUI).
+ */
+let tiendaEnMemoria = { en: 0, texto: "" };
+
+const leerTienda = async () => {
+  if (tiendaEnMemoria.texto && Date.now() - tiendaEnMemoria.en < 5 * 60 * 1000) {
+    return tiendaEnMemoria.texto;
+  }
+  const ajustes = (await storeSettingsModel.findOne({}, "nombreLinea1 nombreLinea2 lema direccion envioBase envioPorKm").lean()) || {};
+  const nombre = `${ajustes.nombreLinea1 || "Tienda"} ${ajustes.nombreLinea2 || "la 635"}`.trim();
+  const texto = [
+    `Se llama ${nombre}.`,
+    ajustes.lema ? `Su lema: "${ajustes.lema}".` : "",
+    ajustes.direccion ? `Dirección: ${ajustes.direccion}.` : "",
+    ajustes.envioBase != null
+      ? `Envío a domicilio: ${plata(ajustes.envioBase)} base más ${plata(ajustes.envioPorKm ?? 0)} por kilómetro; también se puede retirar en la tienda.`
+      : "",
+  ].filter(Boolean).join(" ");
+  tiendaEnMemoria = { en: Date.now(), texto };
+  return texto;
+};
+
+// Las secciones de la cuenta a las que Tiqui puede llevar (web y app las traducen a su ruta).
+const SECCIONES = ["pedidos", "puntos", "favoritos", "direcciones", "pagos", "recibos", "avisos", "cuenta", "carrito", "inicio"];
+
+// Las preguntas que dicen "ofertas": con estas, las promos van arriba en la lista.
+const PIDE_OFERTAS = /\b(ofert|promo|descuent|rebaj|barat|recomiend|recomenda|sugier)/;
+
+const catalogoParaTiqui = async (textoDeLaCharla) => {
+  const [todos, ofertas] = await Promise.all([leerCatalogo(), leerOfertas()]);
+  const palabras = palabrasClave(textoDeLaCharla);
+  const pideOfertas = PIDE_OFERTAS.test(aTextoPlano(textoDeLaCharla));
+  const puntos = (p) =>
+    palabras.reduce((a, w) => a + (p.clave.includes(w) ? 1 : 0), 0) +
+    // Lo que está en oferta siempre entra; si preguntó por ofertas, va primero.
+    (ofertas.porProducto.has(p.id) ? (pideOfertas ? 5 : 0.5) : 0);
+
+  const conExistencias = todos.filter((p) => p.stock > 0);
+  const disponibles = conExistencias
+    .map((p, i) => ({ p, n: puntos(p), i }))
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .map((x) => x.p)
+    .slice(0, TOPE_CATALOGO);
+
+  const agotados = palabras.length
+    ? todos.filter((p) => p.stock <= 0 && palabras.some((w) => p.clave.includes(w))).slice(0, 5)
+    : [];
+
+  const categorias = [...new Set(conExistencias.map((p) => p.categoria).filter(Boolean))].sort();
+
+  return { disponibles, agotados, categorias, ofertas };
+};
+
+const armarPreguntaDeTiqui = ({ frase, carrito, charla, disponibles, agotados, categorias, ofertas, tienda }) => {
+  const enCarrito = carrito.length
+    ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
+    : "vacío";
+
+  const linea = (p) =>
+    [
+      p.nombre,
+      p.precio != null ? `${plata(p.precio)}${p.porLibra ? " la libra" : ""}` : "",
+      p.categoria,
+      p.marca,
+      ofertas.porProducto.get(p.id) || "",
+      p.soloAdultos ? "solo mayores de edad" : "",
+    ].filter(Boolean).join(" · ");
+
+  return [
+    charla.length
+      ? `Lo último que se habló (de lo más viejo a lo más nuevo):\n${charla.map((m) => `${m.quien}: ${m.texto}`).join("\n")}`
+      : "Es lo primero que dice el cliente en esta charla.",
+    "",
+    `El cliente dijo ahora: "${frase}"`,
+    "",
+    `En su carrito lleva: ${enCarrito}`,
+    "",
+    `La tienda: ${tienda}`,
+    "",
+    `Categorías: ${categorias.join(", ") || "(ninguna)"}`,
+    "",
+    ofertas.resumen.length
+      ? `Promociones vigentes hoy:\n${ofertas.resumen.join("\n")}`
+      : "Hoy no hay promociones vigentes.",
+    "",
+    "Productos con existencias (nombre · precio · categoría · marca · oferta):",
+    disponibles.map(linea).join("\n") || "(ninguno)",
+    ...(agotados.length ? ["", `Agotados hoy, NO se pueden agregar: ${agotados.map((p) => p.nombre).join(", ")}`] : []),
+  ].join("\n");
+};
+
+const nombreDeProducto = { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de productos." };
+
+const HERRAMIENTAS_TIQUI = [
   {
     functionDeclarations: [
       {
         name: "agregar_producto",
-        description: "Agrega unidades de un producto del catálogo al carrito del cliente.",
+        description: "Agrega unidades de un producto al carrito. Una llamada por producto.",
         parameters: {
           type: Type.OBJECT,
           properties: {
-            producto: {
-              type: Type.STRING,
-              description: "Nombre EXACTO tal como viene en la lista de productos.",
-            },
-            cantidad: { type: Type.NUMBER, description: "Cuántas unidades. 1 si no lo dijo." },
+            producto: nombreDeProducto,
+            cantidad: { type: Type.NUMBER, description: "Cuántas unidades (o libras). 1 si no lo dijo." },
           },
           required: ["producto"],
         },
       },
       {
         name: "quitar_producto",
-        description: "Quita unidades de un producto que ya está en el carrito del cliente.",
+        description: "Quita unidades de un producto que ya está en el carrito.",
         parameters: {
           type: Type.OBJECT,
           properties: {
-            producto: { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de productos." },
-            cantidad: {
-              type: Type.NUMBER,
-              description: "Cuántas unidades quitar. Si no lo dijo, se quita del todo.",
-            },
+            producto: nombreDeProducto,
+            cantidad: { type: Type.NUMBER, description: "Cuántas quitar. Si no lo dijo, se quita del todo." },
           },
           required: ["producto"],
         },
       },
       {
         name: "cambiar_cantidad",
-        description:
-          "Deja un producto que ya está en el carrito en una cantidad exacta ('mejor que sean dos', 'solo una').",
+        description: "Deja un producto en una cantidad exacta ('mejor que sean dos', 'solo una').",
         parameters: {
           type: Type.OBJECT,
           properties: {
-            producto: { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de productos." },
+            producto: nombreDeProducto,
             cantidad: { type: Type.NUMBER, description: "La cantidad FINAL que quiere, no la que se suma." },
           },
           required: ["producto", "cantidad"],
         },
       },
       {
-        name: "mostrar_producto",
-        description: "El cliente quiere VER un producto (su ficha), sin agregarlo todavía.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            producto: { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de productos." },
-          },
-          required: ["producto"],
-        },
-      },
-      {
         name: "vaciar_carrito",
-        description: "Vacía el carrito completo del cliente.",
+        description: "Vacía el carrito completo ('borra el carrito', 'empecemos de nuevo').",
         parameters: { type: Type.OBJECT, properties: {} },
       },
       {
         name: "ver_total",
-        description: "El cliente pregunta cuánto lleva o cuál es el total de su carrito.",
+        description: "Pregunta cuánto lleva o cuál es su total. La tienda dice el monto exacto.",
         parameters: { type: Type.OBJECT, properties: {} },
       },
       {
         name: "ir_a_pagar",
-        description: "El cliente quiere pagar, comprar o finalizar su pedido.",
+        description: "Quiere pagar, comprar o terminar su pedido.",
         parameters: { type: Type.OBJECT, properties: {} },
       },
       {
-        name: "responder",
-        description:
-          "Lo que el asistente dice en voz alta. SIEMPRE hay que llamarla, además de cualquier otra herramienta que haga falta.",
+        name: "mostrar_producto",
+        description: "Quiere VER un producto (su ficha) sin agregarlo todavía.",
+        parameters: { type: Type.OBJECT, properties: { producto: nombreDeProducto }, required: ["producto"] },
+      },
+      {
+        name: "mostrar_categoria",
+        description: "Quiere ver una categoría o pasillo de la tienda ('enséñame las bebidas').",
         parameters: {
           type: Type.OBJECT,
           properties: {
-            texto: {
-              type: Type.STRING,
-              description: "Una o dos frases, máximo 140 caracteres. Se escucha, no se lee.",
-            },
+            categoria: { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de categorías." },
+          },
+          required: ["categoria"],
+        },
+      },
+      {
+        name: "abrir_seccion",
+        description: "Quiere ir a una sección de su cuenta o de la tienda (sus pedidos, sus puntos, su carrito…).",
+        parameters: {
+          type: Type.OBJECT,
+          properties: { seccion: { type: Type.STRING, enum: SECCIONES, description: "A cuál sección." } },
+          required: ["seccion"],
+        },
+      },
+      {
+        name: "responder",
+        description: "Lo que Tiqui dice en voz alta. SIEMPRE hay que llamarla, además de cualquier otra herramienta.",
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            texto: { type: Type.STRING, description: "Una o dos frases cortas, máximo 160 caracteres. Se escucha, no se lee." },
           },
           required: ["texto"],
         },
@@ -665,45 +849,82 @@ const HERRAMIENTAS_ASISTENTE = [
   },
 ];
 
-const MODO_ASISTENTE_HERRAMIENTAS = [
-  "Eres el asistente de voz de Tienda La 635, una tienda de barrio en El Salvador.",
-  "Un cliente te habló y las reglas del sistema no entendieron qué quería. Tu trabajo es",
-  "descifrarlo y llamar las herramientas que hagan falta para atenderlo.",
+/*
+ * Cómo es Tiqui. Va escrito tuteando a propósito: si las instrucciones van
+ * de "vos" o de "usted", al modelo se le pega y contesta igual.
+ */
+const MODO_TIQUI = [
+  "Eres Tiqui, la mascota de Tienda la 635: la etiqueta de precio del logo, con cara.",
+  "Atiendes por voz a los clientes de esta tienda de barrio en El Salvador.",
   "",
-  "Cómo trabajas:",
-  "- Si pide varias cosas en la misma frase ('dos manzanas y una leche'), llamá",
-  "  'agregar_producto' una vez POR CADA producto. No hace falta juntarlo en una sola llamada.",
-  "- SOLO podés usar productos de la lista que te paso. Si lo que pide no está en esa lista,",
-  "  no llames ninguna herramienta de carrito para eso — solo 'responder', con amabilidad.",
-  "  Nunca inventes productos.",
-  "- Si pide algo por su uso ('algo para la tos', 'para el desayuno'), buscá en la lista",
-  "  qué le sirve y ofrecelo por su nombre.",
-  "- SIEMPRE llamá 'responder', sin excepción, además de cualquier otra herramienta.",
-  "- Lo que digas en 'responder' se ESCUCHA, no se lee: frases cortas, sin listas, sin emojis.",
-  "- Hablás en español claro, cálido y cercano pero NEUTRO: al cliente de usted,",
-  "  sin diminutivos ni jerga (nada de 'pancito', 'heladitos', 'cafecito').",
-  "- Entre los clientes hay personas mayores: se entiende de una sola escuchada.",
+  "CÓMO HABLAS:",
+  "- Siempre en primera persona y tuteando: tú, nunca usted ni vos. Alegre y cercano,",
+  "  como un niño amable que se conoce toda la tienda.",
+  "- Lo que dices se ESCUCHA, no se lee: una o dos frases cortas (máximo 160 caracteres),",
+  "  sin listas, sin emojis, sin asteriscos.",
+  "- Español claro y neutro, que se entienda a la primera, también para personas mayores.",
+  "  Nada de diminutivos ni jerga.",
+  "- Los precios, con signo de dólar y dos decimales: $2.50.",
   "",
-  "SI LA PREGUNTA NO ES DE PRODUCTOS NI DEL CARRITO (el horario, la dirección,",
-  "si aceptan tarjeta, cómo es la entrega, o cualquier charla que no sea comprar):",
-  "no inventes la respuesta —no tenés esos datos— pero TAMPOCO digas 'no entendí'",
-  "ni le pidas que repita, porque sí la entendiste, solo no es algo que puedas",
-  "resolver vos. Decile con dos frases que eso no lo manejás vos, y ofrecele algo",
-  "que sí podés: 'Eso no lo sé decir, mejor pregúntele a alguien de la tienda por",
-  "WhatsApp. ¿Le ayudo a armar su pedido mientras tanto?'. No llames ninguna otra",
-  "herramienta para eso, pero la respuesta tiene que sonar a que la escuchaste,",
-  "no a que la ignoraste.",
+  "QUÉ PUEDES HACER (llama las herramientas que hagan falta y SIEMPRE 'responder'):",
+  "- Agregar, quitar o cambiar la cantidad de productos. Si pide varias cosas, una llamada",
+  "  por producto.",
+  "- Vaciar el carrito, decir el total ('ver_total') o llevarlo a pagar ('ir_a_pagar').",
+  "- Mostrar un producto, una categoría, o abrir una sección de su cuenta.",
+  "- Recomendar: elige de la lista lo que le sirve por lo que pide o por lo que ya lleva, y",
+  "  prefiere lo que está en oferta. Nombra uno o dos con su precio y pregúntale si lo",
+  "  quiere; no lo agregues si no te lo pidió.",
+  "- Promociones: si pregunta por ofertas, cuéntale una o dos de las vigentes con su precio",
+  "  de oferta. Si hoy no hay, dilo y ofrécete a recomendarle algo.",
+  "- La tienda: usa solo lo que viene en 'La tienda'. El horario y el número de WhatsApp",
+  "  no los tienes: di que pueden escribir por WhatsApp desde el botón verde de la tienda.",
   "",
-  "Reservá el 'no entendí, repítalo' para cuando la frase de verdad no se entiende",
-  "—se cortó, quedó a medias, o no tiene sentido ninguno—, que es distinto de una",
-  "pregunta clara sobre algo que no es tu trabajo.",
+  "REGLAS:",
+  "- SOLO productos y categorías de las listas, con su nombre EXACTO en las herramientas.",
+  "  Nunca inventes productos, precios ni promociones.",
+  "- Si pide algo que no hay, dilo con cariño y ofrece lo más parecido de la lista, sin",
+  "  agregarlo. Si está en 'Agotados hoy', di que hoy se acabó.",
+  "- El total en dólares no lo calcules: llama 'ver_total' o 'ir_a_pagar' y la tienda dice",
+  "  el monto exacto.",
+  "- 'cambiar_cantidad' deja la cantidad FINAL: 'mejor que sean dos' es 2, no 2 más.",
+  "- Si la frase no se entiende (se cortó, no tiene sentido), pide que la repita. Si se",
+  "  entiende pero no es algo que puedas resolver, dilo y ofrece lo que sí puedes hacer.",
   "",
-  REGLAS_DE_CHARLA,
+  "LA CONVERSACIÓN:",
+  "- Te paso lo último que se habló. Úsalo para entender respuestas cortas que dependen de",
+  "  lo anterior: 'sí', 'no', 'mejor dos', 'la otra', 'esa', 'y también…'. Si acabas de",
+  "  ofrecer un producto y te dice que sí, es ESE producto: agrégalo.",
+  "- No repitas lo que dijiste en el turno anterior; sigue la charla como una persona.",
 ].join("\n");
 
-aiController.entenderConHerramientas = async (req, res) => {
+// Lo que dice Tiqui cuando el modelo hizo algo pero no dijo nada.
+const NOMBRE_DE_SECCION = {
+  pedidos: "tus pedidos", puntos: "tus puntos", favoritos: "tus favoritos", direcciones: "tus direcciones",
+  pagos: "tus métodos de pago", recibos: "tus recibos", avisos: "tus avisos", cuenta: "tu cuenta",
+  carrito: "tu carrito", inicio: "el inicio",
+};
+const fraseDeRespaldo = (acciones) => {
+  const partes = [];
+  const agregados = acciones.filter((a) => a.tipo === "agregar").map((a) => `${a.cantidad} ${a.producto}`);
+  if (agregados.length) partes.push(`Te agregué ${agregados.join(" y ")}.`);
+  for (const a of acciones) {
+    if (a.tipo === "quitar") partes.push(`Quité ${a.producto}.`);
+    if (a.tipo === "cambiar") partes.push(`Listo, dejé ${a.producto} en ${a.cantidad}.`);
+    if (a.tipo === "vaciar") partes.push("Vacié tu carrito.");
+    if (a.tipo === "mostrar") partes.push(`Aquí está ${a.producto}.`);
+    if (a.tipo === "categoria") partes.push(`Te muestro ${a.categoria}.`);
+    if (a.tipo === "seccion") partes.push(`Te abro ${NOMBRE_DE_SECCION[a.seccion] || "esa sección"}.`);
+    // 'total' y 'comprar': el monto lo dice el cliente con la cuenta exacta.
+    if (a.tipo === "total" || a.tipo === "comprar") partes.push("Déjame ver tu cuenta.");
+  }
+  if (!partes.length) return "";
+  return agregados.length ? `${partes.join(" ")} ¿Algo más?` : partes.join(" ");
+};
+
+aiController.asistente = async (req, res) => {
   try {
-    // Igual que en /entender: `productos` ya no se usa, el catálogo lo arma el servidor.
+    // `productos` ya no se usa (el catálogo lo arma el servidor); se acepta
+    // para no romper a los clientes viejos que todavía lo mandan.
     const { frase, carrito = [], historial = [] } = req.body;
 
     if (!frase || !String(frase).trim()) {
@@ -716,81 +937,70 @@ aiController.entenderConHerramientas = async (req, res) => {
     }
 
     const charla = conversacionReciente(historial);
-    const { disponibles, agotados } = await catalogoParaAsistente(
-      [frase, ...charla.slice(-4).map((m) => m.texto)].join(" ")
-    );
-    const contents = armarPreguntaDelAsistente({ frase, carrito, charla, disponibles, agotados });
+    const [{ disponibles, agotados, categorias, ofertas }, tienda] = await Promise.all([
+      // Lo que se está hablando decide qué productos van arriba: la frase y lo
+      // último de la charla (un "sí" solo no dice nada; lo de antes, sí).
+      catalogoParaTiqui([frase, ...charla.slice(-4).map((m) => m.texto)].join(" ")),
+      leerTienda(),
+    ]);
+    const contents = armarPreguntaDeTiqui({ frase, carrito, charla, disponibles, agotados, categorias, ofertas, tienda });
 
     try {
-      // Con plazo, igual que /entender: hay alguien hablándole al teléfono
-      // y esperando respuesta ya.
-      const respuesta = await generarConIA({
+      // Con cobertura: si Gemini se traba, contesta el respaldo sin esperarlo.
+      // Ver CON COBERTURA en utils/iaClient.js.
+      const respuesta = await generarConCobertura({
         contents,
         config: {
-          systemInstruction: MODO_ASISTENTE_HERRAMIENTAS,
-          tools: HERRAMIENTAS_ASISTENTE,
+          systemInstruction: MODO_TIQUI,
+          tools: HERRAMIENTAS_TIQUI,
           toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY } },
-          // Baja a propósito: aquí no se quiere creatividad, se quiere que
-          // entienda bien y elija de la lista.
-          temperature: 0.2,
+          // Poca creatividad: se quiere que entienda bien y elija de la lista.
+          temperature: 0.3,
         },
-      }, PLAZO_ASISTENTE);
+      });
 
       const llamadas = respuesta.functionCalls || [];
       if (!llamadas.length) throw new Error("La IA no llamó ninguna herramienta");
 
-      /*
-       * No se confía en que el modelo copió bien el nombre del producto: se
-       * verifica contra la lista real, igual que en /entender. Lo que no
-       * calza se descarta sin decir nada — esa llamada simplemente no se
-       * traduce en ninguna acción.
-       */
-      const nombresReales = new Map(
-        disponibles.map((p) => [p.nombre.toLowerCase(), p.nombre])
-      );
+      // No se confía en que el modelo copió bien los nombres: se validan
+      // contra las listas reales y lo que no calza se descarta.
+      const productosReales = new Map(disponibles.map((p) => [p.nombre.toLowerCase(), p]));
+      const categoriasReales = new Map(categorias.map((c) => [c.toLowerCase(), c]));
 
       const acciones = [];
       let dice = "";
 
       for (const llamada of llamadas) {
         const args = llamada.args || {};
-        const nombreReal = () => nombresReales.get(String(args.producto || "").toLowerCase()) || null;
+        const real = productosReales.get(String(args.producto || "").toLowerCase()) || null;
+        const producto = real?.nombre || null;
+        // Por libra se aceptan decimales (1.5 libras de queso); por unidad, enteras.
+        const pedida = Number(args.cantidad);
+        const cantidad = pedida > 0
+          ? (real?.porLibra ? Math.round(pedida * 100) / 100 : Math.max(1, Math.round(pedida)))
+          : null;
 
         switch (llamada.name) {
-          case "agregar_producto": {
-            const producto = nombreReal();
-            if (producto) {
-              acciones.push({
-                tipo: "agregar",
-                producto,
-                cantidad: Number(args.cantidad) > 0 ? Math.round(Number(args.cantidad)) : 1,
-              });
-            }
+          case "agregar_producto":
+            if (producto) acciones.push({ tipo: "agregar", producto, cantidad: cantidad || 1 });
             break;
-          }
-          case "quitar_producto": {
-            const producto = nombreReal();
-            if (producto) {
-              acciones.push({
-                tipo: "quitar",
-                producto,
-                cantidad: Number(args.cantidad) > 0 ? Math.round(Number(args.cantidad)) : null,
-              });
-            }
+          case "quitar_producto":
+            if (producto) acciones.push({ tipo: "quitar", producto, cantidad });
             break;
-          }
-          case "cambiar_cantidad": {
-            const producto = nombreReal();
-            if (producto && Number(args.cantidad) > 0) {
-              acciones.push({ tipo: "cambiar", producto, cantidad: Math.round(Number(args.cantidad)) });
-            }
+          case "cambiar_cantidad":
+            if (producto && cantidad) acciones.push({ tipo: "cambiar", producto, cantidad });
             break;
-          }
-          case "mostrar_producto": {
-            const producto = nombreReal();
+          case "mostrar_producto":
             if (producto) acciones.push({ tipo: "mostrar", producto });
             break;
+          case "mostrar_categoria": {
+            const categoria = categoriasReales.get(String(args.categoria || "").toLowerCase());
+            if (categoria) acciones.push({ tipo: "categoria", categoria });
+            break;
           }
+          case "abrir_seccion":
+            if (SECCIONES.includes(args.seccion)) acciones.push({ tipo: "seccion", seccion: args.seccion });
+            break;
           case "vaciar_carrito":
             acciones.push({ tipo: "vaciar" });
             break;
@@ -808,20 +1018,70 @@ aiController.entenderConHerramientas = async (req, res) => {
         }
       }
 
-      // Mismo candado que /entender: sin frase que decir, no hay respuesta
-      // que dar — mejor admitir que no se entendió que quedarse mudo.
+      /*
+       * A veces el modelo HACE (agrega la leche) pero se olvida de 'responder'.
+       * Antes eso tiraba todo, acción incluida. Ahora se dice lo que se hizo
+       * con una frase armada aquí. Sin acciones ni frase, sí: no se entendió.
+       */
+      if (!dice) dice = fraseDeRespaldo(acciones);
       if (!dice) {
         return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "vacia" });
       }
 
       return res.status(200).json({ acciones, respuesta: dice, entendido: true, origen: "ia" });
     } catch (errorIA) {
-      console.log("IA no disponible para el asistente (herramientas): " + errorIA.message);
+      console.log("IA no disponible para Tiqui: " + errorIA.message);
       return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "error" });
     }
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * GET /api/ai/voz?t=<texto>
+ * La voz de Tiqui (ver utils/vozTiqui.js). Va por GET a propósito: así el
+ * navegador la pone directo en un <audio> y empieza a sonar con los primeros
+ * pedazos, sin esperar el archivo entero. Lo mismo la app.
+ */
+aiController.voz = async (req, res) => {
+  const texto = paraDecir(String(req.query.t || "")).slice(0, 400);
+  if (!texto) return res.status(400).json({ message: "Hace falta el texto" });
+  if (!vozDisponible()) return res.status(503).json({ message: "sin-voz" });
+
+  const clave = `${process.env.ELEVENLABS_VOICE_ID || ""}|${texto}`;
+  res.setHeader("Content-Type", "audio/mpeg");
+  // El mismo texto suena igual siempre: el navegador puede guardarlo.
+  res.setHeader("Cache-Control", "public, max-age=86400");
+
+  const previa = frasePrevia(clave);
+  if (previa) {
+    res.setHeader("Content-Length", previa.length);
+    return res.end(previa);
+  }
+
+  // Si el cliente se va (lo interrumpieron, cerró el asistente), se corta el
+  // pedido a ElevenLabs: no se paga audio que nadie va a oír.
+  const corte = new AbortController();
+  res.on("close", () => {
+    if (!res.writableEnded) corte.abort();
+  });
+
+  try {
+    const respuesta = await pedirVoz(texto, { signal: corte.signal });
+    const partes = [];
+    for await (const parte of respuesta.body) {
+      partes.push(parte);
+      res.write(parte);
+    }
+    res.end();
+    guardarFrase(clave, Buffer.concat(partes));
+  } catch (error) {
+    if (corte.signal.aborted) return;
+    console.log("Voz de Tiqui no disponible: " + error.message);
+    if (!res.headersSent) return res.status(502).json({ message: "sin-voz" });
+    res.end();
   }
 };
 

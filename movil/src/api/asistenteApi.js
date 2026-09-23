@@ -1,53 +1,70 @@
 /*
  * ============================================================
- * ASISTENTE — el plan B con IA
+ * TIQUI — el asistente con IA
  * ============================================================
- * A diferencia del resto de la app, esto NO es un calco de
- * `frontend/src/api/aiService.js`: la web sigue en `/ai/entender` (un
- * producto por turno, `responseSchema`), pero móvil habla con
- * `/ai/entender-herramientas` — el mismo plan B, con tool calling de Gemini
- * del lado del backend, para poder entender "dos manzanas y una leche" en
- * un solo viaje en vez de solo la mitad. Ver el comentario grande en
- * `backend/src/controller/aiController.js` (entenderConHerramientas).
+ * El mismo cerebro que la web: `/ai/asistente` (tool calling de Gemini en el
+ * backend) entiende lo que se dijo con el catálogo, las promociones y los
+ * datos de la tienda, y devuelve una LISTA de acciones y la frase que hay que
+ * decir. Ver el comentario grande de TIQUI en
+ * `backend/src/controller/aiController.js`.
  *
- * Se llama SOLO cuando las reglas locales del asistente no entendieron la
- * frase (ver useAsistenteVoz.js).
+ * Se llama cuando las reglas rápidas del asistente no alcanzan (ver
+ * useAsistenteVoz.js).
  * ============================================================
  */
 
-import { peticion } from './api';
+import { peticion, URL_API } from './api';
 
 export const asistenteApi = {
   /*
-   * Nunca lanza error: sin internet o sin IA configurada, el asistente sigue
-   * como siempre, pidiendo que le repitan.
+   * Nunca lanza error: sin internet devuelve origen 'sin-red' y el asistente
+   * lo dice tal cual. El catálogo lo pone el servidor; aquí solo viaja lo
+   * que sabe el teléfono: el carrito y lo último que se habló.
    */
-  /*
-   * El catálogo lo arma el servidor con lo que tiene existencias (ver
-   * aiController, EL CATÁLOGO QUE VE EL ASISTENTE); `productos` solo sigue
-   * viajando para un backend viejo que todavía lo use. Lo nuevo es
-   * `historial`, lo último que se dijo, para entender un "sí" o un "mejor dos".
-   */
-  entenderPedido: async ({ frase, productos, carrito, historial }) => {
+  asistente: async ({ frase, carrito, historial, productos = [] }) => {
     try {
-      return await peticion('/ai/entender-herramientas', {
+      return await peticion('/ai/asistente', {
         metodo: 'POST',
-        cuerpo: { frase, productos, carrito, historial },
+        cuerpo: { frase, carrito, historial },
         tiempoMaximo: 15000,
       });
-    } catch {
+    } catch (error) {
+      /*
+       * El servidor todavía no tiene Tiqui (404): pasa si la app se actualiza
+       * antes que Render. Se usa la ruta de antes, que devuelve lo mismo
+       * (acciones + respuesta) pero necesita que le mandemos los productos.
+       */
+      if (error?.estado === 404) {
+        try {
+          return await peticion('/ai/entender-herramientas', {
+            metodo: 'POST',
+            cuerpo: { frase, carrito, historial, productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })) },
+            tiempoMaximo: 15000,
+          });
+        } catch {
+          // Sigue abajo: sin red.
+        }
+      }
       return { acciones: [], respuesta: '', entendido: false, origen: 'sin-red' };
     }
   },
 
   /*
-   * Despierta el servidor al abrir el asistente: Render lo duerme si no hay
-   * tráfico, y la primera pregunta tardaba medio minuto. No gasta IA y no
-   * importa si falla.
+   * Despierta el servidor al abrir el asistente (Render lo duerme si no hay
+   * tráfico) y pregunta si tiene la voz de Tiqui. Nunca falla: sin respuesta,
+   * `voz` es false y se habla con la voz del teléfono.
    */
-  despertar: () => {
-    peticion('/ai/listo').catch(() => {});
+  despertar: async () => {
+    try {
+      const datos = await peticion('/ai/listo', { tiempoMaximo: 45000 });
+      return { voz: Boolean(datos?.voz) };
+    } catch {
+      return { voz: false };
+    }
   },
+
+  // Dónde está el audio de una frase dicha por Tiqui (ver backend utils/vozTiqui.js).
+  urlVoz: (texto) => `${URL_API}/ai/voz?t=${encodeURIComponent(texto)}`,
 };
 
 export default asistenteApi;

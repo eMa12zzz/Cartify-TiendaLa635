@@ -47,6 +47,16 @@ export const MODELO_IA = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
 export const MODELO_IA_RESPALDO = process.env.GEMINI_MODEL_RESPALDO || "gemini-flash-latest";
 
 /*
+ * El respaldo del ASISTENTE es otro: Gemma, un modelo abierto de Google que
+ * se usa con la misma llave. Medido el 23-09-2026, con TODOS los Gemini
+ * "flash" devolviendo 503 a la vez (lite, flash, 3.1, 3.5, 3.7, 3.8): Gemma
+ * contestó cada vez, en 1–2,6 s, con las herramientas y tuteando bien. No es
+ * tan fino como lite, pero una respuesta en dos segundos le gana a un
+ * "se me cortó" a los siete.
+ */
+export const MODELO_ASISTENTE_RESPALDO = process.env.GEMINI_MODEL_ASISTENTE_RESPALDO || "gemma-4-26b-a4b-it";
+
+/*
  * ============================================================
  * REINTENTOS — el 503 de Google no tiene por qué llegar al cliente
  * ============================================================
@@ -164,4 +174,87 @@ export const generarConIA = async (peticion, { intentos = 3, tiempoMaximo, plazo
   }
 
   throw ultimoError;
+};
+
+/*
+ * ============================================================
+ * CON COBERTURA — el asistente no espera a un modelo trabado
+ * ============================================================
+ * `generarConIA` prueba los modelos UNO DETRÁS DE OTRO. Con Gemini saturado
+ * eso no sirve para una conversación: el primero se cuelga hasta que se le
+ * acaba el tiempo, y para cuando le toca al respaldo ya no queda plazo. Se
+ * vio en el registro: "no respondió en 2 intentos, probando el siguiente
+ * modelo" y enseguida "se acabó el plazo".
+ *
+ * Aquí el primero sale solo y, si en `cobertura` ms no contestó (o falló),
+ * sale el siguiente EN PARALELO. Gana el primero que conteste y a los demás
+ * se les corta el pedido. Cuando Gemini anda bien contesta él en menos de un
+ * segundo y el respaldo ni se entera; cuando no, contesta el respaldo sin
+ * haber esperado al que estaba trabado.
+ * ============================================================
+ */
+export const generarConCobertura = (
+  peticion,
+  { modelos = [MODELO_IA, MODELO_ASISTENTE_RESPALDO], cobertura = 1500, plazoTotal = 7000 } = {}
+) => {
+  const ia = getIA();
+  if (!ia) return Promise.reject(new Error("La IA no está configurada"));
+
+  const lista = modelos.filter((m, i) => m && modelos.indexOf(m) === i);
+  const general = new AbortController();
+
+  return new Promise((resolver, rechazar) => {
+    let siguiente = 0;
+    let pendientes = 0;
+    let terminado = false;
+    let ultimoError = null;
+    let reloj = null;
+
+    const plazo = setTimeout(() => {
+      if (terminado) return;
+      terminado = true;
+      clearTimeout(reloj);
+      general.abort();
+      rechazar(ultimoError || new Error("Se acabó el plazo para la IA"));
+    }, plazoTotal);
+
+    const cerrar = () => {
+      terminado = true;
+      clearTimeout(plazo);
+      clearTimeout(reloj);
+      // Corta los pedidos que siguen en camino: su respuesta ya no sirve.
+      general.abort();
+    };
+
+    const lanzar = () => {
+      if (terminado || siguiente >= lista.length) return;
+      const model = lista[siguiente++];
+      pendientes += 1;
+      clearTimeout(reloj);
+      // Si este no contesta en `cobertura`, entra el siguiente en paralelo.
+      reloj = setTimeout(lanzar, cobertura);
+
+      ia.models
+        .generateContent({ ...peticion, model, config: { ...(peticion.config || {}), abortSignal: general.signal } })
+        .then((respuesta) => {
+          if (terminado) return;
+          cerrar();
+          resolver(respuesta);
+        })
+        .catch((error) => {
+          pendientes -= 1;
+          if (terminado) return;
+          ultimoError = error;
+          console.log(`IA (asistente): "${model}" falló — ${String(codigoDeError(error) ?? error.message).slice(0, 60)}`);
+          // Falló rápido: el siguiente entra ya, sin esperar la cobertura.
+          if (siguiente < lista.length) lanzar();
+          else if (pendientes === 0) {
+            cerrar();
+            rechazar(ultimoError);
+          }
+        });
+    };
+
+    lanzar();
+  });
 };

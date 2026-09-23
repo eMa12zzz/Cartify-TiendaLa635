@@ -12,7 +12,11 @@
  *     que de verdad soporta la New Architecture; `@react-native-voice/voice`
  *     falla en silencio con ella) y `expo-speech` para hablar.
  *
- * Y lo que se dejó AFUERA a propósito, para que esto fuera un apartado y no
+ * Y habla con la VOZ DE TIQUI (la del video, desde el servidor) cuando la
+ * compilación trae expo-audio y el servidor tiene la llave; si no, con la
+ * del teléfono. Ver utils/vozTiqui.js. Tiqui tutea, como en su video.
+ *
+ * Lo que se dejó AFUERA a propósito, para que esto fuera un apartado y no
  * un mes de trabajo:
  *   - Elegir voz del sistema (aquí el teléfono elige la suya en español).
  *   - Llevar a una sección de la cuenta específica o abrir un producto en su
@@ -21,13 +25,11 @@
  *   - El upsell ("por cierto, X está en oferta"): el catálogo mapeado de
  *     móvil no trae el campo `esMasVendido` que usaba esa regla.
  *
- * ── El plan B SÍ cambió: tool calling, no `responseSchema` ──
+ * ── El plan B: Tiqui, el mismo cerebro que la web ──
  * `preguntarALaIA` (más abajo) es lo que entra cuando estas reglas de texto
- * se dan por vencidas. Ahí SÍ hay una diferencia con la web: móvil habla con
- * `/ai/entender-herramientas` (function calling de Gemini) en vez de
- * `/ai/entender` (un producto por turno). La web se queda como está — ver
- * el comentario grande en `aiController.js` (entenderConHerramientas) para
- * el porqué.
+ * no alcanzan: habla con `/ai/asistente` (tool calling de Gemini, con el
+ * catálogo, las promociones y los datos de la tienda). Ver el comentario
+ * grande de TIQUI en `aiController.js`.
  * ============================================================
  */
 
@@ -42,6 +44,7 @@ import { useAuth } from './useAuth';
 import { useEdad } from '../context/EdadContext';
 import { esSoloAdultos } from '../utils/unidades';
 import { navegarA } from '../navigation/navigationRef';
+import { decirConTiqui, callarTiqui, vozTiquiPosible } from '../utils/vozTiqui';
 
 const NUMEROS = {
   un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
@@ -70,11 +73,30 @@ const REINTENTO_SILENCIO_MS = 900;
 
 // A dónde puede llevar por voz. Solo lo que móvil de verdad tiene como ruta.
 const DESTINOS = [
-  { palabras: /\b(mis pedidos|mi pedido|pedidos|ordenes|compras)\b/, nombre: 'sus pedidos', tab: 'pedidos', sesion: true },
-  { palabras: /\b(mi perfil|mi cuenta|mis datos)\b/, nombre: 'su cuenta', tab: 'perfil', sesion: true },
-  { palabras: /\b(mi carrito|el carrito|carrito)\b/, nombre: 'su carrito', ruta: 'Carrito' },
-  { palabras: /\b(inicio|la tienda|el catalogo|el catálogo)\b/, nombre: 'el inicio', tab: 'inicio' },
+  { seccion: 'pedidos', palabras: /\b(mis pedidos|mi pedido|pedidos|ordenes|compras)\b/, nombre: 'tus pedidos', tab: 'pedidos', sesion: true },
+  { seccion: 'cuenta', palabras: /\b(mi perfil|mi cuenta|mis datos)\b/, nombre: 'tu cuenta', tab: 'perfil', sesion: true },
+  { seccion: 'carrito', palabras: /\b(mi carrito|el carrito|carrito)\b/, nombre: 'tu carrito', ruta: 'Carrito' },
+  { seccion: 'inicio', palabras: /\b(inicio|la tienda|el catalogo|el catálogo)\b/, nombre: 'el inicio', tab: 'inicio' },
 ];
+
+/*
+ * Las secciones que la IA puede pedir abrir. Móvil no tiene pantallas propias
+ * para puntos, favoritos, direcciones, etc.: viven dentro del perfil.
+ */
+const DESTINO_DE_SECCION = {
+  ...Object.fromEntries(DESTINOS.map((d) => [d.seccion, d])),
+  ...Object.fromEntries(['puntos', 'favoritos', 'direcciones', 'pagos', 'recibos', 'avisos']
+    .map((s) => [s, { nombre: 'tu cuenta', tab: 'perfil', sesion: true }])),
+};
+
+// Mismas reglas que la web (ver useVoiceAssistant.js allá para el porqué de cada una).
+const PIDE_VACIAR = /\b(vaciar|vacia|vacialo|empezar de nuevo|borra todo|borrar todo|quita todo|quitar todo)\b|\b(borra|borrar|limpia|limpiar|quita|quitar|elimina|eliminar|saca|sacar|vacia|vaciar)\s+(todo\s+)?(el|mi)\s+carrito\b/;
+const PIDE_TOTAL = /\b(cuanto llevo|cuanto va|cuanto debo|cuanto sale todo|el total|mi total|total)\b|^cuanto (es|seria)( todo)?$/;
+const PIDE_COMPRAR = (t) =>
+  /\b(comprar|pagar|finalizar|terminar|es todo|eso es todo)\b/.test(t) ||
+  (/^(ya\s+)?listo\b/.test(t) && t.split(' ').length <= 3);
+const ES_PREGUNTA = /\b(que|cual|cuales|cuanto cuesta|cuanto vale|cuanto sale|precio|hay|tienen|tienes|esta en|estan en|recomienda|recomiendas|recomiendame|sugiere|sugieres|oferta|ofertas|promo|promocion|promociones|descuento|descuentos|donde|como|por que)\b/;
+const PIDE_AGREGAR = /\b(quiero|dame|deme|agrega|agregame|agregue|pon|ponme|echa|echame|me das|me llevo|llevo|anota|anotame)\b/;
 const PIDE_IR = /\b(ver|vamos|llevame|llévame|muestrame|muéstrame|enseñame|enséñame|abrir|abre|ir a|donde esta|dónde está)\b/;
 
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -154,6 +176,10 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const ultimoSiguesRef = useRef(0);
   const finalTextoRef = useRef('');
   const idRef = useRef(0);
+  // La voz de Tiqui: si el servidor la tiene (y esta compilación trae
+  // expo-audio). Con dos fallas seguidas se deja de intentar en esta charla.
+  const vozTiquiRef = useRef(false);
+  const fallasVozRef = useRef(0);
 
   /*
    * La memoria de la charla, al día en el mismo instante (el estado
@@ -170,12 +196,18 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
   // Despierta el servidor apenas se abre el asistente (Render lo duerme si no
   // hay tráfico). Así la primera pregunta no tarda medio minuto.
+  // De paso pregunta si tiene la voz de Tiqui.
   useEffect(() => {
-    asistenteApi.despertar();
+    let vivo = true;
+    asistenteApi.despertar().then(({ voz }) => {
+      if (vivo) vozTiquiRef.current = voz && vozTiquiPosible;
+    });
+    return () => { vivo = false; };
   }, []);
 
   const arrancarReconocimiento = useCallback(() => {
     if (!activoRef.current) return;
+    callarTiqui();
     Speech.stop();
     hablandoRef.current = false;
     finalTextoRef.current = '';
@@ -204,10 +236,13 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       return;
     }
 
+    callarTiqui();
     Speech.stop();
     hablandoRef.current = true;
     setHablando(true);
-    Speech.speak(texto, {
+
+    // La voz del teléfono: el respaldo de la de Tiqui, y la única sin ella.
+    const conElTelefono = () => Speech.speak(texto, {
       // "es-419" (español latinoamericano neutro) en vez de es-SV: no todos
       // los teléfonos traen una voz de El Salvador instalada, y esta es la
       // que con más frecuencia sí encuentra una voz decente del sistema.
@@ -216,6 +251,24 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       onDone: continuar,
       onStopped: continuar,
       onError: continuar,
+    });
+
+    if (!vozTiquiRef.current) {
+      conElTelefono();
+      return;
+    }
+    decirConTiqui(asistenteApi.urlVoz(texto), {
+      // 0,95 es la velocidad "Normal" de la voz del teléfono; el audio va a 1.
+      velocidad: rateRef.current / 0.95,
+      alTerminar: () => {
+        fallasVozRef.current = 0;
+        continuar();
+      },
+      alFallar: () => {
+        fallasVozRef.current += 1;
+        if (fallasVozRef.current >= 2) vozTiquiRef.current = false;
+        conElTelefono();
+      },
     });
   }, []);
   hablarRef.current = hablar;
@@ -235,7 +288,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   };
 
   /*
-   * El backend (`/ai/entender-herramientas`) ya hizo el tool calling: esto
+   * El backend (`/ai/asistente`) ya hizo el tool calling: esto
    * solo EJECUTA la lista de acciones que Gemini decidió, una por una, igual
    * que las reglas locales de más abajo ejecutan lo que entendieron por
    * regex. Puede traer varias en un mismo turno ("dos manzanas y una
@@ -253,11 +306,10 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
     setPensando(true);
     try {
-      const idea = await asistenteApi.entenderPedido({
+      const idea = await asistenteApi.asistente({
         frase,
-        // El servidor nuevo arma su propio catálogo e ignora esto; se sigue
-        // mandando para un backend viejo que todavía lo necesite.
-        productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })),
+        // Solo se usan si el servidor todavía es el viejo (ver asistenteApi).
+        productos,
         carrito: dataRef.current.carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
         // Lo que se habló ANTES de esta frase (la última de la memoria es la
         // frase misma, que ya va aparte).
@@ -270,12 +322,19 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       // Sin red o el servidor no contestó a tiempo: decirlo tal cual, no
       // fingir que no se entendió algo que se dijo bien.
       if (idea?.origen === 'sin-red') {
-        hablarRef.current?.('Perdón, se me cortó la conexión. ¿Me lo repite?');
+        hablarRef.current?.('Perdón, se me cortó la conexión. ¿Me lo repites?');
+        return;
+      }
+
+      // La IA está saturada o no contestó a tiempo: no es que no se haya
+      // entendido, así que se pide de nuevo sin hacerlo sentir culpable.
+      if (idea?.origen === 'error') {
+        hablarRef.current?.('Uy, me distraje un segundo. ¿Me lo repites?');
         return;
       }
 
       if (!idea?.entendido) {
-        hablarRef.current?.('No le entendí bien. Puedo ayudarle a agregar productos, ver su total o vaciar el carrito.');
+        hablarRef.current?.('No te entendí bien. Puedo agregarte productos, contarte las ofertas o vaciar el carrito.');
         return;
       }
 
@@ -330,6 +389,15 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
           case 'vaciar':
             fns.limpiarCarrito?.();
             break;
+          case 'seccion': {
+            const destino = DESTINO_DE_SECCION[accion.seccion];
+            if (!destino || (destino.sesion && !isAuthenticated)) break;
+            if (destino.ruta) navegarA(destino.ruta);
+            else navegarA('Tabs', { screen: destino.tab });
+            break;
+          }
+          // 'categoria': móvil todavía no tiene una pantalla por categoría;
+          // Tiqui igual la nombra en lo que dice.
           case 'total':
             pideTotal = true;
             break;
@@ -359,7 +427,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
         if (bloqueados.length) {
           const lista = bloqueados.join(' y ');
           const verbo = bloqueados.length === 1 ? 'es' : 'son';
-          dice = `${lista} ${verbo} para mayores de edad. Ábralo desde la tienda para confirmar su identificación.`;
+          dice = `${lista} ${verbo} para mayores de edad. Ábrelo desde la tienda para confirmar tu identificación.`;
         } else if (pideComprar) {
           const { carrito, totalCarrito } = dataRef.current;
           if (!carrito.length) {
@@ -378,7 +446,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     } finally {
       setPensando(false);
     }
-  }, [mayorConfirmado]);
+  }, [mayorConfirmado, isAuthenticated]);
 
   const procesar = useCallback((texto) => {
     const t = expandirSinonimos(normalizar(texto));
@@ -397,7 +465,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
         // sí puede gastar batería o agarrar algo que se dice sin querer.
         activoRef.current = false;
         setActivo(false);
-        hablar('Le llevo a pagar.');
+        hablar('Te llevo a pagar.');
         navegarA('Checkout');
       } else if (/\b(no|cancela|espera|todavia|todavía|aun|aún)\b/.test(t)) {
         confirmandoRef.current = false;
@@ -409,25 +477,25 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     }
 
     if (/\b(ayuda|que puedo decir|comandos|no se|no entiendo)\b/.test(t)) {
-      hablar('Puedes decir: quiero una manzana y dos galletas, muéstrame las manzanas, quita una manzana, cuánto llevo, vaciar carrito, o comprar.');
+      hablar('Puedes decirme: quiero una manzana y dos galletas, qué ofertas hay, muéstrame las manzanas, quita una manzana, cuánto llevo, borra el carrito o comprar.');
       return;
     }
     if (/\b(repite|repetir|otra vez|que dijiste)\b/.test(t)) {
       hablar(ultimaRespuestaRef.current || 'No he dicho nada todavía.');
       return;
     }
-    if (/\b(vaciar|vacia|vacía|limpiar|empezar de nuevo|borra todo)\b/.test(t)) {
+    if (PIDE_VACIAR.test(t)) {
       fns.limpiarCarrito?.();
       hablar('Vacié tu carrito. ¿Qué te gustaría llevar?');
       return;
     }
-    if (/\b(comprar|pagar|finalizar|listo|terminar|es todo)\b/.test(t)) {
+    if (PIDE_COMPRAR(t)) {
       if (!carrito.length) { hablar('Tu carrito está vacío. ¿Qué te gustaría llevar?'); return; }
       confirmandoRef.current = true;
       hablar(`Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(carrito)} productos. ¿Confirmas la compra? Di sí para confirmar.`);
       return;
     }
-    if (/\b(cuanto|total|llevo|va)\b/.test(t)) {
+    if (PIDE_TOTAL.test(t)) {
       hablar(`Llevas $${totalCarrito.toFixed(2)} en ${contarItems(carrito)} productos.`);
       return;
     }
@@ -452,12 +520,12 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       const destino = DESTINOS.find((d) => d.palabras.test(t));
       if (destino) {
         if (destino.sesion && !isAuthenticated) {
-          hablar('Necesita iniciar sesión para eso.');
+          hablar('Necesitas iniciar sesión para eso.');
           return;
         }
         if (destino.ruta) navegarA(destino.ruta);
         else navegarA('Tabs', { screen: destino.tab });
-        hablar(`Le abro ${destino.nombre}.`);
+        hablar(`Te abro ${destino.nombre}.`);
         return;
       }
 
@@ -472,6 +540,14 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       // Ni apartado ni producto: antes esto se colaba hasta "agregar" de
       // abajo y terminaba metiendo al carrito algo que solo se quería VER.
       // Que lo intente la IA, igual que cuando las reglas de agregar fallan.
+      preguntarALaIA(texto);
+      return;
+    }
+
+    // ── Preguntas: a Tiqui, nunca al carrito ("¿la leche está en oferta?") ──
+    // Con signos de pregunta va a la IA aunque también pida algo: ella agrega Y contesta.
+    const conSignos = /[¿?]/.test(texto);
+    if ((conSignos || ES_PREGUNTA.test(t)) && (conSignos || !PIDE_AGREGAR.test(t))) {
       preguntarALaIA(texto);
       return;
     }
@@ -530,10 +606,10 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     if (bloqueados.length) {
       const lista = bloqueados.join(' y ');
       const verbo = bloqueados.length === 1 ? 'es' : 'son';
-      piezas.push(`${lista} ${verbo} para mayores de edad. Ábralo desde la tienda para confirmar su identificación.`);
+      piezas.push(`${lista} ${verbo} para mayores de edad. Ábrelo desde la tienda para confirmar tu identificación.`);
     }
     const dicho = piezas.join('. ');
-    const pregunta = agregados.length ? '¿Algo más?' : agotados.length && !bloqueados.length ? '¿Le busco otra cosa?' : '';
+    const pregunta = agregados.length ? '¿Algo más?' : agotados.length && !bloqueados.length ? '¿Te busco otra cosa?' : '';
     // Con punto antes de la pregunta, sin duplicarlo si la última pieza ya lo trae.
     hablar(pregunta ? `${dicho}${dicho.endsWith('.') ? '' : '.'} ${pregunta}` : dicho);
   }, [hablar, preguntarALaIA, isAuthenticated, mayorConfirmado]);
@@ -583,7 +659,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     try {
       const permiso = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!permiso.granted) {
-        hablar('Necesito permiso del micrófono para escucharle. Actívelo en los ajustes del teléfono.');
+        hablar('Necesito permiso del micrófono para escucharte. Actívalo en los ajustes del teléfono.');
         return;
       }
     } catch {
@@ -598,6 +674,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   }, [hablar, arrancarReconocimiento]);
 
   const interrumpir = useCallback(() => {
+    callarTiqui();
     Speech.stop();
     hablandoRef.current = false;
     setHablando(false);
@@ -611,11 +688,13 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     setActivo(false);
     setEscuchando(false);
     try { ExpoSpeechRecognitionModule.stop(); } catch { /* no estaba escuchando */ }
+    callarTiqui();
     Speech.stop();
   }, []);
 
   const toggleMute = useCallback(() => {
     setMuteado((m) => !m);
+    callarTiqui();
     Speech.stop();
   }, []);
 
@@ -630,7 +709,10 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       const teniaSesion = activoRef.current;
       activoRef.current = false;
       try { ExpoSpeechRecognitionModule.stop(); } catch { /* no estaba escuchando */ }
-      if (teniaSesion) Speech.stop();
+      if (teniaSesion) {
+        callarTiqui();
+        Speech.stop();
+      }
     };
   }, []);
 

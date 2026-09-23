@@ -98,7 +98,7 @@ const Asistente = () => {
 
         {historial.length === 0 ? (
           <Text style={estilos.bajada}>
-            Toca el micrófono y diga, por ejemplo: "quiero una manzana y dos galletas".
+            Soy Tiqui. Toca el micrófono y dime, por ejemplo: "quiero una manzana y dos galletas" o "¿qué ofertas hay?".
           </Text>
         ) : (
           <ScrollView ref={chatRef} style={estilos.chat} contentContainerStyle={estilos.chatContenido}>
