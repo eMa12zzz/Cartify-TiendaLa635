@@ -308,6 +308,8 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     try {
       const idea = await asistenteApi.asistente({
         frase,
+        // Solo se usan si el servidor todavía es el viejo (ver asistenteApi).
+        productos,
         carrito: dataRef.current.carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
         // Lo que se habló ANTES de esta frase (la última de la memoria es la
         // frase misma, que ya va aparte).

@@ -21,13 +21,43 @@ export const aiService = {
    *
    * Nunca lanza error: sin red devuelve origen 'sin-red' y el asistente lo
    * dice tal cual.
+   *
+   * `productos` NO viaja en la pregunta normal: solo hace falta si el
+   * servidor todavía es el viejo (ver abajo).
    */
-  asistente: async ({ frase, carrito, historial }) => {
+  asistente: async ({ frase, carrito, historial, productos = [] }) => {
     try {
       // enSilencio: si la IA no contesta, ni aviso rojo ni sesión cerrada
       // (ver api.js). Y con tope: alguien está esperando parado.
       const response = await api.post('/ai/asistente', { frase, carrito, historial }, { enSilencio: true, timeout: 15000 });
       return response.data;
+    } catch (error) {
+      /*
+       * El servidor todavía no tiene Tiqui (404): pasa mientras la web ya se
+       * actualizó y Render no. Antes eso se decía "se me cortó la conexión",
+       * que era mentira. Ahora se usa la ruta vieja, que contesta una acción
+       * por turno y necesita que le mandemos los productos.
+       */
+      if (error?.response?.status === 404) return aiService.asistenteViejo({ frase, carrito, historial, productos });
+      return { acciones: [], respuesta: '', entendido: false, origen: 'sin-red' };
+    }
+  },
+
+  // La ruta de antes de Tiqui, con su respuesta traducida a la forma nueva.
+  asistenteViejo: async ({ frase, carrito, historial, productos }) => {
+    try {
+      const { data } = await api.post(
+        '/ai/entender',
+        { frase, carrito, historial, productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })) },
+        { enSilencio: true, timeout: 15000 }
+      );
+      const hayAccion = data?.accion && data.accion !== 'ninguna';
+      return {
+        acciones: hayAccion ? [{ tipo: data.accion, producto: data.producto, cantidad: data.cantidad }] : [],
+        respuesta: data?.respuesta || '',
+        entendido: Boolean(data?.entendido),
+        origen: data?.origen || 'ia',
+      };
     } catch {
       return { acciones: [], respuesta: '', entendido: false, origen: 'sin-red' };
     }

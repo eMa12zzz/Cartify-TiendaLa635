@@ -17,12 +17,16 @@
  *
  * Variables:
  *   ELEVENLABS_API_KEY   la llave (solo con permiso de Text to Speech)
- *   ELEVENLABS_VOICE_ID  la voz; por defecto la del video ("Cheerful Boy (ES)")
+ *   ELEVENLABS_VOICE_ID  la voz; por defecto la de Tiqui (ver abajo)
  *   ELEVENLABS_MODEL     por defecto eleven_flash_v2_5, el más rápido y barato
+ *
+ * La voz de Tiqui es una voz de la cuenta de ElevenLabs de la tienda (elegida
+ * el 2026-09-23). NO es la del primer video: esa era de HeyGen, generada con
+ * el plan gratis, que no permite uso comercial ni clonarla.
  * ============================================================
  */
 
-const VOZ_POR_DEFECTO = "AVOPrFWR8uIjg0PjPok2";
+const VOZ_POR_DEFECTO = "p5EUznrYaWnafKvUkNiR";
 const MODELO_POR_DEFECTO = "eleven_flash_v2_5";
 
 export const vozDisponible = () => Boolean(process.env.ELEVENLABS_API_KEY);
