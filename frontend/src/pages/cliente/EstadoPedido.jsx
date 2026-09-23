@@ -8,7 +8,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { orderService } from '../../api/orderService';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import MapaSeguimiento from '../../components/Store/MapaSeguimiento';
-import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
+import { pasosDe, indiceDePaso, poseDeEstado } from '../../utils/pasosPedido';
 import ValoracionPedido from '../../components/Store/ValoracionPedido';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
@@ -162,24 +162,26 @@ const EstadoPedido = () => {
               Pedido recibido el {formatFechaLarga(pedido.createdAt)}
             </p>
 
+            {/*
+              La mascota contando en qué va el pedido: mira el recibo, llena
+              la bolsa, va en patineta, festeja la entrega… o se pone triste si
+              se canceló. Reemplaza al círculo con el ícono del paso.
+            */}
+            <div className="flex flex-col items-center my-6">
+              <div className="mb-3">
+                <Mascota pose={poseDeEstado(estado)} alto={140} />
+              </div>
+              <div className="text-base font-bold text-center" style={{ color: c.textPrimary }}>
+                {cancelado
+                  ? 'Este pedido se canceló'
+                  : enCamino
+                    ? (seguimiento.yaCasi ? 'Ya casi llega a su puerta' : seguimiento.espera)
+                    : (PASOS[pasoActual] || PASOS[0]).detalle}
+              </div>
+            </div>
+
             {!cancelado && (
               <>
-                {/* El círculo con el check, como en la confirmación */}
-                <div className="flex flex-col items-center my-6">
-                  <div
-                    className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
-                    style={{ background: estado === 'entregado' ? '#22c55e' : BROWN }}
-                  >
-                    {estaEnCamino
-                      ? <Bike className="w-7 h-7 text-white" />
-                      : (() => { const I = (PASOS[pasoActual] || PASOS[0]).Icono; return <I className="w-7 h-7 text-white" />; })()}
-                  </div>
-                  <div className="text-base font-bold" style={{ color: c.textPrimary }}>
-                    {enCamino
-                      ? (seguimiento.yaCasi ? 'Ya casi llega a su puerta' : seguimiento.espera)
-                      : (PASOS[pasoActual] || PASOS[0]).detalle}
-                  </div>
-                </div>
 
                 {/* Línea de tiempo real (3 pasos) */}
                 <div className="flex items-start">

@@ -60,6 +60,24 @@ const POSES = {
   fiesta: { vista: '40 0 320 395', ojos: 'feliz', boca: 'abierta', mov: 'mascota-salta', aparte: 'confeti' },
   // Guiñando un ojo y moviéndose como quien saluda.
   saludo: { vista: '104 30 192 360', ojos: 'guino', mov: 'mascota-saluda' },
+
+  /*
+   * Los estados de un pedido (ver utils/pasosPedido.js). Cada uno cuenta lo
+   * que está pasando sin tener que leer la etiqueta de texto.
+   */
+  // Le llegó el pedido: mira el recibo con su ✓.
+  recibido: { vista: '100 26 290 380', mira: [7, 1], mov: 'mascota-respira', aparte: 'recibo' },
+  // Lo están armando: van cayendo productos a la bolsa y ella mira, concentrada.
+  preparando: { vista: '100 26 270 400', mira: [6, 7], boca: 'lado', mov: 'mascota-respira', aparte: 'bolsa' },
+  // Va para su casa: en patineta, inclinada hacia adelante, con el cordón al viento.
+  'en-camino': {
+    vista: '20 20 350 434', correr: 'rotate(8 200 382)', mira: [8, -1], cordon: 'viento',
+    todo: 'mascota-traqueteo', detras: 'velocidad', aparte: 'patineta',
+  },
+  // Llegó: contenta junto a la bolsa entregada.
+  entregado: { vista: '100 20 270 410', ojos: 'feliz', boca: 'abierta', mov: 'mascota-respira', aparte: 'entrega' },
+  // Se canceló: triste, con el cordón caído.
+  cancelado: { vista: '104 30 200 360', mira: [0, 5], cejas: 'preocupado', boca: 'triste', cordon: 'caido' },
 };
 
 // En los botones va solo la etiqueta colgando, sin aire alrededor.
@@ -117,6 +135,7 @@ const Boca = ({ tipo = 'sonrisa' }) => {
     sonrisa: 'M184,284 Q200,300 216,284',
     plana: 'M188,292 L212,292',
     lado: 'M188,292 Q204,297 214,286',
+    triste: 'M186,296 Q200,284 214,296',
   }[tipo];
   return <path d={d} stroke={RASGO} strokeWidth="7.5" {...trazo} />;
 };
@@ -125,6 +144,14 @@ const Cordon = ({ tipo }) => {
   if (tipo === 'colgado') return <path d="M200,0 L200,160" stroke={CORDON_COLOR} strokeWidth="7" {...trazo} />;
   if (tipo === 'cortado') {
     return <path d="M200,160 L200,112 M200,112 l-8,-12 M200,112 l0,-14 M200,112 l8,-12" stroke={CORDON_COLOR} strokeWidth="7" {...trazo} />;
+  }
+  // Al viento, hacia atrás: va rápido.
+  if (tipo === 'viento') {
+    return <path d="M200,160 C194,126 170,110 146,104 C120,98 108,84 96,78" stroke={CORDON_COLOR} strokeWidth="7" {...trazo} />;
+  }
+  // Caído sobre el hombro: sin ánimo.
+  if (tipo === 'caido') {
+    return <path d="M200,160 C216,150 244,152 260,172 C274,190 280,212 282,234" stroke={CORDON_COLOR} strokeWidth="7" {...trazo} />;
   }
   if (tipo === 'enchufe') {
     return (
@@ -187,6 +214,65 @@ const APARTE = {
       ))}
     </>
   ),
+  // Recibido: un recibo con su ✓, flotando al lado.
+  recibo: (
+    <g className="mascota-flota-suave">
+      <g transform="rotate(10 312 280)">
+        <rect x="276" y="228" width="72" height="100" rx="8" fill="var(--mascota-fondo, var(--papel))" stroke={CUERPO_COLOR} strokeWidth="6" />
+        <path d="M290,256 L334,256 M290,276 L334,276 M290,296 L318,296" stroke={CUERPO_COLOR} strokeWidth="6" opacity=".45" {...trazo} />
+      </g>
+      <circle cx="346" cy="232" r="19" fill={CORDON_COLOR} />
+      <path d="M337,232 L344,239 L356,226" stroke="#FFFFFF" strokeWidth="5" {...trazo} />
+    </g>
+  ),
+  // Preparando: una manzana y una caja caen a la bolsa (la bolsa va delante y se las traga).
+  bolsa: (
+    <>
+      <g className="mascota-cae">
+        <circle cx="300" cy="236" r="13" fill="#F0707F" />
+        <path d="M300,223 q4,-8 10,-8" stroke="#4CC27A" strokeWidth="4" {...trazo} />
+      </g>
+      <g className="mascota-cae" style={{ animationDelay: '-0.8s' }}>
+        <rect x="318" y="220" width="18" height="30" rx="5" fill="#FFC23D" />
+      </g>
+      <path d="M280,318 C280,296 320,296 320,318" stroke={CORDON_COLOR} strokeWidth="6" {...trazo} />
+      <path d="M256,318 L344,318 L352,404 Q352,414 342,414 L258,414 Q248,414 248,404 Z" fill={CORDON_COLOR} />
+      <path d="M256,318 L344,318 L345,332 L255,332 Z" fill="#000000" opacity=".12" />
+    </>
+  ),
+  // En camino: la patineta. Las ruedas giran (ver .mascota-rueda).
+  patineta: (
+    <>
+      <path d="M312,396 L334,262 M318,262 L350,262" stroke={CUERPO_COLOR} strokeWidth="9" {...trazo} />
+      <rect x="110" y="386" width="212" height="14" rx="7" fill={CUERPO_COLOR} />
+      {[140, 300].map((x) => (
+        <g key={x}>
+          <circle cx={x} cy="424" r="20" fill="var(--mascota-fondo, var(--papel))" stroke={CUERPO_COLOR} strokeWidth="8" />
+          <path className="mascota-rueda" style={{ transformOrigin: `${x}px 424px` }} d={`M${x - 10},424 L${x + 10},424`} stroke={CORDON_COLOR} strokeWidth="5" {...trazo} />
+        </g>
+      ))}
+    </>
+  ),
+  // Entregado: la bolsa en el piso con su ✓, y un corazón que sube.
+  entrega: (
+    <>
+      <path d="M282,332 C282,312 314,312 314,332" stroke={CORDON_COLOR} strokeWidth="6" {...trazo} />
+      <path d="M258,332 L338,332 L345,410 Q345,418 337,418 L259,418 Q251,418 251,410 Z" fill={CORDON_COLOR} />
+      <circle cx="340" cy="336" r="17" fill={CUERPO_COLOR} />
+      <path d="M332,336 L338,342 L349,330" stroke={RASGO} strokeWidth="4.5" {...trazo} />
+      <path className="mascota-corazon" d="M322,196 c-8,-12 -26,-4 -18,10 l18,16 l18,-16 c8,-14 -10,-22 -18,-10 z" fill="#F0707F" />
+    </>
+  ),
+};
+
+// Lo que va DETRÁS de la etiqueta.
+const DETRAS = {
+  // Las líneas de velocidad de "en camino".
+  velocidad: (
+    <g className="mascota-viento">
+      <path d="M40,250 L100,250 M20,300 L92,300 M44,350 L100,350" stroke="var(--tinta-suave)" strokeWidth="6" opacity=".45" {...trazo} />
+    </g>
+  ),
 };
 
 const Mascota = ({ pose = 'cargando', alto, mini = false, sobre, titulo, className = '', style }) => {
@@ -202,17 +288,21 @@ const Mascota = ({ pose = 'cargando', alto, mini = false, sobre, titulo, classNa
       style={{ height: alto, width: 'auto', overflow: 'visible', flexShrink: 0, ...(SOBRE[sobre] || {}), ...style }}
       {...(titulo ? { role: 'img', 'aria-label': titulo } : { 'aria-hidden': true })}
     >
-      <g transform={p.correr}>
-        <g className={mov}>
-          <path d={CUERPO + AGUJERO} fillRule="evenodd" fill={CUERPO_COLOR} />
-          {CEJAS[p.cejas] && <path d={CEJAS[p.cejas]} stroke={RASGO} strokeWidth="6.5" {...trazo} />}
-          <Ojos tipo={p.ojos} mira={p.mira} />
-          <Boca tipo={p.boca} />
-          <Cordon tipo={p.cordon} />
-          {p.delante === 'lupa' && <Lupa />}
+      {/* `todo` mueve la escena entera (la patineta traquetea con ella encima). */}
+      <g className={p.todo}>
+        {p.detras && DETRAS[p.detras]}
+        <g transform={p.correr}>
+          <g className={mov}>
+            <path d={CUERPO + AGUJERO} fillRule="evenodd" fill={CUERPO_COLOR} />
+            {CEJAS[p.cejas] && <path d={CEJAS[p.cejas]} stroke={RASGO} strokeWidth="6.5" {...trazo} />}
+            <Ojos tipo={p.ojos} mira={p.mira} />
+            <Boca tipo={p.boca} />
+            <Cordon tipo={p.cordon} />
+            {p.delante === 'lupa' && <Lupa />}
+          </g>
         </g>
+        {p.aparte && APARTE[p.aparte]}
       </g>
-      {p.aparte && APARTE[p.aparte]}
     </svg>
   );
 };

@@ -648,6 +648,32 @@ input:disabled {
 @keyframes mascotaParpadeo { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
 @keyframes mascotaChispa { from { opacity: 1; } to { opacity: 0.15; } }
 
+/* Los estados del pedido (poses recibido, preparando, en-camino, entregado). */
+.mascota-flota-suave { animation: mascotaFlotaSuave 2.2s ease-in-out infinite alternate; }
+.mascota-cae { animation: mascotaCae 1.6s ease-in infinite; }
+.mascota-viento { animation: mascotaViento 600ms linear infinite; }
+.mascota-rueda { animation: mascotaRueda 500ms linear infinite; }
+.mascota-traqueteo { animation: mascotaTraqueteo 280ms ease-in-out infinite alternate; }
+.mascota-corazon { animation: mascotaCorazon 2.2s ease-out infinite; }
+@keyframes mascotaFlotaSuave { from { transform: translateY(0); } to { transform: translateY(-7px); } }
+/* Cae desde arriba y se pierde detrás de la bolsa, que va dibujada delante. */
+@keyframes mascotaCae {
+  0%   { transform: translateY(0); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translateY(92px); opacity: 1; }
+}
+@keyframes mascotaViento {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(-26px); opacity: 0.2; }
+}
+@keyframes mascotaRueda { to { transform: rotate(360deg); } }
+@keyframes mascotaTraqueteo { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+@keyframes mascotaCorazon {
+  0%   { transform: translateY(0); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateY(-34px); opacity: 0; }
+}
+
 /*
   Las cargas de pantalla entera aparecen con un poco de retraso: si los datos
   llegan en un pestañeo, la mascota no alcanza a verse y no queda un parpadeo

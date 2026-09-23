@@ -7,6 +7,7 @@ import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import MapaSeguimiento from './MapaSeguimiento';
 import CodigoEntrega from './CodigoEntrega';
+import Mascota from '../UI/Mascota';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 
 /*
@@ -20,8 +21,16 @@ import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
  *
  * Va abajo a la IZQUIERDA porque el botón de WhatsApp ya ocupa la derecha.
  * Dos burbujas en la misma esquina se tapan entre ellas.
+ *
+ * La burbuja ES la mascota: cada estado tiene su ilustración (mira el recibo,
+ * llena la bolsa, va en patineta…; ver `pose` en utils/pasosPedido.js), con
+ * el nombre del estado en una etiqueta chica debajo. Se entiende de un
+ * vistazo qué está pasando, sin leer.
  * ============================================================
  */
+
+// La sombra que separa a la mascota de lo que tenga detrás en la tienda.
+const SOMBRA_MASCOTA = { filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.18))' };
 
 /*
  * "En camino" solo aplica a domicilio — un retiro en local no tiene
@@ -94,6 +103,9 @@ const BurbujaPedido = () => {
   // solo entra a competir con si de verdad hay un punto fresco que mostrar.
   const estaEnCamino = estado === 'en_camino';
   const enCamino = estaEnCamino && seguimiento.enVivo;
+  // La ilustración del estado. "En camino" va aparte porque solo existe en la
+  // lista de domicilio, y `paso` cae al primero si el estado no está en ella.
+  const pose = estaEnCamino ? 'en-camino' : paso.pose;
 
   /*
    * Entregado o cancelado: la burbuja se va sola. Antes solo se checaba
@@ -119,8 +131,8 @@ const BurbujaPedido = () => {
   };
 
   /*
-   * Encogida: un botón redondo con el icono del paso, nada más. Ocupa poco,
-   * no tapa la tienda y siempre se puede volver.
+   * Encogida: la mascota sola y más chica, sin la etiqueta. Ocupa poco, no
+   * tapa la tienda y siempre se puede volver.
    */
   if (encogida) {
     return (
@@ -133,13 +145,10 @@ const BurbujaPedido = () => {
           left: 'max(20px, env(safe-area-inset-left))',
           bottom: 'calc(20px + env(safe-area-inset-bottom))',
           zIndex: 900,
-          width: 44, height: 44, borderRadius: '50%',
-          border: 'none', background: BROWN, color: '#fff',
-          boxShadow: '0 8px 20px rgba(140,86,40,0.38)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: 'none', background: 'none', padding: 0, cursor: 'pointer',
         }}
       >
-        {estaEnCamino ? <Bike size={19} strokeWidth={2.3} /> : <paso.Icono size={19} strokeWidth={2.3} />}
+        <Mascota pose={pose} alto={56} style={SOMBRA_MASCOTA} />
       </button>
     );
   }
@@ -161,11 +170,14 @@ const BurbujaPedido = () => {
         <div
           style={{
             width: 'min(300px, calc(100vw - 40px))',
+            // La mascota de abajo es más alta que la pastilla de antes: en
+            // pantallas bajas el panel se desplaza en vez de salirse por arriba.
+            maxHeight: 'calc(100dvh - 180px)',
+            overflowY: 'auto',
             background: 'var(--papel)',
             borderRadius: 18,
             boxShadow: '0 18px 44px rgba(0,0,0,0.22)',
             border: '1px solid var(--linea)',
-            overflow: 'hidden',
             animation: 'cardIn 220ms var(--ease-out)',
           }}
         >
@@ -261,6 +273,7 @@ const BurbujaPedido = () => {
             codigo={enCurso.deliveryCode}
             deliveryType={enCurso.deliveryType}
             estado={estado}
+            enBurbuja
           />
 
           <div style={{ padding: 14 }}>
@@ -328,46 +341,53 @@ const BurbujaPedido = () => {
         </div>
       )}
 
-      {/* La burbuja: el icono del paso actual y su nombre */}
+      {/* La burbuja: la mascota haciendo lo que pasa con el pedido, y su nombre debajo */}
       <button
         type="button"
         onClick={() => setAbierta((v) => !v)}
         aria-expanded={abierta}
         aria-label={enCamino ? `Su pedido va en camino. ${seguimiento.espera}` : `Su pedido: ${paso.label}`}
         style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          border: 'none',
+          background: 'none',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        <Mascota pose={pose} alto={84} style={SOMBRA_MASCOTA} />
+        <span style={{
+          marginTop: -2,
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 9,
-          height: 52,
-          padding: '0 18px 0 14px',
+          gap: 7,
+          height: 28,
+          padding: '0 12px',
           borderRadius: 999,
-          border: 'none',
           // Verde cuando está por tocar: se distingue de un vistazo, aunque
           // la persona esté al otro lado del cuarto.
           background: seguimiento.yaCasi ? '#14663A' : BROWN,
           color: '#fff',
-          boxShadow: seguimiento.yaCasi
-            ? '0 10px 26px rgba(20,102,58,0.42)'
-            : '0 10px 26px rgba(140,86,40,0.42)',
-          fontSize: 13.5,
+          boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
+          fontSize: 12.5,
           fontWeight: 700,
-        }}
-      >
-        {/*
-          Cuando alguien ya va en la calle con el pedido, la burbuja cerrada
-          lo dice sin que haya que abrirla: es la información que el cliente
-          está esperando, y hacerlo tocar para verla sería mezquino.
-        */}
-        {estaEnCamino
-          ? <Bike size={19} strokeWidth={2.2} />
-          : <paso.Icono size={19} strokeWidth={2.2} />}
-        {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
-        {/* El puntito que respira: dice "esto sigue en curso" sin decir nada */}
-        <span style={{
-          width: 8, height: 8, borderRadius: '50%', background: '#8ee6a8',
-          boxShadow: '0 0 0 0 rgba(142,230,168,.7)',
-          animation: 'latido 1.8s ease-out infinite',
-        }} />
+          whiteSpace: 'nowrap',
+        }}>
+          {/*
+            Cuando alguien ya va en la calle con el pedido, la burbuja cerrada
+            lo dice sin que haya que abrirla: es la información que el cliente
+            está esperando, y hacerlo tocar para verla sería mezquino.
+          */}
+          {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
+          {/* El puntito que respira: dice "esto sigue en curso" sin decir nada */}
+          <span style={{
+            width: 7, height: 7, borderRadius: '50%', background: '#8ee6a8',
+            boxShadow: '0 0 0 0 rgba(142,230,168,.7)',
+            animation: 'latido 1.8s ease-out infinite',
+          }} />
+        </span>
       </button>
 
       <style>{`
