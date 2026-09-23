@@ -1,6 +1,7 @@
 import styled from 'styled-components';
-import { MessageCircle, MapPin } from 'lucide-react';
+import { MessageCircle, MapPin, ArrowUpRight } from 'lucide-react';
 import { usePieTienda } from '../../hooks/usePieTienda';
+import { LANDING_URL } from '../../utils/tienda';
 
 /*
  * ============================================================
@@ -89,6 +90,26 @@ const Frase = styled.p`
   color: var(--tinta-suave);
   margin: 0 0 18px;
   max-width: 34ch;
+`;
+
+/*
+ * El enlace a la página de presentación. Va pegado a la frase de la marca
+ * porque es eso: "así es la tienda", contado largo. En el color de acción y
+ * con la flechita hacia afuera, que avisa que se abre en otra pestaña.
+ */
+const EnlaceLanding = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -8px 0 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--marca-600);
+  text-decoration: none;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: var(--marca-700); text-decoration: underline; }
+  }
 `;
 
 const Dato = styled.p`
@@ -218,6 +239,11 @@ const PieTienda = () => {
               <Nombre>{nombreLinea1}<br />{nombreLinea2}</Nombre>
             )}
             <Frase>{lema}</Frase>
+            {/* Aparte y en otra pestaña: es su propia página, y así quien la
+                abre no pierde el carrito ni el lugar donde iba en la tienda. */}
+            <EnlaceLanding href={LANDING_URL} target="_blank" rel="noopener noreferrer">
+              Así funciona la tienda <ArrowUpRight size={14} strokeWidth={2.4} />
+            </EnlaceLanding>
             <Dato>
               <MapPin size={15} strokeWidth={2} />
               {direccion}
