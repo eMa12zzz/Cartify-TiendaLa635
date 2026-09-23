@@ -5,31 +5,56 @@ import toast from 'react-hot-toast';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { useKiosco } from '../../hooks/useKiosco';
 import { orderService } from '../../api/orderService';
+import MascotaAsistente from './MascotaAsistente';
 
 /*
  * AsistenteVoz — pantalla grande (kiosco) del asistente por voz.
  * Solo pinta; la lógica vive en useVoiceAssistant. Animaciones con la vara de
  * Emil (ease-out fuerte, <300ms, respeta prefers-reduced-motion).
  *
- * EL ASPECTO ES EL DE LA LANDING PAGE: fondo negro con una luz azul detrás, un
- * escenario redondeado con el orbe del micrófono y sus anillos, la onda de
- * barras, el chat en burbujas (la persona en blanco, el asistente en azul
- * tenue) y el carrito con la foto de cada producto. Los bucles (anillos, onda,
- * puntos de "pensando") viven en index.css; aquí solo se elige la clase de
- * estado.
+ * SE LE HABLA A LA MASCOTA. En vez de un orbe con un micrófono, al centro está
+ * la etiqueta del logo con cara (MascotaAsistente): mira a quien tiene
+ * enfrente, asiente mientras le hablan, piensa, contesta moviendo la boca y
+ * pone cara según cómo le fue. Es una conversación cara a cara, así que solo
+ * se ve el último intercambio: lo que dijo la mascota en su globo y lo que
+ * dijo la persona debajo. El resultado de todo lo dicho queda en el carrito.
+ *
+ * El fondo sigue siendo el de la landing: negro con una luz azul detrás.
  */
 const EASE_OUT = [0.23, 1, 0.32, 1];
 
-// La luz azul detrás del micrófono y el negro del resto, como en la landing.
+// La luz azul detrás de la mascota y el negro del resto, como en la landing.
 const FONDO =
   'radial-gradient(900px 620px at 50% 26%, rgba(0, 92, 138, 0.38), transparent 62%), #000';
 
 /*
- * El orbe va SIEMPRE en el azul de la casa, no en --marca-600: en diciembre
- * esa variable es verde y en Halloween naranja, y un orbe naranja encima de
- * esta luz azul se ve como un error. La temporada ya se nota en la tienda.
+ * El botón del micrófono va SIEMPRE en el azul de la casa, no en
+ * --marca-600: en diciembre esa variable es verde y en Halloween naranja, y
+ * un botón naranja encima de esta luz azul se ve como un error. La temporada
+ * ya se nota en la tienda.
  */
 const ORBE = 'radial-gradient(circle at 34% 28%, #29a3e6, #003049 68%)';
+
+/*
+ * Lo que dice la mascota antes de que le hablen. Va escrito y NO hablado: al
+ * abrir, el asistente espera a que la persona toque (ver más abajo).
+ */
+const SALUDO = '¡Hola! Toque el botón y dígame qué necesita. Por ejemplo: “quiero una manzana y dos galletas”.';
+
+/*
+ * La cara que pone la mascota según lo último que dijo.
+ *
+ * Sale del texto porque el hook no avisa aparte si entendió o no. Si cambian
+ * estas frases en useVoiceAssistant (o en cerrarCompra, aquí abajo), hay que
+ * mirar aquí también; lo peor que pasa si no coinciden es que la mascota
+ * ponga cara normal.
+ */
+const animoDe = (texto = '') => {
+  if (/^¡Listo/.test(texto)) return 'feliz'; // la compra quedó cerrada
+  if (/^Agregué/.test(texto)) return 'contento';
+  if (/^(No le entendí|No encontré|No tienes|No pude|Tu navegador no)/.test(texto)) return 'confundido';
+  return 'normal';
+};
 
 // Botones de vidrio de las esquinas.
 const VIDRIO = {
@@ -38,21 +63,6 @@ const VIDRIO = {
   backdropFilter: 'blur(10px)',
   WebkitBackdropFilter: 'blur(10px)',
 };
-
-/*
- * Las barras de la onda: más altas al centro, y cada una con su propio ritmo
- * y desfase para que no suban todas a la vez. Con fórmula y no con
- * Math.random(): así no saltan de sitio cada vez que React vuelve a pintar.
- */
-const BARRAS = Array.from({ length: 28 }, (_, i) => {
-  const centro = 13.5;
-  const cercania = 1 - Math.abs(i - centro) / centro;
-  return {
-    alto: Math.round(14 + 32 * cercania),
-    duracion: `${(0.6 + ((i * 7) % 5) * 0.12).toFixed(2)}s`,
-    retraso: `-${(((i * 13) % 10) * 0.09).toFixed(2)}s`,
-  };
-});
 
 const AsistenteVoz = ({
   onClose, productos, carrito, totalCarrito,
@@ -162,7 +172,6 @@ const AsistenteVoz = ({
     }
   };
 
-  const chatRef = useRef(null);
   const carritoRef = useRef(null);
 
   /*
@@ -174,11 +183,6 @@ const AsistenteVoz = ({
   useEffect(() => {
     toast.dismiss();
   }, []);
-
-  // Auto-scroll del chat al último mensaje (y a la transcripción en vivo).
-  useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [historial, transcripcion, pensando]);
 
   // Lo último que entró al carrito queda a la vista.
   useEffect(() => {
@@ -195,14 +199,32 @@ const AsistenteVoz = ({
   const estadoTexto = pensando
     ? 'Buscando productos…'
     : hablando ? 'Toque para interrumpir'
-    : !activo ? 'Toque el micrófono y hable'
-    : escuchando ? 'Escuchando…' : 'Un momento…';
+    : !activo ? 'Toque para hablarle'
+    : escuchando ? 'Le escucho…' : 'Un momento…';
 
-  // La clase que mueve los anillos, la onda y el orbe (ver index.css).
-  const claseEstado = pensando
-    ? 'asis-pensando'
-    : hablando ? 'asis-hablando'
-    : escuchando ? 'asis-escuchando' : '';
+  // Qué hace la mascota, con el mismo orden que el texto de arriba.
+  const estadoMascota = pensando ? 'pensando'
+    : hablando ? 'hablando'
+    : escuchando ? 'escuchando' : 'reposo';
+
+  // El último intercambio: lo que dijo la mascota y lo que dijo la persona.
+  const ultimoBot = [...historial].reverse().find((m) => m.tipo !== 'user');
+  const ultimoUser = [...historial].reverse().find((m) => m.tipo === 'user');
+
+  // Mientras la escucha o piensa, cara neutra: la de antes era de otra frase.
+  const animo = escuchando || pensando ? 'normal' : animoDe(ultimoBot?.texto);
+
+  // Lo de la persona: en vivo mientras habla, y si no, lo último que dijo.
+  const enVivo = escuchando && !!transcripcion;
+  const textoPersona = enVivo ? transcripcion : ultimoUser?.texto;
+
+  /*
+   * Tocar a la mascota o al botón hace lo mismo que el orbe de antes. Si está
+   * hablando, el toque la INTERRUMPE y se pone a escuchar: ya no hay que
+   * aguantarse la frase completa aunque uno ya sepa qué decir.
+   */
+  const alTocar = hablando ? interrumpir : activo ? detener : iniciar;
+  const etiquetaToque = hablando ? 'Interrumpir y hablar' : activo ? 'Detener' : 'Empezar a hablar';
 
   const brilloOrbe = escuchando
     ? 'inset 0 0 0 1px rgba(255,255,255,0.35), 0 0 0 10px rgba(0,154,235,0.18), 0 24px 90px 0 rgba(0,154,235,0.75)'
@@ -214,7 +236,7 @@ const AsistenteVoz = ({
       <motion.button
         onClick={() => setMinimizado(false)}
         aria-label="Volver a la pantalla del asistente"
-        className={`fixed bottom-6 right-6 flex items-center gap-3 pl-2.5 pr-5 py-2.5 rounded-full text-white ${claseEstado}`}
+        className="fixed bottom-6 right-6 flex items-center gap-3 pl-3 pr-5 py-2.5 rounded-full text-white"
         style={{
           background: 'rgba(6, 18, 26, 0.92)',
           border: '1px solid rgba(255,255,255,0.12)',
@@ -225,14 +247,9 @@ const AsistenteVoz = ({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2, ease: EASE_OUT }}
       >
-        <span className="relative grid place-items-center w-11 h-11">
-          <span className="asis-anillo" style={{ inset: 0 }} />
-          <span
-            className="asis-orbe relative z-10 grid place-items-center w-10 h-10 rounded-full"
-            style={{ background: ORBE }}
-          >
-            <Mic className="w-5 h-5" />
-          </span>
+        {/* La misma mascota, en chico: sigue escuchando con su cara. */}
+        <span className="grid place-items-center w-9 h-11 flex-none">
+          <MascotaAsistente compacta estado={estadoMascota} animo={animo} latido={transcripcion} className="h-11 w-auto" />
         </span>
         <span className="text-sm font-semibold whitespace-nowrap">
           Asistente {escuchando ? 'escuchando…' : 'activo'}
@@ -248,7 +265,7 @@ const AsistenteVoz = ({
 
   return (
     <motion.div
-      className={`fixed inset-0 flex flex-col text-white ${claseEstado}`}
+      className="fixed inset-0 flex flex-col text-white"
       style={{ background: FONDO, zIndex: 10000 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -295,59 +312,88 @@ const AsistenteVoz = ({
           <p className="text-xs font-semibold tracking-[0.14em] uppercase" style={{ color: '#6fb3d9' }}>
             Asistente de voz
           </p>
-          <h1 className="mt-2 text-4xl md:text-5xl font-bold tracking-tight leading-none">
-            Compre hablando.
-          </h1>
-          <p className="mt-3 text-base md:text-lg" style={{ color: 'rgba(255,255,255,0.64)' }}>
-            Toque el micrófono y dígale lo que necesita. Por ejemplo:{' '}
-            <span className="text-white font-semibold">“quiero una manzana y dos galletas”</span>
-          </p>
 
           {/*
             Todo va directo sobre el fondo, sin un recuadro que lo encierre:
-            el orbe, la conversación y el carrito se separan con aire y una
+            la mascota, lo que se dicen y el carrito se separan con aire y una
             línea fina, no con cajas.
           */}
-          <div className="relative w-full mt-8 flex flex-col items-center">
-            {/* Orbe del micrófono con anillos */}
-            <div className="relative w-[170px] h-[170px] grid place-items-center flex-none">
-              <span className="asis-anillo" />
-              <span className="asis-anillo" />
-              <span className="asis-anillo" />
-              <motion.button
-                /*
-                 * Si está hablando, el toque lo INTERRUMPE y se pone a escuchar.
-                 * Antes había que aguantarse la frase completa aunque uno ya
-                 * supiera qué decir; ahora se le corta como a una persona.
-                 */
-                onClick={hablando ? interrumpir : activo ? detener : iniciar}
-                className="asis-orbe relative z-10 w-[118px] h-[118px] rounded-full grid place-items-center"
-                style={{
-                  background: ORBE,
-                  boxShadow: brilloOrbe,
-                  transition: 'box-shadow 300ms ease-out',
-                }}
-                whileHover={reduce ? undefined : { scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.16, ease: EASE_OUT }}
-                aria-label={hablando ? 'Interrumpir y hablar' : activo ? 'Detener' : 'Empezar a hablar'}
+          <div className="relative w-full mt-6 flex flex-col items-center">
+            {/* ── La mascota y lo que dice ── */}
+            <div className="w-full flex flex-col md:flex-row items-center justify-center gap-5 md:gap-6">
+              {/*
+                La mascota también se toca, como el orbe de antes. Para el
+                teclado queda solo el botón del micrófono: dos controles que
+                hacen lo mismo serían un tab de más.
+              */}
+              <button
+                type="button"
+                onClick={alTocar}
+                tabIndex={-1}
+                aria-hidden="true"
+                className="flex-none w-[170px] md:w-[210px] outline-none"
               >
-                <Mic className="w-11 h-11 text-white" />
-              </motion.button>
-            </div>
-
-            {/* La onda */}
-            <div className="flex items-center gap-1 h-12 mt-3" aria-hidden="true">
-              {BARRAS.map((b, i) => (
-                <i
-                  key={i}
-                  className="asis-barra"
-                  style={{ height: b.alto, '--d': b.duracion, '--r': b.retraso }}
+                <MascotaAsistente
+                  estado={estadoMascota}
+                  animo={animo}
+                  latido={transcripcion}
+                  className="w-full h-auto block"
                 />
-              ))}
+              </button>
+
+              <motion.div
+                key={pensando ? 'pensando' : (ultimoBot?.id ?? 'saludo')}
+                className="masc-globo relative w-full max-w-[420px] md:w-auto md:flex-1 md:max-w-[340px] px-[22px] py-[18px] rounded-3xl text-left text-lg md:text-xl font-medium leading-snug"
+                style={{ backgroundColor: '#fff', color: '#001a29' }}
+                initial={{ opacity: 0, scale: reduce ? 1 : 0.96 }}
+                // Mientras la persona habla, el globo se apaga: ahora le toca a ella.
+                animate={{ opacity: escuchando ? 0.38 : 1, scale: 1 }}
+                transition={{ duration: 0.2, ease: EASE_OUT }}
+              >
+                {pensando
+                  ? <span className="masc-puntos" aria-label="El asistente está pensando"><i /><i /><i /></span>
+                  : (ultimoBot?.texto || SALUDO)}
+              </motion.div>
             </div>
 
-            <p className="mt-2 text-sm md:text-base" style={{ color: 'rgba(255,255,255,0.62)' }} aria-live="polite">
+            {/* ── Lo que dice la persona: en vivo, con cursor, mientras habla ── */}
+            <div className="w-full flex justify-end mt-4 min-h-[52px]">
+              {textoPersona && (
+                <div
+                  className={`max-w-[85%] px-[18px] py-3 text-base md:text-[17px] leading-snug text-left ${enVivo ? 'italic' : ''}`}
+                  style={{
+                    backgroundColor: 'rgba(111,179,217,0.14)',
+                    border: '1px solid rgba(111,179,217,0.3)',
+                    color: '#e3f1f9',
+                    borderRadius: '22px 22px 6px 22px',
+                    opacity: hablando ? 0.45 : 1,
+                    transition: 'opacity 250ms ease-out',
+                  }}
+                >
+                  “{textoPersona}{enVivo ? <span className="masc-cursor" /> : '”'}
+                </div>
+              )}
+            </div>
+
+            {/* ── El botón para hablarle ── */}
+            <motion.button
+              onClick={alTocar}
+              className={`relative mt-4 w-[76px] h-[76px] rounded-full grid place-items-center flex-none ${escuchando ? 'masc-mic-escuchando' : ''}`}
+              style={{
+                background: ORBE,
+                boxShadow: brilloOrbe,
+                transition: 'box-shadow 300ms ease-out',
+              }}
+              whileHover={reduce ? undefined : { scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.16, ease: EASE_OUT }}
+              aria-label={etiquetaToque}
+            >
+              <span className="masc-mic-onda" />
+              <Mic className="w-8 h-8 text-white" />
+            </motion.button>
+
+            <p className="mt-2.5 text-sm md:text-base" style={{ color: 'rgba(255,255,255,0.62)' }} aria-live="polite">
               {estadoTexto}
             </p>
 
@@ -377,67 +423,6 @@ const AsistenteVoz = ({
                 </select>
               </label>
             )}
-
-            {/* ── La conversación ── */}
-            <div
-              ref={chatRef}
-              className="w-full mt-5 overflow-y-auto flex flex-col gap-2.5"
-              style={{ minHeight: '4.5rem', maxHeight: '15rem' }}
-            >
-              {historial.length === 0 && !(escuchando && transcripcion) && !pensando && (
-                <p className="m-auto text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                  Aquí va a ver lo que dice y lo que le contesta el asistente.
-                </p>
-              )}
-
-              {historial.map((m) => (
-                <motion.div
-                  key={m.id}
-                  initial={{ opacity: 0, y: reduce ? 0 : 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, ease: EASE_OUT }}
-                  className={`flex ${m.tipo === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className="max-w-[85%] px-4 py-2.5 text-[15px] leading-snug text-left"
-                    style={m.tipo === 'user'
-                      ? { backgroundColor: '#fff', color: '#001a29', borderRadius: '20px 20px 6px 20px' }
-                      : {
-                        backgroundColor: 'rgba(111,179,217,0.13)',
-                        border: '1px solid rgba(111,179,217,0.22)',
-                        color: '#e3f1f9',
-                        borderRadius: '20px 20px 20px 6px',
-                      }}
-                  >
-                    {m.tipo === 'user' ? `“${m.texto}”` : m.texto}
-                  </div>
-                </motion.div>
-              ))}
-
-              {/* Lo que va diciendo, mientras lo dice */}
-              {escuchando && transcripcion && (
-                <div className="flex justify-end">
-                  <div
-                    className="max-w-[85%] px-4 py-2.5 text-[15px] leading-snug text-left italic"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.85)', color: '#001a29', borderRadius: '20px 20px 6px 20px' }}
-                  >
-                    “{transcripcion}…”
-                  </div>
-                </div>
-              )}
-
-              {pensando && (
-                <div className="flex justify-start">
-                  <div
-                    className="px-4 py-2.5"
-                    style={{ backgroundColor: 'rgba(111,179,217,0.13)', border: '1px solid rgba(111,179,217,0.22)', borderRadius: '20px 20px 20px 6px' }}
-                    aria-label="El asistente está pensando"
-                  >
-                    <span className="asis-escribiendo"><i /><i /><i /></span>
-                  </div>
-                </div>
-              )}
-            </div>
 
             {!soportado && (
               <p className="mt-3 text-sm" style={{ color: '#fca5a5' }}>
