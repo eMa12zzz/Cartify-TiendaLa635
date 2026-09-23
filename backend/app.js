@@ -40,6 +40,13 @@ import perfilRoutes from "./src/routes/perfil.js";
 //cosas
 const app = express();
 
+/*
+ * En Render el servidor está detrás de un proxy: sin esto, todas las visitas
+ * llegan con la IP del proxy y los topes por persona (limiter y los del
+ * asistente) se vuelven un tope para TODA la tienda junta.
+ */
+app.set("trust proxy", 1);
+
 app.use(
     cors({
         /*
