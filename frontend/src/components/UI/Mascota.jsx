@@ -1,4 +1,6 @@
 import { CUERPO, AGUJERO, CORDON } from './mascotaFormas';
+import DisfrazTiqui from './DisfrazTiqui';
+import { useDisfrazTiqui } from '../../hooks/useDisfrazTiqui';
 
 /*
  * ============================================================
@@ -12,7 +14,8 @@ import { CUERPO, AGUJERO, CORDON } from './mascotaFormas';
  * Los colores salen de tokens (--mascota-cuerpo, --mascota-rasgo,
  * --mascota-cordon en index.css), así que en modo oscuro se voltea sola:
  * etiqueta blanca con rasgos navy, como el logo. NO usa --marca-600: esa
- * cambia con la temporada, y la mascota es siempre la misma.
+ * cambia con la temporada, y la mascota es siempre la misma. Lo que la
+ * temporada le cambia es la ropa (gorro, corbatín...): ver DisfrazTiqui.
  *
  * Es de adorno: el texto de al lado dice lo que pasa, así que por defecto va
  * aria-hidden. Si alguna vez va sola, `titulo` la vuelve una imagen con nombre.
@@ -60,6 +63,9 @@ const POSES = {
   fiesta: { vista: '40 0 320 395', ojos: 'feliz', boca: 'abierta', mov: 'mascota-salta', aparte: 'confeti' },
   // Guiñando un ojo y moviéndose como quien saluda.
   saludo: { vista: '104 30 192 360', ojos: 'guino', mov: 'mascota-saluda' },
+  // Quieta y sonriendo, con aire para cualquier disfraz: la vista previa del
+  // panel, donde varias juntas moviéndose serían un mareo.
+  posando: { vista: '84 30 232 400' },
 
   /*
    * Los estados de un pedido (ver utils/pasosPedido.js). Cada uno cuenta lo
@@ -275,11 +281,23 @@ const DETRAS = {
   ),
 };
 
-const Mascota = ({ pose = 'cargando', alto, mini = false, sobre, titulo, className = '', style }) => {
+/*
+ * `disfraz`: lo que lleva puesto. Si no se pasa, el de la temporada de la
+ * tienda (ver useDisfrazTiqui); `null` lo deja sin nada. El panel lo pasa a
+ * mano para mostrar cómo se verá en cada temporada.
+ */
+const Mascota = ({ pose = 'cargando', alto, mini = false, sobre, titulo, className = '', style, disfraz }) => {
   const p = POSES[pose] || POSES.cargando;
   const vista = mini ? VISTA_MINI : p.vista;
   // En chico el péndulo va más corto: dentro de un botón no puede irse encima del texto.
   const mov = mini && p.mov === 'mascota-pendulo' ? 'mascota-pendulo-corto' : p.mov;
+
+  const deTemporada = useDisfrazTiqui();
+  /*
+   * En los botones va sin disfraz: a la altura de una línea de texto el gorro
+   * se vuelve una mancha roja al lado de "Iniciar sesión".
+   */
+  const puesto = mini ? null : disfraz === undefined ? deTemporada : disfraz;
 
   return (
     <svg
@@ -298,6 +316,8 @@ const Mascota = ({ pose = 'cargando', alto, mini = false, sobre, titulo, classNa
             <Ojos tipo={p.ojos} mira={p.mira} />
             <Boca tipo={p.boca} />
             <Cordon tipo={p.cordon} />
+            {/* Encima del cordón: el gorro tapa por dónde sale. */}
+            <DisfrazTiqui disfraz={puesto} />
             {p.delante === 'lupa' && <Lupa />}
           </g>
         </g>

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { CUERPO, AGUJERO, CORDON } from '../UI/mascotaFormas';
+import DisfrazTiqui from '../UI/DisfrazTiqui';
+import { useDisfrazTiqui } from '../../hooks/useDisfrazTiqui';
 
 /*
  * MascotaAsistente — la etiqueta del logo con cara. En el asistente de voz es
@@ -8,7 +10,8 @@ import { CUERPO, AGUJERO, CORDON } from '../UI/mascotaFormas';
  * Estilo plano: la etiqueta blanca, los rasgos en el navy de la casa y el
  * cordón en el azul de acento. Van FIJOS y no con --marca-600, por lo mismo
  * que el orbe de antes: en diciembre esa variable es verde y en Halloween
- * naranja, y la mascota tiene que ser siempre la misma.
+ * naranja, y la mascota tiene que ser siempre la misma. La temporada sí le
+ * cambia la ropa: ver DisfrazTiqui.
  *
  * Solo pinta. Recibe qué está haciendo (`estado`) y cómo le fue (`animo`), y
  * de ahí saca qué cara poner. La cara se arma con atributos data-* en el
@@ -72,6 +75,7 @@ const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compact
   const ojosRef = useRef(null);
   const cabezaRef = useRef(null);
   const r = rasgos(estado, animo);
+  const disfraz = useDisfrazTiqui();
 
   const mirar = (x, y) => {
     if (caraRef.current) caraRef.current.style.transform = `translate(${(x * 0.55).toFixed(1)}px, ${(y * 0.55).toFixed(1)}px)`;
@@ -188,6 +192,9 @@ const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compact
               <path className="masc-boca masc-b-lado" d="M188,292 Q204,297 214,286" fill="none" stroke={NAVY} strokeWidth="7" strokeLinecap="round" />
               <path className="masc-boca masc-b-ondulada" d="M180,292 q5,-7 10,0 q5,7 10,0 q5,-7 10,0 q5,7 10,0" fill="none" stroke={NAVY} strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
             </g>
+
+            {/* Lo de la temporada, dentro de la cabeza: asiente y salta con ella. */}
+            <DisfrazTiqui disfraz={disfraz} contorno={NAVY} />
           </g>
         </g>
 
