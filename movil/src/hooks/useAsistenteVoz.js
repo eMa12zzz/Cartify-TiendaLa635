@@ -155,9 +155,24 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const finalTextoRef = useRef('');
   const idRef = useRef(0);
 
+  /*
+   * La memoria de la charla, al día en el mismo instante (el estado
+   * `historial` recién se actualiza en el próximo render y la pregunta a la IA
+   * sale antes). Viaja con cada pregunta para que entienda un "sí" o un
+   * "mejor dos" que dependen de lo anterior.
+   */
+  const memoriaRef = useRef([]);
+
   const registrar = (tipo, texto) => {
+    memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
     setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto }]);
   };
+
+  // Despierta el servidor apenas se abre el asistente (Render lo duerme si no
+  // hay tráfico). Así la primera pregunta no tarda medio minuto.
+  useEffect(() => {
+    asistenteApi.despertar();
+  }, []);
 
   const arrancarReconocimiento = useCallback(() => {
     if (!activoRef.current) return;
@@ -240,9 +255,24 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     try {
       const idea = await asistenteApi.entenderPedido({
         frase,
+        // El servidor nuevo arma su propio catálogo e ignora esto; se sigue
+        // mandando para un backend viejo que todavía lo necesite.
         productos: productos.map((p) => ({ nombre: p.nombre, precio: p.precio })),
         carrito: dataRef.current.carrito.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad })),
+        // Lo que se habló ANTES de esta frase (la última de la memoria es la
+        // frase misma, que ya va aparte).
+        historial: memoriaRef.current.slice(0, -1).slice(-6).map((m) => ({
+          quien: m.tipo === 'user' ? 'cliente' : 'asistente',
+          texto: m.texto,
+        })),
       });
+
+      // Sin red o el servidor no contestó a tiempo: decirlo tal cual, no
+      // fingir que no se entendió algo que se dijo bien.
+      if (idea?.origen === 'sin-red') {
+        hablarRef.current?.('Perdón, se me cortó la conexión. ¿Me lo repite?');
+        return;
+      }
 
       if (!idea?.entendido) {
         hablarRef.current?.('No le entendí bien. Puedo ayudarle a agregar productos, ver su total o vaciar el carrito.');
@@ -277,6 +307,20 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
               fns.actualizarCantidad?.(prod.id, enCarrito.cantidad - accion.cantidad);
             } else {
               fns.eliminarDelCarrito?.(prod.id);
+            }
+            break;
+          }
+          case 'cambiar': {
+            // "Mejor que sean dos": deja la cantidad exacta; si no estaba
+            // en el carrito, se agrega con esa cantidad (con el mismo candado +18).
+            if (!prod) break;
+            const yaEsta = dataRef.current.carrito.find((i) => i.id === prod.id);
+            if (yaEsta) {
+              fns.actualizarCantidad?.(prod.id, accion.cantidad || 1);
+            } else if (esSoloAdultos(prod) && !mayorConfirmado) {
+              bloqueados.push(prod.nombre);
+            } else {
+              fns.agregarAlCarrito?.(prod, accion.cantidad || 1);
             }
             break;
           }
@@ -440,11 +484,21 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     // candado que la tarjeta y la ficha, solo que aquí no hay a dónde abrir
     // un modal de DUI en medio de la conversación, así que se explica y ya.
     const bloqueados = [];
+    /*
+     * Lo que se pidió pero está agotado. Antes se "agregaba" igual: el
+     * carrito lo rechazaba en silencio y el asistente decía "Agregué 1 leche"
+     * sobre una leche que nunca entró. Ahora se dice que se acabó.
+     */
+    const agotados = [];
     const vistos = new Set();
     for (const parte of partes) {
       const prod = buscarProducto(parte);
       if (prod && !vistos.has(prod.id)) {
         vistos.add(prod.id);
+        if ((Number(prod.stock) || 0) <= 0) {
+          agotados.push(prod.nombre);
+          continue;
+        }
         if (esSoloAdultos(prod) && !mayorConfirmado) {
           bloqueados.push(prod.nombre);
           continue;
@@ -455,7 +509,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       }
     }
 
-    if (agregados.length === 0 && bloqueados.length === 0) {
+    if (agregados.length === 0 && bloqueados.length === 0 && agotados.length === 0) {
       // Las reglas se dieron por vencidas: que lo intente la IA antes de
       // decir que no se entendió nada.
       preguntarALaIA(texto);
@@ -470,12 +524,18 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
           : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}`
       );
     }
+    if (agotados.length) {
+      piezas.push(`Hoy se nos ${agotados.length === 1 ? 'acabó' : 'acabaron'} ${agotados.join(' y ')}`);
+    }
     if (bloqueados.length) {
       const lista = bloqueados.join(' y ');
       const verbo = bloqueados.length === 1 ? 'es' : 'son';
       piezas.push(`${lista} ${verbo} para mayores de edad. Ábralo desde la tienda para confirmar su identificación.`);
     }
-    hablar(piezas.join('. ') + (agregados.length ? ' ¿Algo más?' : ''));
+    const dicho = piezas.join('. ');
+    const pregunta = agregados.length ? '¿Algo más?' : agotados.length && !bloqueados.length ? '¿Le busco otra cosa?' : '';
+    // Con punto antes de la pregunta, sin duplicarlo si la última pieza ya lo trae.
+    hablar(pregunta ? `${dicho}${dicho.endsWith('.') ? '' : '.'} ${pregunta}` : dicho);
   }, [hablar, preguntarALaIA, isAuthenticated, mayorConfirmado]);
   procesarRef.current = procesar;
 

@@ -88,6 +88,32 @@ const codigoDeError = (error) => {
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /*
+ * ============================================================
+ * CON PLAZO — para el asistente de voz
+ * ============================================================
+ * Medido en esta tienda (septiembre 2026): "flash-lite" contesta al
+ * asistente en 0,5–1 s tal como viene. El que tardaba era el RESPALDO:
+ * "flash-latest" no contestó en 9 s ni una vez de tres. Y el respaldo
+ * entraba apenas lite tropezaba con un 503 —cosa de todos los días en la
+ * capa gratis—, así que la persona se quedaba callada mirando la pantalla.
+ *
+ * Se probó también apagar el razonamiento interno y no sirve: lite rechaza
+ * thinkingBudget: 0 con un 400, y flash no acepta el nivel mínimo. Lite ya
+ * es rápido sin tocarle nada; el problema era cuánto se esperaba.
+ *
+ * Con `plazoTotal` (ms) la función deja de probar cuando se acaba el tiempo,
+ * y cada llamada se corta por su cuenta con `tiempoMaximo`. El asistente
+ * reintenta lite (que es el que contesta) y solo si sobra tiempo prueba el
+ * respaldo. Pasado el plazo se rinde: más vale decir "se me cortó" que
+ * dejar a alguien esperando medio minuto.
+ *
+ * El corte es de NUESTRO lado (abortSignal), no con httpOptions.timeout:
+ * ese viaja a Google como plazo de la petición, y Google rechaza con 400
+ * cualquier plazo menor a 10 segundos.
+ * ============================================================
+ */
+
+/*
  * Llama a la IA aguantando los tropiezos de Google.
  *
  * `peticion` es lo mismo que recibe generateContent, PERO sin `model`: el
@@ -97,17 +123,28 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
  * pueden esperar lo mismo: al asistente de voz le habla alguien en la cara y
  * tiene que contestar ya, mientras que redactar una promoción puede tardar
  * unos segundos más si a cambio sale con IA de verdad.
+ *
+ * `tiempoMaximo` y `plazoTotal`: ver CON PLAZO, arriba.
  */
-export const generarConIA = async (peticion, { intentos = 3 } = {}) => {
+export const generarConIA = async (peticion, { intentos = 3, tiempoMaximo, plazoTotal } = {}) => {
   const ia = getIA();
   if (!ia) throw new Error("La IA no está configurada");
 
+  const limite = plazoTotal ? Date.now() + plazoTotal : Infinity;
+  const quedan = () => limite - Date.now();
   let ultimoError = null;
 
   for (const model of [MODELO_IA, MODELO_IA_RESPALDO]) {
     for (let intento = 1; intento <= intentos; intento++) {
+      // Con menos de 800 ms no alcanza ni para una respuesta rápida: se corta.
+      if (quedan() < 800) throw ultimoError || new Error("Se acabó el plazo para la IA");
+
+      const corte = tiempoMaximo || plazoTotal ? Math.min(tiempoMaximo || Infinity, quedan()) : null;
       try {
-        return await ia.models.generateContent({ ...peticion, model });
+        const config = corte
+          ? { ...(peticion.config || {}), abortSignal: AbortSignal.timeout(corte) }
+          : peticion.config;
+        return await ia.models.generateContent({ ...peticion, config, model });
       } catch (error) {
         ultimoError = error;
         const codigo = codigoDeError(error);
@@ -118,8 +155,9 @@ export const generarConIA = async (peticion, { intentos = 3 } = {}) => {
         /*
          * La espera crece entre intentos: si el modelo está congestionado,
          * volver a golpearlo al instante lo encuentra igual de congestionado.
+         * Con plazo, la espera es corta: el tiempo es de quien está hablando.
          */
-        if (intento < intentos) await esperar(400 * intento);
+        if (intento < intentos) await esperar(plazoTotal ? 250 : 400 * intento);
       }
     }
     console.log(`IA: "${model}" no respondió en ${intentos} intentos, probando el siguiente modelo`);

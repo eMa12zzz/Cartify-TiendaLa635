@@ -22,15 +22,31 @@ export const asistenteApi = {
    * Nunca lanza error: sin internet o sin IA configurada, el asistente sigue
    * como siempre, pidiendo que le repitan.
    */
-  entenderPedido: async ({ frase, productos, carrito }) => {
+  /*
+   * El catálogo lo arma el servidor con lo que tiene existencias (ver
+   * aiController, EL CATÁLOGO QUE VE EL ASISTENTE); `productos` solo sigue
+   * viajando para un backend viejo que todavía lo use. Lo nuevo es
+   * `historial`, lo último que se dijo, para entender un "sí" o un "mejor dos".
+   */
+  entenderPedido: async ({ frase, productos, carrito, historial }) => {
     try {
       return await peticion('/ai/entender-herramientas', {
         metodo: 'POST',
-        cuerpo: { frase, productos, carrito },
+        cuerpo: { frase, productos, carrito, historial },
+        tiempoMaximo: 15000,
       });
     } catch {
       return { acciones: [], respuesta: '', entendido: false, origen: 'sin-red' };
     }
+  },
+
+  /*
+   * Despierta el servidor al abrir el asistente: Render lo duerme si no hay
+   * tráfico, y la primera pregunta tardaba medio minuto. No gasta IA y no
+   * importa si falla.
+   */
+  despertar: () => {
+    peticion('/ai/listo').catch(() => {});
   },
 };
 

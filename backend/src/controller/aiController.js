@@ -210,6 +210,171 @@ aiController.generarCopyPromo = async (req, res) => {
 
 /*
  * ============================================================
+ * EL CATÁLOGO QUE VE EL ASISTENTE — lo arma el servidor
+ * ============================================================
+ * Antes lo mandaba el navegador o el teléfono: la lista entera de productos,
+ * en el orden en que llega de GET /product. Ese orden es el de la base
+ * (productModel.find() no ordena nada), o sea más o menos el de creación, y
+ * aquí se cortaba en 120. Resultado: entraban los 120 MÁS VIEJOS y los
+ * productos nuevos —justo los que la tienda más quiere vender— nunca le
+ * llegaban a la IA. Y los agotados ocupaban lugar igual, porque del otro lado
+ * solo se quitaban los inactivos.
+ *
+ * Ahora se arma aquí, con lo que de verdad hay:
+ *   - Solo activos y CON existencias. Lo agotado no se puede agregar, así que
+ *     no se le ofrece a la IA como si se pudiera.
+ *   - Los más nuevos primero (el _id de Mongo lleva la fecha de creación).
+ *   - Y ANTES que todo, los que tienen que ver con lo que se está hablando:
+ *     la frase y lo último de la conversación. Si alguien pregunta por
+ *     leche, la leche entra aunque la tienda tenga mil productos.
+ *
+ * La lista se guarda 30 segundos en memoria: el asistente pregunta varias
+ * veces seguidas en una misma charla, y no hace falta ir a la base cada vez.
+ * ============================================================
+ */
+const TOPE_CATALOGO = 150;
+const VIGENCIA_CATALOGO_MS = 30 * 1000;
+let catalogoEnMemoria = { en: 0, lista: null };
+
+const aTextoPlano = (s) =>
+  String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// Palabras que no dicen qué producto se busca: sin ellas "quiero una leche" es "leche".
+const PALABRAS_DE_RELLENO = new Set([
+  "quiero", "dame", "deme", "tiene", "tienen", "hay", "algo", "para", "por", "favor",
+  "con", "sin", "que", "una", "uno", "unos", "unas", "los", "las", "del", "mas",
+  "tambien", "mejor", "otra", "otro", "esa", "ese", "eso", "esta", "este", "agregue",
+  "agrega", "ponga", "pongame", "cuanto", "cuesta", "vale", "precio", "usted", "gracias",
+]);
+
+const palabrasClave = (texto) =>
+  aTextoPlano(texto)
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2 && !PALABRAS_DE_RELLENO.has(w))
+    // "fresas" y "fresa" cuentan igual.
+    .map((w) => w.replace(/s$/, ""));
+
+const leerCatalogo = async () => {
+  if (catalogoEnMemoria.lista && Date.now() - catalogoEnMemoria.en < VIGENCIA_CATALOGO_MS) {
+    return catalogoEnMemoria.lista;
+  }
+  const productos = await productModel
+    .find({ isActive: { $ne: false } }, "name salePrice stock")
+    .sort({ _id: -1 })
+    .lean();
+  const lista = productos
+    .filter((p) => p.name)
+    .map((p) => ({
+      nombre: p.name,
+      precio: p.salePrice,
+      stock: Number(p.stock) || 0,
+      clave: aTextoPlano(p.name),
+    }));
+  catalogoEnMemoria = { en: Date.now(), lista };
+  return lista;
+};
+
+/*
+ * Lo disponible, con lo relacionado a la charla arriba y los nuevos después,
+ * y aparte los agotados que tienen que ver con lo que pidió: para que la IA
+ * pueda decir "se nos acabó" en vez de "no tenemos eso".
+ */
+const catalogoParaAsistente = async (textoDeLaCharla) => {
+  const todos = await leerCatalogo();
+  const palabras = palabrasClave(textoDeLaCharla);
+  const cuanto = (p) => palabras.reduce((a, w) => a + (p.clave.includes(w) ? 1 : 0), 0);
+
+  const conExistencias = todos.filter((p) => p.stock > 0);
+  const disponibles = palabras.length
+    ? conExistencias
+        .map((p, i) => ({ p, puntos: cuanto(p), i }))
+        // Mismo puntaje: gana el más nuevo (que ya venía primero en la lista).
+        .sort((a, b) => b.puntos - a.puntos || a.i - b.i)
+        .map((x) => x.p)
+    : conExistencias;
+
+  const agotados = palabras.length
+    ? todos.filter((p) => p.stock <= 0 && cuanto(p) > 0).slice(0, 5)
+    : [];
+
+  return { disponibles: disponibles.slice(0, TOPE_CATALOGO), agotados };
+};
+
+/*
+ * ============================================================
+ * LA CONVERSACIÓN — lo último que se dijo
+ * ============================================================
+ * Antes la IA recibía solo la frase de ahora. Si el asistente preguntaba
+ * "¿Se la agrego?" y la persona decía "sí", la IA no tenía idea de qué era
+ * "la": cada frase le llegaba como si fuera la primera de la charla. Ahora
+ * viajan los últimos mensajes (de los dos lados), y con eso entiende las
+ * respuestas cortas que dependen de lo anterior: "sí", "mejor dos", "la
+ * otra", "y también una leche".
+ *
+ * Tres intercambios alcanzan para eso y mantienen la pregunta liviana.
+ * ============================================================
+ */
+const MENSAJES_DE_MEMORIA = 6;
+
+const conversacionReciente = (historial) =>
+  (Array.isArray(historial) ? historial : [])
+    .slice(-MENSAJES_DE_MEMORIA)
+    .map((m) => ({
+      quien: m?.quien === "asistente" ? "Asistente" : "Cliente",
+      texto: String(m?.texto || "").replace(/\s+/g, " ").trim().slice(0, 220),
+    }))
+    .filter((m) => m.texto);
+
+// El texto que se le pasa al modelo, igual para las dos rutas del asistente.
+const armarPreguntaDelAsistente = ({ frase, carrito, charla, disponibles, agotados }) => {
+  const enCarrito = carrito.length
+    ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
+    : "vacío";
+
+  return [
+    charla.length
+      ? `Lo último que se habló (de lo más viejo a lo más nuevo):\n${charla.map((m) => `${m.quien}: ${m.texto}`).join("\n")}`
+      : "Es lo primero que dice el cliente en esta charla.",
+    "",
+    `El cliente dijo ahora: "${frase}"`,
+    "",
+    `En su carrito lleva: ${enCarrito}`,
+    "",
+    "Productos que la tienda tiene hoy (con existencias):",
+    disponibles.map((p) => `${p.nombre}${p.precio != null ? ` ($${p.precio})` : ""}`).join("\n") || "(ninguno)",
+    ...(agotados.length ? ["", `Agotados hoy, NO se pueden agregar: ${agotados.map((p) => p.nombre).join(", ")}`] : []),
+  ].join("\n");
+};
+
+// Las reglas de charla que comparten las dos rutas del asistente.
+const REGLAS_DE_CHARLA = [
+  "LA CONVERSACIÓN:",
+  "- Te paso lo último que se habló. Usalo para entender respuestas cortas que dependen",
+  "  de lo anterior: 'sí', 'no', 'mejor dos', 'la otra', 'esa', 'y también…'. Si acabás",
+  "  de ofrecer un producto y el cliente dice que sí, es ESE producto.",
+  "- No repitas lo que ya dijiste en el turno anterior; seguí la charla como una persona.",
+  "- Si pide algo que está en la lista de agotados, decile que hoy se acabó y, si en la",
+  "  lista hay algo parecido, ofrecéselo por su nombre (sin agregarlo todavía).",
+].join("\n");
+
+/*
+ * GET /api/ai/listo
+ * El asistente lo toca apenas se abre. El servidor de Render se duerme si no
+ * hay tráfico y la primera pregunta tardaba medio minuto en contestar; así se
+ * despierta (y deja el catálogo en memoria) mientras la persona todavía está
+ * leyendo la pantalla, antes de que hable.
+ */
+aiController.listo = async (req, res) => {
+  try {
+    await leerCatalogo();
+  } catch {
+    // Si la base tarda, igual se contesta: el objetivo era despertar el servidor.
+  }
+  return res.status(200).json({ listo: true });
+};
+
+/*
+ * ============================================================
  * ENTENDER LO QUE PIDIÓ EL CLIENTE (asistente de voz)
  * ============================================================
  * El asistente entiende por reglas: normaliza la frase, expande sinónimos y
@@ -232,13 +397,16 @@ const ESQUEMA_INTENCION = {
   properties: {
     accion: {
       type: Type.STRING,
-      description: "Una de: agregar, quitar, vaciar, total, comprar, ninguna",
+      description: "Una de: agregar, quitar, cambiar, vaciar, total, comprar, ninguna",
     },
     producto: {
       type: Type.STRING,
       description: "Nombre EXACTO tal como viene en la lista de productos. Vacío si no aplica.",
     },
-    cantidad: { type: Type.NUMBER, description: "Cuántas unidades. 1 si no lo dijo." },
+    cantidad: {
+      type: Type.NUMBER,
+      description: "Cuántas unidades. 1 si no lo dijo. En 'cambiar', la cantidad final que quiere.",
+    },
     respuesta: {
       type: Type.STRING,
       description: "Lo que el asistente dice en voz alta. Una o dos frases, máximo 140 caracteres.",
@@ -275,11 +443,25 @@ const MODO_ASISTENTE = [
   "Reservá el 'no entendí, repítalo' para cuando la frase de verdad no se entiende",
   "—se cortó, quedó a medias, o no tiene sentido ninguno—, que es distinto de una",
   "pregunta clara sobre algo que no es tu trabajo.",
+  "",
+  "'cambiar' es dejar un producto del carrito en una cantidad exacta: 'mejor que sean",
+  "dos', 'solo una'. La cantidad es la final, no la que se suma.",
+  "",
+  REGLAS_DE_CHARLA,
 ].join("\n");
+
+/*
+ * Cuánto se le aguanta a Google en el asistente: hasta 3,5 s por llamada y 7 s
+ * en total, con dos intentos por modelo (el rápido suele contestar al segundo
+ * cuando el primero choca con un 503). Ver CON PLAZO en utils/iaClient.js.
+ */
+const PLAZO_ASISTENTE = { intentos: 2, tiempoMaximo: 3500, plazoTotal: 7000 };
 
 aiController.entenderPedido = async (req, res) => {
   try {
-    const { frase, productos = [], carrito = [] } = req.body;
+    // `productos` ya no se usa (el catálogo lo arma el servidor); se sigue
+    // aceptando para no romper a los clientes que todavía lo mandan.
+    const { frase, carrito = [], historial = [] } = req.body;
 
     if (!frase || !String(frase).trim()) {
       return res.status(400).json({ message: "Hace falta la frase" });
@@ -292,35 +474,18 @@ aiController.entenderPedido = async (req, res) => {
       return res.status(200).json({ accion: "ninguna", entendido: false, origen: "sin-ia" });
     }
 
-    /*
-     * Se manda solo nombre y precio, y como mucho 120 productos. El catálogo
-     * entero en cada pregunta gastaría la cuota gratis en dos días y haría la
-     * respuesta más lenta, que es justo lo que no se puede permitir cuando
-     * alguien está parado esperando que le contesten.
-     */
-    const catalogo = productos
-      .slice(0, 120)
-      .map((p) => `${p.nombre}${p.precio != null ? ` ($${p.precio})` : ""}`)
-      .join("\n");
-
-    const enCarrito = carrito.length
-      ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
-      : "vacío";
-
-    const contents = [
-      `El cliente dijo: "${frase}"`,
-      "",
-      `En su carrito lleva: ${enCarrito}`,
-      "",
-      "Productos que la tienda tiene hoy:",
-      catalogo,
-    ].join("\n");
+    const charla = conversacionReciente(historial);
+    // Lo que se está hablando decide qué productos van arriba: la frase y lo
+    // último de la charla (un "sí" solo no dice nada; lo de antes, sí).
+    const { disponibles, agotados } = await catalogoParaAsistente(
+      [frase, ...charla.slice(-4).map((m) => m.texto)].join(" ")
+    );
+    const contents = armarPreguntaDelAsistente({ frase, carrito, charla, disponibles, agotados });
 
     try {
       /*
-       * UN solo reintento: acá hay alguien hablándole al teléfono y esperando
-       * respuesta. Callar tres segundos para contestar con IA es peor que
-       * contestar ya con las reglas de siempre.
+       * Con plazo: acá hay alguien hablándole a la pantalla y esperando
+       * respuesta. Ver CON PLAZO en utils/iaClient.js.
        */
       const respuesta = await generarConIA({
         contents,
@@ -332,7 +497,7 @@ aiController.entenderPedido = async (req, res) => {
           // entienda bien y elija de la lista.
           temperature: 0.2,
         },
-      }, { intentos: 1 });
+      }, PLAZO_ASISTENTE);
 
       const texto = respuesta.text;
       if (!texto) throw new Error("La IA no devolvió texto");
@@ -341,11 +506,12 @@ aiController.entenderPedido = async (req, res) => {
 
       /*
        * No se confía en que el modelo copió bien el nombre: se verifica
-       * contra la lista real. Si se lo inventó, se ignora el producto y queda
-       * solo la respuesta hablada.
+       * contra la lista real (la de disponibles: un agotado tampoco pasa).
+       * Si se lo inventó, se ignora el producto y queda solo la respuesta
+       * hablada.
        */
-      const nombreReal = productos.find(
-        (p) => (p.nombre || "").toLowerCase() === String(idea.producto || "").toLowerCase()
+      const nombreReal = disponibles.find(
+        (p) => p.nombre.toLowerCase() === String(idea.producto || "").toLowerCase()
       )?.nombre || "";
 
       /*
@@ -442,6 +608,19 @@ const HERRAMIENTAS_ASISTENTE = [
         },
       },
       {
+        name: "cambiar_cantidad",
+        description:
+          "Deja un producto que ya está en el carrito en una cantidad exacta ('mejor que sean dos', 'solo una').",
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            producto: { type: Type.STRING, description: "Nombre EXACTO tal como viene en la lista de productos." },
+            cantidad: { type: Type.NUMBER, description: "La cantidad FINAL que quiere, no la que se suma." },
+          },
+          required: ["producto", "cantidad"],
+        },
+      },
+      {
         name: "mostrar_producto",
         description: "El cliente quiere VER un producto (su ficha), sin agregarlo todavía.",
         parameters: {
@@ -518,11 +697,14 @@ const MODO_ASISTENTE_HERRAMIENTAS = [
   "Reservá el 'no entendí, repítalo' para cuando la frase de verdad no se entiende",
   "—se cortó, quedó a medias, o no tiene sentido ninguno—, que es distinto de una",
   "pregunta clara sobre algo que no es tu trabajo.",
+  "",
+  REGLAS_DE_CHARLA,
 ].join("\n");
 
 aiController.entenderConHerramientas = async (req, res) => {
   try {
-    const { frase, productos = [], carrito = [] } = req.body;
+    // Igual que en /entender: `productos` ya no se usa, el catálogo lo arma el servidor.
+    const { frase, carrito = [], historial = [] } = req.body;
 
     if (!frase || !String(frase).trim()) {
       return res.status(400).json({ message: "Hace falta la frase" });
@@ -533,29 +715,15 @@ aiController.entenderConHerramientas = async (req, res) => {
       return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "sin-ia" });
     }
 
-    // Mismo tope que /entender: 120 productos alcanzan para no gastar la
-    // cuota gratis en dos días y mantener la respuesta rápida.
-    const catalogo = productos
-      .slice(0, 120)
-      .map((p) => `${p.nombre}${p.precio != null ? ` ($${p.precio})` : ""}`)
-      .join("\n");
-
-    const enCarrito = carrito.length
-      ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
-      : "vacío";
-
-    const contents = [
-      `El cliente dijo: "${frase}"`,
-      "",
-      `En su carrito lleva: ${enCarrito}`,
-      "",
-      "Productos que la tienda tiene hoy:",
-      catalogo,
-    ].join("\n");
+    const charla = conversacionReciente(historial);
+    const { disponibles, agotados } = await catalogoParaAsistente(
+      [frase, ...charla.slice(-4).map((m) => m.texto)].join(" ")
+    );
+    const contents = armarPreguntaDelAsistente({ frase, carrito, charla, disponibles, agotados });
 
     try {
-      // Un solo intento, igual que /entender: hay alguien hablándole al
-      // teléfono y esperando respuesta ya.
+      // Con plazo, igual que /entender: hay alguien hablándole al teléfono
+      // y esperando respuesta ya.
       const respuesta = await generarConIA({
         contents,
         config: {
@@ -566,7 +734,7 @@ aiController.entenderConHerramientas = async (req, res) => {
           // entienda bien y elija de la lista.
           temperature: 0.2,
         },
-      }, { intentos: 1 });
+      }, PLAZO_ASISTENTE);
 
       const llamadas = respuesta.functionCalls || [];
       if (!llamadas.length) throw new Error("La IA no llamó ninguna herramienta");
@@ -578,9 +746,7 @@ aiController.entenderConHerramientas = async (req, res) => {
        * traduce en ninguna acción.
        */
       const nombresReales = new Map(
-        productos
-          .filter((p) => p?.nombre)
-          .map((p) => [String(p.nombre).toLowerCase(), p.nombre])
+        disponibles.map((p) => [p.nombre.toLowerCase(), p.nombre])
       );
 
       const acciones = [];
@@ -610,6 +776,13 @@ aiController.entenderConHerramientas = async (req, res) => {
                 producto,
                 cantidad: Number(args.cantidad) > 0 ? Math.round(Number(args.cantidad)) : null,
               });
+            }
+            break;
+          }
+          case "cambiar_cantidad": {
+            const producto = nombreReal();
+            if (producto && Number(args.cantidad) > 0) {
+              acciones.push({ tipo: "cambiar", producto, cantidad: Math.round(Number(args.cantidad)) });
             }
             break;
           }
