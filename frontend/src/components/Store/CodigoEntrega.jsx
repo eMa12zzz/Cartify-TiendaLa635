@@ -26,7 +26,7 @@ import { useTheme } from '../../hooks/useClientTheme';
  * mostrador también entrega a quien se presente.
  * ============================================================
  */
-const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
+const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbuja = false }) => {
   const { palette } = useTheme();
   const c = palette.colors;
 
@@ -66,15 +66,21 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
     );
   }
 
+  /*
+   * SIN RECUADRO. Antes era una tarjeta con borde y fondo propio metida dentro
+   * de otra tarjeta (el panel de la burbuja, la tarjeta del pedido), y cada
+   * dígito iba en su cajita con borde: recuadros dentro de recuadros, y en
+   * modo oscuro se veía como un bloque apelmazado.
+   *
+   * Ahora va directo sobre lo que tenga debajo. En las páginas lo separa de
+   * lo de arriba una línea fina; en la burbuja no hace falta, porque arriba
+   * ya está el encabezado. Lo que salta a la vista son los dígitos: grandes,
+   * sobre un tono suave de la marca y sin bordes.
+   */
   return (
     <div
-      className="mt-6 rounded-2xl p-4"
-      style={{
-        border: `1px solid ${c.cardBorder}`,
-        // Un fondo apenas distinto del resto de la tarjeta: tiene que saltar a
-        // la vista sin gritar como si fuera un error.
-        background: 'color-mix(in srgb, var(--marca-600) 6%, transparent)',
-      }}
+      className={enBurbuja ? 'px-3.5 pt-4' : 'mt-6 pt-5'}
+      style={enBurbuja ? undefined : { borderTop: `1px solid ${c.cardBorder}` }}
     >
       <div className="flex items-center gap-2 mb-3">
         <ShieldCheck className="w-4 h-4" style={{ color: 'var(--marca-600)' }} />
@@ -85,19 +91,19 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
 
       <div className="flex items-center gap-2 mb-3">
         {digitos.map((d, i) => (
-          <div
+          <span
             key={i}
-            className="flex items-center justify-center rounded-xl text-2xl font-bold"
+            className="flex items-center justify-center rounded-xl font-extrabold tabular-nums"
             style={{
-              width: 46,
-              height: 56,
+              width: 48,
+              height: 58,
+              fontSize: 28,
               color: c.textPrimary,
-              background: c.cardBg,
-              border: `1px solid ${c.cardBorder}`,
+              background: 'var(--marca-50)',
             }}
           >
             {d}
-          </div>
+          </span>
         ))}
       </div>
 
