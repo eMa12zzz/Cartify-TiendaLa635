@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
+import { EsperaMascota, CargandoMascota } from '../../components/UI/Mascota';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { formatearDui, formatearTelefono, LARGO_TELEFONO, LARGO_DUI } from '../../utils/mascaras';
 import { calcularEdad, EDAD_MINIMA, esMayorDeEdad } from '../../utils/edad';
@@ -72,7 +73,7 @@ const DetallesCuenta = () => {
       <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Detalles de la Cuenta</h1>
 
       {loading ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tu perfil…</p>
+        <CargandoMascota texto="Cargando tu perfil…" />
       ) : (
         <div className="flex flex-col md:flex-row gap-8">
           {/* Avatar: se toca para subir/cambiar la foto. */}
@@ -103,7 +104,7 @@ const DetallesCuenta = () => {
                   subiendoFoto ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                 }`}
               >
-                {subiendoFoto ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
+                {subiendoFoto ? <EsperaMascota alto={34} sobre="oscuro" /> : <Camera className="w-6 h-6" />}
               </span>
             </button>
             <p className="text-xs mt-2" style={{ color: c.textMuted }}>

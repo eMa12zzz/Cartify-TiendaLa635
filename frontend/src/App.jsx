@@ -16,6 +16,7 @@ import ProtectedRoute from './components/Layout/ProtectedRoute';
 import LimiteDeError from './components/UI/LimiteDeError';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
 import BurbujaPedido from './components/Store/BurbujaPedido';
+import AvisoSinConexion from './components/UI/AvisoSinConexion';
 import VincularKiosco from './pages/VincularKiosco';
 
 /*
@@ -197,6 +198,9 @@ function App() {
         {/* Seguimiento del pedido en curso; va a la izquierda para no chocar
             con el de WhatsApp, que ocupa la esquina derecha. */}
         <BurbujaPedido />
+        {/* Si se cae el internet, la mascota desenchufada lo avisa (solo en
+            la tienda y Mi Cuenta). */}
+        <AvisoSinConexion />
         {/*
           La red debajo de TODAS las pantallas.
 

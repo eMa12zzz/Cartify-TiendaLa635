@@ -3,6 +3,7 @@ import { MapPin, Trash2, Plus, Signpost } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAddresses } from '../../hooks/useAddresses';
 import MapaDireccion from '../../components/Store/MapaDireccion';
+import { CargandoMascota } from '../../components/UI/Mascota';
 
 /*
  * Direcciones — el cliente gestiona sus direcciones de entrega (área "Mi Cuenta").
@@ -61,7 +62,7 @@ const Direcciones = () => {
       )}
 
       {loading ? (
-        <p className="text-sm" style={{ color: c.textSecondary }}>Cargando tus direcciones…</p>
+        <CargandoMascota texto="Cargando tus direcciones…" />
       ) : addresses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <MapPin className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />

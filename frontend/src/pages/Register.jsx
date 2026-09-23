@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Phone, User, Hash, Lock, Loader2, Calendar } from 'lucide-react';
+import { Mail, Phone, User, Hash, Lock, Calendar } from 'lucide-react';
+import { EsperaMascota } from '../components/UI/Mascota';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { BotonOjo } from '../components/UI/CampoContrasena';
@@ -578,7 +579,7 @@ const Register = () => {
             </BloqueConsentimiento>
 
             <Button type="submit" disabled={cargando}>
-              {cargando ? <Loader2 size={18} className="animate-spin" /> : 'Continuar'}
+              {cargando ? <><EsperaMascota sobre="color" /> Un momento…</> : 'Continuar'}
             </Button>
 
           </form>
@@ -587,7 +588,7 @@ const Register = () => {
 
           <GoogleFila>
             {entrandoGoogle ? (
-              <Loader2 size={22} className="animate-spin" style={{ color: BROWN }} />
+              <EsperaMascota alto={30} />
             ) : (
               <GoogleLogin
                 onSuccess={onGoogle}

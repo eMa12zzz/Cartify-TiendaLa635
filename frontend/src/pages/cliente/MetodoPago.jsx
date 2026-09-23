@@ -6,6 +6,7 @@ import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { useSaldo } from '../../hooks/useSaldo';
 import MarcaTarjeta from '../../components/Cuenta/MarcaTarjeta';
 import VistaTarjeta from '../../components/Cuenta/VistaTarjeta';
+import { CargandoMascota } from '../../components/UI/Mascota';
 import {
   NOMBRE_MARCA,
   detectarMarca,
@@ -196,7 +197,7 @@ const MetodoPago = () => {
         </div>
 
         {loading ? (
-          <p className="text-sm mt-6" style={{ color: c.textSecondary }}>Cargando sus métodos…</p>
+          <CargandoMascota texto="Cargando sus métodos…" />
         ) : methods.length === 0 && !agregando ? (
           <div className="flex flex-col items-center text-center py-12">
             <CreditCard className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />

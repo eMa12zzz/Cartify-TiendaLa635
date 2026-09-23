@@ -222,32 +222,52 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
   // Arranca con lo que venga en ?q= (ver Store.jsx), o vacío.
   const [terminoBusqueda, setTerminoBusqueda] = useState(busquedaInicial);
   const [cargando, setCargando] = useState(false);
+  /*
+   * La carga falló (servidor caído, sin internet…). Antes el error se tragaba
+   * y la lista quedaba vacía, así que la tienda decía "Todavía no hay
+   * productos": un problema de conexión se leía como un negocio sin nada que
+   * vender. Ahora se sabe y se puede reintentar.
+   */
+  const [errorCarga, setErrorCarga] = useState(false);
   const [filtroPrecio, setFiltroPrecio] = useState('todos');
   const [promoSeleccionada, setPromoSeleccionada] = useState(null);
   // Promo abierta en la ventana de detalle (el click al banner del carrusel).
   const [promoDetalle, setPromoDetalle] = useState(null);
 
+  // Trae el catálogo y las promos. La usan el arranque y el botón "Reintentar".
+  const traerTienda = useCallback(async () => {
+    try {
+      const [prods, promos] = await Promise.all([
+        productService.getProducts(),
+        promotionService.getPromotions().catch(() => []),
+      ]);
+      const activos = (Array.isArray(prods) ? prods : []).filter((p) => p.isActive !== false);
+      const lista = Array.isArray(promos) ? promos : [];
+      const mapaPromo = construirMapaPromo(lista);
+      setProductos(activos.map((p) => mapearProducto(p, mapaPromo)));
+      setPromociones(lista);
+      setErrorCarga(false);
+    } catch (error) {
+      console.error('Error cargando la tienda:', error);
+      setErrorCarga(true);
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
   useEffect(() => {
     const cargar = async () => {
-      try {
-        setCargando(true);
-        const [prods, promos] = await Promise.all([
-          productService.getProducts(),
-          promotionService.getPromotions().catch(() => []),
-        ]);
-        const activos = (Array.isArray(prods) ? prods : []).filter((p) => p.isActive !== false);
-        const lista = Array.isArray(promos) ? promos : [];
-        const mapaPromo = construirMapaPromo(lista);
-        setProductos(activos.map((p) => mapearProducto(p, mapaPromo)));
-        setPromociones(lista);
-      } catch (error) {
-        console.error('Error cargando la tienda:', error);
-      } finally {
-        setCargando(false);
-      }
+      setCargando(true);
+      await traerTienda();
     };
     cargar();
-  }, []);
+  }, [traerTienda]);
+
+  const reintentarCarga = useCallback(() => {
+    setCargando(true);
+    setErrorCarga(false);
+    traerTienda();
+  }, [traerTienda]);
 
   /*
    * Llegó por el enlace del correo: se le abre la promo que le anunciaron.
@@ -597,6 +617,8 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
     actualizarCantidad,
     limpiarCarrito,
     cargando,
+    errorCarga,
+    reintentarCarga,
     filtroPrecio,
     setFiltroPrecio,
     promoSeleccionada,

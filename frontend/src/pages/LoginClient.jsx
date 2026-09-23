@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import styled from 'styled-components';
-import { Mail, Lock, Loader2, ArrowRight, Store as StoreIcon, Star, Bike, Heart } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Store as StoreIcon, Star, Bike, Heart } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { loginClientDB, googleLoginDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import MarcaTienda from '../components/Store/MarcaTienda';
+import { EsperaMascota } from '../components/UI/Mascota';
+import MascotaColgada from '../components/UI/MascotaColgada';
 import { consumirRecienRegistrado } from '../utils/primerIngreso';
 
 const BROWN = 'var(--marca-600)';
@@ -34,6 +36,42 @@ const Container = styled.div`
   background: var(--papel);
   display: flex;
   flex-direction: column;
+  position: relative;   /* de aquí cuelga la mascota (ver Percha) */
+`;
+
+/*
+ * De dónde cuelga la mascota: la línea de abajo del encabezado (64px).
+ *
+ * Es parte del FONDO, como una ilustración ya pintada: va detrás del
+ * contenido (Body tiene z-index 1), así que el cordón pasa por detrás del
+ * titular y nada de la página se corre para hacerle lugar. No recibe toques.
+ * Usa las mismas medidas que Body para caer en el hueco entre el texto y el
+ * formulario; en el teléfono, centrada encima del formulario.
+ */
+const Percha = styled.div`
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  > div {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 1fr 460px;
+    gap: 40px;
+  }
+  /* Corrida hacia el hueco entre columnas: el cordón pasa por detrás del final
+     del titular y la etiqueta queda fuera del párrafo y de la lista. */
+  .mascota-colgada { justify-self: end; margin-right: -26px; height: clamp(320px, 34vw, 430px); width: auto; }
+
+  @media (max-width: 940px) {
+    > div { grid-template-columns: 1fr; padding: 0 20px; }
+    .mascota-colgada { justify-self: center; margin-right: 0; height: 230px; }
+  }
 `;
 
 /*
@@ -101,17 +139,32 @@ const Body = styled.div`
   max-width: 1180px;
   width: 100%;
   margin: 0 auto;
+  /* Por delante de la mascota, que es parte del fondo (ver Percha). */
+  position: relative;
+  z-index: 1;
 
-  /* En pantalla chica el formulario manda y el saludo se va abajo. */
+  /*
+   * En pantalla chica el formulario manda y el saludo se va abajo. Arriba
+   * queda el aire donde cuelga la mascota: ahí el formulario la taparía.
+   */
   @media (max-width: 940px) {
     grid-template-columns: 1fr;
-    padding: 32px 20px 48px;
+    padding: 250px 20px 48px;
     gap: 28px;
   }
 `;
 
 // ── La mitad de la izquierda: quiénes somos ──
 const Saludo = styled.div`
+  /*
+   * El párrafo y la lista no llegan hasta donde cuelga la mascota. En
+   * pantalla ancha ya les sobra espacio (su máximo es 440px); esto solo
+   * actúa cuando la columna se angosta, para que no se le encimen.
+   */
+  @media (min-width: 941px) {
+    > p, > ul { max-width: min(440px, calc(100% - 140px)); }
+  }
+
   @media (max-width: 940px) { order: 2; text-align: center; }
 `;
 
@@ -390,9 +443,31 @@ const LoginClient = () => {
    */
   const volver = params.get('volver');
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, formState: { errors } } = useForm({
     defaultValues: { email: '', password: '' }
   });
+
+  /*
+   * Lo que la mascota colgada necesita saber del formulario: en qué campo
+   * está la persona (para mirar el correo o taparse los ojos en la
+   * contraseña), cuánto lleva escrito del correo (para seguirlo con la
+   * vista) y si algo acaba de fallar (para negar con la cabeza).
+   */
+  const [campo, setCampo] = useState(null);
+  const correo = useWatch({ control, name: 'email' }) || '';
+  // Cuenta los fallos; mientras no sea cero, la mascota niega. Se apaga sola.
+  const [noCuadro, setNoCuadro] = useState(0);
+  const negar = () => setNoCuadro((n) => n + 1);
+  useEffect(() => {
+    if (!noCuadro) return undefined;
+    const reloj = setTimeout(() => setNoCuadro(0), 1300);
+    return () => clearTimeout(reloj);
+  }, [noCuadro]);
+
+  const miradaMascota = campo === 'email' ? 'correo'
+    : campo === 'password' ? (verPass ? 'espia' : 'tapada')
+    : 'formulario';
+  const estadoMascota = loading ? 'entrando' : noCuadro ? 'error' : 'reposo';
 
   /*
    * Lo que pasa DESPUÉS de que el backend confirmó la sesión, sea por
@@ -464,6 +539,7 @@ const LoginClient = () => {
       const res = await loginClientDB({ email: data.email, password: data.password });
       alEntrar(res);
     } catch (err) {
+      negar();
       toast.error(err.message || 'Credenciales inválidas');
     } finally {
       setLoading(false);
@@ -524,6 +600,17 @@ const LoginClient = () => {
         </VolverTienda>
       </TopBar>
 
+      {/* La mascota colgando de la línea del encabezado, pendiente del formulario. */}
+      <Percha>
+        <div>
+          <MascotaColgada
+            mirada={miradaMascota}
+            progreso={Math.min(correo.length / 28, 1)}
+            estado={estadoMascota}
+          />
+        </div>
+      </Percha>
+
       <Body>
         {/*
           La mitad de la izquierda no está de adorno: quien llegó hasta aquí
@@ -565,7 +652,11 @@ const LoginClient = () => {
           <SectionTitle>Inicie sesión para comprar</SectionTitle>
           <SubTitle>Puede seguir viendo la tienda sin cuenta.</SubTitle>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form
+            onSubmit={handleSubmit(onSubmit, negar)}
+            onFocus={(e) => setCampo(e.target.name || e.target.closest('[data-campo]')?.dataset.campo || null)}
+            onBlur={() => setCampo(null)}
+          >
 
             <FieldGroup>
               <Label>Correo Electrónico</Label>
@@ -586,7 +677,8 @@ const LoginClient = () => {
 
             <FieldGroup>
               <Label>Contraseña</Label>
-              <InputWrapper>
+              {/* data-campo: el botón del ojo también cuenta como "en la contraseña". */}
+              <InputWrapper data-campo="password">
                 <IconWrapper><Lock size={18} /></IconWrapper>
                 <Input
                   type={verPass ? 'text' : 'password'}
@@ -612,7 +704,7 @@ const LoginClient = () => {
             </Row>
 
             <Button type="submit" disabled={loading}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Iniciar sesión'}
+              {loading ? <><EsperaMascota sobre="color" /> Entrando…</> : 'Iniciar sesión'}
             </Button>
 
           </form>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LocateFixed, MapPin, Loader2 } from 'lucide-react';
 import Mapa from '../Mapa/Mapa';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
+import { EsperaMascota } from '../UI/Mascota';
 
 /*
  * ============================================================
@@ -115,7 +116,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
         }}
       >
         {localizando
-          ? <><Loader2 size={15} className="animate-spin" /> Buscándolo…</>
+          ? <><EsperaMascota alto={19} /> Buscándolo…</>
           : <><LocateFixed size={15} /> Usar mi ubicación</>}
       </button>
 
