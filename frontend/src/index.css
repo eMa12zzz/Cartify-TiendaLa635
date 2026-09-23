@@ -596,77 +596,153 @@ input:disabled {
 
 /*
   ==========================================
-  ASISTENTE DE VOZ (AsistenteVoz.jsx)
+  ASISTENTE DE VOZ — la mascota (MascotaAsistente.jsx, AsistenteVoz.jsx)
   ==========================================
-  El orbe con anillos que se expanden, la onda de barras y los puntos de
-  "pensando", como en la landing page. Van en CSS y no en JavaScript: son
-  bucles infinitos y así corren en la GPU sin tocar React.
+  A quien se le habla es a la etiqueta del logo. MascotaAsistente pone en su
+  <svg> atributos data-* (boca, ojos, cejas, pose, mov, antena, animo) y aquí
+  se decide qué parte se ve y cómo se mueve. Los bucles van en CSS y no en
+  JavaScript: corren en la GPU sin tocar React.
 
-  El estado lo pone una clase en el contenedor (asis-escuchando,
-  asis-hablando, asis-pensando): escuchando, los anillos laten más rápido y la
-  onda se mueve.
+  Las coordenadas de transform-origin (200px 382px, etc.) son del dibujo, no
+  de la pantalla: 382 es la base de la etiqueta y 160 el agujero del cordón.
 */
-@keyframes asisAnillo {
-  from { transform: scale(0.72); opacity: 1; }
-  to   { transform: scale(1.55); opacity: 0; }
-}
-.asis-anillo {
-  position: absolute;
-  inset: 12px;
-  border-radius: 50%;
-  border: 1px solid rgba(111, 179, 217, 0.4);
-  animation: asisAnillo 3.2s cubic-bezier(0.23, 1, 0.32, 1) infinite;
-  pointer-events: none;
-}
-.asis-anillo:nth-child(2) { animation-delay: 1.05s; }
-.asis-anillo:nth-child(3) { animation-delay: 2.1s; }
-.asis-escuchando .asis-anillo {
-  animation-duration: 1.4s;
-  border-color: rgba(142, 203, 232, 0.85);
+
+/* La pose: se acerca a uno al escuchar y se ladea si no entendió. */
+.masc-pose { transform-origin: 200px 382px; transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1); }
+.masc[data-pose="atento"] .masc-pose { transform: translateY(4px) scale(1.05); }
+.masc[data-pose="ladeado"] .masc-pose { transform: rotate(-6deg); }
+
+/* El movimiento de fondo según lo que esté haciendo. */
+.masc-mueve { transform-origin: 200px 382px; }
+.masc[data-mov="flota"] .masc-mueve { animation: mascFlota 2.6s ease-in-out infinite alternate; }
+.masc[data-mov="respira"] .masc-mueve { animation: mascRespira 1.3s ease-in-out infinite alternate; }
+.masc[data-mov="piensa"] .masc-mueve { animation: mascPiensa 1.6s ease-in-out infinite alternate; }
+.masc[data-mov="rebota"] .masc-mueve { animation: mascRebota 300ms ease-in-out infinite alternate; }
+.masc[data-mov="salta"] .masc-mueve { animation: mascSalta 850ms cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@keyframes mascFlota { from { transform: translateY(0); } to { transform: translateY(-9px); } }
+@keyframes mascRespira { from { transform: scale(1); } to { transform: scale(1.015, 0.99); } }
+@keyframes mascPiensa { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes mascRebota { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+@keyframes mascSalta {
+  0%, 100% { transform: translateY(0) scale(1.05, 0.94); }
+  18%, 82% { transform: translateY(0) scale(1, 1); }
+  50%      { transform: translateY(-30px) scale(0.98, 1.03); }
 }
 
-@keyframes asisOnda {
-  0%, 100% { transform: scaleY(0.18); }
-  50%      { transform: scaleY(1); }
-}
-.asis-barra {
-  width: 4px;
-  border-radius: 4px;
-  background: linear-gradient(#8ecbe8, #009aeb);
-  transform: scaleY(0.14);
-  opacity: 0.5;
-  transition: opacity 200ms ease-out;
-}
-.asis-escuchando .asis-barra,
-.asis-hablando .asis-barra {
-  opacity: 1;
-  animation: asisOnda var(--d, 0.9s) ease-in-out infinite;
-  animation-delay: var(--r, 0s);
+/* Asiente cada vez que le llegan palabras nuevas. */
+.masc-cabeza { transform-origin: 200px 382px; }
+.masc-cabeza.masc-asiente { animation: mascAsiente 320ms ease-out; }
+@keyframes mascAsiente {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  40%      { transform: translateY(6px) rotate(1.5deg); }
 }
 
-@keyframes asisPiensa {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(0.94); }
+/* El cordón hace de antena: al escuchar le llegan ondas, al pensar se enrosca. */
+.masc-antena { transform-origin: 200px 160px; }
+.masc[data-antena="suave"] .masc-antena { animation: mascAntena 2.4s ease-in-out infinite alternate; }
+.masc[data-antena="recibe"] .masc-antena { animation: mascRecibe 220ms ease-in-out infinite alternate; }
+.masc[data-antena="gira"] .masc-antena { animation: mascGira 1.1s ease-in-out infinite; }
+@keyframes mascAntena { from { transform: rotate(-5deg); } to { transform: rotate(6deg); } }
+@keyframes mascRecibe { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes mascGira { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(14deg); } }
+.masc-llega { opacity: 0; transform-origin: 219px 44px; }
+.masc[data-antena="recibe"] .masc-llega { animation: mascLlega 1.1s ease-in infinite; }
+.masc[data-antena="recibe"] .masc-llega:nth-of-type(2) { animation-delay: 0.37s; }
+.masc[data-antena="recibe"] .masc-llega:nth-of-type(3) { animation-delay: 0.74s; }
+@keyframes mascLlega {
+  0%   { transform: scale(2.6); opacity: 0; }
+  35%  { opacity: 0.9; }
+  100% { transform: scale(0.5); opacity: 0; }
 }
-.asis-pensando .asis-orbe { animation: asisPiensa 1.2s ease-in-out infinite; }
 
-@keyframes asisPunto {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30%           { transform: translateY(-5px); opacity: 1; }
+/* La cara. La mirada la mueve JavaScript (sigue al puntero); aquí solo se suaviza. */
+.masc-cara, .masc-ojos { transition: transform 180ms ease-out; }
+.masc-parpadeo { transform-origin: 200px 252px; animation: mascParpadeo 3.8s infinite; }
+@keyframes mascParpadeo { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+.masc-ojo { transform-box: fill-box; transform-origin: center; transition: transform 250ms cubic-bezier(0.23, 1, 0.32, 1); }
+.masc[data-ojos="grandes"] .masc-ojo { transform: scale(1.22); }
+.masc[data-ojos="confundidos"] .masc-ojo-i { transform: scale(0.78); }
+.masc[data-ojos="confundidos"] .masc-ojo-d { transform: scale(1.25); }
+.masc-ojos-abiertos, .masc-ojos-felices { transition: opacity 120ms; }
+.masc-ojos-felices { opacity: 0; }
+.masc[data-ojos="felices"] .masc-ojos-abiertos { opacity: 0; }
+.masc[data-ojos="felices"] .masc-ojos-felices { opacity: 1; }
+.masc-ceja {
+  opacity: 0; transform-box: fill-box; transform-origin: center;
+  transition: opacity 150ms, transform 250ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.asis-escribiendo { display: inline-flex; gap: 4px; padding: 4px 0; }
-.asis-escribiendo i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #6fb3d9;
-  animation: asisPunto 1s infinite;
+.masc[data-cejas="arriba"] .masc-ceja { opacity: 1; transform: translateY(-3px); }
+.masc[data-cejas="una"] .masc-ceja-d { opacity: 1; transform: translateY(-5px) rotate(6deg); }
+.masc-boca { opacity: 0; transition: opacity 100ms; }
+.masc[data-boca="sonrisa"] .masc-b-sonrisa,
+.masc[data-boca="o"] .masc-b-o,
+.masc[data-boca="habla"] .masc-b-habla,
+.masc[data-boca="abierta"] .masc-b-abierta,
+.masc[data-boca="lado"] .masc-b-lado,
+.masc[data-boca="ondulada"] .masc-b-ondulada { opacity: 1; }
+.masc-habla { transform-origin: 200px 290px; animation: mascHabla 800ms infinite; }
+@keyframes mascHabla {
+  0%, 100% { transform: scaleY(0.3); }
+  15% { transform: scaleY(1); }
+  30% { transform: scaleY(0.5); }
+  45% { transform: scaleY(0.95); }
+  62% { transform: scaleY(0.25); }
+  80% { transform: scaleY(0.8); }
 }
-.asis-escribiendo i:nth-child(2) { animation-delay: 0.15s; }
-.asis-escribiendo i:nth-child(3) { animation-delay: 0.3s; }
+
+/* No entendió: un signo de pregunta. Compra cerrada: confeti. */
+.masc-pregunta {
+  opacity: 0; transform-origin: 300px 112px; transform: scale(0.5);
+  transition: opacity 200ms, transform 350ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.masc[data-animo="confundido"] .masc-pregunta { opacity: 1; transform: scale(1); }
+.masc-confeti { opacity: 0; transition: opacity 200ms; }
+.masc[data-animo="feliz"] .masc-confeti { opacity: 1; }
+.masc-papelito { transform-box: fill-box; transform-origin: center; }
+.masc[data-animo="feliz"] .masc-papelito { animation: mascConfeti 1.8s linear infinite; }
+@keyframes mascConfeti {
+  from { transform: translateY(-20px) rotate(0); opacity: 1; }
+  to   { transform: translateY(150px) rotate(220deg); opacity: 0; }
+}
+
+/* El globo de lo que dice la mascota: la cola apunta hacia ella (arriba en
+   el teléfono, a la izquierda cuando van lado a lado). */
+.masc-globo::before {
+  content: ''; position: absolute; left: 50%; top: -14px; transform: translateX(-50%);
+  border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 15px solid #fff;
+}
+@media (min-width: 768px) {
+  .masc-globo::before {
+    left: -13px; top: 58%; transform: translateY(-50%);
+    border: 0; border-top: 11px solid transparent; border-bottom: 11px solid transparent; border-right: 15px solid #fff;
+  }
+}
+
+/* "Pensando" dentro del globo, y el cursor de lo que va diciendo la persona. */
+@keyframes mascPunto {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30%           { transform: translateY(-6px); opacity: 1; }
+}
+.masc-puntos { display: inline-flex; gap: 6px; padding: 8px 2px; }
+.masc-puntos i { width: 9px; height: 9px; border-radius: 50%; background: #003049; animation: mascPunto 1s infinite; }
+.masc-puntos i:nth-child(2) { animation-delay: 0.15s; }
+.masc-puntos i:nth-child(3) { animation-delay: 0.3s; }
+.masc-cursor {
+  display: inline-block; width: 2px; height: 1.05em; margin-left: 3px; vertical-align: -2px;
+  background: #8ecbe8; animation: mascCursor 1s steps(2, jump-none) infinite;
+}
+@keyframes mascCursor { from { opacity: 1; } to { opacity: 0; } }
+
+/* El botón del micrófono: una onda sale de él mientras escucha. */
+.masc-mic-onda { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+.masc-mic-escuchando .masc-mic-onda { animation: mascOndaMic 1.1s ease-out infinite; }
+@keyframes mascOndaMic {
+  from { box-shadow: 0 0 0 0 rgba(0, 154, 235, 0.55); }
+  to   { box-shadow: 0 0 0 22px rgba(0, 154, 235, 0); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .asis-anillo, .asis-barra, .asis-orbe, .asis-escribiendo i { animation: none !important; }
+  .masc *, .masc-puntos i, .masc-cursor, .masc-mic-onda { animation: none !important; transition: none !important; }
 }
 
 /*
