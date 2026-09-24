@@ -36,22 +36,29 @@ export const vozDisponible = () => Boolean(process.env.ELEVENLABS_API_KEY);
  *
  *   - La tienda se llama "la seis tres cinco", NUNCA "seiscientos treinta y
  *     cinco" (lo pidió la tienda para el video y vale igual aquí).
- *   - Los precios se escriben "$2.50" y se dicen "2 dólares con 50 centavos":
- *     leído tal cual, el signo y el punto salen raros o en inglés.
+ *   - Los precios se escriben "$2.50" y se dicen "2 dólares con 50 centavos",
+ *     con la palabra "centavos" completa: la tienda cobra en dólares, y leído
+ *     tal cual el signo sale como "pesos" o en inglés.
  *   - Las promos "2x1" se dicen "2 por 1", no "dos equis uno".
+ *
+ * La web y la app tienen la misma regla para la voz del teléfono o del
+ * navegador (el respaldo): si cambia aquí, cambia allá.
  */
+const dineroParaDecir = (_, enteros, decimales = "") => {
+  const d = Number(enteros);
+  const c = decimales ? Number(decimales.padEnd(2, "0")) : 0;
+  const dolares = d === 1 ? "1 dólar" : `${d} dólares`;
+  const centavos = c === 1 ? "1 centavo" : `${c} centavos`;
+  if (!c) return dolares;
+  if (!d) return centavos;
+  return `${dolares} con ${centavos}`;
+};
+
 export const paraDecir = (texto) =>
   String(texto || "")
     .replace(/\b635\b/g, "seis tres cinco")
     .replace(/\b(\d+)\s?[xX×]\s?(\d+)\b/g, "$1 por $2")
-    .replace(/\$\s?(\d+)(?:[.,](\d{1,2}))?/g, (_, enteros, decimales = "") => {
-      const d = Number(enteros);
-      const c = decimales ? Number(decimales.padEnd(2, "0")) : 0;
-      const dolares = d === 1 ? "1 dólar" : `${d} dólares`;
-      if (!c) return dolares;
-      if (!d) return `${c} centavos`;
-      return `${dolares} con ${c}`;
-    })
+    .replace(/\$\s?(\d+)(?:[.,](\d{1,2}))?/g, dineroParaDecir)
     .replace(/\s+/g, " ")
     .trim();
 

@@ -44,7 +44,7 @@ import { useAuth } from './useAuth';
 import { useEdad } from '../context/EdadContext';
 import { esSoloAdultos } from '../utils/unidades';
 import { navegarA } from '../navigation/navigationRef';
-import { decirConTiqui, callarTiqui, vozTiquiPosible } from '../utils/vozTiqui';
+import { decirConTiqui, callarTiqui, vozTiquiPosible, paraDecir } from '../utils/vozTiqui';
 
 const NUMEROS = {
   un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
@@ -103,6 +103,20 @@ const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const normalizar = (s) => sinAcentos(s).toLowerCase().trim();
 const contarItems = (lista) => lista.reduce((a, i) => a + i.cantidad, 0);
 
+/*
+ * Las frases del total. El monto se escribe "$12.50" (así sale en el chat) y
+ * la voz lo dice "12 dólares con 50 centavos" (ver paraDecir en vozTiqui).
+ * Decía "Tu total es $12.50 con 3 productos": dicho en voz alta quedaba
+ * "...con 50 centavos con 3 productos", y con uno solo, "1 productos".
+ */
+const productosEnTexto = (lista) => {
+  const n = contarItems(lista);
+  return n === 1 ? '1 producto' : `${n} productos`;
+};
+const fraseConfirmar = (lista, total) =>
+  `Son ${productosEnTexto(lista)} y tu total es $${total.toFixed(2)}. ¿Confirmas la compra? Di sí para confirmar.`;
+const fraseLlevas = (lista, total) => `Llevas $${total.toFixed(2)} en ${productosEnTexto(lista)}.`;
+
 const cantidadExplicita = (texto) => {
   const t = normalizar(texto);
   const d = t.match(/\b(\d+)\b/);
@@ -122,6 +136,24 @@ const expandirSinonimos = (t) => {
   }
   return out;
 };
+
+/*
+ * Lo que la persona pidió en un pedazo de la frase, sin las palabras de pedir
+ * ni la cantidad: de "dos galletas" queda "galletas". Sirve para decir lo que
+ * no hay en vez de callarlo. Misma regla que la web (useVoiceAssistant.js).
+ */
+const DE_RELLENO = new Set([
+  'quiero', 'quisiera', 'dame', 'deme', 'agrega', 'agregame', 'agregue', 'pon', 'ponme',
+  'echa', 'echame', 'das', 'llevo', 'anota', 'anotame', 'necesito', 'los', 'las', 'del',
+  'por', 'favor', 'porfa', 'mas', 'con', 'para', 'libra', 'libras', 'media', 'medio',
+  'poquito', 'eso', 'todo', 'nada', 'bueno', 'gracias', 'hoy', 'solo', 'nomas', 'algo',
+  'otra', 'otro', 'cosa', ...Object.keys(NUMEROS),
+]);
+const loQuePidio = (parte) =>
+  parte.split(/\s+/).filter((w) => w.length > 2 && !DE_RELLENO.has(w) && !/\d/.test(w)).join(' ');
+
+// Las partes de una frase con varios pedidos: "una manzana y dos galletas".
+const SEPARA_PEDIDOS = /\s+y\s+|,|\s+tambien\s+|\s+ademas\s+/;
 
 // Mismo puntaje que la web — ver el comentario original ahí para el porqué
 // de cada nivel (100 nombre exacto, 90 lo contiene, 80 palabra principal en
@@ -242,7 +274,8 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     setHablando(true);
 
     // La voz del teléfono: el respaldo de la de Tiqui, y la única sin ella.
-    const conElTelefono = () => Speech.speak(texto, {
+    // "$12.50" se dice "12 dólares con 50 centavos", no "doce pesos". Ver paraDecir.
+    const conElTelefono = () => Speech.speak(paraDecir(texto), {
       // "es-419" (español latinoamericano neutro) en vez de es-SV: no todos
       // los teléfonos traen una voz de El Salvador instalada, y esta es la
       // que con más frecuencia sí encuentra una voz decente del sistema.
@@ -434,11 +467,11 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
             dice = 'Tu carrito está vacío. ¿Qué te gustaría llevar?';
           } else {
             confirmandoRef.current = true;
-            dice = `Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(carrito)} productos. ¿Confirmas la compra? Di sí para confirmar.`;
+            dice = fraseConfirmar(carrito, totalCarrito);
           }
         } else if (pideTotal) {
           const { carrito, totalCarrito } = dataRef.current;
-          dice = `Llevas $${totalCarrito.toFixed(2)} en ${contarItems(carrito)} productos.`;
+          dice = fraseLlevas(carrito, totalCarrito);
         }
 
         hablarRef.current?.(dice);
@@ -492,11 +525,11 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     if (PIDE_COMPRAR(t)) {
       if (!carrito.length) { hablar('Tu carrito está vacío. ¿Qué te gustaría llevar?'); return; }
       confirmandoRef.current = true;
-      hablar(`Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(carrito)} productos. ¿Confirmas la compra? Di sí para confirmar.`);
+      hablar(fraseConfirmar(carrito, totalCarrito));
       return;
     }
     if (PIDE_TOTAL.test(t)) {
-      hablar(`Llevas $${totalCarrito.toFixed(2)} en ${contarItems(carrito)} productos.`);
+      hablar(fraseLlevas(carrito, totalCarrito));
       return;
     }
     if (/\b(quita|quitar|elimina|eliminar|borra|saca|remueve)\b/.test(t)) {
@@ -553,7 +586,11 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     }
 
     // ── Agregar (varios por frase) ──
-    const partes = t.split(/\s+y\s+|,|\s+tambien\s+|\s+ademas\s+/).map((s) => s.trim()).filter(Boolean);
+    const partes = t.split(SEPARA_PEDIDOS).map((s) => s.trim()).filter(Boolean);
+    // Sin los sinónimos que se le pegan al final, para nombrar lo que no hay
+    // tal como lo dijo.
+    const dichas = normalizar(texto).split(SEPARA_PEDIDOS).map((s) => s.trim()).filter(Boolean);
+    const noHay = [];
     const agregados = [];
     // Productos +18 encontrados pero NO agregados: sin confirmar la edad, la
     // voz no mete un producto restringido al carrito por su cuenta — mismo
@@ -567,9 +604,14 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
      */
     const agotados = [];
     const vistos = new Set();
-    for (const parte of partes) {
+    for (const [i, parte] of partes.entries()) {
       const prod = buscarProducto(parte);
-      if (prod && !vistos.has(prod.id)) {
+      if (!prod) {
+        const pedido = loQuePidio(dichas[i] || parte);
+        if (pedido && !noHay.includes(pedido)) noHay.push(pedido);
+        continue;
+      }
+      if (!vistos.has(prod.id)) {
         vistos.add(prod.id);
         if ((Number(prod.stock) || 0) <= 0) {
           agotados.push(prod.nombre);
@@ -600,6 +642,8 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
           : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}`
       );
     }
+    // Lo que se pidió y no hay se dice, no se calla. Ver loQuePidio.
+    if (noHay.length) piezas.push(`No tengo ${noHay.join(' ni ')}`);
     if (agotados.length) {
       piezas.push(`Hoy se nos ${agotados.length === 1 ? 'acabó' : 'acabaron'} ${agotados.join(' y ')}`);
     }
