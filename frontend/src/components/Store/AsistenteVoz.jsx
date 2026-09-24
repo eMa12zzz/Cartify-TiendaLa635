@@ -4,6 +4,7 @@ import { Mic, X, ShoppingCart, Volume2, VolumeX, Minimize2, QrCode, UserCheck, P
 import toast from 'react-hot-toast';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { useKiosco } from '../../hooks/useKiosco';
+import { useAuth } from '../../hooks/useAuth';
 import { orderService } from '../../api/orderService';
 import MascotaAsistente from './MascotaAsistente';
 
@@ -50,7 +51,7 @@ const SALUDO = '¡Hola! Soy Tiqui. Toca el botón y dime qué necesitas. Por eje
  * ponga cara normal.
  */
 const animoDe = (texto = '') => {
-  if (/(Pasa a caja|Lleva tu carrito a caja)/.test(texto)) return 'feliz'; // la compra quedó cerrada
+  if (/(Pasa a caja|Lleva tu carrito a caja|Te abro el pago)/.test(texto)) return 'feliz'; // la compra quedó cerrada
   if (/^(Agregué|Te agregué|¡Listo|Listo)/.test(texto)) return 'contento';
   if (/^(No te entendí|No encontré|No tienes|No pude|Tu navegador no|Perdón, se me cortó|Uy, me distraje)/.test(texto)) return 'confundido';
   return 'normal';
@@ -68,9 +69,25 @@ const AsistenteVoz = ({
   onClose, productos, carrito, totalCarrito,
   agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
   categorias, irAProducto, irACategoria, irARuta,
+  /*
+   * Abrir el pago cuando la persona confirma la compra. Lo pone la tienda en
+   * línea; sin él (o con una cuenta vinculada por QR en el kiosco) se sigue
+   * pagando en caja. Ver cerrarCompra.
+   */
+  irAPagar,
 }) => {
   const reduce = useReducedMotion();
   const [minimizado, setMinimizado] = useState(false); // asistente en segundo plano
+  const { esCliente } = useAuth();
+
+  /*
+   * "Ya confirmó, falta abrir el pago". Se espera a que Tiqui termine la
+   * frase: abrir el pago cierra el asistente, y cerrarlo a media frase la
+   * cortaba en seco.
+   */
+  const [yendoAPagar, setYendoAPagar] = useState(false);
+  const irAPagarRef = useRef(irAPagar);
+  useEffect(() => { irAPagarRef.current = irAPagar; });
 
   /*
    * Hablar por referencia: cerrarCompra necesita hablar, pero se define ANTES
@@ -108,6 +125,17 @@ const AsistenteVoz = ({
 
   hablarRef.current = hablar;
 
+  /*
+   * Abre el pago apenas Tiqui termina de decir que lo va a abrir (o de una, si
+   * la voz está silenciada). Con tope de 8 s: si el audio se trabara, el pago
+   * se abre igual y la persona no queda esperando algo que no llega.
+   */
+  useEffect(() => {
+    if (!yendoAPagar) return undefined;
+    const reloj = setTimeout(() => irAPagarRef.current?.(), hablando ? 8000 : 0);
+    return () => clearTimeout(reloj);
+  }, [yendoAPagar, hablando]);
+
   // La cuenta del cliente, si escaneó el QR con su teléfono.
   const kiosco = useKiosco();
 
@@ -125,6 +153,19 @@ const AsistenteVoz = ({
    */
   const cerrarCompra = async () => {
     const cliente = kiosco.cliente;
+
+    /*
+     * En la tienda en línea, confirmar es ir a pagar: Tiqui abre el pago con
+     * la dirección y la forma de pago por elegir. Sin sesión, primero lo lleva
+     * a iniciar sesión y de ahí vuelve directo al pago (ver irAPagar en Store).
+     */
+    if (!cliente && irAPagar) {
+      setYendoAPagar(true);
+      hablarRef.current?.(esCliente
+        ? '¡Listo! Te abro el pago para que elijas cómo recibirlo y cómo pagar.'
+        : '¡Listo! Para pagar, primero inicia sesión. Te llevo, y tu carrito te espera.');
+      return;
+    }
 
     if (!cliente) {
       hablarRef.current?.('¡Listo! Lleva tu carrito a caja y alguien de la tienda te ayuda a pagar. ¡Gracias!');
