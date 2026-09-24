@@ -137,6 +137,24 @@ const expandirSinonimos = (t) => {
   return out;
 };
 
+/*
+ * Lo que la persona pidió en un pedazo de la frase, sin las palabras de pedir
+ * ni la cantidad: de "dos galletas" queda "galletas". Sirve para decir lo que
+ * no hay en vez de callarlo. Misma regla que la web (useVoiceAssistant.js).
+ */
+const DE_RELLENO = new Set([
+  'quiero', 'quisiera', 'dame', 'deme', 'agrega', 'agregame', 'agregue', 'pon', 'ponme',
+  'echa', 'echame', 'das', 'llevo', 'anota', 'anotame', 'necesito', 'los', 'las', 'del',
+  'por', 'favor', 'porfa', 'mas', 'con', 'para', 'libra', 'libras', 'media', 'medio',
+  'poquito', 'eso', 'todo', 'nada', 'bueno', 'gracias', 'hoy', 'solo', 'nomas', 'algo',
+  'otra', 'otro', 'cosa', ...Object.keys(NUMEROS),
+]);
+const loQuePidio = (parte) =>
+  parte.split(/\s+/).filter((w) => w.length > 2 && !DE_RELLENO.has(w) && !/\d/.test(w)).join(' ');
+
+// Las partes de una frase con varios pedidos: "una manzana y dos galletas".
+const SEPARA_PEDIDOS = /\s+y\s+|,|\s+tambien\s+|\s+ademas\s+/;
+
 // Mismo puntaje que la web — ver el comentario original ahí para el porqué
 // de cada nivel (100 nombre exacto, 90 lo contiene, 80 palabra principal en
 // singular/plural, 70 esa palabra suelta en la frase, 20 cualquier palabra).
@@ -568,7 +586,11 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     }
 
     // ── Agregar (varios por frase) ──
-    const partes = t.split(/\s+y\s+|,|\s+tambien\s+|\s+ademas\s+/).map((s) => s.trim()).filter(Boolean);
+    const partes = t.split(SEPARA_PEDIDOS).map((s) => s.trim()).filter(Boolean);
+    // Sin los sinónimos que se le pegan al final, para nombrar lo que no hay
+    // tal como lo dijo.
+    const dichas = normalizar(texto).split(SEPARA_PEDIDOS).map((s) => s.trim()).filter(Boolean);
+    const noHay = [];
     const agregados = [];
     // Productos +18 encontrados pero NO agregados: sin confirmar la edad, la
     // voz no mete un producto restringido al carrito por su cuenta — mismo
@@ -582,9 +604,14 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
      */
     const agotados = [];
     const vistos = new Set();
-    for (const parte of partes) {
+    for (const [i, parte] of partes.entries()) {
       const prod = buscarProducto(parte);
-      if (prod && !vistos.has(prod.id)) {
+      if (!prod) {
+        const pedido = loQuePidio(dichas[i] || parte);
+        if (pedido && !noHay.includes(pedido)) noHay.push(pedido);
+        continue;
+      }
+      if (!vistos.has(prod.id)) {
         vistos.add(prod.id);
         if ((Number(prod.stock) || 0) <= 0) {
           agotados.push(prod.nombre);
@@ -615,6 +642,8 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
           : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}`
       );
     }
+    // Lo que se pidió y no hay se dice, no se calla. Ver loQuePidio.
+    if (noHay.length) piezas.push(`No tengo ${noHay.join(' ni ')}`);
     if (agotados.length) {
       piezas.push(`Hoy se nos ${agotados.length === 1 ? 'acabó' : 'acabaron'} ${agotados.join(' y ')}`);
     }

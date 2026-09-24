@@ -884,6 +884,9 @@ const MODO_TIQUI = [
   "  Nunca inventes productos, precios ni promociones.",
   "- Si pide algo que no hay, dilo con cariño y ofrece lo más parecido de la lista, sin",
   "  agregarlo. Si está en 'Agotados hoy', di que hoy se acabó.",
+  "- Agrega SOLO lo que nombró o lo que tú le ofreciste y te dijo que sí. Algo parecido",
+  "  NO es lo mismo: si pide galletas y no hay, unos churritos no son galletas. Dilo y",
+  "  pregúntale si quiere el parecido.",
   "- El total en dólares no lo calcules: llama 'ver_total' o 'ir_a_pagar' y la tienda dice",
   "  el monto exacto.",
   "- 'cambiar_cantidad' deja la cantidad FINAL: 'mejor que sean dos' es 2, no 2 más.",
@@ -896,6 +899,81 @@ const MODO_TIQUI = [
   "  ofrecer un producto y te dice que sí, es ESE producto: agrégalo.",
   "- No repitas lo que dijiste en el turno anterior; sigue la charla como una persona.",
 ].join("\n");
+
+/*
+ * ============================================================
+ * ¿DE VERDAD PIDIÓ ESTE PRODUCTO?
+ * ============================================================
+ * Le pedían "dos galletas" —que la tienda no tiene— y el modelo agregaba dos
+ * Churritos Diana por su cuenta, diciendo "te agregué", como si fuera lo
+ * mismo. Las instrucciones ya le pedían OFRECER lo parecido sin agregarlo,
+ * pero a veces no hace caso, y un carrito con algo que nadie pidió es peor
+ * que no entender.
+ *
+ * Así que no se le cree: para agregar un producto, la persona tiene que
+ * haberlo NOMBRADO en esta frase (alguna palabra de su nombre o su marca, o
+ * un pariente cercano: "refresco" y "soda").
+ *
+ * La única excepción es la respuesta corta —"sí", "dale", "otra más"— a lo
+ * último que dijo Tiqui: ahí vale lo que Tiqui acababa de ofrecer o agregar.
+ * Pero solo si la frase no pide nada nuevo. Con "quiero unas galletas", el
+ * modelo llegó a agregar una manzana porque se había hablado de manzanas
+ * antes; si la frase trae una palabra que no es ningún producto de la tienda,
+ * la charla anterior ya no justifica nada.
+ *
+ * Lo que no pasa se convierte en lo que debió ser: "No tengo galletas. Lo
+ * más parecido es Churritos Diana, ¿te lo agrego?".
+ * ============================================================
+ */
+const PARIENTES = [
+  ["refresco", "gaseosa", "soda", "cola", "coca"],
+  ["platano", "banano", "guineo"],
+  ["churrito", "churro"],
+  ["yogurt", "yogur"],
+];
+
+const fueNombrado = (producto, textos) => {
+  const dichas = new Set(palabrasClave(textos.join(" ")));
+  return palabrasClave(`${producto.nombre} ${producto.marca || ""}`).some(
+    (w) => dichas.has(w) || PARIENTES.some((g) => g.includes(w) && g.some((x) => dichas.has(x)))
+  );
+};
+
+// Palabras de cantidad, de pedir o de decir que sí: no dicen QUÉ se quiere.
+const SIN_PRODUCTO = new Set([
+  "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "media", "medio",
+  "libra", "libras", "pon", "ponme", "echa", "echame", "llevo", "llevar", "anota", "anotame",
+  "agregame", "agregar", "quisiera", "necesito", "porfa", "ademas", "tambien", "poquito",
+  "dale", "claro", "bueno", "okay", "vaya", "listo", "perfecto", "mismo", "misma", "igual",
+  "agregalo", "agregala", "agregalos", "agregalas", "ponlo", "ponla", "ponlos", "ponlas",
+  "echalo", "echala", "llevalo", "llevala", "sale", "simon", "supuesto", "gusta", "gustaria",
+  "quieres", "quiere", "probar", "pruebo", "esos", "esas", "ella", "ello", "vez", "veces",
+]);
+
+/*
+ * Qué palabras de la frase no son ningún producto de la tienda: lo que se
+ * pidió y no hay. Se devuelven como las dijo la persona ("galletas", con su
+ * plural y sus tildes), que es como Tiqui tiene que repetirlas.
+ */
+const loQueNoHay = (frase, catalogo) => {
+  const conocidas = new Set(catalogo.flatMap((p) => palabrasClave(`${p.nombre} ${p.marca || ""}`)));
+  const vistas = new Set();
+  return String(frase || "")
+    .normalize("NFC")
+    .toLowerCase()
+    // Letras de cualquier alfabeto con sus tildes: una "é" que llega como "e"
+    // más la tilde aparte no puede partir "también" en dos.
+    .split(/[^\p{L}\p{M}\p{N}]+/u)
+    .filter((w) => {
+      const [plana] = palabrasClave(w);
+      if (!plana || SIN_PRODUCTO.has(aTextoPlano(w)) || /\d/.test(w) || conocidas.has(plana) || vistas.has(plana)) return false;
+      vistas.add(plana);
+      return true;
+    });
+};
+
+const enLista = (cosas, conector) =>
+  cosas.length <= 1 ? cosas.join("") : `${cosas.slice(0, -1).join(", ")} ${conector} ${cosas[cosas.length - 1]}`;
 
 // Lo que dice Tiqui cuando el modelo hizo algo pero no dijo nada.
 const NOMBRE_DE_SECCION = {
@@ -969,6 +1047,20 @@ aiController.asistente = async (req, res) => {
 
       const acciones = [];
       let dice = "";
+      /*
+       * Lo que el modelo quiso agregar sin que nadie lo pidiera. Ver ¿DE
+       * VERDAD PIDIÓ ESTE PRODUCTO? Los que parecen un reemplazo se ofrecen;
+       * los que ya se habían nombrado antes (la manzana de hace dos frases) no
+       * son un "parecido", son una confusión, y solo se descartan.
+       */
+      const catalogo = await leerCatalogo();
+      const faltan = loQueNoHay(frase, catalogo);
+      const ultimoDeTiqui = [...charla].reverse().find((m) => m.quien === "Asistente")?.texto || "";
+      const loDicho = [frase, ...charla.slice(-4).map((m) => m.texto)];
+      const pidioEsto = (real) =>
+        fueNombrado(real, [frase]) || (!faltan.length && fueNombrado(real, [ultimoDeTiqui]));
+      const sustitutos = [];
+      let descartados = 0;
 
       for (const llamada of llamadas) {
         const args = llamada.args || {};
@@ -982,7 +1074,13 @@ aiController.asistente = async (req, res) => {
 
         switch (llamada.name) {
           case "agregar_producto":
-            if (producto) acciones.push({ tipo: "agregar", producto, cantidad: cantidad || 1 });
+            if (!producto) break;
+            if (!pidioEsto(real)) {
+              descartados += 1;
+              if (!fueNombrado(real, loDicho) && !sustitutos.includes(producto)) sustitutos.push(producto);
+              break;
+            }
+            acciones.push({ tipo: "agregar", producto, cantidad: cantidad || 1 });
             break;
           case "quitar_producto":
             if (producto) acciones.push({ tipo: "quitar", producto, cantidad });
@@ -1016,6 +1114,20 @@ aiController.asistente = async (req, res) => {
           default:
             break;
         }
+      }
+
+      /*
+       * Si quiso colar un sustituto, lo que había dicho el modelo ("te agregué
+       * dos Churritos Diana") ya no es verdad: la frase se arma aquí con lo que
+       * sí se hizo, lo que no hay y el parecido como pregunta.
+       */
+      if (descartados) {
+        const hecho = fraseDeRespaldo(acciones).replace(/\s*¿Algo más\?$/, "");
+        const noHay = faltan.length ? `No tengo ${enLista(faltan, "ni")}.` : "No tengo exactamente eso.";
+        const siguiente = sustitutos.length
+          ? `Lo más parecido es ${enLista(sustitutos, "o")}, ¿${sustitutos.length === 1 ? "te lo agrego" : "quieres alguno"}?`
+          : "¿Te busco otra cosa?";
+        dice = [hecho, noHay, siguiente].filter(Boolean).join(" ");
       }
 
       /*
