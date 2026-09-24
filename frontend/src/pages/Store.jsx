@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
@@ -21,6 +21,7 @@ import { useRastroTienda } from '../hooks/useRastroTienda';
 import { useMyOrders } from '../hooks/useMyOrders';
 import { useModulos } from '../hooks/useModulos';
 import { useAjustesCtx } from '../context/AjustesContext';
+import { useAuth } from '../hooks/useAuth';
 import { bloqueDeSeccion } from '../utils/portada';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
@@ -474,7 +475,9 @@ const Store = () => {
    * Si vino desde "Servicios" con ?modulo=, la tienda abre parada en ese
    * pasillo. Se lee una sola vez, al montar: después manda la barra de arriba.
    */
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { pathname } = useLocation();
+  const { esCliente } = useAuth();
   const { pasillos } = useModulos();
   // La tienda se ve con o sin cuenta; la sesión solo cambia qué botones salen.
 
@@ -563,8 +566,59 @@ const Store = () => {
   }, [secciones]);
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  /*
+   * ?pagar=1: viene del login al que lo mandó Tiqui para pagar. Se abre el
+   * carrito directo en el pago, que es donde iba antes de que le pidieran la
+   * sesión. Ver irAPagar.
+   */
+  const vieneAPagar = searchParams.get('pagar') === '1';
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
+  const [carritoEnPago, setCarritoEnPago] = useState(false);
   const [mostrarAsistente, setMostrarAsistente] = useState(false);
+  /*
+   * Se abre cuando termina de cargar el catálogo, no antes: el carrito se arma
+   * con los productos de hoy y hasta entonces viene vacío. Abierto antes, caía
+   * en la lista vacía en vez del pago.
+   */
+  const [pagoPendiente, setPagoPendiente] = useState(vieneAPagar);
+  const abrirPagoPendiente = pagoPendiente && !cargando;
+
+  // El ?pagar=1 se usa una vez: si se quedara, recargar la página volvería a
+  // abrir el pago aunque la persona ya lo hubiera cerrado.
+  useEffect(() => {
+    if (!vieneAPagar) return;
+    setSearchParams((previos) => {
+      const limpios = new URLSearchParams(previos);
+      limpios.delete('pagar');
+      return limpios;
+    }, { replace: true });
+  }, [vieneAPagar, setSearchParams]);
+
+  const cerrarCarrito = () => {
+    setMostrarCarrito(false);
+    setCarritoEnPago(false);
+    setPagoPendiente(false);
+  };
+
+  /*
+   * La persona le confirmó la compra a Tiqui: se abre el pago.
+   *
+   * Tiqui se cierra antes. Minimizado se quedaba justo encima del botón de
+   * "Realizar pedido", y ya no tiene nada que hacer: lo que falta —dirección
+   * y forma de pago— se elige tocando.
+   *
+   * Sin sesión de cliente, primero al login, y de vuelta aquí con ?pagar=1
+   * para caer directo en el pago. El carrito se guarda solo, no se pierde.
+   */
+  const irAPagar = () => {
+    setMostrarAsistente(false);
+    if (!esCliente) {
+      navigate(`/iniciar-sesion?volver=${encodeURIComponent(`${pathname}?pagar=1`)}`);
+      return;
+    }
+    setCarritoEnPago(true);
+    setMostrarCarrito(true);
+  };
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef(null);
 
@@ -639,6 +693,7 @@ const Store = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             irARuta={(ruta) => navigate(ruta)}
+            irAPagar={irAPagar}
           />
         )}
       </AnimatePresence>
@@ -964,19 +1019,20 @@ const Store = () => {
         />
       )}
 
-      {mostrarCarrito && (
+      {(mostrarCarrito || abrirPagoPendiente) && (
         <ShoppingCart
           items={carrito}
           total={totalCarrito}
-          onCerrar={() => setMostrarCarrito(false)}
+          onCerrar={cerrarCarrito}
           onActualizarCantidad={actualizarCantidad}
           onEliminarItem={eliminarDelCarrito}
           onLimpiarCarrito={limpiarCarrito}
+          abrirEnPago={carritoEnPago || abrirPagoPendiente}
           onCheckout={() => {
             // Sin aviso: a estas alturas el pedido ya se hizo y el carrito ya
             // se vació solo al confirmarlo. Ver limpiarCarrito en useStore.
             limpiarCarrito({ avisar: false });
-            setMostrarCarrito(false);
+            cerrarCarrito();
           }}
         />
       )}

@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { aiService } from '../api/aiService';
-import { decirConTiqui, callarTiqui } from '../utils/vozTiqui';
+import { decirConTiqui, callarTiqui, paraDecir } from '../utils/vozTiqui';
 
 /*
  * useVoiceAssistant — el "cerebro" de Tiqui, el asistente por voz (Modo Kiosco).
@@ -147,6 +147,20 @@ const vozPreferida = (lista) =>
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const normalizar = (s) => sinAcentos(s).toLowerCase().trim();
 const contarItems = (lista) => lista.reduce((a, i) => a + i.cantidad, 0);
+
+/*
+ * Las frases del total. El monto se escribe "$12.50" (así sale en el chat) y
+ * la voz lo dice "12 dólares con 50 centavos" (ver paraDecir en vozTiqui).
+ * Decía "Tu total es $12.50 con 3 productos": dicho en voz alta quedaba
+ * "...con 50 centavos con 3 productos", y con uno solo, "1 productos".
+ */
+const productosEnTexto = (lista) => {
+  const n = contarItems(lista);
+  return n === 1 ? '1 producto' : `${n} productos`;
+};
+const fraseConfirmar = (lista, total) =>
+  `Son ${productosEnTexto(lista)} y tu total es $${total.toFixed(2)}. ¿Confirmas la compra? Di sí para confirmar.`;
+const fraseLlevas = (lista, total) => `Llevas $${total.toFixed(2)} en ${productosEnTexto(lista)}.`;
 
 const cantidadExplicita = (texto) => {
   const t = normalizar(texto);
@@ -394,7 +408,8 @@ export const useVoiceAssistant = ({
       return;
     }
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(texto);
+    // "$12.50" se dice "12 dólares con 50 centavos", no "doce pesos". Ver paraDecir.
+    const u = new SpeechSynthesisUtterance(paraDecir(texto));
     u.lang = 'es-SV';
     u.rate = rateRef.current;
     /*
@@ -657,10 +672,10 @@ export const useVoiceAssistant = ({
             dice = 'Tu carrito está vacío. ¿Qué te gustaría llevar?';
           } else {
             confirmandoRef.current = true;
-            dice = `Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(ahora)} productos. ¿Confirmas la compra? Di sí para confirmar.`;
+            dice = fraseConfirmar(ahora, totalCarrito);
           }
         } else if (pideTotal) {
-          dice = `Llevas $${totalCarrito.toFixed(2)} en ${contarItems(ahora)} productos.`;
+          dice = fraseLlevas(ahora, totalCarrito);
         }
         hablarRef.current?.(dice);
       }, 0);
@@ -710,11 +725,11 @@ export const useVoiceAssistant = ({
     if (PIDE_COMPRAR(t)) {
       if (!carrito.length) { hablar('Tu carrito está vacío. ¿Qué te gustaría llevar?'); return; }
       confirmandoRef.current = true;
-      hablar(`Tu total es $${totalCarrito.toFixed(2)} con ${contarItems(carrito)} productos. ¿Confirmas la compra? Di sí para confirmar.`);
+      hablar(fraseConfirmar(carrito, totalCarrito));
       return;
     }
     if (PIDE_TOTAL.test(t)) {
-      hablar(`Llevas $${totalCarrito.toFixed(2)} en ${contarItems(carrito)} productos.`);
+      hablar(fraseLlevas(carrito, totalCarrito));
       return;
     }
     if (/\b(quita|quitar|elimina|eliminar|borra|saca|remueve)\b/.test(t)) {

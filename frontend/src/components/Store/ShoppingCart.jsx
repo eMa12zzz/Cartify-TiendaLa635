@@ -1063,6 +1063,12 @@ const ShoppingCart = ({
   onEliminarItem,
   onLimpiarCarrito,
   onCheckout,
+  /*
+   * Abrir directo en el pago, sin pasar por la lista. Lo pide Tiqui cuando
+   * la persona le confirma la compra por voz: ya dijo que sí, hacerla tocar
+   * "Pagar" otra vez sería preguntarle dos veces lo mismo.
+   */
+  abrirEnPago = false,
 }) => {
   const navigate = useNavigate();
   /*
@@ -1074,7 +1080,14 @@ const ShoppingCart = ({
   const location = useLocation();
   const rutaActual = `${location.pathname}${location.search}`;
 
-  const [view, setView] = useState('cart'); // 'cart' | 'checkout' | 'confirmation'
+  // Va aquí arriba y no con el canje de puntos: la vista inicial ya la necesita.
+  const { user, esCliente } = useAuth();
+
+  /*
+   * El pago exige sesión de cliente y algo que pagar (ver irAlCheckout). Si
+   * falta cualquiera de las dos, se abre la lista como siempre.
+   */
+  const [view, setView] = useState(() => (abrirEnPago && esCliente && items.length ? 'checkout' : 'cart')); // 'cart' | 'checkout' | 'confirmation'
   const [procesando, setProcesando] = useState(false);
   // El pedido que devolvió el backend al crearlo: de aquí salen el número real,
   // el total real y el envío real que se muestran en la confirmación.
@@ -1182,9 +1195,8 @@ const ShoppingCart = ({
   const [metodoPago, setMetodoPago] = useState('efectivo'); // 'efectivo' | 'tarjeta' | 'saldo'
 
   // ── Canje de puntos ──
-  // `esCliente` distingue "hay sesión" de "hay sesión DE CLIENTE": en la tienda
-  // la activa puede ser la del personal. Ver useAuth.
-  const { user, esCliente } = useAuth();
+  // `esCliente` (de más arriba) distingue "hay sesión" de "hay sesión DE
+  // CLIENTE": en la tienda la activa puede ser la del personal. Ver useAuth.
   const { ajustes } = useAjustesCtx();
   // La burbuja de seguimiento vive montada desde antes de abrir el carrito y
   // no se entera sola de un pedido recién pagado: aquí se le avisa. Ver
