@@ -110,13 +110,14 @@ export const TemaProvider = ({ children }) => {
       // El tema crudo, para quien necesite su clave o su saludo.
       tema,
       activo: !!tema,
-      colores: oscuro ? paletaOscura(clara) : clara,
+      // marcaTexto: la marca cuando es letra. Ver theme/colores.js.
+      colores: oscuro ? paletaOscura(clara) : { ...clara, marcaTexto: clara.marca },
       /*
        * La de siempre aunque rija el modo oscuro. Solo para lo que es arte a
        * sangre con texto blanco encima (la introducción): ahí el azul hondo
        * ya es el fondo oscuro, y aclararlo le quitaba contraste al texto.
        */
-      coloresClaros: clara,
+      coloresClaros: { ...clara, marcaTexto: clara.marca },
       decoracion: tema && decoracionEncendida ? tema.decoracion : null,
       // El saludo de los días sin temporada. En blanco no sale cinta.
       saludoNormal: (temporada?.saludoNormal || '').trim(),

@@ -208,7 +208,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
                     ]}
                   />
                 </View>
-                <Text style={[estilos.pasoTexto, hecho && { color: colores.marca, fontWeight: '700' }]}>
+                <Text style={[estilos.pasoTexto, hecho && { color: colores.marcaTexto, fontWeight: '700' }]}>
                   {paso.label}
                 </Text>
               </View>
@@ -322,7 +322,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
         {puntosGanados > 0 && (
           <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
             <Estrella size={15} color={colores.marca} />
-            <Text style={[estilos.puntosTexto, { color: colores.marca }]}>
+            <Text style={[estilos.puntosTexto, { color: colores.marcaTexto }]}>
               Ganó {puntosGanados} {puntosGanados === 1 ? 'punto' : 'puntos'} con esta compra
             </Text>
           </View>

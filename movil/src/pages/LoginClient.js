@@ -31,10 +31,11 @@
  * ============================================================
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -55,6 +56,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
+import { URL_WEB_LEGAL } from '../utils/legales';
 
 const LoginClient = ({ irARegistro, irATienda }) => {
   const { login } = useAuth();
@@ -69,6 +71,8 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   const [recordarme, setRecordarme] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [cargandoGoogle, setCargandoGoogle] = useState(false);
+  // Del correo, "Siguiente" en el teclado salta aquí. Ver CampoTexto.
+  const campoContrasena = useRef(null);
 
   const cambiar = (campo) => (texto) => {
     setValores((v) => ({ ...v, [campo]: texto }));
@@ -191,6 +195,8 @@ const LoginClient = ({ irARegistro, irATienda }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            textContentType="emailAddress"
+            siguiente={campoContrasena}
             accessibilityLabel="Correo electrónico"
             redondo
           />
@@ -204,15 +210,25 @@ const LoginClient = ({ irARegistro, irATienda }) => {
             esContrasena
             autoCapitalize="none"
             autoComplete="password"
+            textContentType="password"
+            ref={campoContrasena}
+            alEnviar={enviar}
             accessibilityLabel="Contraseña"
             redondo
           />
 
           <View style={estilos.fila}>
             <Casilla marcada={recordarme} alCambiar={setRecordarme} etiqueta="Recordarme 30 días" />
-            {/* Pendiente: la pantalla de recuperar contraseña todavía no existe en móvil. */}
-            <Pressable hitSlop={8}>
-              <Text style={[estilos.enlace, { color: colores.marca }]}>¿Olvidó su contraseña?</Text>
+            {/*
+              La recuperación todavía no existe en la app: se hace en la web,
+              que ya la tiene completa. Antes este enlace no hacía nada.
+            */}
+            <Pressable
+              hitSlop={8}
+              accessibilityRole="link"
+              onPress={() => Linking.openURL(`${URL_WEB_LEGAL}/forgot-password`)}
+            >
+              <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>¿Olvidó su contraseña?</Text>
             </Pressable>
           </View>
 
@@ -266,7 +282,7 @@ const LoginClient = ({ irARegistro, irATienda }) => {
           */}
           <Text style={estilos.pie}>
             ¿No tiene una cuenta?{' '}
-            <Text style={[estilos.pieEnlace, { color: colores.marca }]} onPress={irARegistro}>
+            <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irARegistro}>
               Regístrese
             </Text>
           </Text>
@@ -310,7 +326,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   },
   enlace: {
     fontSize: 13,
-    color: COLORES.marca,
+    color: COLORES.marcaTexto,
     fontWeight: '600',
   },
   aviso: {
@@ -380,7 +396,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     marginTop: 22,
   },
   pieEnlace: {
-    color: COLORES.marca,
+    color: COLORES.marcaTexto,
     fontWeight: '600',
   },
 });

@@ -473,8 +473,8 @@ const BurbujaPedido = () => {
                 <Text style={estilos.notaPequena}>Se lo llevamos a: {pedido.deliveryAddress}</Text>
               )}
 
-              <Pressable onPress={irAPedidos} style={estilos.botonVerPedido}>
-                <Text style={[estilos.botonVerPedidoTexto, { color: colores.marca }]}>Ver el pedido</Text>
+              <Pressable accessibilityRole="button" onPress={irAPedidos} style={estilos.botonVerPedido}>
+                <Text style={[estilos.botonVerPedidoTexto, { color: colores.marcaTexto }]}>Ver el pedido</Text>
                 <ChevronRight size={14} color={colores.marca} />
               </Pressable>
             </View>

@@ -5,6 +5,7 @@ import { useModulos } from './useModulos';
 import { useAjustesCtx } from '../context/AjustesContext';
 import { flujoDeModulo } from '../utils/modulos';
 import { enlaceWhatsApp } from '../utils/tienda';
+import { DOCUMENTOS_LEGALES } from '../utils/legales';
 
 /*
  * usePieTienda — qué se puede ofrecer en el pie de página, y a dónde lleva cada
@@ -45,9 +46,7 @@ const ENLACES_SIN_SESION = [
  * importante para quien vino a comprar. Abajo del todo es donde la gente lo
  * busca cuando lo busca.
  */
-const ENLACES_LEGALES = [
-  { texto: 'Términos y privacidad', ruta: '/terminos' },
-];
+const ENLACES_LEGALES = DOCUMENTOS_LEGALES.map((d) => ({ texto: d.titulo, ruta: d.ruta }));
 
 const SALUDO_WHATSAPP =
   'Hola, vengo de la tienda en linea y quisiera hacer una consulta.';
@@ -103,8 +102,11 @@ export const usePieTienda = () => {
     enlacesCuenta,
     enlacesLegales: ENLACES_LEGALES,
     ir,
-    whatsapp: enlaceWhatsApp(SALUDO_WHATSAPP),
+    whatsapp: enlaceWhatsApp(SALUDO_WHATSAPP, ajustes.negocio?.whatsapp),
     direccion: ajustes.direccion,
+    // Los datos del negocio que puso el dueño (Personalización → Identidad).
+    // Lo que esté vacío no se pinta.
+    negocio: ajustes.negocio || {},
     nombre: `${ajustes.nombreLinea1} ${ajustes.nombreLinea2}`.trim(),
     // Las dos líneas por separado: en el pie se apilan igual que en el
     // encabezado, con el mismo peso y color.

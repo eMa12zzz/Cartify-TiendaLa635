@@ -170,7 +170,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -301,7 +301,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
             {pedido.pointsEarned > 0 && (
               <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
                 <Estrella size={14} color={colores.marca} />
-                <Text style={[estilos.puntosTexto, { color: colores.marca }]}>
+                <Text style={[estilos.puntosTexto, { color: colores.marcaTexto }]}>
                   Ganó {pedido.pointsEarned} {pedido.pointsEarned === 1 ? 'punto' : 'puntos'} con esta compra
                 </Text>
               </View>

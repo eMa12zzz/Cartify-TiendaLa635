@@ -23,7 +23,15 @@ export const DIRECCION_EN_UNA_LINEA = 'Calle Sevilla 635, Col. Providencia';
  */
 export const WHATSAPP = (process.env.EXPO_PUBLIC_WHATSAPP || '').replace(/\D/g, '');
 
-export const enlaceWhatsApp = (mensaje) =>
-  WHATSAPP
-    ? `https://wa.me/${WHATSAPP}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ''}`
+/*
+ * `numero`: el WhatsApp que el dueño puso en el panel (Personalización →
+ * Datos del negocio). Manda sobre el de la configuración, que queda de
+ * respaldo. Un número salvadoreño de 8 dígitos se completa con el 503.
+ */
+export const enlaceWhatsApp = (mensaje, numero) => {
+  const digitos = String(numero || '').replace(/\D/g, '');
+  const destino = (digitos.length === 8 ? `503${digitos}` : digitos) || WHATSAPP;
+  return destino
+    ? `https://wa.me/${destino}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ''}`
     : null;
+};

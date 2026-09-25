@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import api from '../api/api';
 import { useAjustesCtx } from '../context/AjustesContext';
+import Mascota from '../components/UI/Mascota';
 
 const ForgotPassword = () => {
   // El nombre de la tienda sale de los ajustes, no escrito a mano.
@@ -44,11 +45,14 @@ const ForgotPassword = () => {
     <div className="min-h-screen flex bg-[var(--papel)]">
       {/* Left Column - Image */}
       <div className="hidden lg:block lg:w-1/2 relative bg-[var(--papel-gris)]">
-        <img 
-          src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop" 
-          alt="Fruits" 
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        {/*
+          Tiqui sobre el fondo de la marca. Antes era una foto de Unsplash cargada
+          desde sus servidores: cada visita le avisaba a un tercero, y si la foto
+          cambiaba de dirección la columna quedaba vacía.
+        */}
+        <div className="absolute inset-0 flex items-center justify-center bg-[var(--marca-50)]" aria-hidden="true">
+          <Mascota pose="perdida" alto={260} />
+        </div>
       </div>
 
       {/* Right Column - Form */}
@@ -58,7 +62,7 @@ const ForgotPassword = () => {
           {/* Logo / Header */}
           <div className="text-center mb-10">
             {/* El nombre sale de los ajustes, no del codigo. Ver MarcaTienda. */}
-            <h1 className="text-4xl font-extrabold text-black leading-tight mb-4 tracking-tight">
+            <h1 className="text-4xl font-extrabold text-[var(--tinta)] leading-tight mb-4 tracking-tight">
               {ajustes.nombreLinea1}
               {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
             </h1>
@@ -70,11 +74,12 @@ const ForgotPassword = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5 relative">
             <div>
-              <label className="block text-sm font-semibold text-[var(--tinta-suave)] mb-1.5">Correo</label>
+              <label htmlFor="campo-email" className="block text-sm font-semibold text-[var(--tinta-suave)] mb-1.5">Correo</label>
               <input
                 type="email"
                 placeholder="Introduce tu correo electrónico"
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-[var(--peligro)]' : 'border-[var(--linea-fuerte)]'} focus:outline-none focus:border-[var(--marca-600)] focus:ring-1 focus:ring-[var(--marca-600)] transition-colors text-sm`}
+                id="campo-email"
                 {...register("email", { 
                   required: "El correo es obligatorio",
                   pattern: {
@@ -102,7 +107,7 @@ const ForgotPassword = () => {
           <div className="mt-8 text-center flex flex-col gap-2">
             <p className="text-xs text-[var(--tinta-suave)]">
               ¿Ya la recordaste?{' '}
-              <Link to="/iniciar-sesion" className="text-[var(--marca-600)] hover:text-[var(--marca-700)] font-semibold transition-colors">
+              <Link to="/iniciar-sesion" className="text-[var(--marca-texto)] hover:text-[var(--marca-texto-fuerte)] font-semibold transition-colors">
                 Iniciar sesión
               </Link>
             </p>

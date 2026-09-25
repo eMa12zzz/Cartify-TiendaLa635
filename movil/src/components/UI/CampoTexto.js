@@ -30,6 +30,14 @@ const CampoTexto = ({
   // rediseñado. Opcional para no mover el resto de formularios (Registro,
   // el DUI de ModalConfirmarEdad) que siguen con el campo cuadrado normal.
   redondo = false,
+  /*
+   * El recorrido con el teclado. `siguiente` es la ref del campo que viene:
+   * la tecla del teclado dice "Siguiente" y salta ahí sin cerrarse. En el
+   * último campo va `alEnviar`: la tecla dice "Listo" y manda el formulario.
+   * Sin esto había que cerrar el teclado y tocar cada campo a mano.
+   */
+  siguiente,
+  alEnviar,
   ...props
 }) => {
   const [enfocado, setEnfocado] = useState(false);
@@ -44,6 +52,12 @@ const CampoTexto = ({
 
   // El rojo gana sobre la marca: si el campo está mal, eso es lo que hay que ver.
   const colorBorde = error ? COLORES.error : enfocado ? colores.marca : COLORES.borde;
+
+  const recorrido = siguiente
+    ? { returnKeyType: 'next', submitBehavior: 'submit', onSubmitEditing: () => siguiente.current?.focus() }
+    : alEnviar
+      ? { returnKeyType: 'done', onSubmitEditing: alEnviar }
+      : {};
 
   return (
     <View style={estilos.contenedor}>
@@ -80,6 +94,11 @@ const CampoTexto = ({
           secureTextEntry={esContrasena && !verTexto}
           onFocus={() => setEnfocado(true)}
           onBlur={() => setEnfocado(false)}
+          // Sin nombre propio, el lector anuncia la etiqueta (o el marcador),
+          // y si el campo está mal, dice por qué justo después.
+          accessibilityLabel={etiqueta || marcador}
+          accessibilityHint={error || undefined}
+          {...recorrido}
           {...props}
         />
 
@@ -111,7 +130,12 @@ const CampoTexto = ({
         )}
       </View>
 
-      {error ? <Text style={estilos.error}>{error}</Text> : null}
+      {/* El error se anuncia solo al aparecer, sin tener que ir a buscarlo. */}
+      {error ? (
+        <Text style={estilos.error} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 };

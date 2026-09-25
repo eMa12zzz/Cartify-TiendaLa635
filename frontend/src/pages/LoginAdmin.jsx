@@ -6,6 +6,7 @@ import { loginAdminDB, verify2FAAdmin } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import CampoContrasena from '../components/UI/CampoContrasena';
 import { useAjustesCtx } from '../context/AjustesContext';
+import Mascota from '../components/UI/Mascota';
 
 const LoginAdmin = () => {
   const navigate = useNavigate();
@@ -111,11 +112,14 @@ const LoginAdmin = () => {
     <div className="min-h-screen flex bg-white">
       {/* Columna izquierda - Imagen */}
       <div className="hidden lg:block lg:w-1/2 relative bg-gray-100">
-        <img
-          src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop"
-          alt="Tienda"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        {/*
+          Tiqui sobre el fondo de la marca. Antes era una foto de Unsplash cargada
+          desde sus servidores: cada visita le avisaba a un tercero, y si la foto
+          cambiaba de dirección la columna quedaba vacía.
+        */}
+        <div className="absolute inset-0 flex items-center justify-center bg-[var(--marca-50)]" aria-hidden="true">
+          <Mascota pose="saludo" alto={260} />
+        </div>
       </div>
 
       {/* Columna derecha - Formulario */}

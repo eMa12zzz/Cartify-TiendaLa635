@@ -168,6 +168,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
         value={busqueda}
         onChangeText={alBuscar}
         placeholder="Buscar en la tienda"
+        accessibilityLabel="Buscar en la tienda"
         placeholderTextColor={COLORES.marcador}
         style={estilos.campo}
         // El teclado muestra "buscar" en vez de un salto de línea, y filtrar

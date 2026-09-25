@@ -118,7 +118,7 @@ const Preferencias = ({ alVolver }) => {
                 </View>
 
                 <View style={estilos.textos}>
-                  <Text style={[estilos.titulo, activa && { color: colores.marca, fontWeight: '700' }]}>
+                  <Text style={[estilos.titulo, activa && { color: colores.marcaTexto, fontWeight: '700' }]}>
                     {op.titulo}
                   </Text>
                   <Text style={estilos.detalle}>{op.detalle}</Text>

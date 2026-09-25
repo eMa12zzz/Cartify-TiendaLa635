@@ -21,6 +21,7 @@ import Mascota, { EsperaMascota } from '../UI/Mascota';
 // El nombre de la tienda sale de los ajustes; el carrito y el recibo se habían
 // quedado con el escrito a mano. Ver AjustesContext.
 import { useAjustesCtx } from '../../context/AjustesContext';
+import { enlaceWhatsApp } from '../../utils/tienda';
 
 // Productos por página en el resumen del pedido confirmado.
 const POR_PAGINA = 4;
@@ -142,12 +143,17 @@ const BackBtn = styled.button`
   min-height: 44px;
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: ${BROWN}; }
+    &:hover { color: var(--marca-texto); }
   }
   &:active { transform: scale(0.94); }
 `;
 
-const HelpBtn = styled.button`
+/*
+ * "Ayuda" abre el WhatsApp de la tienda. Es un enlace y no un botón porque
+ * lleva a otro lado; antes era un botón que no hacía nada al tocarlo.
+ */
+const HelpBtn = styled.a`
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -163,7 +169,7 @@ const HelpBtn = styled.button`
   white-space: nowrap;
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: ${BROWN}; color: ${BROWN}; }
+    &:hover { border-color: ${BROWN}; color: var(--marca-texto); }
   }
   &:active { transform: scale(0.97); }
 `;
@@ -313,7 +319,7 @@ const ItemOldPrice = styled.span`
 const ItemPrice = styled.span`
   font-size: 13px;
   font-weight: 700;
-  color: ${BROWN};
+  color: var(--marca-texto);
 `;
 
 // El "/lb" acompaña al precio sin competir con él.
@@ -353,7 +359,7 @@ const QtyBtn = styled.button`
   color: var(--tinta-suave);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { background: ${BROWN_LIGHT}; border-color: ${BROWN}; color: ${BROWN}; }
+    &:hover { background: ${BROWN_LIGHT}; border-color: ${BROWN}; color: var(--marca-texto); }
   }
   &:active:not(:disabled) { transform: scale(0.94); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -586,7 +592,7 @@ const CheckoutSectionTitle = styled.div`
 
 const CheckoutSectionSub = styled.div`
   font-size: 13px;
-  color: ${BROWN};
+  color: var(--marca-texto);
   font-weight: 500;
 `;
 
@@ -656,7 +662,7 @@ const MoreBadge = styled.div`
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  color: ${BROWN};
+  color: var(--marca-texto);
 `;
 
 /* Checkout right: order summary */
@@ -750,7 +756,7 @@ const CouponBtn = styled.button`
   background: none;
   border: none;
   font-size: 13px;
-  color: ${BROWN};
+  color: var(--marca-texto);
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -983,7 +989,7 @@ const ConfirmSummaryTitle = styled.div`
 
 const OrderNumber = styled.div`
   font-size: 12px;
-  color: ${BROWN};
+  color: var(--marca-texto);
   font-weight: 600;
   margin-bottom: 16px;
   display: flex;
@@ -1350,6 +1356,30 @@ const ShoppingCart = ({
   };
 
   /*
+   * Escape hace lo mismo que la flecha o la X de cada vista: en la lista
+   * cierra, en el pago vuelve a la lista y en la confirmación cierra. Mientras
+   * se procesa el pago no hace nada, para no salir a medio cobro.
+   */
+  useEffect(() => {
+    const alTeclear = (e) => {
+      if (e.key !== 'Escape' || procesando) return;
+      if (view === 'cart') onCerrar();
+      else if (view === 'checkout') setView('cart');
+      else handleConfirmClose();
+    };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  });
+
+  // La ayuda va al WhatsApp que la tienda puso en el panel. Sin número, no sale.
+  const enlaceAyuda = enlaceWhatsApp('Hola, necesito ayuda con mi pedido.', ajustes?.negocio?.whatsapp);
+  const botonAyuda = enlaceAyuda && (
+    <HelpBtn href={enlaceAyuda} target="_blank" rel="noopener noreferrer">
+      <MessageCircle size={15} strokeWidth={2} aria-hidden="true" /> Ayuda
+    </HelpBtn>
+  );
+
+  /*
    * Ir al checkout exige sesión de cliente.
    *
    * El servidor ya rechaza el pedido sin sesión, y "Realizar pedido" también lo
@@ -1370,14 +1400,14 @@ const ShoppingCart = ({
   if (view === 'cart') {
     return (
       <Overlay $montado={montado} onClick={onCerrar}>
-        <CartPanel $montado={montado} onClick={e => e.stopPropagation()}>
+        <CartPanel $montado={montado} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Carrito">
           <CartHeader>
             <CartTitle>
               <ShoppingBag size={18} />
               Carrito
               <ItemCount>({items.length} {items.length === 1 ? 'artículo' : 'artículos'})</ItemCount>
             </CartTitle>
-            <CloseButton onClick={onCerrar}><X size={18} /></CloseButton>
+            <CloseButton type="button" onClick={onCerrar} aria-label="Cerrar el carrito" autoFocus><X size={18} aria-hidden="true" /></CloseButton>
           </CartHeader>
 
           <CartItemsScroll>
@@ -1478,15 +1508,15 @@ const ShoppingCart = ({
   if (view === 'checkout') {
     return (
       <Overlay $montado={montado} onClick={() => {}}>
-        <FullPanel $montado={montado} onClick={e => e.stopPropagation()}>
+        <FullPanel $montado={montado} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Pago del pedido">
           <PageTopBar>
-            <BackBtn onClick={() => setView('cart')}><ChevronLeft size={20} /></BackBtn>
+            <BackBtn type="button" onClick={() => setView('cart')} aria-label="Volver al carrito" autoFocus><ChevronLeft size={20} aria-hidden="true" /></BackBtn>
             {/* La misma marca que el menú. Antes aquí decía "Tienda" en gris
                 a 11px encima de "la 635" a 18px — ni parecido. */}
             <BrandTitle>
               <MarcaTienda tamano={19} alto={38} />
             </BrandTitle>
-            <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
+            {botonAyuda}
           </PageTopBar>
 
           <CheckoutLayout>
@@ -1674,7 +1704,7 @@ const ShoppingCart = ({
                               onClick={() => setAgregandoDireccion(true)}
                               style={{
                                 marginTop: 8, background: 'none', border: 'none', padding: 0,
-                                color: BROWN, fontSize: 12, fontWeight: 700,
+                                color: 'var(--marca-texto)', fontSize: 12, fontWeight: 700,
                                 fontFamily: 'inherit', cursor: 'pointer',
                               }}
                             >
@@ -1734,7 +1764,7 @@ const ShoppingCart = ({
                   </div>
 
                   {metodoPago === 'saldo' && (
-                    <p style={{ fontSize: 12, color: BROWN, margin: '10px 0 0', fontWeight: 500 }}>
+                    <p style={{ fontSize: 12, color: 'var(--marca-texto)', margin: '10px 0 0', fontWeight: 500 }}>
                       Le quedarán ${(saldo - totalAPagar).toFixed(2)} después de este pedido.
                     </p>
                   )}
@@ -1791,7 +1821,7 @@ const ShoppingCart = ({
                       className="press"
                       style={{
                         padding: '0 18px', borderRadius: 12, border: `1.5px solid ${BROWN}`,
-                        background: 'var(--papel)', color: BROWN, fontSize: 13, fontWeight: 600,
+                        background: 'var(--papel)', color: 'var(--marca-texto)', fontSize: 13, fontWeight: 600,
                         fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
                         opacity: canjeando || !codigoTarjeta.trim() ? 0.5 : 1,
                       }}
@@ -1874,8 +1904,20 @@ const ShoppingCart = ({
                 <span style={{ fontSize: 22 }}>${totalAPagar.toFixed(2)}</span>
               </TotalBig>
 
-              <p style={{ fontSize: 11, color: 'var(--tinta-tenue)', marginTop: 12, lineHeight: 1.5 }}>
-                Al realizar este pedido, usted acepta los Términos y Condiciones.
+              {/*
+                Qué se acepta al pagar, con los dos documentos a un toque. Se
+                abren en otra pestaña para no perder lo elegido en el pago. A
+                12,5 px y en el gris de texto: a 11 px y en el gris más tenue
+                casi no se leía, y es justo lo que alguien debería poder leer.
+              */}
+              <p style={{ fontSize: 12.5, color: 'var(--tinta-suave)', marginTop: 12, lineHeight: 1.55 }}>
+                Al realizar este pedido, usted acepta los{' '}
+                <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--marca-texto-fuerte)', fontWeight: 600, textDecoration: 'underline' }}>
+                  términos y condiciones
+                </a>{' '}y la{' '}
+                <a href="/devoluciones" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--marca-texto-fuerte)', fontWeight: 600, textDecoration: 'underline' }}>
+                  política de cambios y devoluciones
+                </a>.
               </p>
 
               <PlaceOrderBtn onClick={handlePlaceOrder} disabled={procesando}>
@@ -1912,14 +1954,14 @@ const ShoppingCart = ({
 
     return (
       <Overlay $montado={montado} onClick={() => {}}>
-        <FullPanel $montado={montado}>
+        <FullPanel $montado={montado} role="dialog" aria-modal="true" aria-label="Pedido confirmado">
           <PageTopBar>
-            <BackBtn onClick={handleConfirmClose}><ChevronLeft size={20} /></BackBtn>
+            <BackBtn type="button" onClick={handleConfirmClose} aria-label="Cerrar y volver a la tienda" autoFocus><ChevronLeft size={20} aria-hidden="true" /></BackBtn>
             <BrandTitle>
               {/* Igual que el checkout y que el menú. Ver MarcaTienda. */}
               <MarcaTienda tamano={19} alto={38} />
             </BrandTitle>
-            <HelpBtn><MessageCircle size={15} strokeWidth={2} /> Ayuda</HelpBtn>
+            {botonAyuda}
           </PageTopBar>
 
           <ConfirmLayout>
@@ -2055,7 +2097,7 @@ const ShoppingCart = ({
                     {esDomicilioReal ? 'Dirección de entrega' : 'Retiro en el local'}
                   </div>
                   {esDomicilioReal && (
-                    <div style={{ color: BROWN, fontSize: 13 }}>{direccionReal || 'Sin dirección'}</div>
+                    <div style={{ color: 'var(--marca-texto)', fontSize: 13 }}>{direccionReal || 'Sin dirección'}</div>
                   )}
                 </div>
               </DeliveryAddress>

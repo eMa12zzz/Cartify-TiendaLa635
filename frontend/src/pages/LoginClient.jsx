@@ -126,7 +126,7 @@ const Titular = styled.h1`
   color: var(--tinta);
   margin: 0 0 16px;
 
-  strong { color: ${BROWN}; font-weight: 800; }
+  strong { color: var(--marca-texto); font-weight: 800; }
 `;
 
 const Bajada = styled.p`
@@ -167,7 +167,7 @@ const IconoVentaja = styled.span`
   height: 30px;
   border-radius: 10px;
   background: var(--marca-50);
-  color: ${BROWN};
+  color: var(--marca-texto);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -311,7 +311,7 @@ const RememberLabel = styled.label`
 
 const ForgotLink = styled(Link)`
   font-size: 13px;
-  color: ${BROWN};
+  color: var(--marca-texto);
   font-weight: 600;
   text-decoration: none;
   &:hover { text-decoration: underline; }
@@ -370,7 +370,7 @@ const FooterText = styled.div`
 `;
 
 const FooterLink = styled(Link)`
-  color: ${BROWN};
+  color: var(--marca-texto);
   font-weight: 600;
   text-decoration: none;
   &:hover { text-decoration: underline; }
@@ -603,13 +603,14 @@ const LoginClient = () => {
           >
 
             <FieldGroup>
-              <Label>Correo Electrónico</Label>
+              <Label htmlFor="campo-email">Correo Electrónico</Label>
               <InputWrapper>
                 <IconWrapper><Mail size={18} /></IconWrapper>
                 <Input
                   type="email"
                   placeholder="juan@ejemplo.com"
                   $error={!!errors.email}
+                  id="campo-email"
                   {...register('email', {
                     required: 'El correo es requerido',
                     pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Formato inválido' }
@@ -620,7 +621,7 @@ const LoginClient = () => {
             </FieldGroup>
 
             <FieldGroup>
-              <Label>Contraseña</Label>
+              <Label htmlFor="campo-password">Contraseña</Label>
               {/* data-campo: el botón del ojo también cuenta como "en la contraseña". */}
               <InputWrapper data-campo="password">
                 <IconWrapper><Lock size={18} /></IconWrapper>
@@ -629,6 +630,7 @@ const LoginClient = () => {
                   placeholder="••••••••"
                   style={{ paddingRight: 44 }}
                   $error={!!errors.password}
+                  id="campo-password"
                   {...register('password', {
                     required: 'La contraseña es requerida',
                     minLength: { value: 6, message: 'Mínimo 6 caracteres' }

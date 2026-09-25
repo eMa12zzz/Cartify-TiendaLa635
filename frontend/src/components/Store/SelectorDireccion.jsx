@@ -180,7 +180,7 @@ const Opcion = styled.button`
 `;
 
 const Agregar = styled(Opcion)`
-  color: ${BROWN};
+  color: var(--marca-texto);
   font-weight: 700;
   font-size: 13px;
   align-items: center;

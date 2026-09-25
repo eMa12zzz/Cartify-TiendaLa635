@@ -41,7 +41,7 @@ const BackButton = styled.button`
   display: block;
 
   &:hover {
-    color: ${BROWN};
+    color: var(--marca-texto);
   }
 `;
 
@@ -153,13 +153,13 @@ const CreatePassword = () => {
 
       <Body>
         <Card>
-          <BackButton onClick={() => navigate('/verification')}>←</BackButton>
+          <BackButton type="button" aria-label="Volver" onClick={() => navigate('/verification')}>←</BackButton>
 
           <SectionTitle>Crea una contraseña</SectionTitle>
 
           <form onSubmit={handleSubmit(onSubmit)}>
             
-            <Label>Nueva Contraseña</Label>
+            <Label htmlFor="campo-newPassword">Nueva Contraseña</Label>
             {/* Con el ojo se puede revisar antes de mandar: en esta pantalla
                 un dedazo se descubre hasta el próximo inicio de sesión. */}
             <div style={{ position: 'relative' }}>
@@ -168,6 +168,7 @@ const CreatePassword = () => {
                 placeholder="Nueva Contraseña"
                 style={{ paddingRight: 44 }}
                 $error={!!errors.newPassword}
+                id="campo-newPassword"
                 {...register("newPassword", {
                   required: "La contraseña es obligatoria",
                   minLength: { value: 6, message: "Mínimo 6 caracteres" }
@@ -177,13 +178,14 @@ const CreatePassword = () => {
             </div>
             {errors.newPassword && <ErrorMsg>{errors.newPassword.message}</ErrorMsg>}
 
-            <Label>Confirmar Contraseña</Label>
+            <Label htmlFor="campo-confirmNewPassword">Confirmar Contraseña</Label>
             <div style={{ position: 'relative' }}>
               <Input
                 type={verConfirma ? 'text' : 'password'}
                 placeholder="Confirmar Contraseña"
                 style={{ paddingRight: 44 }}
                 $error={!!errors.confirmNewPassword}
+                id="campo-confirmNewPassword"
                 {...register("confirmNewPassword", {
                   required: "Debe confirmar la contraseña",
                   validate: value => value === newPassword || "Las contraseñas no coinciden"

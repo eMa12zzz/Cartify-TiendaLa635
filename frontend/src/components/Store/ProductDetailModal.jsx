@@ -120,7 +120,7 @@ const Volver = styled.button`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: var(--marca-600); color: var(--marca-700); }
+    &:hover { border-color: var(--marca-600); color: var(--marca-texto-fuerte); }
   }
   &:active { transform: scale(0.97); }
 `;
@@ -152,13 +152,13 @@ const MigaEnlace = styled.button`
   cursor: pointer;
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-600); text-decoration: underline; }
+    &:hover { color: var(--marca-texto); text-decoration: underline; }
   }
 `;
 
 /* El último escalón: se corta con puntos suspensivos en vez de partir la fila. */
 const MigaActual = styled.span`
-  color: var(--marca-700);
+  color: var(--marca-texto-fuerte);
   font-weight: 600;
   min-width: 0;
   overflow: hidden;
@@ -311,7 +311,7 @@ const Marca = styled.div`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.1px;
-  color: var(--marca-600);
+  color: var(--marca-texto);
   margin-bottom: 7px;
 `;
 

@@ -112,10 +112,10 @@ const diapositivasDe = (colores) => [
     ...degradadoDe(colores, ['marcaClaro', 'marca', 'acento']),
     IconoFondo: Mic,
     numero: '02',
-    etiqueta: 'ASISTENTE DE VOZ',
+    etiqueta: 'TIQUI, SU ASISTENTE',
     tituloPrefijo: 'Pida ',
     tituloAcento: 'hablando',
-    texto: 'Dígale a nuestro asistente qué necesita y arme su pedido sin escribir ni un producto.',
+    texto: 'Dígale a Tiqui, la mascota de la tienda, qué necesita y ella le arma el pedido sin escribir ni un producto.',
   },
   {
     clave: 'mapa',

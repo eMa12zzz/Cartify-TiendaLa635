@@ -119,7 +119,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           salida sería adivinar que hay que tocar "Todos". */}
       {!!promoSeleccionada && (
         <View style={estilos.filaPromoActiva}>
-          <Text style={[estilos.promoActivaTexto, { color: colores.marca }]} numberOfLines={1}>
+          <Text style={[estilos.promoActivaTexto, { color: colores.marcaTexto }]} numberOfLines={1}>
             Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
           </Text>
           <Pressable

@@ -89,7 +89,7 @@ const TarjetaRecibo = ({ pedido, colores }) => {
           {pedido.pointsEarned > 0 && (
             <View style={estilos.puntos}>
               <Estrella size={12} color={colores.marca} />
-              <Text style={[estilos.puntosTexto, { color: colores.marca }]}>+{pedido.pointsEarned}</Text>
+              <Text style={[estilos.puntosTexto, { color: colores.marcaTexto }]}>+{pedido.pointsEarned}</Text>
             </View>
           )}
         </View>

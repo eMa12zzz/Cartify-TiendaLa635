@@ -40,7 +40,7 @@ const ORBE = 'radial-gradient(circle at 34% 28%, #29a3e6, #003049 68%)';
  * Lo que dice la mascota antes de que le hablen. Va escrito y NO hablado: al
  * abrir, el asistente espera a que la persona toque (ver más abajo).
  */
-const SALUDO = '¡Hola! Soy Tiqui. Toca el botón y dime qué necesitas. Por ejemplo: “quiero una manzana y dos galletas” o “¿qué ofertas hay?”.';
+const SALUDO = '¡Hola! Soy Tiqui. Toca el botón y dime qué necesitas. Por ejemplo: “quiero dos manzanas y una leche” o “¿qué ofertas hay?”.';
 
 /*
  * La cara que pone la mascota según lo último que dijo.
@@ -569,7 +569,7 @@ const AsistenteVoz = ({
             </p>
             {/* El código escrito es el plan B: si la cámara no agarra, se
                 puede teclear en el teléfono. */}
-            <p className="text-[13px] font-black tracking-[3px]" style={{ color: 'var(--marca-600)' }}>
+            <p className="text-[13px] font-black tracking-[3px]" style={{ color: 'var(--marca-texto)' }}>
               {kiosco.codigo}
             </p>
           </div>

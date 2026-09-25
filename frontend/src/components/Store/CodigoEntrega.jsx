@@ -54,7 +54,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
   if (compacto) {
     return (
       <div className="flex items-center gap-2">
-        <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'var(--marca-600)' }} />
+        <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'var(--marca-texto)' }} />
         <span className="text-xs" style={{ color: c.textMuted }}>Código de entrega</span>
         <span
           className="text-sm font-bold tracking-[0.2em]"
@@ -83,7 +83,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
       style={enBurbuja ? undefined : { borderTop: `1px solid ${c.cardBorder}` }}
     >
       <div className="flex items-center gap-2 mb-3">
-        <ShieldCheck className="w-4 h-4" style={{ color: 'var(--marca-600)' }} />
+        <ShieldCheck className="w-4 h-4" style={{ color: 'var(--marca-texto)' }} />
         <span className="text-sm font-bold" style={{ color: c.textPrimary }}>
           Su código de entrega
         </span>

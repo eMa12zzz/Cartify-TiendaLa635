@@ -5,6 +5,7 @@ import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
 import ServicioTarifa from '../components/Admin/ServicioTarifa';
 import TemporadasPropias from '../components/Admin/TemporadasPropias';
+import DatosNegocio from '../components/Admin/DatosNegocio';
 import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo, todosLosTemas } from '../utils/temporadas';
 import Mascota from '../components/UI/Mascota';
 import { disfrazDeTema, NOMBRE_DEL_DISFRAZ } from '../utils/disfracesTiqui';
@@ -300,6 +301,18 @@ const Personalizacion = () => {
               {guardando ? 'Guardando…' : 'Guardar identidad'}
             </button>
           </form>
+            )}
+
+            {/* ── Identidad (2.ª parte): los datos del negocio ── */}
+            {seccion === 'identidad' && (
+              <DatosNegocio
+                key={JSON.stringify(ajustes.negocio || {})}
+                negocio={ajustes.negocio}
+                guardar={guardar}
+                guardando={guardando}
+                estiloTarjeta={tarjeta}
+                estiloCampo={inputStyle}
+              />
             )}
 
 

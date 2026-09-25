@@ -24,9 +24,9 @@ const Container = styled.div`min-height: 100vh; background: var(--papel-suave); 
 const Content = styled.div`flex: 1; padding: 32px 28px 60px; max-width: 760px; margin: 0 auto; width: 100%;`;
 const StepTitle = styled.h2`font-size: 18px; font-weight: 800; color: var(--tinta); margin: 0 0 14px;`;
 const Tabs = styled.div`display: flex; gap: 8px; margin-bottom: 18px;`;
-const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : 'var(--linea-fuerte)')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'var(--papel)')}; color: ${p => (p.$active ? BROWN_DARK : 'var(--tinta-suave)')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
+const Tab = styled.button`display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid ${p => (p.$active ? BROWN : 'var(--linea-fuerte)')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'var(--papel)')}; color: ${p => (p.$active ? 'var(--marca-texto-fuerte)' : 'var(--tinta-suave)')}; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);`;
 const SizesGrid = styled.div`display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; @media (max-width: 560px) { grid-template-columns: repeat(2, 1fr); }`;
-const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.5px solid ${p => (p.$active ? BROWN : 'var(--linea-fuerte)')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'var(--papel)')}; color: ${p => (p.$active ? BROWN_DARK : 'var(--tinta)')}; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); padding: 10px; &:hover { border-color: ${BROWN}; }
+const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.5px solid ${p => (p.$active ? BROWN : 'var(--linea-fuerte)')}; background: ${p => (p.$active ? 'var(--marca-100)' : 'var(--papel)')}; color: ${p => (p.$active ? 'var(--marca-texto-fuerte)' : 'var(--tinta)')}; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out); padding: 10px; &:hover { border-color: ${BROWN}; }
   /*
    * Sin material no se puede elegir. Se deja VISIBLE y apagado en vez de
    * esconderlo: la tienda sí ofrece ese formato, hoy no hay con qué hacerlo.
@@ -39,7 +39,7 @@ const SizeCard = styled.button`min-height: 90px; border-radius: 10px; border: 1.
 
 // El motivo, en palabras. "Agotado" a secas no dice qué se acabó.
 const SinMaterial = styled.span`font-size: 11px; font-weight: 700; color: var(--peligro); text-transform: uppercase; letter-spacing: 0.3px;`;
-const QuedaPoco = styled.span`font-size: 11px; font-weight: 700; color: ${BROWN_DARK};`;
+const QuedaPoco = styled.span`font-size: 11px; font-weight: 700; color: var(--marca-texto-fuerte);`;
 const OptionsCard = styled.div`background: var(--papel); border: 1px solid var(--linea); border-radius: 14px; padding: 20px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px;`;
 const Row = styled.div`display: flex; align-items: center; justify-content: space-between; gap: 12px;`;
 const Label = styled.span`font-size: 14px; color: var(--tinta); font-weight: 600;`;
@@ -48,7 +48,7 @@ const Select = styled.select`border: 1.5px solid var(--linea-fuerte); border-rad
 const Toggle = styled.button`position: relative; width: 44px; height: 24px; border-radius: 999px; border: none; cursor: pointer; background: ${p => (p.$on ? BROWN : 'var(--linea-fuerte)')}; transition: background-color var(--dur-press) var(--ease-out); & span { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--papel); transform: ${p => (p.$on ? 'translateX(20px)' : 'translateX(0)')}; transition: transform var(--dur-press) var(--ease-out); }`;
 const PriceBox = styled.div`display: flex; align-items: baseline; justify-content: space-between; padding: 16px 0; border-top: 1px dashed var(--linea-fuerte); margin-bottom: 20px;`;
 const PriceLabel = styled.span`font-size: 15px; color: var(--tinta-suave);`;
-const PriceValue = styled.span`font-size: 28px; font-weight: 800; color: ${BROWN_DARK};`;
+const PriceValue = styled.span`font-size: 28px; font-weight: 800; color: var(--marca-texto-fuerte);`;
 const ErrorMsg = styled.div`color: var(--peligro); font-size: 13px; margin-bottom: 16px;`;
 /*
  * Distinto del ErrorMsg rojo a propósito: esto no bloquea nada, es un
@@ -275,21 +275,21 @@ const Impresiones = () => {
                 </span>
               )}
             </Label>
-            <Toggle $on={color} disabled={!puedeColor} onClick={() => puedeColor && setColor((v) => !v)} aria-label="Color">
+            <Toggle $on={color} disabled={!puedeColor} onClick={() => puedeColor && setColor((v) => !v)} role="switch" aria-checked={color} aria-label="Imprimir a color">
               <span />
             </Toggle>
           </Row>
           <Row>
-            <Label>Copias</Label>
-            <NumInput type="number" min="1" value={copias} onChange={(e) => setCopias(e.target.value)} />
+            <Label id="etiqueta-copias">Copias</Label>
+            <NumInput type="number" inputMode="numeric" min="1" aria-labelledby="etiqueta-copias" value={copias} onChange={(e) => setCopias(e.target.value)} />
           </Row>
           <Row>
             <Label>Doble cara</Label>
-            <Toggle $on={dobleCara} onClick={() => setDobleCara((v) => !v)} aria-label="Doble cara"><span /></Toggle>
+            <Toggle $on={dobleCara} onClick={() => setDobleCara((v) => !v)} role="switch" aria-checked={dobleCara} aria-label="Imprimir a doble cara"><span /></Toggle>
           </Row>
           <Row>
-            <Label>Tipo de papel</Label>
-            <Select value={papel} onChange={(e) => setPapel(e.target.value)}>
+            <Label id="etiqueta-papel">Tipo de papel</Label>
+            <Select aria-labelledby="etiqueta-papel" value={papel} onChange={(e) => setPapel(e.target.value)}>
               <option>Normal</option>
               <option>Fotográfico</option>
               <option>Cartulina</option>

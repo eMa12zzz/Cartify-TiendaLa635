@@ -1,6 +1,7 @@
 import styled from 'styled-components';
-import { MessageCircle, MapPin, ArrowUpRight } from 'lucide-react';
+import { MessageCircle, MapPin, ArrowUpRight, Clock, Phone, Mail } from 'lucide-react';
 import { usePieTienda } from '../../hooks/usePieTienda';
+import { abrirAvisoCookies } from '../../utils/consentimiento';
 import { LANDING_URL } from '../../utils/tienda';
 
 /*
@@ -104,11 +105,11 @@ const EnlaceLanding = styled.a`
   margin: -8px 0 18px;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--marca-600);
+  color: var(--marca-texto);
   text-decoration: none;
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-700); text-decoration: underline; }
+    &:hover { color: var(--marca-texto-fuerte); text-decoration: underline; }
   }
 `;
 
@@ -122,6 +123,9 @@ const Dato = styled.p`
   margin: 0 0 14px;
 
   svg { flex-shrink: 0; margin-top: 1px; color: var(--tinta-tenue); }
+  /* Teléfono y correo se tocan para llamar o escribir: se ven como enlace. */
+  a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--marca-texto-fuerte); }
 `;
 
 const BotonWhats = styled.a`
@@ -141,7 +145,7 @@ const BotonWhats = styled.a`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: var(--marca-600); color: var(--marca-700); }
+    &:hover { border-color: var(--marca-600); color: var(--marca-texto-fuerte); }
   }
   &:active { transform: scale(0.97); }
 `;
@@ -183,7 +187,7 @@ const Enlace = styled.button`
   transition: color var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-700); }
+    &:hover { color: var(--marca-texto-fuerte); }
   }
 `;
 
@@ -215,14 +219,14 @@ const EnlaceCierre = styled.button`
   transition: color var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-700); text-decoration: underline; }
+    &:hover { color: var(--marca-texto-fuerte); text-decoration: underline; }
   }
 `;
 
 const PieTienda = () => {
   const {
     pasillos, enlacesCuenta, enlacesLegales, ir, whatsapp, direccion, nombre, anio,
-    nombreLinea1, nombreLinea2, logoUrl, lema,
+    nombreLinea1, nombreLinea2, logoUrl, lema, negocio,
   } = usePieTienda();
 
   return (
@@ -245,9 +249,29 @@ const PieTienda = () => {
               Así funciona la tienda <ArrowUpRight size={14} strokeWidth={2.4} />
             </EnlaceLanding>
             <Dato>
-              <MapPin size={15} strokeWidth={2} />
+              <MapPin size={15} strokeWidth={2} aria-hidden="true" />
               {direccion}
             </Dato>
+            {/* Los datos del negocio (Personalización → Identidad). Lo que el
+                dueño dejó vacío no se pinta. */}
+            {negocio.horario && (
+              <Dato>
+                <Clock size={15} strokeWidth={2} aria-hidden="true" />
+                {negocio.horario}
+              </Dato>
+            )}
+            {negocio.telefono && (
+              <Dato>
+                <Phone size={15} strokeWidth={2} aria-hidden="true" />
+                <a href={`tel:${negocio.telefono.replace(/[^\d+]/g, '')}`}>{negocio.telefono}</a>
+              </Dato>
+            )}
+            {negocio.correo && (
+              <Dato>
+                <Mail size={15} strokeWidth={2} aria-hidden="true" />
+                <a href={`mailto:${negocio.correo}`}>{negocio.correo}</a>
+              </Dato>
+            )}
             {/* Sin número configurado no se pinta el botón: uno que no lleva a
                 ningún lado es peor que no tener botón. */}
             {whatsapp && (
@@ -286,10 +310,14 @@ const PieTienda = () => {
         </Columnas>
 
         <Cierre>
-          <span>© {anio} {nombre}</span>
-          {enlacesLegales.map((e) => (
-            <EnlaceCierre key={e.ruta} onClick={() => ir(e.ruta)}>{e.texto}</EnlaceCierre>
-          ))}
+          <span>© {anio} {nombre}{negocio.titular ? ` · ${negocio.titular}` : ''}</span>
+          <nav aria-label="Documentos legales" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+            {enlacesLegales.map((e) => (
+              <EnlaceCierre key={e.ruta} onClick={() => ir(e.ruta)}>{e.texto}</EnlaceCierre>
+            ))}
+            {/* Para cambiar lo que eligió en el aviso de cookies, cuando quiera. */}
+            <EnlaceCierre onClick={abrirAvisoCookies}>Configurar cookies</EnlaceCierre>
+          </nav>
           <span>Hecho en El Salvador</span>
         </Cierre>
       </Interior>

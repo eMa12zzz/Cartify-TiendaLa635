@@ -37,7 +37,7 @@ const BackButton = styled.button`
   padding: 0;
   display: block;
 
-  &:hover { color: ${BROWN}; }
+  &:hover { color: var(--marca-texto); }
 `;
 
 const SectionTitle = styled.h2`
@@ -102,10 +102,17 @@ const ErrorMsg = styled.div`
   border-radius: 8px;
 `;
 
-const ForgotLink = styled.div`
+// Botón con cara de enlace: el div de antes no se alcanzaba con Tab.
+const ForgotLink = styled.button`
+  display: block;
+  margin: 0 auto;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-family: inherit;
   text-align: center;
   font-size: 13px;
-  color: ${BROWN};
+  color: var(--marca-texto);
   cursor: pointer;
   font-weight: 600;
 
@@ -175,14 +182,16 @@ const LoginPassword = () => {
 
       <Body>
         <Card>
-          <BackButton onClick={() => navigate('/iniciar-sesion')}>←</BackButton>
+          <BackButton type="button" aria-label="Volver" onClick={() => navigate('/iniciar-sesion')}>←</BackButton>
 
           <SectionTitle>Bienvenido de vuelta</SectionTitle>
           <Subtitle>Ingresa tu contraseña para continuar</Subtitle>
 
-          <Label>Contraseña</Label>
+          <Label htmlFor="campo-password">Contraseña</Label>
           <div style={{ position: 'relative' }}>
             <Input
+              id="campo-password"
+              autoComplete="current-password"
               type={verPass ? 'text' : 'password'}
               placeholder="Tu contraseña"
               style={{ paddingRight: 44 }}
@@ -200,7 +209,7 @@ const LoginPassword = () => {
             {loading ? 'Verificando...' : 'Iniciar sesión'}
           </Button>
 
-          <ForgotLink onClick={() => alert('Función de recuperación próximamente')}>
+          <ForgotLink type="button" onClick={() => alert('Función de recuperación próximamente')}>
             ¿Olvidaste tu contraseña?
           </ForgotLink>
         </Card>
