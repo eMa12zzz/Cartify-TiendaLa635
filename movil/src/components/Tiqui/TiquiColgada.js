@@ -17,6 +17,7 @@
  *   'piensa'    mira hacia arriba, una ceja arriba.
  *   'habla'     la boca se abre y se cierra.
  *   'feliz'     ojos felices y cachetes.
+ *   'tapada'    no mira: ojos cerrados y colorada (la contraseña del login).
  *   'jalada'    la están jalando: sorprendida, estirada.
  *   'soltada'   la soltaron: contenta, de vuelta para arriba.
  *
@@ -86,6 +87,14 @@ const Cara = ({ cara, rasgo, parpadeo, bocaAbierta }) => {
           {bocaAbierta
             ? <Ellipse cx={200} cy={290} rx={11} ry={12} fill={rasgo} />
             : linea('M186,288 Q200,298 214,288', 7.5)}
+        </>
+      );
+    case 'tapada':
+      return (
+        <>
+          {linea(`${cerrado(I)} ${cerrado(D)}`)}
+          {cachetes(0.55)}
+          {linea('M186,286 Q200,296 214,286', 7)}
         </>
       );
     case 'feliz':

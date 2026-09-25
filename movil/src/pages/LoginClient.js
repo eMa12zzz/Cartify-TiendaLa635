@@ -71,6 +71,8 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   const [recordarme, setRecordarme] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [cargandoGoogle, setCargandoGoogle] = useState(false);
+  // Con la contraseña en foco, Tiqui se tapa los ojos: no está mirando.
+  const [enContrasena, setEnContrasena] = useState(false);
   // Del correo, "Siguiente" en el teclado salta aquí. Ver CampoTexto.
   const campoContrasena = useRef(null);
 
@@ -184,14 +186,19 @@ const LoginClient = ({ irARegistro, irATienda }) => {
           showsVerticalScrollIndicator={false}
         >
           {/*
-            Tiqui colgando junto al título, como en el inicio de sesión de la
-            web: contenta mientras entra, pensativa si algo no cuadró.
+            Tiqui colgando arriba del formulario, como en el inicio de sesión
+            de la web: se tapa los ojos en la contraseña, se pone contenta
+            mientras entra y pensativa si algo no cuadró.
           */}
           <View style={estilos.tiqui} pointerEvents="none">
-            <TiquiColgada cara={cargando || cargandoGoogle ? 'feliz' : avisoServidor ? 'piensa' : 'normal'} alto={150} largo={90} />
+            <TiquiColgada
+              cara={cargando || cargandoGoogle ? 'feliz' : avisoServidor ? 'piensa' : enContrasena ? 'tapada' : 'normal'}
+              alto={170}
+              largo={70}
+            />
           </View>
-          <Text style={[estilos.titulo, estilos.conTiqui]}>Bienvenido de nuevo</Text>
-          <Text style={[estilos.subtitulo, estilos.conTiqui]}>Inicie sesión para seguir con su compra.</Text>
+          <Text style={estilos.titulo}>Bienvenido de nuevo</Text>
+          <Text style={estilos.subtitulo}>Inicie sesión para seguir con su compra.</Text>
 
           <CampoTexto
             icono={Mail}
@@ -219,6 +226,8 @@ const LoginClient = ({ irARegistro, irATienda }) => {
             autoComplete="password"
             textContentType="password"
             ref={campoContrasena}
+            onFocus={() => setEnContrasena(true)}
+            onBlur={() => setEnContrasena(false)}
             alEnviar={enviar}
             accessibilityLabel="Contraseña"
             redondo
@@ -321,20 +330,20 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     fontWeight: '800',
     color: COLORES.tituloFuerte,
     marginBottom: 6,
+    textAlign: 'center',
   },
   subtitulo: {
     fontSize: 14,
     color: COLORES.subtitulo,
     marginBottom: 26,
+    textAlign: 'center',
   },
-  // Cuelga del borde de arriba, a la derecha; el título le deja su lugar.
+  // Cuelga del borde de arriba, centrada: el margen negativo se come el
+  // aire de arriba del cuerpo para que el broche quede pegado a la barra.
   tiqui: {
-    position: 'absolute',
-    top: 0,
-    right: 18,
-  },
-  conTiqui: {
-    paddingRight: 84,
+    alignItems: 'center',
+    marginTop: -28,
+    marginBottom: 10,
   },
   fila: {
     flexDirection: 'row',
