@@ -71,7 +71,8 @@
         {
           "microphonePermission": "Se usa para escuchar lo que pide por voz."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "extra": {
       "eas": {
