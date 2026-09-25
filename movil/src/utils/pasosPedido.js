@@ -1,4 +1,4 @@
-import { Package, ChefHat, Bike, Check } from 'lucide-react-native';
+import { Package, ChefHat, Bike, Check, Store } from 'lucide-react-native';
 import { COLORES_OSCURO } from '../theme/colores';
 
 /*
@@ -23,6 +23,8 @@ export const PASOS_TODOS = [
   { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package, pose: 'recibido' },
   { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat, pose: 'preparando' },
   { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike, pose: 'en-camino' },
+  // Solo retiro en la tienda: el aviso de "ya puede pasar por él".
+  { id: 'listo', label: 'Listo para recoger', detalle: 'Ya puede pasar por él a la tienda', Icono: Store, pose: 'entregado' },
   { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check, pose: 'entregado' },
 ];
 
@@ -41,7 +43,7 @@ export const poseDeEstado = (estado) =>
  */
 export const pasosDe = (deliveryType) =>
   deliveryType === 'delivery'
-    ? PASOS_TODOS
+    ? PASOS_TODOS.filter((p) => p.id !== 'listo')
     : PASOS_TODOS.filter((p) => p.id !== 'en_camino');
 
 /*
@@ -66,6 +68,7 @@ export const ESTADOS_PEDIDO = {
   pagado: { texto: 'Pagado', color: '#2563EB', fondo: '#E8EFFD' },
   preparando: { texto: 'Preparando', color: '#D97706', fondo: '#FBF0DF' },
   en_camino: { texto: 'En camino', color: '#1D4ED8', fondo: '#E3EAFB' },
+  listo: { texto: 'Listo para recoger', color: '#6D28D9', fondo: '#EFE8FB' },
   entregado: { texto: 'Entregado', color: '#16A34A', fondo: '#E4F5EA' },
   cancelado: { texto: 'Cancelado', color: '#DC2626', fondo: '#FBE7E7' },
 };
@@ -79,6 +82,7 @@ const ESTADOS_PEDIDO_OSCURO = {
   pagado: { texto: 'Pagado', color: COLORES_OSCURO.infoVivo, fondo: COLORES_OSCURO.infoFondo },
   preparando: { texto: 'Preparando', color: COLORES_OSCURO.avisoVivo, fondo: COLORES_OSCURO.avisoFondo },
   en_camino: { texto: 'En camino', color: COLORES_OSCURO.infoVivo, fondo: COLORES_OSCURO.infoFondo },
+  listo: { texto: 'Listo para recoger', color: '#C4B5FD', fondo: '#241B38' },
   entregado: { texto: 'Entregado', color: COLORES_OSCURO.exitoVivo, fondo: COLORES_OSCURO.exitoFondo },
   cancelado: { texto: 'Cancelado', color: COLORES_OSCURO.peligro, fondo: COLORES_OSCURO.peligroFondo },
 };

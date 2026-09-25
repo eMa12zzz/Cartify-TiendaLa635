@@ -13,6 +13,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
+import { useTienda } from '../../context/TiendaContext';
 import { useAviso } from '../../context/AvisoContext';
 import { irATabs } from '../../navigation/navigationRef';
 import { permisoParaAvisos } from '../../utils/notificaciones';
@@ -25,12 +26,13 @@ const PruebasDesarrollo = () => {
   const estilos = useEstilos(crearEstilos);
   const { colores } = useTema();
   const { orders } = usePedidoActivoCtx();
+  const { promociones } = useTienda();
   const { avisar } = useAviso();
   const [activa, setActiva] = useState(simulacionActiva());
 
   useEffect(() => suscribirseASimulacion(() => setActiva(simulacionActiva())), []);
 
-  const simular = async () => {
+  const simular = async (tipo) => {
     // El permiso ANTES de arrancar: pedirlo a mitad del pedido se come el aviso.
     if (!(await permisoParaAvisos())) {
       avisar('Sin permiso de notificaciones: el pedido corre igual, pero sin el aviso', 'error');
@@ -38,8 +40,10 @@ const PruebasDesarrollo = () => {
     // Un pedido real suyo como molde (productos y total), si tiene alguno.
     const reales = (orders || []).filter((o) => !esPedidoSimulado(o._id));
     const plantilla = reales.find((o) => o.deliveryLat != null) || reales[0] || null;
-    iniciarSimulacion({ plantilla });
-    avisar('Pedido de prueba en marcha: sale a los 35 s y llega a los 2 min');
+    iniciarSimulacion({ plantilla, tipo });
+    avisar(tipo === 'retiro'
+      ? 'Pedido de prueba en marcha: queda listo para recoger a los 35 s'
+      : 'Pedido de prueba en marcha: sale a los 35 s y llega a los 2 min');
     irATabs('inicio');
   };
 
@@ -67,9 +71,12 @@ const PruebasDesarrollo = () => {
       {activa ? (
         <Boton texto="Detener el pedido de prueba" alTocar={detenerSimulacion} />
       ) : (
-        <Boton texto="Simular un pedido a domicilio" alTocar={simular} />
+        <>
+          <Boton texto="Simular un pedido a domicilio" alTocar={() => simular('delivery')} />
+          <Boton texto="Simular un pedido para recoger" alTocar={() => simular('retiro')} />
+        </>
       )}
-      <Boton texto="Probar aviso de promoción" alTocar={() => probar(probarAvisoPromo)} />
+      <Boton texto="Probar aviso de promoción" alTocar={() => probar(() => probarAvisoPromo((promociones || [])[0]))} />
       <Boton texto="Probar aviso de productos nuevos" alTocar={() => probar(probarAvisoProductosNuevos)} />
     </View>
   );

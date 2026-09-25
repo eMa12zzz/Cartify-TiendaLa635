@@ -52,7 +52,7 @@ const BurbujaPedido = () => {
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
-  const { orders, abrirPedido, cerrarPedidoAbierto } = usePedidoActivoCtx();
+  const { orders, abrirPedido, cerrarPedidoAbierto, pedidoASeguir, dejarDeSeguir } = usePedidoActivoCtx();
   // El pedido puede estar listo ANTES de que Splash termine de decidir a
   // dónde ir (sesión restaurada + Onboarding leído): sin esto, la burbuja se
   // alcanzaba a ver montándose encima del propio Splash.
@@ -84,12 +84,27 @@ const BurbujaPedido = () => {
 
   const enCurso = esCliente
     ? (orders || [])
-        .filter((o) => ['pagado', 'preparando', 'en_camino'].includes(o.status))
+        .filter((o) => ['pagado', 'preparando', 'en_camino', 'listo'].includes(o.status))
         .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0]
     : null;
 
   // Los hooks necesitan el id ANTES de cualquier return: no se llaman a medias.
   const seguimiento = useSeguimientoEnVivo(enCurso?._id, !!enCurso);
+
+  /*
+   * Tocaron el aviso de "va en camino": se despliega la tarjeta con el mapa
+   * aunque la burbuja estuviera encogida u oculta. Se espera a que el pedido
+   * esté en la lista (al abrir la app desde el aviso, todavía se está
+   * cargando).
+   */
+  const idEnCurso = enCurso ? String(enCurso._id) : null;
+  useEffect(() => {
+    if (!pedidoASeguir || !idEnCurso || pedidoASeguir !== idEnCurso) return;
+    setEncogidaEn(null);
+    setOculta(false);
+    setAbierta(true);
+    dejarDeSeguir();
+  }, [pedidoASeguir, idEnCurso, dejarDeSeguir]);
   const zona = useTiempoPorZona(
     !enCurso || seguimiento.enVivo ? null : enCurso.deliveryLat,
     !enCurso || seguimiento.enVivo ? null : enCurso.deliveryLng

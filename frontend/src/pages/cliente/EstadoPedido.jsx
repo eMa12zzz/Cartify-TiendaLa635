@@ -80,7 +80,7 @@ const EstadoPedido = () => {
   }, [id]);
 
   // Seguimiento en vivo: solo tiene sentido mientras el pedido está en curso.
-  const enCurso = pedido && ['pagado', 'preparando', 'en_camino'].includes(pedido.status);
+  const enCurso = pedido && ['pagado', 'preparando', 'en_camino', 'listo'].includes(pedido.status);
   const seguimiento = useSeguimientoEnVivo(pedido?._id, !!enCurso);
 
   if (cargando) {

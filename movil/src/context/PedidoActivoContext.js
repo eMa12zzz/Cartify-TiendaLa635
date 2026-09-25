@@ -88,6 +88,15 @@ export const PedidoActivoProvider = ({ children }) => {
 
   const cerrarPedidoAbierto = useCallback(() => setPedidoAbierto(null), []);
 
+  /*
+   * El pedido cuya burbuja hay que desplegar (con el mapa). Lo pide el aviso
+   * de "va en camino" al tocarlo: ahí lo que se quiere ver es al repartidor,
+   * no la lista. BurbujaPedido lo lee y lo suelta en cuanto se abre.
+   */
+  const [pedidoASeguir, setPedidoASeguir] = useState(null);
+  const seguirPedido = useCallback((id) => setPedidoASeguir(id ? String(id) : null), []);
+  const dejarDeSeguir = useCallback(() => setPedidoASeguir(null), []);
+
   return (
     <PedidoActivoContext.Provider
       value={{
@@ -97,6 +106,9 @@ export const PedidoActivoProvider = ({ children }) => {
         pedidoAbierto,
         abrirPedido: setPedidoAbierto,
         cerrarPedidoAbierto,
+        pedidoASeguir,
+        seguirPedido,
+        dejarDeSeguir,
       }}
     >
       {children}
@@ -113,6 +125,9 @@ const SIN_PROVEEDOR = {
   pedidoAbierto: null,
   abrirPedido: () => {},
   cerrarPedidoAbierto: () => {},
+  pedidoASeguir: null,
+  seguirPedido: () => {},
+  dejarDeSeguir: () => {},
 };
 
 export const usePedidoActivoCtx = () => useContext(PedidoActivoContext) || SIN_PROVEEDOR;

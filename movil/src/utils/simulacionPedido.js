@@ -33,21 +33,34 @@ export const esPedidoSimulado = (id) => id === ID_SIMULADO;
  * verdad tarda media hora; aquí dos minutos y medio. El viaje dura 90
  * segundos para que el repartidor se vea avanzar varias veces en el mapa
  * (la app pregunta su posición cada 10).
+ *
+ * A domicilio: recibido → preparando → en camino → entregado.
+ * Para recoger: recibido → preparando → listo → entregado (en el mostrador).
  */
-const PREPARANDO_EN = 15;
 const EN_CAMINO_EN = 35;
 const DURACION_VIAJE = 90;
-const ENTREGADO_EN = EN_CAMINO_EN + DURACION_VIAJE + 5;
+const RECORRIDOS = {
+  delivery: [['preparando', 15], ['en_camino', 35], ['entregado', 35 + 90 + 5]],
+  retiro: [['preparando', 15], ['listo', 35], ['entregado', 75]],
+};
 
 // De dónde sale el repartidor respecto a la casa: unos 1.6 km al noreste.
 const SALIDA = { lat: 0.0115, lng: 0.0105 };
 // Si no hay una dirección de verdad con coordenadas, una en San Salvador.
 const DESTINO_POR_DEFECTO = { lat: 13.7035, lng: -89.2244 };
 
-// Los textos que manda el servidor (backend/src/utils/avisosCliente.js).
-export const AVISO_EN_CAMINO = {
-  titulo: 'Su pedido va en camino',
-  cuerpo: 'Ya salió de la tienda. Puede verlo en el mapa y saber cuándo salir a la puerta.',
+/*
+ * Los textos que manda el servidor en cada paso (TEXTOS_PEDIDO en
+ * backend/src/utils/avisosCliente.js). Si allá cambian, se cambian aquí.
+ */
+export const TEXTOS_PEDIDO = {
+  preparando: { titulo: 'Estamos preparando su pedido', cuerpo: 'Ya estamos juntando sus productos.' },
+  en_camino: {
+    titulo: 'Su pedido va en camino',
+    cuerpo: 'Ya salió de la tienda. Puede verlo en el mapa y saber cuándo salir a la puerta.',
+  },
+  listo: { titulo: 'Su pedido está listo', cuerpo: 'Ya puede pasar a recogerlo a la tienda.' },
+  entregado: { titulo: 'Su pedido llegó', cuerpo: '¡Que lo disfrute! Si quiere, califique la entrega desde la app.' },
 };
 
 let sim = null;
@@ -69,10 +82,9 @@ const segundos = () => (Date.now() - sim.inicio) / 1000;
 
 const estadoActual = () => {
   const s = segundos();
-  if (s < PREPARANDO_EN) return 'pagado';
-  if (s < EN_CAMINO_EN) return 'preparando';
-  if (s < ENTREGADO_EN) return 'en_camino';
-  return 'entregado';
+  let estado = 'pagado';
+  for (const [paso, en] of RECORRIDOS[sim.tipo]) if (s >= en) estado = paso;
+  return estado;
 };
 
 /*
@@ -80,7 +92,7 @@ const estadoActual = () => {
  * tiene alguno): de ahí salen los productos y el total, para que se vea como
  * uno de verdad. `destino` es a dónde va.
  */
-export const iniciarSimulacion = ({ plantilla = null, destino = null } = {}) => {
+export const iniciarSimulacion = ({ plantilla = null, destino = null, tipo = 'delivery' } = {}) => {
   detenerSimulacion();
   const casa =
     destino?.lat != null && destino?.lng != null
@@ -90,21 +102,31 @@ export const iniciarSimulacion = ({ plantilla = null, destino = null } = {}) => 
         : DESTINO_POR_DEFECTO;
   sim = {
     inicio: Date.now(),
+    tipo: tipo === 'retiro' ? 'retiro' : 'delivery',
     plantilla,
     destino: casa,
     salida: { lat: casa.lat + SALIDA.lat, lng: casa.lng + SALIDA.lng },
   };
 
-  // Cada cambio de paso se anuncia a quien muestra el pedido.
-  [PREPARANDO_EN, EN_CAMINO_EN, ENTREGADO_EN].forEach((s) => relojes.push(setTimeout(avisarCambio, s * 1000 + 50)));
-
-  // El aviso que de verdad manda el servidor cuando el pedido sale.
-  relojes.push(setTimeout(() => {
-    avisoLocal({ ...AVISO_EN_CAMINO, datos: { tipo: 'pedidoEnCamino', pedidoId: ID_SIMULADO } });
-  }, EN_CAMINO_EN * 1000));
+  const recorrido = RECORRIDOS[sim.tipo];
+  recorrido.forEach(([paso, en]) => {
+    relojes.push(setTimeout(() => {
+      // Cada cambio de paso se anuncia a quien muestra el pedido…
+      avisarCambio();
+      // …y suena el aviso que manda el servidor en ese paso (el retiro no se
+      // avisa al entregarse: se entrega en el mostrador, con la persona ahí).
+      if (paso === 'entregado' && sim?.tipo === 'retiro') return;
+      avisoLocal({
+        ...TEXTOS_PEDIDO[paso],
+        canal: 'pedidos',
+        datos: { tipo: paso === 'en_camino' ? 'pedidoEnCamino' : 'pedido', estado: paso, pedidoId: ID_SIMULADO },
+      });
+    }, en * 1000));
+  });
 
   // Al terminar, el pedido de prueba se va solo un rato después.
-  relojes.push(setTimeout(detenerSimulacion, (ENTREGADO_EN + 60) * 1000));
+  const fin = recorrido[recorrido.length - 1][1];
+  relojes.push(setTimeout(detenerSimulacion, (fin + 60) * 1000));
 
   avisarCambio();
 };
@@ -128,7 +150,7 @@ export const pedidoSimulado = () => {
     ...p,
     _id: ID_SIMULADO,
     status: estadoActual(),
-    deliveryType: 'delivery',
+    deliveryType: sim.tipo === 'retiro' ? 'retiro' : 'delivery',
     deliveryAddress: p.deliveryAddress || 'Dirección de prueba',
     deliveryLat: sim.destino.lat,
     deliveryLng: sim.destino.lng,
@@ -145,6 +167,7 @@ export const pedidoSimulado = () => {
 // Lo mismo que devuelve GET /order/:id/courier, con el repartidor avanzando.
 export const repartidorSimulado = () => {
   if (!sim) return { status: 'cancelado', deliveryType: 'delivery', destino: null, courier: null };
+  if (sim.tipo === 'retiro') return { status: estadoActual(), deliveryType: 'retiro', destino: null, courier: null };
   const status = estadoActual();
   let courier = null;
   if (status === 'en_camino') {
@@ -171,9 +194,10 @@ export const probarAvisoProductosNuevos = () =>
     datos: { tipo: 'productosNuevos' },
   });
 
-export const probarAvisoPromo = () =>
+// Con una promo de verdad de la tienda, para que al tocarlo haya qué abrir.
+export const probarAvisoPromo = (promo) =>
   avisoLocal({
-    titulo: 'Churritos Diana al 2x1',
-    cuerpo: 'Solo hoy: lleve dos y pague uno.',
-    datos: { tipo: 'promo', promoId: 'prueba' },
+    titulo: promo?.title || 'Nueva promoción',
+    cuerpo: promo?.promoDescription || 'Aprovéchela en la tienda.',
+    datos: { tipo: 'promo', promoId: String(promo?._id || '') },
   });

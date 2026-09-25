@@ -54,7 +54,6 @@
  * ver el comentario grande de `volarAlCarrito.js`.
  */
 
-import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -68,8 +67,9 @@ import { FavoritosProvider } from './src/context/FavoritosContext';
 import { TemaProvider } from './src/context/TemaContext';
 import { TiendaProvider } from './src/context/TiendaContext';
 import { PedidoActivoProvider } from './src/context/PedidoActivoContext';
-import { irATabs, navegarA } from './src/navigation/navigationRef';
-import { escucharToques } from './src/utils/notificaciones';
+import { navegarA } from './src/navigation/navigationRef';
+// Tocar un aviso lleva justo a lo que avisaba (el pedido, la promo…).
+import AvisosTocados from './src/components/UI/AvisosTocados';
 import RootNavigator from './src/navigation/RootNavigator';
 import LimiteDeError from './src/components/UI/LimiteDeError';
 import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
@@ -81,25 +81,6 @@ import { ModoProvider, useModo } from './src/context/ModoContext';
 const BarraDeEstado = () => {
   const { oscuro } = useModo();
   return <StatusBar style={oscuro ? 'light' : 'dark'} />;
-};
-
-/*
- * Tocar un aviso tiene que llevar a donde el aviso prometía. El backend manda
- * el tipo en la carga útil (ver backend/src/utils/pushExpo.js) y esto lo
- * traduce a una pestaña: el de "su pedido va en camino" abre Pedidos, y los
- * de promociones y productos nuevos, la tienda.
- *
- * No pinta nada — vive en el árbol solo para tener un sitio donde montar el
- * oyente y quitarlo. Va DENTRO de los proveedores porque la navegación tiene
- * que estar lista cuando llegue el toque.
- */
-const AvisosTocados = () => {
-  useEffect(() => escucharToques((datos) => {
-    if (datos?.tipo === 'pedidoEnCamino') irATabs('pedidos');
-    else if (datos?.tipo === 'promo' || datos?.tipo === 'productosNuevos') irATabs('inicio');
-  }), []);
-
-  return null;
 };
 
 // GestureHandlerRootView: sin él no funcionan los gestos de jalar para

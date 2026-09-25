@@ -542,6 +542,8 @@ export const TiendaProvider = ({ children }) => {
       productosDestacados,
       secciones,
       promosDelCarrusel,
+      // Todas, sin filtrar por pasillo: el aviso de una promo la busca aquí.
+      promociones,
       promoSeleccionada,
       setPromoSeleccionada,
       promoDetalle,
@@ -561,7 +563,7 @@ export const TiendaProvider = ({ children }) => {
     [
       productos, cargando, errorCarga, traerCatalogo, refrescarCatalogo, pasillos, todosLosModulos, moduloSeleccionado,
       nombrePasillo, productosDelPasillo, categorias, categoriaSeleccionada,
-      terminoBusqueda, productosFiltrados, productosDestacados, secciones, promosDelCarrusel,
+      terminoBusqueda, productosFiltrados, productosDestacados, secciones, promosDelCarrusel, promociones,
       promoSeleccionada, promoDetalle, productosDePromo, abrirPromo, cerrarPromo,
       verPromoEnTienda, carrito, totalCarrito, cantidadItems, agregarAlCarrito,
       eliminarDelCarrito, actualizarCantidad, limpiarCarrito, vaciarTrasPedido,

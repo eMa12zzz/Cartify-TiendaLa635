@@ -200,47 +200,99 @@ export const anotarProductoNuevo = (producto) => {
   relojLote.unref?.();
 };
 
-/* ══════════ 2. El pedido va en camino ══════════ */
+/* ══════════ 2. Los avisos del pedido ══════════ */
 
 /*
- * Este va a UNA persona: la dueña del pedido. No hay lista ni lote.
+ * Lo que le dice el teléfono a la dueña del pedido en cada paso. Son avisos
+ * DE SERVICIO, no de publicidad: la persona está esperando su pedido, así que
+ * le llegan siempre a los teléfonos donde tiene la app (el sistema del
+ * teléfono igual le deja apagarlos). Antes solo existía "va en camino" y
+ * nacía apagado: casi nadie se enteraba de nada.
+ *
+ * Cada paso, una vez: el controlador solo llama en el SALTO de un estado a
+ * otro. Los textos se repiten en movil/src/utils/simulacionPedido.js (el
+ * simulador de la app): si se cambian aquí, se cambian allá.
+ *
+ * Retiro en la tienda: "entregado" no se avisa, porque se entrega en el
+ * mostrador, con la persona enfrente.
  */
-export const avisarPedidoEnCamino = async (pedido) => {
-  const idCliente = pedido?.clientId?._id || pedido?.clientId;
-  if (!idCliente) return { enviados: 0, motivo: "el pedido no tiene cliente" };
+export const TEXTOS_PEDIDO = {
+  preparando: {
+    titulo: "Estamos preparando su pedido",
+    cuerpo: "Ya estamos juntando sus productos.",
+  },
+  en_camino: {
+    titulo: "Su pedido va en camino",
+    cuerpo: "Ya salió de la tienda. Puede verlo en el mapa y saber cuándo salir a la puerta.",
+  },
+  listo: {
+    titulo: "Su pedido está listo",
+    cuerpo: "Ya puede pasar a recogerlo a la tienda.",
+  },
+  entregado: {
+    titulo: "Su pedido llegó",
+    cuerpo: "¡Que lo disfrute! Si quiere, califique la entrega desde la app.",
+  },
+  cancelado: {
+    titulo: "Su pedido fue cancelado",
+    cuerpo: "Si tiene dudas, escríbanos y lo revisamos.",
+  },
+};
 
+const clienteDelPedido = async (pedido) => {
+  const idCliente = pedido?.clientId?._id || pedido?.clientId;
+  if (!idCliente) return null;
   const cliente = await clientModel
     .findById(idCliente)
     .select("email fullName notificationPrefs isActive +pushTokens")
     .lean();
+  return cliente && cliente.isActive !== false ? cliente : null;
+};
 
-  if (cliente.isActive === false) return { enviados: 0, motivo: "la cuenta está inactiva" };
-
-  /*
-   * Aquí SÍ se pide el true explícito, al revés que en los otros dos.
-   *
-   * Este interruptor nace APAGADO en el modelo, así que "no tengo el campo"
-   * significa "no lo he encendido nunca". Con un $ne: false le llegaría el
-   * aviso a todo el mundo, que es justo lo contrario de lo que eligieron.
-   */
-  if (cliente.notificationPrefs?.pedidoCerca !== true) {
-    return { enviados: 0, motivo: "no tiene encendido el aviso de pedido en camino" };
+/*
+ * El push del paso al que acaba de llegar el pedido. Va por el canal
+ * "pedidos" (prioridad alta: sale como globo arriba de la pantalla).
+ *
+ * `datos.pedidoId` es lo que lee la app para llevar a ESE pedido al tocar la
+ * notificación. `tipo` sigue siendo "pedidoEnCamino" para "en camino": las
+ * versiones de la app que ya están instaladas solo conocen ese.
+ */
+export const avisarPasoDelPedido = async (pedido, estado) => {
+  const texto = TEXTOS_PEDIDO[estado];
+  if (!texto) return { enviados: 0, motivo: "ese estado no se avisa" };
+  if (estado === "entregado" && pedido?.deliveryType !== "delivery") {
+    return { enviados: 0, motivo: "el retiro se entrega en el mostrador" };
   }
+  const cliente = await clienteDelPedido(pedido);
+  if (!cliente) return { enviados: 0, motivo: "sin cliente activo" };
 
-  /*
-   * El push primero: de los tres avisos, este es el único que la persona está
-   * esperando con el teléfono en la mano. Un correo que llega cuando el
-   * repartidor ya tocó el timbre no sirve de nada.
-   *
-   * `datos.pedidoId` es lo que lee la app para abrir ESE pedido al tocar la
-   * notificación, en vez de dejar a alguien buscándolo en la lista.
-   */
-  enviarPushEnSegundoPlano(cliente.pushTokens || [], {
-    titulo: "Su pedido va en camino",
-    cuerpo: "Ya salió de la tienda. Puede verlo en el mapa y saber cuándo salir a la puerta.",
-    datos: { tipo: "pedidoEnCamino", pedidoId: String(pedido._id || "") },
+  const tokens = cliente.pushTokens || [];
+  enviarPushEnSegundoPlano(tokens, {
+    ...texto,
+    canal: "pedidos",
+    datos: {
+      tipo: estado === "en_camino" ? "pedidoEnCamino" : "pedido",
+      estado,
+      pedidoId: String(pedido._id || ""),
+    },
   });
+  return { enviados: tokens.length };
+};
 
+/*
+ * El CORREO de "va en camino". Este sí sigue la preferencia `pedidoCerca`
+ * (Mi cuenta › Avisos), que nace apagada: un correo por cada pedido es más de
+ * lo que mucha gente quiere, y en la app ya le avisó el teléfono.
+ */
+export const avisarPedidoEnCamino = async (pedido) => {
+  const cliente = await clienteDelPedido(pedido);
+  if (!cliente) return { enviados: 0, motivo: "sin cliente activo" };
+
+  // El true explícito: el interruptor nace apagado, así que "no tengo el
+  // campo" significa "no lo he encendido nunca".
+  if (cliente.notificationPrefs?.pedidoCerca !== true) {
+    return { enviados: 0, motivo: "no pidió el correo de pedido en camino" };
+  }
   if (!cliente.email) return { enviados: 0, motivo: "el cliente no tiene correo" };
 
   const tienda = await identidadDeLaTienda();
@@ -253,14 +305,24 @@ export const avisarPedidoEnCamino = async (pedido) => {
 };
 
 /*
- * La versión que llama el controlador: dispara y se olvida.
+ * La versión que llama el controlador: dispara y se olvida. El push del paso
+ * y, si va en camino, el correo.
  *
  * El .catch no es opcional. Sin él, un tropiezo aquí adentro es una promesa
  * rechazada sin dueño, y Node se lleva el proceso entero por delante — o sea,
- * la tienda se cae porque un correo no salió.
+ * la tienda se cae porque un aviso no salió.
  */
-export const avisarPedidoEnCaminoEnSegundoPlano = (pedido) => {
-  avisarPedidoEnCamino(pedido).catch((error) => {
-    console.log("aviso de pedido en camino: falló el envío: " + error);
+export const avisarCambioDePedidoEnSegundoPlano = (pedido, estado) => {
+  avisarPasoDelPedido(pedido, estado).catch((error) => {
+    console.log(`aviso del pedido (${estado}): falló el envío: ${error}`);
   });
+  if (estado === "en_camino") {
+    avisarPedidoEnCamino(pedido).catch((error) => {
+      console.log("correo de pedido en camino: falló el envío: " + error);
+    });
+  }
 };
+
+// Nombre viejo, por si algo más lo llama todavía.
+export const avisarPedidoEnCaminoEnSegundoPlano = (pedido) =>
+  avisarCambioDePedidoEnSegundoPlano(pedido, "en_camino");
