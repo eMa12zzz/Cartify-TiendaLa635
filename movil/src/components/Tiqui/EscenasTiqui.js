@@ -254,7 +254,7 @@ const Pedido = ({ alto, parpadeo }) => (
   </Lienzo>
 );
 
-// 6. ¿Empezamos?: salta de alegría entre confeti, con el micrófono listo.
+// 6. ¿Empezamos?: salta de alegría entre confeti, junto al ícono de su pestaña.
 const CONFETI = [
   [74, 120, -25, AZUL], [330, 110, 30, AMARILLO], [52, 250, 60, RUBOR],
   [352, 236, -40, AZUL], [104, 58, 15, AMARILLO], [296, 48, -20, RUBOR],
@@ -266,7 +266,7 @@ const Empezar = ({ alto, parpadeo }) => (
       <Rect key={`${x}-${y}`} x={x - 4} y={y - 9} width={8} height={18} rx={4} fill={color} transform={`rotate(${giro} ${x} ${y})`} />
     ))}
     <Tiqui ojos="felices" boca="abierta" rubor parpadeo={parpadeo} />
-    {/* El botón del micrófono, como en la pantalla del asistente. */}
+    {/* El micrófono es el ícono de la pestaña donde vive (Asistente). */}
     <Circle cx={322} cy={352} r={32} fill={NAVY} />
     <Rect x={312} y={332} width={20} height={30} rx={10} fill={BLANCO} />
     <Path d="M304,352 Q322,376 340,352 M322,366 L322,374" stroke={BLANCO} strokeWidth={4} {...trazo} />

@@ -3,8 +3,9 @@
  *
  * Copia el de la web: ancho completo, 13 de alto interno, esquinas de 8 y el
  * café que se oscurece al presionar. Cuando está cargando no se apaga sin más:
- * muestra la rueda, porque un botón que deja de responder sin decir nada se
- * vuelve a tocar tres veces.
+ * muestra a Tiqui colgando y "Un momento…" (como la web con EsperaMascota),
+ * porque un botón que deja de responder sin decir nada se vuelve a tocar
+ * tres veces.
  *
  * ── El color se recibe, no se lee del tema ──
  *
@@ -15,8 +16,9 @@
  * color y cae al `backgroundColor` por defecto del estilo.
  */
 
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEstilos } from '../../context/ModoContext';
+import { EsperaMascota } from '../Tiqui/Mascota';
 
 const Boton = ({
   texto,
@@ -36,6 +38,7 @@ const Boton = ({
       onPress={alPresionar}
       disabled={inactivo}
       accessibilityRole="button"
+      accessibilityState={{ disabled: inactivo, busy: cargando }}
       style={({ pressed }) => [
         estilos.boton,
         !!color && { backgroundColor: color },
@@ -46,7 +49,10 @@ const Boton = ({
       ]}
     >
       {cargando ? (
-        <ActivityIndicator size="small" color="#FFFFFF" />
+        <View style={estilos.contenido}>
+          <EsperaMascota alto={22} sobre="color" />
+          <Text style={estilos.texto}>Un momento…</Text>
+        </View>
       ) : (
         <View style={estilos.contenido}>
           <Text style={estilos.texto}>{texto}</Text>

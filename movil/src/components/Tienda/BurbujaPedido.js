@@ -12,6 +12,7 @@ import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import CodigoEntrega from './CodigoEntrega';
+import Mascota from '../Tiqui/Mascota';
 import PasosPedido from './PasosPedido';
 import MapaSeguimiento from './MapaSeguimiento';
 import ModalMapaSeguimiento from './ModalMapaSeguimiento';
@@ -51,7 +52,7 @@ const BurbujaPedido = () => {
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
-  const { orders, abrirPedido, cerrarPedidoAbierto } = usePedidoActivoCtx();
+  const { orders, abrirPedido, cerrarPedidoAbierto, pedidoASeguir, dejarDeSeguir } = usePedidoActivoCtx();
   // El pedido puede estar listo ANTES de que Splash termine de decidir a
   // dónde ir (sesión restaurada + Onboarding leído): sin esto, la burbuja se
   // alcanzaba a ver montándose encima del propio Splash.
@@ -83,12 +84,27 @@ const BurbujaPedido = () => {
 
   const enCurso = esCliente
     ? (orders || [])
-        .filter((o) => ['pagado', 'preparando', 'en_camino'].includes(o.status))
+        .filter((o) => ['pagado', 'preparando', 'en_camino', 'listo'].includes(o.status))
         .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0]
     : null;
 
   // Los hooks necesitan el id ANTES de cualquier return: no se llaman a medias.
   const seguimiento = useSeguimientoEnVivo(enCurso?._id, !!enCurso);
+
+  /*
+   * Tocaron el aviso de "va en camino": se despliega la tarjeta con el mapa
+   * aunque la burbuja estuviera encogida u oculta. Se espera a que el pedido
+   * esté en la lista (al abrir la app desde el aviso, todavía se está
+   * cargando).
+   */
+  const idEnCurso = enCurso ? String(enCurso._id) : null;
+  useEffect(() => {
+    if (!pedidoASeguir || !idEnCurso || pedidoASeguir !== idEnCurso) return;
+    setEncogidaEn(null);
+    setOculta(false);
+    setAbierta(true);
+    dejarDeSeguir();
+  }, [pedidoASeguir, idEnCurso, dejarDeSeguir]);
   const zona = useTiempoPorZona(
     !enCurso || seguimiento.enVivo ? null : enCurso.deliveryLat,
     !enCurso || seguimiento.enVivo ? null : enCurso.deliveryLng
@@ -334,7 +350,6 @@ const BurbujaPedido = () => {
    * no tapa la tienda y siempre se puede volver.
    */
   if (encogida) {
-    const Icono = estaEnCamino ? Bike : paso.Icono;
     return (
       <>
         <Animated.View style={[estilos.botonRedondo, posicion, estiloPresencia, { backgroundColor: colores.marca }]}>
@@ -344,7 +359,8 @@ const BurbujaPedido = () => {
             accessibilityLabel={`Ver su pedido: ${enCamino ? seguimiento.espera : paso.label}`}
             style={estilos.botonRedondoToque}
           >
-            <Icono size={19} color="#FFFFFF" strokeWidth={2.3} />
+            {/* Tiqui en el paso del pedido, como en la web (en patineta si va en camino). */}
+            <Mascota pose={estaEnCamino ? 'en-camino' : paso.pose} alto={34} sobre="color" />
           </Pressable>
         </Animated.View>
         {/* Ver el porqué de este catcher en el comentario grande junto al
@@ -499,11 +515,7 @@ const BurbujaPedido = () => {
          */
         hitSlop={{ top: 22, bottom: 22, left: 10, right: 14 }}
       >
-        {estaEnCamino ? (
-          <Bike size={19} color="#FFFFFF" strokeWidth={2.2} />
-        ) : (
-          <paso.Icono size={19} color="#FFFFFF" strokeWidth={2.2} />
-        )}
+        <Mascota pose={estaEnCamino ? 'en-camino' : paso.pose} alto={40} sobre="color" />
         <Text style={estilos.botonBurbujaTexto}>
           {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
         </Text>

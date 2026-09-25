@@ -101,7 +101,13 @@ const olvidarTokens = async (tokens) => {
  * movil/src/utils/notificaciones.js). Un aviso que al tocarlo abre la portada
  * y te deja buscando el pedido a mano está a medio hacer.
  */
-export const enviarPush = async (tokens, { titulo, cuerpo, datos = {} }) => {
+/*
+ * `canal`: por dónde suena en Android. "pedidos" es el de prioridad alta (sale
+ * como globo arriba de la pantalla: es lo que la persona está esperando);
+ * "avisos", el de siempre, para promociones y productos nuevos, que no tienen
+ * por qué interrumpir. Los dos los crea la app al arrancar.
+ */
+export const enviarPush = async (tokens, { titulo, cuerpo, datos = {}, canal = "avisos" }) => {
   const destinos = [...new Set((tokens || []).filter(esTokenExpo))];
   if (!destinos.length) return { enviados: 0, fallidos: 0 };
 
@@ -120,7 +126,10 @@ export const enviarPush = async (tokens, { titulo, cuerpo, datos = {} }) => {
       data: datos,
       // El canal tiene que existir en el teléfono o Android manda el aviso a
       // uno por defecto sin sonido. Lo crea la app al arrancar.
-      channelId: "avisos",
+      channelId: canal,
+      // Los del pedido van con prioridad alta: que lleguen al momento aunque
+      // el teléfono esté ahorrando batería.
+      priority: canal === "pedidos" ? "high" : "default",
     }));
 
     try {

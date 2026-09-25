@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getPedidosDeCliente } from '../api/pedidosApi';
+import { suscribirseASimulacion } from '../utils/simulacionPedido';
 
 /*
  * ============================================================
@@ -81,7 +82,20 @@ export const PedidoActivoProvider = ({ children }) => {
     return () => clearInterval(reloj);
   }, [cargar, esCliente]);
 
+  // En desarrollo, cada paso del pedido de prueba se ve al instante, sin
+  // esperar los 20 segundos de la siguiente consulta.
+  useEffect(() => (__DEV__ ? suscribirseASimulacion(cargar) : undefined), [cargar]);
+
   const cerrarPedidoAbierto = useCallback(() => setPedidoAbierto(null), []);
+
+  /*
+   * El pedido cuya burbuja hay que desplegar (con el mapa). Lo pide el aviso
+   * de "va en camino" al tocarlo: ahí lo que se quiere ver es al repartidor,
+   * no la lista. BurbujaPedido lo lee y lo suelta en cuanto se abre.
+   */
+  const [pedidoASeguir, setPedidoASeguir] = useState(null);
+  const seguirPedido = useCallback((id) => setPedidoASeguir(id ? String(id) : null), []);
+  const dejarDeSeguir = useCallback(() => setPedidoASeguir(null), []);
 
   return (
     <PedidoActivoContext.Provider
@@ -92,6 +106,9 @@ export const PedidoActivoProvider = ({ children }) => {
         pedidoAbierto,
         abrirPedido: setPedidoAbierto,
         cerrarPedidoAbierto,
+        pedidoASeguir,
+        seguirPedido,
+        dejarDeSeguir,
       }}
     >
       {children}
@@ -108,6 +125,9 @@ const SIN_PROVEEDOR = {
   pedidoAbierto: null,
   abrirPedido: () => {},
   cerrarPedidoAbierto: () => {},
+  pedidoASeguir: null,
+  seguirPedido: () => {},
+  dejarDeSeguir: () => {},
 };
 
 export const usePedidoActivoCtx = () => useContext(PedidoActivoContext) || SIN_PROVEEDOR;

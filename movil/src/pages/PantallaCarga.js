@@ -8,11 +8,12 @@
  * la tienda en vez de un blanco vacío.
  */
 
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { useColores, useEstilos } from '../context/ModoContext';
+import { StyleSheet, Text, View } from 'react-native';
+import { useEstilos } from '../context/ModoContext';
+import Mascota from '../components/Tiqui/Mascota';
+import { FUENTE_MARCA } from '../theme/tipografia';
 
 const PantallaCarga = () => {
-  const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
 
   return (
@@ -21,7 +22,10 @@ const PantallaCarga = () => {
         <Text style={estilos.marcaNombre}>Tienda</Text>
         <Text style={estilos.marcaNombre}>la 635</Text>
       </View>
-      <ActivityIndicator size="large" color={COLORES.marca} style={estilos.indicador} />
+      {/* Tiqui balanceándose de su cordón mientras se revisa la sesión. */}
+      <View style={estilos.indicador}>
+        <Mascota pose="cargando" alto={96} />
+      </View>
     </View>
   );
 };
@@ -38,9 +42,11 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   },
   marcaNombre: {
     fontSize: 36,
-    fontWeight: '800',
+    lineHeight: 40,
+    fontFamily: FUENTE_MARCA,
     color: COLORES.tituloFuerte,
     letterSpacing: -0.5,
+    includeFontPadding: false,
   },
   indicador: {
     marginTop: 30,

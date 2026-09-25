@@ -1,5 +1,5 @@
 import { isValidObjectId } from "mongoose";
-import { avisarPedidoEnCaminoEnSegundoPlano } from "../utils/avisosCliente.js";
+import { avisarCambioDePedidoEnSegundoPlano } from "../utils/avisosCliente.js";
 import orderModel from "../models/order.js";
 import clientModel from "../models/client.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
@@ -471,7 +471,7 @@ orderController.getOrders = async (req, res) => {
 orderController.updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ["pagado", "preparando", "en_camino", "entregado", "cancelado"];
+    const validStatuses = ["pagado", "preparando", "en_camino", "listo", "entregado", "cancelado"];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Estado inválido" });
@@ -546,6 +546,10 @@ orderController.updateOrderStatus = async (req, res) => {
       cambios.enCaminoAt = new Date();
       cambios.enCaminoBy = quien || "";
     }
+    if (status === "listo" && !actual.listoAt) {
+      cambios.listoAt = new Date();
+      cambios.listoBy = quien || "";
+    }
     if (status === "entregado" && !actual.deliveredAt) {
       cambios.deliveredAt = new Date();
       cambios.deliveredBy = quien || "";
@@ -572,18 +576,19 @@ orderController.updateOrderStatus = async (req, res) => {
     }
 
     /*
-     * "Su pedido va en camino", a quien lo pidió.
+     * El aviso del paso, a quien lo pidió (preparando, en camino, listo,
+     * entregado o cancelado; ver utils/avisosCliente.js).
      *
-     * Solo en el SALTO a en_camino, y por eso se mira el estado anterior: sin
-     * esa comprobación, un empleado que vuelve a tocar el botón —o que corrige
-     * el estado tras un error— le manda el mismo aviso otra vez a alguien que
-     * ya está esperando en la puerta.
+     * Solo en el SALTO de estado, y por eso se mira el anterior: sin esa
+     * comprobación, un empleado que vuelve a tocar el botón —o que corrige el
+     * estado tras un error— le manda el mismo aviso otra vez a alguien que ya
+     * lo recibió.
      *
      * Sin await: el pedido ya se guardó y quien está en el mostrador no tiene
-     * por qué esperar a que salga un correo. Ver utils/avisosCliente.js.
+     * por qué esperar a que salga un aviso.
      */
-    if (status === "en_camino" && actual.status !== "en_camino") {
-      avisarPedidoEnCaminoEnSegundoPlano(updated);
+    if (status !== actual.status) {
+      avisarCambioDePedidoEnSegundoPlano(updated, status);
     }
 
     return res.status(200).json({ message: "Estado actualizado", order: updated });

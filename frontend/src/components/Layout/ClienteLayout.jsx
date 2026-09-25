@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store, Heart, Bike, SlidersHorizontal,
+  ArrowLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
@@ -197,6 +198,23 @@ const ClienteLayout = () => {
           className="flex items-center gap-1 overflow-x-auto max-w-6xl mx-auto"
           style={{ scrollbarWidth: 'none' }}
         >
+          {/*
+            La vuelta a comprar, primera y siempre a la vista. Con el
+            encabezado de la tienda arriba parecía que ya no hacía falta, pero
+            ahí el nombre abre los pasillos (no lleva a la tienda) y el
+            buscador y el carrito solo llevan de rebote: no había un "volver"
+            que se viera como tal.
+          */}
+          <Link
+            to="/"
+            title="Volver a la tienda"
+            className="flex items-center gap-1.5 pl-1 pr-3 py-3 text-[13.5px] font-bold whitespace-nowrap transition-colors"
+            style={{ color: c.primary }}
+          >
+            <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden="true" /> Ir a la tienda
+          </Link>
+          <span className="w-px h-5 mr-1 flex-shrink-0" style={{ backgroundColor: c.cardBorder }} aria-hidden="true" />
+
           {items.map((item) => {
             const Icon = item.icon;
             const active = location.pathname === item.to;

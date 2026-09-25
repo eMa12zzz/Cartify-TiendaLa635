@@ -26,11 +26,11 @@
  */
 
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { Heart } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
-import { useTema } from '../../context/TemaContext';
 import { useTienda } from '../../context/TiendaContext';
 import { useFavoritos } from '../../context/FavoritosContext';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
@@ -41,7 +41,6 @@ import { avisarActividad } from '../../utils/actividadUsuario';
 const Favoritos = ({ alVolver }) => {
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
-  const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const { productos, cargando, agregarAlCarrito } = useTienda();
@@ -60,7 +59,7 @@ const Favoritos = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus favoritos…" />
         </View>
       ) : marcados.length === 0 ? (
         <View style={estilos.centro}>

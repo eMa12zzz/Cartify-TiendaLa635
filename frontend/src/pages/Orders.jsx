@@ -25,6 +25,8 @@ const estadoInfo = {
   pagado:     { label: 'Por preparar',   corto: 'Por preparar',   Icono: Package,      color: '#3b82f6' },
   preparando: { label: 'En preparación', corto: 'Preparando',     Icono: ChefHat,      color: '#f97316' },
   en_camino:  { label: 'En camino',      corto: 'En camino',      Icono: Bike,         color: '#1D4ED8' },
+  // Solo retiro en la tienda: ya está armado y el cliente puede pasar.
+  listo:      { label: 'Listo para recoger', corto: 'Listo',       Icono: StoreIcon,    color: '#7c3aed' },
   entregado:  { label: 'Entregado',      corto: 'Entregado',      Icono: CheckCircle2, color: '#22c55e' },
   cancelado:  { label: 'Cancelado',      corto: 'Cancelado',      Icono: X,            color: '#ef4444' },
 };
@@ -33,6 +35,7 @@ const filtros = [
   { id: 'pagado',     label: 'Por preparar' },
   { id: 'preparando', label: 'En preparación' },
   { id: 'en_camino',  label: 'En camino' },
+  { id: 'listo',      label: 'Listos para recoger' },
   { id: 'entregado',  label: 'Entregados' },
   { id: 'todos',      label: 'Todos' },
 ];
@@ -130,6 +133,7 @@ const Orders = () => {
     pagado: orders.filter((o) => o.status === 'pagado').length,
     preparando: orders.filter((o) => o.status === 'preparando').length,
     en_camino: orders.filter((o) => o.status === 'en_camino').length,
+    listo: orders.filter((o) => o.status === 'listo').length,
     entregado: orders.filter((o) => o.status === 'entregado').length,
   };
 
@@ -137,6 +141,7 @@ const Orders = () => {
     { id: 'pagado',     label: 'Por preparar',   valor: counts.pagado,     color: '#3b82f6' },
     { id: 'preparando', label: 'En preparación', valor: counts.preparando, color: '#f97316' },
     { id: 'en_camino',  label: 'En camino',      valor: counts.en_camino,  color: '#1D4ED8' },
+    { id: 'listo',      label: 'Listos',         valor: counts.listo,      color: '#7c3aed' },
     { id: 'entregado',  label: 'Entregados',     valor: counts.entregado,  color: '#22c55e' },
     { id: 'todos',      label: 'Total',          valor: counts.total,      color: '#6b7280' },
   ];
@@ -153,7 +158,7 @@ const Orders = () => {
       <h1 className="text-3xl sm:text-4xl font-extrabold text-[#066494]">Pedidos</h1>
 
       {/* Resumen: cada número es un botón que filtra la lista. */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
         {resumen.map((r) => {
           const activo = filtro === r.id;
           return (
@@ -361,8 +366,9 @@ const Orders = () => {
                     )}
                     {/*
                       "En camino" solo existe para domicilio: un retiro en
-                      local no tiene a quién seguirle el mapa, así que ese
-                      pasa derecho de Preparando a Entregado, como siempre.
+                      local no tiene a quién seguirle el mapa. El retiro pasa
+                      por "Listo para recoger", que es cuando al cliente le
+                      llega el aviso de que ya puede pasar por él.
                     */}
                     {order.status === 'preparando' && esDomicilio && (
                       <button
@@ -374,6 +380,15 @@ const Orders = () => {
                       </button>
                     )}
                     {order.status === 'preparando' && !esDomicilio && (
+                      <button
+                        onClick={() => { cambiarEstado(order._id, 'listo').catch(() => {}); }}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold text-white transition-colors"
+                        style={{ backgroundColor: '#7c3aed' }}
+                      >
+                        <StoreIcon className="w-4 h-4" /> Listo para recoger
+                      </button>
+                    )}
+                    {order.status === 'listo' && (
                       <button
                         onClick={() => setPedidoAEntregar(order)}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-500 text-white transition-colors"

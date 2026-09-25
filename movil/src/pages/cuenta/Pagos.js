@@ -45,7 +45,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -53,6 +52,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { Banknote, CircleAlert, CreditCard, Gift, Lock, Trash2 } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
@@ -285,7 +285,7 @@ const Pagos = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus métodos de pago…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>

@@ -29,6 +29,7 @@
 
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import Mascota from '../components/Tiqui/Mascota';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
 import { Image } from 'expo-image';
@@ -196,7 +197,8 @@ const Carrito = ({ irAInicio, irAPagar }) => {
 
       {vacio ? (
         <View style={estilos.centro}>
-          <ShoppingBag size={48} color={COLORES.marcador} strokeWidth={1.4} />
+          {/* Como en la web: Tiqui mirando un carrito vacío. */}
+          <Mascota pose="vacio" alto={130} />
           <Text style={estilos.vacioTitulo}>Su carrito está vacío</Text>
           <Text style={estilos.vacioTexto}>¡Agregue productos para comenzar!</Text>
           <View style={estilos.botonVacio}>

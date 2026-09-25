@@ -36,7 +36,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   PanResponder,
@@ -46,6 +45,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { EsperaMascota } from '../Tiqui/Mascota';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LocateFixed, MapPin } from 'lucide-react-native';
@@ -257,7 +257,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
               ]}
             >
               {localizando ? (
-                <ActivityIndicator size="small" color={colores.marca} />
+                <EsperaMascota alto={20} />
               ) : (
                 <LocateFixed size={15} color={colores.marca} />
               )}
@@ -276,7 +276,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
             />
             {buscando && (
               <View style={estilos.filaBuscando}>
-                <ActivityIndicator size="small" color={COLORES.textoTenue} />
+                <EsperaMascota alto={20} />
                 <Text style={estilos.buscandoTexto}>Buscando la dirección de ese punto…</Text>
               </View>
             )}

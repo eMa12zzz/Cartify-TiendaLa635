@@ -72,6 +72,7 @@ import Puntos from './cuenta/Puntos';
 import Recibos from './cuenta/Recibos';
 import ModalConfirmar from '../components/UI/ModalConfirmar';
 import HojaTerminos from '../components/UI/HojaTerminos';
+import PruebasDesarrollo from '../components/Cuenta/PruebasDesarrollo';
 import { DOCUMENTOS_LEGALES } from '../utils/legales';
 import { navegarA } from '../navigation/navigationRef';
 import { registrarTokenPush } from '../api/clienteApi';
@@ -281,6 +282,9 @@ const Perfil = () => {
             ))}
           </View>
         </View>
+
+        {/* Solo en desarrollo: simular un pedido y ver los avisos. */}
+        {__DEV__ && <PruebasDesarrollo />}
       </ScrollView>
 
       {docLegal && <HojaTerminos clave={docLegal} alCerrar={() => setDocLegal(null)} />}

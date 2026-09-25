@@ -72,18 +72,38 @@ export const PROJECT_ID =
 export const HAY_PUSH = !!PROJECT_ID;
 
 const CANAL = 'avisos';
+const CANAL_PEDIDOS = 'pedidos';
 
 /*
- * El canal de Android, con la pinta de la tienda: la luz del aviso en azul
- * marino, como todo lo demás.
+ * Los canales de Android, con la pinta de la tienda: la luz del aviso en
+ * azul marino, como todo lo demás. Son dos, y la diferencia es a propósito:
+ *
+ *   'pedidos'  prioridad ALTA: sale como globo arriba de la pantalla, con
+ *              sonido. Es lo que la persona está esperando con el teléfono en
+ *              la mano ("va en camino", "está listo"). Con prioridad normal
+ *              solo aparecía un iconito en la barra y nadie se enteraba.
+ *   'avisos'   prioridad normal: promociones y productos nuevos. Suenan y
+ *              quedan en la bandeja, pero no interrumpen lo que se está haciendo.
+ *
+ * Android no deja cambiarle la prioridad a un canal ya creado: por eso el de
+ * pedidos es uno nuevo y no el de avisos subido de nivel. El servidor dice
+ * por cuál va cada aviso (backend/src/utils/pushExpo.js).
  */
 const prepararCanal = async () => {
   if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(CANAL_PEDIDOS, {
+    name: 'Mi pedido',
+    description: 'Cuando su pedido se prepara, sale, está listo o llega.',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#003049',
+  });
   await Notifications.setNotificationChannelAsync(CANAL, {
-    name: 'Avisos de la tienda',
+    name: 'Promociones y novedades',
+    description: 'Ofertas nuevas y productos que llegan a la tienda.',
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#012D45',
+    lightColor: '#003049',
   });
 };
 
@@ -172,4 +192,38 @@ export const escucharToques = (alTocar) => {
   });
 
   return () => sub.remove();
+};
+
+/*
+ * Un aviso que sale del MISMO teléfono, sin pasar por el servidor ni por
+ * Expo. Solo lo usa el simulador de pedidos (utils/simulacionPedido.js) para
+ * ver cómo se ven los avisos en un emulador, donde el push de verdad no se
+ * registra. Mismo canal ("avisos") y misma forma que el push del servidor,
+ * así que se ve igual y al tocarlo pasa lo mismo.
+ */
+// El permiso de mostrar avisos (en Android 13+ se pide aparte). Devuelve si lo hay.
+export const permisoParaAvisos = async () => {
+  try {
+    await prepararCanal();
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') ({ status } = await Notifications.requestPermissionsAsync());
+    return status === 'granted';
+  } catch {
+    return false;
+  }
+};
+
+export const avisoLocal = async ({ titulo, cuerpo, datos = {}, canal = CANAL }) => {
+  try {
+    if (!(await permisoParaAvisos())) return false;
+    await Notifications.scheduleNotificationAsync({
+      content: { title: titulo, body: cuerpo, data: datos, sound: 'default' },
+      // Inmediato, pero por el canal de la tienda (sin él, Android lo manda a uno sin sonido).
+      trigger: Platform.OS === 'android' ? { channelId: canal } : null,
+    });
+    return true;
+  } catch (error) {
+    console.log('avisos: no se pudo mostrar el aviso de prueba: ' + error?.message);
+    return false;
+  }
 };
