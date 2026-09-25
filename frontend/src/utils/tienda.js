@@ -45,10 +45,26 @@ export const DIRECCION_EN_UNA_LINEA = `${DIRECCION_TIENDA.calle}, ${DIRECCION_TI
  */
 export const WHATSAPP = (import.meta.env.VITE_WHATSAPP || '').replace(/\D/g, '');
 
-export const enlaceWhatsApp = (mensaje) =>
-  WHATSAPP
-    ? `https://wa.me/${WHATSAPP}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ''}`
+/*
+ * El número en formato de wa.me: solo dígitos y con el código de país. Un
+ * número salvadoreño de 8 dígitos ("7000-0000") se completa con el 503.
+ */
+export const numeroWhatsApp = (numero) => {
+  const digitos = String(numero || '').replace(/\D/g, '');
+  if (!digitos) return '';
+  return digitos.length === 8 ? `503${digitos}` : digitos;
+};
+
+/*
+ * `numero`: el WhatsApp que el dueño puso en Personalización → Datos del
+ * negocio. Manda sobre el del .env, que queda de respaldo.
+ */
+export const enlaceWhatsApp = (mensaje, numero) => {
+  const destino = numeroWhatsApp(numero) || WHATSAPP;
+  return destino
+    ? `https://wa.me/${destino}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ''}`
     : null;
+};
 
 /*
  * La página de presentación de la tienda (la landing). Es un proyecto aparte,

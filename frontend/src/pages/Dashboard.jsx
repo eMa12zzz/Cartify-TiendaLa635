@@ -39,7 +39,15 @@ const ServiceGrid = styled.div`
   width: 100%;
 `;
 
-const ServiceCard = styled.div`
+/*
+ * Cada servicio es un botón, no un div con clic: al div no se llega con Tab,
+ * y quien usa el panel con teclado no podía abrir ningún servicio.
+ */
+const ServiceCard = styled.button`
+  width: 100%;
+  border: none;
+  font: inherit;
+  text-align: left;
   background: ${BROWN};
   border-radius: 14px;
   padding: 40px 28px;
@@ -53,9 +61,15 @@ const ServiceCard = styled.div`
     transform: translateY(-2px);
     background: ${BROWN_DARK};
   }
+
+  &:focus-visible {
+    outline: 3px solid var(--tinta);
+    outline-offset: 3px;
+  }
 `;
 
-const ServiceIcon = styled.div`
+// Dentro de un botón solo cabe texto, por eso aquí todo es span.
+const ServiceIcon = styled.span`
   width: 52px;
   height: 52px;
   border-radius: 14px;
@@ -74,14 +88,16 @@ const Vacio = styled.p`
   padding: 40px 0;
 `;
 
-const ServiceTitle = styled.h3`
+const ServiceTitle = styled.span`
+  display: block;
   font-size: 20px;
   font-weight: 700;
   color: white;
   margin: 0 0 6px 0;
 `;
 
-const ServiceDesc = styled.p`
+const ServiceDesc = styled.span`
+  display: block;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.85);
   margin: 0;
@@ -153,12 +169,12 @@ const Dashboard = () => {
             {modulos.map((modulo) => {
               const Icono = iconoDeModulo(modulo);
               return (
-                <ServiceCard key={modulo._id} onClick={() => abrirModulo(modulo)}>
-                  <ServiceIcon><Icono size={26} strokeWidth={1.8} /></ServiceIcon>
-                  <div>
+                <ServiceCard key={modulo._id} type="button" onClick={() => abrirModulo(modulo)}>
+                  <ServiceIcon aria-hidden="true"><Icono size={26} strokeWidth={1.8} /></ServiceIcon>
+                  <span>
                     <ServiceTitle>{modulo.name}</ServiceTitle>
                     <ServiceDesc>{modulo.description || 'Ver los productos de esta sección'}</ServiceDesc>
-                  </div>
+                  </span>
                 </ServiceCard>
               );
             })}

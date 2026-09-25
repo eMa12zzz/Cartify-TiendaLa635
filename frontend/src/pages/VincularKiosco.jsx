@@ -142,7 +142,7 @@ const bajada = { fontSize: 14.5, lineHeight: 1.55, color: 'var(--tinta-suave)', 
 const codigoChip = {
   display: 'inline-block',
   fontSize: 20, fontWeight: 800, letterSpacing: 4,
-  color: 'var(--marca-600)', background: 'var(--marca-50)',
+  color: 'var(--marca-texto)', background: 'var(--marca-50)',
   padding: '8px 18px', borderRadius: 12, margin: '0 0 22px',
 };
 
@@ -155,7 +155,7 @@ const botonPrincipal = {
 
 const botonSuave = {
   width: '100%', padding: '13px 0', borderRadius: 999,
-  border: '1px solid var(--linea)', background: 'var(--papel)', color: 'var(--marca-600)',
+  border: '1px solid var(--linea)', background: 'var(--papel)', color: 'var(--marca-texto)',
   fontSize: 14.5, fontWeight: 700, marginTop: 10,
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
   cursor: 'pointer',

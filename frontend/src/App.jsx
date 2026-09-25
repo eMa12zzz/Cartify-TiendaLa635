@@ -14,6 +14,8 @@ import { useEstiloAvisos } from './hooks/useEstiloAvisos';
 import DecoracionTemporada from './components/Store/DecoracionTemporada';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import LimiteDeError from './components/UI/LimiteDeError';
+import AvisoCookies from './components/UI/AvisoCookies';
+import AnaliticasTienda from './components/UI/AnaliticasTienda';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
 import BurbujaPedido from './components/Store/BurbujaPedido';
 import AvisoSinConexion from './components/UI/AvisoSinConexion';
@@ -45,7 +47,7 @@ import Store from './pages/Store';
 import Seccion from './pages/Seccion';       // Una sección de la portada, completa
 import NoEncontrado from './pages/NoEncontrado'; // 404: cualquier dirección que no exista
 import Impresiones from './pages/impresiones';
-import Terminos from './pages/Terminos';         // Términos de uso y aviso de privacidad
+import Legal from './pages/Legal';               // Términos, privacidad, cookies y devoluciones
 
 // --- Panel Administrativo ---
 import AdminLayout from './components/Layout/AdminLayout'; // Layout compartido del admin (sidebar + topbar)
@@ -157,6 +159,13 @@ function App() {
         <ThemeProvider>
         <PinturaDeTemporada />
         {/*
+          El aviso de cookies y las analíticas (Vercel Web Analytics). Las
+          analíticas solo se cargan si la persona las aceptó en el aviso; ni
+          uno ni otro aparece en el panel. Ver utils/consentimiento.js.
+        */}
+        <AvisoCookies />
+        <AnaliticasTienda />
+        {/*
           El candado de los productos +18: vive alto para que la tarjeta, el
           detalle y el carrito compartan una sola confirmación de edad, y el
           modal se pinte sobre cualquier pantalla. Ver EdadContext.
@@ -253,7 +262,11 @@ function App() {
            * ANTES de registrarse —que es justo cuando se decide si uno entrega
            * sus datos— y desde el enlace del pie sin tener cuenta.
            */}
-          <Route path="/terminos"        element={<Terminos />} />
+          {/* Los documentos legales: una misma pantalla, cuatro textos. Ver utils/legales. */}
+          <Route path="/terminos"        element={<Legal clave="terminos" />} />
+          <Route path="/privacidad"      element={<Legal clave="privacidad" />} />
+          <Route path="/cookies"         element={<Legal clave="cookies" />} />
+          <Route path="/devoluciones"    element={<Legal clave="devoluciones" />} />
 
           {/*
            * ── Rutas Protegidas (requieren autenticación) ──────────────

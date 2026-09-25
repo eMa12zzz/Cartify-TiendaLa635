@@ -318,6 +318,34 @@ storeSettingsController.updateSettings = async (req, res) => {
     }
 
     /*
+     * Datos del negocio (los que usan las páginas legales y el pie). Con
+     * notación de puntos, igual que la temporada: mandar el objeto entero
+     * borraría los campos que no vinieron. Cada campo vacío es válido: el
+     * dueño puede no tener NRC, y entonces no se muestra.
+     */
+    if (req.body.negocio && typeof req.body.negocio === "object") {
+      const n = req.body.negocio;
+      const texto = (v, max) => String(v ?? "").trim().slice(0, max);
+      const reglas = {
+        titular: { max: 120 },
+        nit: { max: 20, forma: /^[0-9-]*$/, error: "El NIT solo lleva números y guiones" },
+        nrc: { max: 20, forma: /^[0-9-]*$/, error: "El NRC solo lleva números y guiones" },
+        correo: { max: 120, forma: /^$|^[^\s@]+@[^\s@]+\.[^\s@]+$/, error: "El correo de contacto no es válido" },
+        telefono: { max: 20, forma: /^[0-9+\s-]*$/, error: "El teléfono solo lleva números, espacios, + y guiones" },
+        whatsapp: { max: 20, forma: /^[0-9+\s-]*$/, error: "El WhatsApp solo lleva números, espacios, + y guiones" },
+        horario: { max: 160 },
+      };
+      for (const [campo, regla] of Object.entries(reglas)) {
+        if (n[campo] === undefined) continue;
+        const valor = texto(n[campo], regla.max);
+        if (regla.forma && !regla.forma.test(valor)) {
+          return res.status(400).json({ message: regla.error });
+        }
+        cambios[`negocio.${campo}`] = campo === "correo" ? valor.toLowerCase() : valor;
+      }
+    }
+
+    /*
      * Tarifa de servicio: encendido/apagado y el tipo (fijo o porcentaje). El
      * valor viaja por CAMPOS_NUMERICOS de arriba.
      */

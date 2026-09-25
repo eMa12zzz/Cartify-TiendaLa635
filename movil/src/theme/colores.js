@@ -39,15 +39,22 @@ export const COLORES_CLARO = {
   marcaApagado: '#A9C2CE',
   // Fondo tenue para los cuadritos de iconos de las ventajas (--marca-100).
   marcaSuave: '#DDECF3',
+  /*
+   * La marca cuando es LETRA (enlaces, precios, títulos en color) y no fondo
+   * (--marca-texto de la web). En claro es la misma; en oscuro es el tono
+   * claro, porque la marca oscura está afinada para llevar letra blanca
+   * encima y como letra sobre el fondo oscuro no se leía.
+   */
+  marcaTexto: '#003049',
 
   fondo: '#FFFFFF',
   texto: '#000000',
   tituloFuerte: '#1D1206',
   tituloVentaja: '#2A1A0E',
-  textoSuave: '#7A7269',
+  textoSuave: '#756D64',
   textoVentaja: '#55504A',
-  textoTenue: '#888888',
-  subtitulo: '#9A938C',
+  textoTenue: '#6F6F6F',
+  subtitulo: '#756E67',
 
   linea: '#E8E8E8',
   lineaCard: '#F0E7DE',
@@ -55,7 +62,7 @@ export const COLORES_CLARO = {
   iconoCampo: '#AAAAAA',
   marcador: '#BBBBBB',
 
-  error: '#FF4D4F',
+  error: '#C62828',
 
   /*
    * ── Los tokens de la web ──
@@ -66,7 +73,7 @@ export const COLORES_CLARO = {
   // Texto principal y los botones negros ("Agregar", "Pagar").
   tinta: '#1C1614',
   tintaSuave: '#6B6560',
-  tintaTenue: '#9C9691',
+  tintaTenue: '#736D66',
   // Iconos en reposo que apenas se ven (el corazón vacío).
   tintaApagada: '#D4D0CC',
   // El texto encima de un botón color tinta: blanco en claro, oscuro en oscuro.
@@ -86,9 +93,9 @@ export const COLORES_CLARO = {
   // Sombreado al presionar algo que no es un botón de color.
   realce: 'rgba(0, 0, 0, 0.03)',
 
-  alerta: '#D8542C',
+  alerta: '#B8421E',
   alertaTexto: '#8A2B12',
-  exito: '#2F8F4E',
+  exito: '#297E45',
 
   /*
    * Colores de ESTADO: verde de listo, azul de en camino, ámbar de cuidado,
@@ -99,7 +106,7 @@ export const COLORES_CLARO = {
   exitoBorde: '#D3EEDA',
   exitoTexto: '#14663A',
   exitoSuave: '#3C7A55',
-  exitoVivo: '#16A34A',
+  exitoVivo: '#117F3A',
   infoFondo: '#EFF5FF',
   infoBorde: '#CFE0FF',
   infoTexto: '#173F94',
@@ -108,10 +115,10 @@ export const COLORES_CLARO = {
   avisoFondo: '#FFF6E9',
   avisoBorde: '#F3DFC0',
   avisoTexto: '#7A3E08',
-  avisoVivo: '#B4590C',
+  avisoVivo: '#AE560C',
   peligroFondo: '#FEF2F2',
   peligroBorde: '#FECACA',
-  peligro: '#DC2626',
+  peligro: '#D72323',
 };
 
 /*
@@ -125,10 +132,11 @@ export const COLORES_CLARO = {
 export const COLORES_OSCURO = {
   oscuro: true,
 
-  marca: '#0F80BA',
-  marcaOscuro: '#1296DA',
+  marca: '#0E75AA',
+  marcaOscuro: '#0F7DB5',
   marcaApagado: '#2E3A42',
-  marcaSuave: '#113041',
+  marcaSuave: '#112D3D',
+  marcaTexto: '#4AB7F0',
 
   fondo: '#121417',
   texto: '#ECEEF0',
@@ -136,7 +144,7 @@ export const COLORES_OSCURO = {
   tituloVentaja: '#E3E6E9',
   textoSuave: '#A9B0B7',
   textoVentaja: '#BCC2C8',
-  textoTenue: '#7D858D',
+  textoTenue: '#8A929A',
   subtitulo: '#8A9299',
 
   linea: '#2A2F35',
@@ -149,7 +157,7 @@ export const COLORES_OSCURO = {
 
   tinta: '#ECEEF0',
   tintaSuave: '#A9B0B7',
-  tintaTenue: '#7D858D',
+  tintaTenue: '#8A929A',
   tintaApagada: '#4A5058',
   sobreTinta: '#121417',
 

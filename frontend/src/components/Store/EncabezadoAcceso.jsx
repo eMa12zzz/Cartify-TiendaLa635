@@ -60,7 +60,7 @@ const VolverTienda = styled.button`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-600); }
+    &:hover { color: var(--marca-texto); }
   }
   &:active { transform: scale(0.97); }
 `;

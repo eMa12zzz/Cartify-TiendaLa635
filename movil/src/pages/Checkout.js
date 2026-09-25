@@ -97,7 +97,7 @@ const Opcion = ({ icono: Icono, titulo, detalle, activa, apagada, alTocar, color
     >
       <Icono size={18} color={activa ? colores.marca : COLORES.textoSuave} strokeWidth={2} />
       <View style={estilos.opcionTextos}>
-        <Text style={[estilos.opcionTitulo, activa && { color: colores.marca }]}>{titulo}</Text>
+        <Text style={[estilos.opcionTitulo, activa && { color: colores.marcaTexto }]}>{titulo}</Text>
         <Text style={estilos.opcionDetalle}>{detalle}</Text>
       </View>
       {activa && (
@@ -467,8 +467,8 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                 );
               })}
 
-              <Pressable onPress={() => setMostrarMapa(true)} hitSlop={8}>
-                <Text style={[estilos.enlace, { color: colores.marca }]}>
+              <Pressable accessibilityRole="button" onPress={() => setMostrarMapa(true)} hitSlop={8}>
+                <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>
                   {direcciones.length === 0
                     ? '+ Marcar mi dirección en el mapa'
                     : '+ Agregar otra dirección'}
@@ -507,7 +507,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
           />
 
           {metodoPago === 'saldo' && (
-            <Text style={[estilos.nota, { color: colores.marca }]}>
+            <Text style={[estilos.nota, { color: colores.marcaTexto }]}>
               Le quedarán ${(saldo - totalAPagar).toFixed(2)} después de este pedido.
             </Text>
           )}
@@ -535,7 +535,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                 {usarPuntos && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
               </View>
               <View style={estilos.opcionTextos}>
-                <Text style={[estilos.opcionTitulo, usarPuntos && { color: colores.marca }]}>
+                <Text style={[estilos.opcionTitulo, usarPuntos && { color: colores.marcaTexto }]}>
                   Usar mis {puntos} puntos
                 </Text>
                 <Text style={estilos.opcionDetalle}>
@@ -560,7 +560,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
               autoCorrect={false}
               accessibilityLabel="Código de tarjeta de regalo"
             />
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={canjear}
               disabled={canjeando || !codigoTarjeta.trim()}
               style={({ pressed }) => [
@@ -570,7 +570,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                 (canjeando || !codigoTarjeta.trim()) && estilos.botonCanjeApagado,
               ]}
             >
-              <Text style={[estilos.botonCanjeTexto, { color: colores.marca }]}>
+              <Text style={[estilos.botonCanjeTexto, { color: colores.marcaTexto }]}>
                 {canjeando ? 'Canjeando…' : 'Canjear'}
               </Text>
             </Pressable>

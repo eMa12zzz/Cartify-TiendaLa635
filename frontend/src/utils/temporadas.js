@@ -78,13 +78,15 @@ export const TEMAS_DE_TEMPORADA = [
     hasta: { mes: 10, dia: 31 },
     colores: {
       '--marca-700': '#9A3412',
-      '--marca-600': '#EA580C',
+      // Naranja calabaza más hondo: el #EA580C daba 3,5:1 con la letra blanca
+      // de los botones. Este da 5,2:1 y se sigue viendo naranja.
+      '--marca-600': '#C2410C',
       '--marca-400': '#FB923C',
       '--marca-100': '#FFEAD5',
       '--marca-50': '#FFF7ED',
       '--acento': '#6D28D9',
     },
-    muestras: ['#EA580C', '#6D28D9', '#FFEAD5'],
+    muestras: ['#C2410C', '#6D28D9', '#FFEAD5'],
     decoracion: {
       saludo: 'Noche de brujas — dulces y disfraces en la tienda',
       figura: 'murcielago',
@@ -267,21 +269,26 @@ export const FONDO_OSCURO = '#121417';
  *
  * El azul de la casa (#003049) es casi negro: sobre el fondo oscuro los
  * botones desaparecían. En oscuro el principal sube hasta donde el texto
- * blanco del botón se sigue leyendo (luminancia ~0.19, contraste de 4.4 con
- * el blanco y de 4.3 con el fondo), el tono de "presionado" pasa a ser MÁS
+ * blanco del botón se sigue leyendo, el tono de "presionado" pasa a ser MÁS
  * claro —en oscuro lo que se ilumina es lo que responde— y los fondos suaves
  * (--marca-50/100) dejan de ser pastel y pasan a ser el fondo teñido del color.
+ *
+ * Un mismo color no puede llegar a 4,5:1 con la letra blanca Y con el fondo
+ * oscuro a la vez: el punto medio (luminancia 0,19, como estaba) se quedaba
+ * en 4,4 y 4,3, y fallaba las dos. Por eso se reparte: el principal queda en
+ * 0,155 (5,1:1 con la letra blanca; como figura sobre el fondo da 3,6:1, y a
+ * un botón le basta 3:1), el presionado en 0,18 (4,6:1 con el blanco) y la
+ * marca como LETRA sale de --marca-400 por el token --marca-texto de
+ * index.css (8:1 con el fondo).
  *
  * Recibe la paleta clara ya armada, así sirve igual para la marca, las
  * temporadas de fábrica y las que crea el dueño.
  */
 export const paletaOscura = (colores) => {
-  const base = colores['--marca-600'];
-  const lum = luminanciaDe(base);
-  const principal = lum < 0.16 ? conLuminancia(base, 0.19) : lum > 0.26 ? conLuminancia(base, 0.24) : rgbAHex(hexARgb(base));
+  const principal = conLuminancia(colores['--marca-600'], 0.155);
   const acento = luminanciaDe(colores['--acento']) < 0.24 ? conLuminancia(colores['--acento'], 0.3) : rgbAHex(hexARgb(colores['--acento']));
   return {
-    '--marca-700': conLuminancia(principal, 0.27),
+    '--marca-700': conLuminancia(principal, 0.18),
     '--marca-600': principal,
     '--marca-400': conLuminancia(principal, 0.42),
     '--marca-100': mezclar(principal, FONDO_OSCURO, 0.74),

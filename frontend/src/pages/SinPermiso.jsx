@@ -54,7 +54,7 @@ const Icono = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--marca-600);
+  color: var(--marca-texto);
 `;
 
 const Titulo = styled.h1`

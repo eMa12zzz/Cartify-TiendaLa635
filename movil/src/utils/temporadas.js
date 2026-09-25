@@ -65,7 +65,9 @@ export const TEMAS_DE_TEMPORADA = [
     hasta: { mes: 10, dia: 31 },
     colores: {
       marcaOscuro: '#9A3412',
-      marca: '#EA580C',
+      // Igual que en la web: el #EA580C daba 3,5:1 con la letra blanca de
+      // los botones. Este da 5,2:1 y se sigue viendo naranja.
+      marca: '#C2410C',
       marcaClaro: '#FB923C',
       marcaSuave: '#FFEAD5',
       marcaTenue: '#FFF7ED',
@@ -212,26 +214,28 @@ export const FONDO_OSCURO = '#121417';
  *
  * El azul de la casa (#003049) es casi negro: sobre el fondo oscuro los
  * botones desaparecían. En oscuro el principal sube hasta donde el texto
- * blanco del botón se sigue leyendo (luminancia ~0.19, contraste de 4.4 con
- * el blanco y de 4.3 con el fondo), el tono de "presionado" pasa a ser MÁS
+ * blanco del botón se sigue leyendo, el tono de "presionado" pasa a ser MÁS
  * claro —en oscuro lo que se ilumina es lo que responde— y los fondos suaves
  * (marcaSuave/marcaTenue) dejan de ser pastel y pasan a ser el fondo teñido
  * del color.
+ *
+ * Un mismo color no llega a 4,5:1 con la letra blanca Y con el fondo oscuro
+ * a la vez (el punto medio de antes daba 4,4 y 4,3: fallaba las dos). Se
+ * reparte: el principal en 0,155 (5,1:1 con el blanco), el presionado en
+ * 0,18 (4,6:1) y la marca como LETRA va aparte, en marcaTexto (8:1).
  *
  * Recibe la paleta clara ya armada, así sirve igual para la marca, las
  * temporadas de fábrica y las que crea el dueño.
  */
 export const paletaOscura = (colores) => {
-  const base = colores.marca;
-  const lum = luminanciaDe(base);
-  const principal =
-    lum < 0.16 ? conLuminancia(base, 0.19) : lum > 0.26 ? conLuminancia(base, 0.24) : rgbAHex(hexARgb(base));
+  const principal = conLuminancia(colores.marca, 0.155);
   const acento =
     luminanciaDe(colores.acento) < 0.24 ? conLuminancia(colores.acento, 0.3) : rgbAHex(hexARgb(colores.acento));
   return {
-    marcaOscuro: conLuminancia(principal, 0.27),
+    marcaOscuro: conLuminancia(principal, 0.18),
     marca: principal,
     marcaClaro: conLuminancia(principal, 0.42),
+    marcaTexto: conLuminancia(principal, 0.42),
     marcaSuave: mezclar(principal, FONDO_OSCURO, 0.74),
     marcaTenue: mezclar(principal, FONDO_OSCURO, 0.86),
     acento,

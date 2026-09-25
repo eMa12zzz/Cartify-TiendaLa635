@@ -135,7 +135,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}

@@ -70,7 +70,7 @@ const ModalConfirmar = ({
         {/* Tocar fuera es "no". El Pressable va DEBAJO del panel, no
             envolviéndolo: envuelto, cada toque dentro del cuadro burbujearía
             hasta aquí y lo cerraría. */}
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={StyleSheet.absoluteFill}
           onPress={trabajando ? undefined : alCerrar}
           accessibilityLabel="Cerrar"

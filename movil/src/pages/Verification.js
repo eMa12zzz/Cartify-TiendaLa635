@@ -78,7 +78,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
       <BarraMarca centrado />
 
       <View style={estilos.cuerpo}>
-        <Pressable onPress={alVolver} hitSlop={12} style={estilos.volver}>
+        <Pressable onPress={alVolver} hitSlop={12} style={estilos.volver} accessibilityRole="button" accessibilityLabel="Volver">
           <Text style={estilos.flechaVolver}>←</Text>
         </Pressable>
 
@@ -90,8 +90,13 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
             <Text style={estilos.correo}>{correo || 'su correo'}</Text>
           </Text>
 
-          {/* Tocar cualquier casilla abre el teclado sobre el campo de verdad. */}
-          <Pressable style={estilos.casillas} onPress={() => campo.current?.focus()}>
+          {/*
+            Tocar cualquier casilla abre el teclado sobre el campo de verdad.
+            Para el lector de pantalla las casillas no existen (son dibujo):
+            el que se anuncia es el campo escondido, con su nombre y lo que va
+            escrito. Por eso el Pressable no se agrupa como un solo elemento.
+          */}
+          <Pressable style={estilos.casillas} onPress={() => campo.current?.focus()} accessible={false}>
             {Array.from({ length: LARGO }, (_, indice) => (
               <View
                 key={indice}
@@ -119,6 +124,9 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
               autoCorrect={false}
               autoFocus
               caretHidden
+              accessibilityLabel={`Código de verificación, ${LARGO} caracteres`}
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
               keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
             />
           </Pressable>

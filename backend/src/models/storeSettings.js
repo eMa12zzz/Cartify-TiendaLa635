@@ -144,6 +144,30 @@ const zonaEnvioSchema = new Schema(
   { _id: false }
 );
 
+/*
+ * LOS DATOS DEL NEGOCIO.
+ *
+ * Los que piden las páginas legales (privacidad, términos, devoluciones) y el
+ * pie de página: quién es el responsable, cómo se le contacta y cuándo
+ * atiende. Los escribe el dueño en Personalización; ninguno es obligatorio, y
+ * lo que quede vacío simplemente no se muestra — mejor un dato de menos que
+ * uno inventado en un texto legal.
+ */
+const negocioSchema = new Schema(
+  {
+    // Nombre del titular (persona natural) o razón social (sociedad).
+    titular: { type: String, default: "", trim: true, maxlength: 120 },
+    nit: { type: String, default: "", trim: true, maxlength: 20 },
+    nrc: { type: String, default: "", trim: true, maxlength: 20 },
+    correo: { type: String, default: "", trim: true, lowercase: true, maxlength: 120 },
+    telefono: { type: String, default: "", trim: true, maxlength: 20 },
+    whatsapp: { type: String, default: "", trim: true, maxlength: 20 },
+    // Texto libre: "Lunes a sábado de 7:00 a. m. a 8:00 p. m.".
+    horario: { type: String, default: "", trim: true, maxlength: 160 },
+  },
+  { _id: false }
+);
+
 const storeSettingsSchema = new Schema(
   {
     clave: { type: String, default: CLAVE_UNICA, unique: true, index: true },
@@ -170,6 +194,8 @@ const storeSettingsSchema = new Schema(
 
     // Dirección física: de aquí salen los repartos.
     direccion: { type: String, default: "Calle Sevilla 635, Col. Providencia", trim: true },
+
+    negocio: { type: negocioSchema, default: () => ({}) },
 
     /*
      * ENVÍO POR DISTANCIA (+ ajustes por zona).

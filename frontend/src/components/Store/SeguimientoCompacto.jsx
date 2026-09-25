@@ -104,14 +104,14 @@ const SeguimientoCompacto = ({ pedido }) => {
             color: c.textSecondary,
           }}
         >
-          <Bike className="w-3.5 h-3.5 flex-none" style={{ color: 'var(--marca-600)' }} />
+          <Bike className="w-3.5 h-3.5 flex-none" style={{ color: 'var(--marca-texto)' }} />
           <span style={{ fontWeight: 600, color: c.textPrimary }}>
             {seguimiento.yaCasi ? 'Ya casi llega a su puerta' : seguimiento.espera}
           </span>
           {seguimiento.distancia && (
             <span style={{ color: c.textMuted }}>· a {seguimiento.distancia}</span>
           )}
-          <Radio className="w-3 h-3 ml-auto flex-none" style={{ color: 'var(--marca-600)' }} />
+          <Radio className="w-3 h-3 ml-auto flex-none" style={{ color: 'var(--marca-texto)' }} />
         </div>
       )}
 

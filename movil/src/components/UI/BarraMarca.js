@@ -23,7 +23,7 @@ const BarraMarca = ({ centrado = false, alTocarMarca, textoAccion, alPresionarAc
 
   return (
     <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 12 }, centrado && estilos.barraCentrada]}>
-      <Pressable onPress={alTocarMarca} disabled={!alTocarMarca} style={centrado && estilos.marcaCentrada}>
+      <Pressable accessibilityRole={alTocarMarca ? "button" : undefined} onPress={alTocarMarca} disabled={!alTocarMarca} style={centrado && estilos.marcaCentrada}>
         <MarcaTienda tamano={20} centrado={centrado} />
       </Pressable>
 

@@ -28,11 +28,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const useModalTerminos = () => {
   const [abierto, setAbierto] = useState(false);
+  // Qué documento se abre: la casilla enlaza los términos Y la privacidad.
+  const [clave, setClave] = useState('terminos');
   // Quién lo abrió, para devolverle el foco al cerrar.
   const origen = useRef(null);
 
-  const abrir = useCallback((evento) => {
+  const abrir = useCallback((evento, documento = 'terminos') => {
     origen.current = evento?.currentTarget || null;
+    setClave(documento);
     setAbierto(true);
   }, []);
 
@@ -75,5 +78,5 @@ export const useModalTerminos = () => {
     return () => { document.body.style.overflow = previo; };
   }, [abierto]);
 
-  return { abierto, abrir, cerrar };
+  return { abierto, abrir, cerrar, clave };
 };

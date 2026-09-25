@@ -11,8 +11,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Mic, Volume2, VolumeX } from 'lucide-react-native';
-import { useColores, useEstilos } from '../context/ModoContext';
+import { HelpCircle, Mic, Volume2, VolumeX } from 'lucide-react-native';
+import { useColores, useEstilos, useModo } from '../context/ModoContext';
+import Tiqui from '../components/Tiqui/Tiqui';
+import { LLAVE_TIQUI_PRESENTADO } from './ConoceATiqui';
+import { leer } from '../utils/almacen';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
@@ -40,6 +43,20 @@ const Asistente = () => {
 
   const pulso = useRef(new Animated.Value(1)).current;
   const chatRef = useRef(null);
+  const { oscuro } = useModo();
+
+  /*
+   * La primera vez que se entra aquí, Tiqui se presenta sola (ConoceATiqui).
+   * Es lo que distingue a la tienda: no se deja a que alguien la descubra
+   * por casualidad. Después se puede volver a ver con "¿Quién es Tiqui?".
+   */
+  useEffect(() => {
+    let vivo = true;
+    leer(LLAVE_TIQUI_PRESENTADO).then((visto) => {
+      if (vivo && visto !== '1') navegarA('ConoceATiqui');
+    });
+    return () => { vivo = false; };
+  }, []);
 
   // El anillo late mientras escucha; se para en cuanto deja de hacerlo.
   useEffect(() => {
@@ -72,20 +89,55 @@ const Asistente = () => {
 
   const alTocarMic = hablando ? interrumpir : activo ? detener : iniciar;
 
+  // La cara de Tiqui dice lo mismo que el texto de estado, sin tener que leerlo.
+  const pose = escuchando ? 'escucha' : pensando ? 'piensa' : hablando ? 'habla' : historial.length === 0 ? 'saludo' : 'normal';
+  // Como en la web: navy con rasgos blancos, y al revés en modo oscuro.
+  const coloresTiqui = oscuro
+    ? { cuerpo: '#FFFFFF', rasgo: '#003049' }
+    : { cuerpo: '#003049', rasgo: '#FFFFFF' };
+
   return (
     <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-        <Text style={estilos.titulo}>Asistente por voz</Text>
-        <TouchableOpacity onPress={toggleMute} accessibilityLabel={muteado ? 'Activar voz' : 'Silenciar voz'}>
-          {muteado
-            ? <VolumeX size={22} color={COLORES.textoSuave} strokeWidth={1.8} />
-            : <Volume2 size={22} color={colores.marca} strokeWidth={1.8} />}
-        </TouchableOpacity>
+        <Text style={estilos.titulo} accessibilityRole="header">Tiqui, tu asistente</Text>
+        <View style={estilos.acciones}>
+          <TouchableOpacity
+            onPress={() => navegarA('ConoceATiqui')}
+            accessibilityRole="button"
+            accessibilityLabel="¿Quién es Tiqui? Ver la presentación"
+            hitSlop={8}
+            style={estilos.accion}
+          >
+            <HelpCircle size={22} color={colores.marca} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={toggleMute}
+            accessibilityRole="button"
+            accessibilityLabel={muteado ? 'Activar voz' : 'Silenciar voz'}
+            hitSlop={8}
+            style={estilos.accion}
+          >
+            {muteado
+              ? <VolumeX size={22} color={COLORES.textoSuave} strokeWidth={1.8} />
+              : <Volume2 size={22} color={colores.marca} strokeWidth={1.8} />}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={estilos.cuerpo}>
+        {/* Tiqui, arriba del micrófono: a quien se le habla. Más chico cuando ya hay charla. */}
+        <Tiqui
+          pose={pose}
+          extra={escuchando ? 'ondas' : null}
+          alto={historial.length === 0 ? 150 : 96}
+          cuerpo={coloresTiqui.cuerpo}
+          rasgo={coloresTiqui.rasgo}
+          cordon="#009AEB"
+          acento="#009AEB"
+        />
+
         <Animated.View style={[estilos.circulo, { backgroundColor: micColor, transform: [{ scale: pulso }] }]}>
-          <TouchableOpacity style={estilos.tocable} onPress={alTocarMic} accessibilityLabel={estadoTexto}>
+          <TouchableOpacity style={estilos.tocable} onPress={alTocarMic} accessibilityRole="button" accessibilityLabel={estadoTexto}>
             <Mic size={44} color="#fff" strokeWidth={1.8} />
           </TouchableOpacity>
         </Animated.View>
@@ -98,7 +150,7 @@ const Asistente = () => {
 
         {historial.length === 0 ? (
           <Text style={estilos.bajada}>
-            Soy Tiqui. Toca el micrófono y dime, por ejemplo: "quiero una manzana y dos galletas" o "¿qué ofertas hay?".
+            Soy Tiqui. Toca el micrófono y dime, por ejemplo: "quiero dos manzanas y una leche" o "¿qué ofertas hay?".
           </Text>
         ) : (
           <ScrollView ref={chatRef} style={estilos.chat} contentContainerStyle={estilos.chatContenido}>
@@ -119,7 +171,7 @@ const Asistente = () => {
         )}
       </View>
 
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         activeOpacity={carrito.length === 0 ? 1 : 0.7}
         onPress={() => carrito.length > 0 && navegarA('Carrito')}
         style={[
@@ -137,7 +189,7 @@ const Asistente = () => {
       >
         <View style={estilos.carritoFila}>
           <Text style={estilos.carritoTitulo}>Tu carrito ({items})</Text>
-          <Text style={[estilos.carritoTotal, { color: colores.marca }]}>${totalCarrito.toFixed(2)}</Text>
+          <Text style={[estilos.carritoTotal, { color: colores.marcaTexto }]}>${totalCarrito.toFixed(2)}</Text>
         </View>
         {carrito.length === 0 ? (
           <Text style={estilos.carritoVacio}>Aún no has agregado nada.</Text>
@@ -180,17 +232,30 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     color: COLORES.tituloFuerte,
     letterSpacing: -0.4,
   },
+  acciones: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  // 44 × 44: el mínimo para atinarle con el pulgar sin tocar el de al lado.
+  accion: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cuerpo: {
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 28,
-    paddingTop: 28,
+    paddingTop: 16,
   },
   circulo: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    marginBottom: 16,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    marginTop: 8,
+    marginBottom: 14,
   },
   tocable: {
     flex: 1,

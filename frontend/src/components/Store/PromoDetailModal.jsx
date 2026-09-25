@@ -297,7 +297,7 @@ const Datos = styled.p`
   color: var(--tinta-suave);
 
   span { display: inline-flex; align-items: center; gap: 6px; }
-  svg { flex-shrink: 0; color: var(--marca-600); }
+  svg { flex-shrink: 0; color: var(--marca-texto); }
   strong { color: var(--tinta); font-weight: 700; }
 `;
 

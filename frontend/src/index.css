@@ -49,9 +49,21 @@
   --marca-50:  #F1F6F9;  /* fondos de sección tenues */
   --acento:    #009AEB;  /* enlaces de acción: "Editar", activos */
 
+  /*
+   * La marca cuando es LETRA (enlaces, precios, títulos en color) y no fondo.
+   * En claro es el mismo principal; en oscuro cambia al tono claro, porque el
+   * principal oscuro está afinado para llevar letra blanca encima y como
+   * letra sobre el fondo oscuro no se leía. Se resuelve contra lo que esté
+   * puesto en --marca-600/700/400, así que sigue a las temporadas solo.
+   */
+  --marca-texto:        var(--marca-600);
+  --marca-texto-fuerte: var(--marca-700);
+
   --tinta:       #1C1614; /* texto principal y botones "+" */
   --tinta-suave: #6B6560; /* texto secundario */
-  --tinta-tenue: #9C9691; /* texto de apoyo, placeholders */
+  /* Texto de apoyo y placeholders. Era #9C9691 (2,9:1 sobre blanco): la letra
+     chica de precios anteriores, marcas y ayudas no se leía. Este da 5,1:1. */
+  --tinta-tenue: #736D66;
 
   --tinta-apagada: #D4D0CC; /* iconos en reposo que apenas se ven */
   --sobre-tinta:   #FFFFFF; /* texto encima de un botón color tinta */
@@ -66,8 +78,11 @@
   --realce:       rgba(0, 0, 0, 0.03); /* sombreado al pasar por encima */
   --velo:         rgba(0, 0, 0, 0.45); /* lo que oscurece detrás de un modal */
 
-  --alerta: #D8542C; /* "quedan pocos", errores */
+  /* "Quedan pocos", errores. Era #D8542C (4:1 con blanco); este da 5,5:1
+     como texto y como fondo de un botón con letra blanca. */
+  --alerta: #B8421E;
   --alerta-texto: #8A2B12; /* texto sobre el fondo teñido de alerta */
+  --sobre-alerta: #FFFFFF; /* letra sobre un fondo de alerta lleno */
   --exito:  #2F8F4E;
   --deshabilitado: #C9D4DB; /* botón principal apagado */
 
@@ -135,16 +150,20 @@
 :root[data-modo="oscuro"] {
   color-scheme: dark;
 
-  --marca-700: #1296DA;
-  --marca-600: #0F80BA;
-  --marca-400: #49B8F0;
-  --marca-100: #113041;
-  --marca-50:  #12232E;
+  --marca-700: #0F7DB5;
+  --marca-600: #0E75AA;
+  --marca-400: #4AB7F0;
+  --marca-100: #112D3D;
+  --marca-50:  #11222C;
   --acento:    #009AEB;
+
+  --marca-texto:        var(--marca-400);
+  --marca-texto-fuerte: color-mix(in srgb, var(--marca-400) 70%, #FFFFFF);
 
   --tinta:          #ECEEF0;
   --tinta-suave:    #A9B0B7;
-  --tinta-tenue:    #7D858D;
+  /* Sobre el gris de los campos (#1F2328) el anterior quedaba en 4,3:1. */
+  --tinta-tenue:    #8A929A;
   --tinta-apagada:  #4A5058;
   --sobre-tinta:    #121417;
 
@@ -160,6 +179,9 @@
 
   --alerta: #F07A52;
   --alerta-texto: #F4A58A;
+  /* En oscuro el rojo de alerta es claro (para leerse como letra sobre el
+     fondo): lo que va encima de él, en cambio, va oscuro. 6,6:1. */
+  --sobre-alerta: #121417;
   --exito:  #4CC27A;
   --deshabilitado: #2E3A42;
 

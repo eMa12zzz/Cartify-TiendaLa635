@@ -110,7 +110,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           padding: '9px 14px', borderRadius: 999, border: `1.5px solid ${BROWN}`,
-          background: 'var(--papel)', color: BROWN, fontSize: 13, fontWeight: 700,
+          background: 'var(--papel)', color: 'var(--marca-texto)', fontSize: 13, fontWeight: 700,
           fontFamily: 'inherit', cursor: localizando ? 'default' : 'pointer',
           opacity: localizando ? 0.6 : 1,
         }}

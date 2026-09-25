@@ -858,13 +858,19 @@ const MODO_TIQUI = [
   "Atiendes por voz a los clientes de esta tienda de barrio en El Salvador.",
   "",
   "CÓMO HABLAS:",
-  "- Siempre en primera persona y tuteando: tú, nunca usted ni vos. Alegre y cercano,",
-  "  como un niño amable que se conoce toda la tienda.",
+  "- Siempre en primera persona y tuteando: tú, nunca usted ni vos. Alegre y cercana,",
+  "  como una niña amable que se conoce toda la tienda. Tiqui es ELLA: si hablas de ti",
+  "  con adjetivos, en femenino ('estoy lista', 'qué contenta').",
   "- Lo que dices se ESCUCHA, no se lee: una o dos frases cortas (máximo 160 caracteres),",
   "  sin listas, sin emojis, sin asteriscos.",
   "- Español claro y neutro, que se entienda a la primera, también para personas mayores.",
   "  Nada de diminutivos ni jerga.",
   "- Los precios, con signo de dólar y dos decimales: $2.50.",
+  "- Pregunta '¿algo más?' SOLO cuando acabas de agregar, quitar o cambiar algo del",
+  "  carrito: ahí sí se está armando un pedido. En una charla normal (te saluda, pregunta",
+  "  por ofertas, pide una recomendación, pregunta por la tienda) NO cierres con '¿algo",
+  "  más?', '¿qué más te gustaría pedir?' ni nada parecido: contesta y ya, o sigue la",
+  "  charla con una pregunta sobre lo que se está hablando.",
   "",
   "QUÉ PUEDES HACER (llama las herramientas que hagan falta y SIEMPRE 'responder'):",
   "- Agregar, quitar o cambiar la cantidad de productos. Si pide varias cosas, una llamada",
@@ -974,6 +980,28 @@ const loQueNoHay = (frase, catalogo) => {
 
 const enLista = (cosas, conector) =>
   cosas.length <= 1 ? cosas.join("") : `${cosas.slice(0, -1).join(", ")} ${conector} ${cosas[cosas.length - 1]}`;
+
+/*
+ * "¿Algo más?" solo cuando se está armando un pedido.
+ *
+ * Tiqui cerraba TODO con "¿algo más?" o "¿qué más te gustaría pedir?": le
+ * preguntaban por las ofertas o lo saludaban y contestaba como cajero
+ * apurado. Esa pregunta tiene sentido justo después de tocar el carrito; en
+ * una charla suena a que solo le interesa vender.
+ *
+ * Las instrucciones ya se lo piden, pero el modelo tiene la costumbre muy
+ * pegada. Así que si en esta respuesta no se tocó el carrito, el cierre de
+ * venta se quita de la frase. Si la frase fuera solo eso, se deja como está.
+ */
+const TOCA_EL_CARRITO = new Set(["agregar", "quitar", "cambiar", "vaciar"]);
+const CIERRE_DE_VENTA =
+  /\s*¿\s*(?:y\s+)?(?:algo\s+más|te\s+llevo\s+algo\s+más|(?:deseas|necesitas|quieres|te\s+gustaría)\s+(?:algo|agregar\s+algo|llevar\s+algo|pedir\s+algo)\s+más|qué\s+más\s+(?:te\s+gustaría|quieres|necesitas|deseas|vas\s+a)\s*(?:pedir|llevar|agregar|comprar)?|te\s+(?:ayudo|puedo\s+ayudar)\s+con\s+algo\s+más|se\s+te\s+ofrece\s+algo\s+más)[^?¿]*\?\s*$/i;
+
+const sinCierreDeVenta = (texto, acciones) => {
+  if (acciones.some((a) => TOCA_EL_CARRITO.has(a.tipo))) return texto;
+  const sin = texto.replace(CIERRE_DE_VENTA, "").trim();
+  return sin || texto;
+};
 
 // Lo que dice Tiqui cuando el modelo hizo algo pero no dijo nada.
 const NOMBRE_DE_SECCION = {
@@ -1139,6 +1167,8 @@ aiController.asistente = async (req, res) => {
       if (!dice) {
         return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "vacia" });
       }
+      // Sin tocar el carrito, sin "¿algo más?" al final. Ver sinCierreDeVenta.
+      dice = sinCierreDeVenta(dice, acciones);
 
       return res.status(200).json({ acciones, respuesta: dice, entendido: true, origen: "ia" });
     } catch (errorIA) {

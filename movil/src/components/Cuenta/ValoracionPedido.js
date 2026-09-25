@@ -142,7 +142,7 @@ const ValoracionPedido = ({ pedido }) => {
             colorPresionado={colores.marcaOscuro}
             estilo={estilos.boton}
           />
-          <Pressable onPress={omitir} disabled={guardando} hitSlop={8}>
+          <Pressable accessibilityRole="button" onPress={omitir} disabled={guardando} hitSlop={8}>
             <Text style={estilos.ahoraNo}>Ahora no</Text>
           </Pressable>
         </>

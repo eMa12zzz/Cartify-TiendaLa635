@@ -40,7 +40,7 @@
  * ============================================================
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -136,6 +136,20 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const [valores, setValores] = useState(VALORES_INICIALES);
+  /*
+   * Una ref por campo, para que "Siguiente" en el teclado lleve de uno al
+   * otro en orden (ver CampoTexto). El nombre no la necesita: es el primero.
+   * En iOS el teclado numérico no trae esa tecla, así que en la fecha, el DUI
+   * y el teléfono se sigue tocando el campo que viene.
+   */
+  const campos = {
+    userName: useRef(null),
+    fechaNacimiento: useRef(null),
+    dui: useRef(null),
+    phoneNumber: useRef(null),
+    email: useRef(null),
+    password: useRef(null),
+  };
   const [errores, setErrores] = useState({});
   const [avisoServidor, setAvisoServidor] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -152,7 +166,8 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [promociones, setPromociones] = useState(false);
   const [errorTerminos, setErrorTerminos] = useState('');
-  const [verTerminos, setVerTerminos] = useState(false);
+  // Qué documento legal está abierto encima del formulario (o null).
+  const [verTerminos, setVerTerminos] = useState(null);
 
   const [foto, setFoto] = useState(null);
   const [errorFoto, setErrorFoto] = useState('');
@@ -264,6 +279,9 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             alCambiar={cambiar('fullName')}
             error={errores.fullName}
             autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            siguiente={campos.userName}
             redondo
           />
 
@@ -275,6 +293,10 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             alCambiar={cambiar('userName')}
             error={errores.userName}
             autoCapitalize="none"
+            autoComplete="username-new"
+            textContentType="username"
+            ref={campos.userName}
+            siguiente={campos.fechaNacimiento}
             redondo
           />
 
@@ -287,6 +309,9 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.fechaNacimiento}
             keyboardType="number-pad"
             maxLength={LARGO_FECHA}
+            autoComplete="birthdate-full"
+            ref={campos.fechaNacimiento}
+            siguiente={puedeDui ? campos.dui : campos.phoneNumber}
             redondo
           />
 
@@ -304,6 +329,8 @@ const Register = ({ irALogin, alPedirCodigo }) => {
               error={errores.dui}
               keyboardType="number-pad"
               maxLength={LARGO_DUI}
+              ref={campos.dui}
+              siguiente={campos.phoneNumber}
               redondo
             />
           )}
@@ -317,6 +344,10 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.phoneNumber}
             keyboardType="phone-pad"
             maxLength={LARGO_TELEFONO}
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            ref={campos.phoneNumber}
+            siguiente={campos.email}
             redondo
           />
 
@@ -330,6 +361,9 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            textContentType="emailAddress"
+            ref={campos.email}
+            siguiente={campos.password}
             redondo
           />
 
@@ -342,6 +376,9 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             error={errores.password}
             esContrasena
             autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            ref={campos.password}
             redondo
           />
 
@@ -396,8 +433,20 @@ const Register = ({ irALogin, alPedirCodigo }) => {
                 }}
                 etiqueta="He leído y acepto"
               />
-              <Text style={[estilos.enlace, { color: colores.marca }]} onPress={() => setVerTerminos(true)}>
-                los términos y el aviso de privacidad
+              <Text
+                style={[estilos.enlace, { color: colores.marcaTexto }]}
+                accessibilityRole="link"
+                onPress={() => setVerTerminos('terminos')}
+              >
+                los términos
+              </Text>
+              <Text style={estilos.textoCasilla}>y la</Text>
+              <Text
+                style={[estilos.enlace, { color: colores.marcaTexto }]}
+                accessibilityRole="link"
+                onPress={() => setVerTerminos('privacidad')}
+              >
+                política de privacidad
               </Text>
             </View>
 
@@ -432,7 +481,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
           <Text style={estilos.pie}>
             ¿Ya tienes una cuenta?{' '}
-            <Text style={[estilos.pieEnlace, { color: colores.marca }]} onPress={irALogin}>
+            <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irALogin}>
               Iniciar Sesión
             </Text>
           </Text>
@@ -440,7 +489,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
       </KeyboardAvoidingView>
 
       {/* Encima de todo el formulario, que sigue montado detrás con lo escrito. */}
-      {verTerminos && <HojaTerminos alCerrar={() => setVerTerminos(false)} />}
+      {verTerminos && <HojaTerminos clave={verTerminos} alCerrar={() => setVerTerminos(null)} />}
     </View>
   );
 };
@@ -534,9 +583,15 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   },
   enlace: {
     fontSize: 13,
-    color: COLORES.marca,
+    color: COLORES.marcaTexto,
     fontWeight: '600',
     textDecorationLine: 'underline',
+    // Más alto para atinarle con el dedo, sin mover el renglón.
+    paddingVertical: 6,
+  },
+  textoCasilla: {
+    fontSize: 13,
+    color: COLORES.textoSuave,
   },
   errorTerminos: {
     color: COLORES.error,
@@ -568,7 +623,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     color: COLORES.textoTenue,
   },
   pieEnlace: {
-    color: COLORES.marca,
+    color: COLORES.marcaTexto,
     fontWeight: '600',
   },
 });

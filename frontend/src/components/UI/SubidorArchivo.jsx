@@ -243,7 +243,7 @@ const BotonQuitar = styled.button`
               background-color var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { background: #D8542C; }
+    &:hover { background: var(--alerta); color: var(--sobre-alerta); }
   }
   &:active { transform: scale(0.9); }
 
@@ -280,7 +280,7 @@ const Aviso = styled.p`
   margin: 7px 0 0;
   font-size: 12px;
   font-weight: 500;
-  color: ${(p) => (p.$variante === 'oscuro' ? '#FFD9CF' : '#D8542C')};
+  color: ${(p) => (p.$variante === 'oscuro' ? '#FFD9CF' : 'var(--alerta)')};
   animation: ${fundido} var(--dur-popover) var(--ease-out) both;
 `;
 
@@ -383,7 +383,9 @@ const SubidorArchivo = ({
           <>
             <UploadCloud size={26} strokeWidth={1.7} />
             <TextoVacio>{titulo}</TextoVacio>
-            {ayuda && <TextoVacio style={{ opacity: 0.7, fontSize: 11.5 }}>{ayuda}</TextoVacio>}
+            {/* Más chica que el título, pero sin transparencia: con opacidad
+                el gris bajaba a 2,9:1 y a 11,5px ya no se leía. */}
+            {ayuda && <TextoVacio style={{ fontSize: 11.5 }}>{ayuda}</TextoVacio>}
           </>
         )}
 

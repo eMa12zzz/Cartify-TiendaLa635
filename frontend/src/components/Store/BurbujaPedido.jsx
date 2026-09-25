@@ -330,7 +330,7 @@ const BurbujaPedido = () => {
               onClick={() => navigate(`/mi-cuenta/pedido/${enCurso._id}`)}
               style={{
                 marginTop: 12, width: '100%', padding: '9px 0', borderRadius: 999,
-                border: '1px solid var(--linea)', background: 'var(--papel)', color: BROWN,
+                border: '1px solid var(--linea)', background: 'var(--papel)', color: 'var(--marca-texto)',
                 fontSize: 12.5, fontWeight: 700, display: 'flex',
                 alignItems: 'center', justifyContent: 'center', gap: 4,
               }}

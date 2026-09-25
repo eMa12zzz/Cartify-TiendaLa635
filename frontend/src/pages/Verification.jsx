@@ -41,7 +41,7 @@ const BackButton = styled.button`
   display: block;
 
   &:hover {
-    color: ${BROWN};
+    color: var(--marca-texto);
   }
 `;
 
@@ -127,8 +127,13 @@ const ResendRow = styled.div`
   color: var(--tinta-tenue);
 `;
 
-const ResendLink = styled.span`
-  color: ${BROWN};
+// Botón con cara de enlace: el span de antes no se alcanzaba con Tab.
+const ResendLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--marca-texto);
   font-weight: 600;
   cursor: pointer;
   &:hover { text-decoration: underline; }
@@ -245,18 +250,27 @@ const Verification = () => {
 
       <Body>
         <Card>
-          <BackButton onClick={() => navigate(-1)}>←</BackButton>
+          <BackButton type="button" aria-label="Volver" onClick={() => navigate(-1)}>←</BackButton>
 
           <SectionTitle>Ingresa el código de verificación</SectionTitle>
 
           <InfoBox>
             <InfoText>Se ha enviado un código a {identifier}</InfoText>
 
-            <CodeContainer>
+            {/*
+              Cada casilla dice cuál es ("Dígito 2 de 6"): sin eso el lector
+              de pantalla anunciaba seis campos iguales sin nombre. Y el
+              teclado numérico en el teléfono, con el código que llegó por
+              mensaje ofrecido para pegar en la primera.
+            */}
+            <CodeContainer role="group" aria-label="Código de verificación">
               {code.map((digit, idx) => (
                 <CodeInput
                   key={idx}
                   id={`code-${idx}`}
+                  aria-label={`Dígito ${idx + 1} de ${code.length}`}
+                  inputMode="numeric"
+                  autoComplete={idx === 0 ? 'one-time-code' : 'off'}
                   type="text"
                   maxLength="1"
                   value={digit}
@@ -275,7 +289,7 @@ const Verification = () => {
 
           <ResendRow>
             ¿No has recibido el código aún?{' '}
-            <ResendLink onClick={() => alert('Solicita un nuevo código.')}>
+            <ResendLink type="button" onClick={() => alert('Solicita un nuevo código.')}>
               Solicitar código nuevo
             </ResendLink>
           </ResendRow>
