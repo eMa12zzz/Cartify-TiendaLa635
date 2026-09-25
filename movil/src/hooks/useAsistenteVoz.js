@@ -510,7 +510,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     }
 
     if (/\b(ayuda|que puedo decir|comandos|no se|no entiendo)\b/.test(t)) {
-      hablar('Puedes decirme: quiero una manzana y dos galletas, qué ofertas hay, muéstrame las manzanas, quita una manzana, cuánto llevo, borra el carrito o comprar.');
+      hablar('Puedes decirme: quiero dos manzanas y una leche, qué ofertas hay, muéstrame las manzanas, quita una manzana, cuánto llevo, borra el carrito o comprar.');
       return;
     }
     if (/\b(repite|repetir|otra vez|que dijiste)\b/.test(t)) {

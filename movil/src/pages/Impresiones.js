@@ -239,7 +239,7 @@ const Impresiones = ({ alVolver }) => {
                     !disponible && estilos.tarjetaApagada,
                   ]}
                 >
-                  <Text style={[estilos.formatoNombre, activo && { color: colores.marcaOscuro }]}>{f.name}</Text>
+                  <Text style={[estilos.formatoNombre, activo && { color: colores.marcaTexto }]}>{f.name}</Text>
                   <Text style={estilos.formatoMedida}>
                     {pxDesdeCm(f.widthCm)} × {pxDesdeCm(f.heightCm)} px
                   </Text>
@@ -254,14 +254,14 @@ const Impresiones = ({ alVolver }) => {
 
         <Text style={estilos.pasoTitulo}>2. Sube tu archivo</Text>
         <View style={estilos.filaArchivo}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={elegirFoto}
             style={({ pressed }) => [estilos.botonArchivo, pressed && { borderColor: colores.marca }]}
           >
             <ImagenIcono size={18} color={colores.marca} />
             <Text style={estilos.botonArchivoTexto}>Elegir foto</Text>
           </Pressable>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={elegirPdf}
             style={({ pressed }) => [estilos.botonArchivo, pressed && { borderColor: colores.marca }]}
           >
@@ -274,7 +274,7 @@ const Impresiones = ({ alVolver }) => {
           <View style={estilos.previewArchivo}>
             <FileUp size={16} color={COLORES.textoSuave} />
             <Text style={estilos.previewNombre} numberOfLines={1}>{archivo.name}</Text>
-            <Pressable onPress={() => setArchivo(null)} hitSlop={10} accessibilityLabel="Quitar archivo">
+            <Pressable accessibilityRole="button" onPress={() => setArchivo(null)} hitSlop={10} accessibilityLabel="Quitar archivo">
               <Equis size={15} color={COLORES.textoSuave} />
             </Pressable>
           </View>
@@ -305,6 +305,7 @@ const Impresiones = ({ alVolver }) => {
               value={color}
               onValueChange={(v) => puedeColor && setColor(v)}
               disabled={!puedeColor}
+              accessibilityLabel="Imprimir a color"
               trackColor={{ true: colores.marca }}
             />
           </View>
@@ -312,7 +313,7 @@ const Impresiones = ({ alVolver }) => {
           <View style={estilos.filaOpcion}>
             <Text style={estilos.etiquetaOpcion}>Copias</Text>
             <View style={estilos.contador}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => setCopias((n) => Math.max(1, n - 1))}
                 hitSlop={8}
                 style={estilos.botonContador}
@@ -321,13 +322,14 @@ const Impresiones = ({ alVolver }) => {
                 <Menos size={14} color={COLORES.tituloVentaja} />
               </Pressable>
               <TextInput
+                accessibilityLabel="Número de copias"
                 value={String(copias)}
                 onChangeText={(t) => setCopias(Math.max(1, Number(t.replace(/[^0-9]/g, '')) || 1))}
                 keyboardType="number-pad"
                 keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                 style={estilos.inputCopias}
               />
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => setCopias((n) => n + 1)}
                 hitSlop={8}
                 style={estilos.botonContador}
@@ -340,16 +342,18 @@ const Impresiones = ({ alVolver }) => {
 
           <View style={estilos.filaOpcion}>
             <Text style={estilos.etiquetaOpcion}>Doble cara</Text>
-            <Switch value={dobleCara} onValueChange={setDobleCara} trackColor={{ true: colores.marca }} />
+            <Switch value={dobleCara} onValueChange={setDobleCara} trackColor={{ true: colores.marca }} accessibilityLabel="Imprimir a doble cara" />
           </View>
 
           <View>
             <Text style={[estilos.etiquetaOpcion, { marginBottom: 8 }]}>Tipo de papel</Text>
-            <View style={estilos.filaPapeles}>
+            <View style={estilos.filaPapeles} accessibilityRole="radiogroup" accessibilityLabel="Tipo de papel">
               {PAPELES.map((p) => {
                 const activo = papel === p;
                 return (
                   <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: activo }}
                     key={p}
                     onPress={() => setPapel(p)}
                     style={[
@@ -375,7 +379,7 @@ const Impresiones = ({ alVolver }) => {
               </Text>
             )}
           </View>
-          <Text style={[estilos.precioValor, { color: colores.marcaOscuro }]}>${total.toFixed(2)}</Text>
+          <Text style={[estilos.precioValor, { color: colores.marcaTexto }]}>${total.toFixed(2)}</Text>
         </View>
 
         {!!error && <Text style={estilos.error}>{error}</Text>}
@@ -480,7 +484,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   quedaPoco: {
     fontSize: 9.5,
     fontWeight: '700',
-    color: COLORES.marca,
+    color: COLORES.marcaTexto,
     marginTop: 2,
   },
   filaArchivo: {

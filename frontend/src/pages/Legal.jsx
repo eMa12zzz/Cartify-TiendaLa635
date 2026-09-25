@@ -1,13 +1,15 @@
+import { useEffect } from 'react';
 import styled from 'styled-components';
 import { ArrowLeft } from 'lucide-react';
 import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
+import { Link } from 'react-router-dom';
 import TextoTerminos from '../components/Store/TextoTerminos';
-import { useTerminos } from '../hooks/useTerminos';
+import { useDocumentoLegal } from '../hooks/useTerminos';
 
 /*
  * ============================================================
- * TÉRMINOS Y PRIVACIDAD — Terminos.jsx
+ * LAS PÁGINAS LEGALES — Legal.jsx
  * ============================================================
  * El documento que hasta ahora no existía: se pedían nombre, DUI, teléfono,
  * correo y dirección sin decir en ninguna parte para qué.
@@ -19,9 +21,11 @@ import { useTerminos } from '../hooks/useTerminos';
  * que borren sus datos" es un botón que abre WhatsApp con el mensaje escrito,
  * en vez de un correo de contacto que nadie contesta.
  *
- * El texto lo pinta TextoTerminos, que es el mismo que usa el modal del
- * registro. Aquí se pone lo que rodea al documento: el encabezado de la tienda,
- * el índice y la forma de volver.
+ * Una sola pantalla para los cuatro documentos: /terminos, /privacidad,
+ * /cookies y /devoluciones (ver App.jsx). El texto lo pinta TextoTerminos,
+ * el mismo del modal del registro; aquí va lo que rodea al documento: el
+ * encabezado de la tienda, el índice, la forma de volver y los enlaces a los
+ * otros documentos.
  * ============================================================
  */
 
@@ -71,7 +75,7 @@ const Volver = styled.button`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: var(--marca-600); color: var(--marca-700); }
+    &:hover { border-color: var(--marca-600); color: var(--marca-texto-fuerte); }
   }
   &:active { transform: scale(0.97); }
 `;
@@ -146,7 +150,7 @@ const EnlaceIndice = styled.button`
   transition: color var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-700); }
+    &:hover { color: var(--marca-texto-fuerte); }
   }
 
   @media (max-width: 980px) {
@@ -188,11 +192,34 @@ const Cierre = styled.div`
   color: var(--tinta-tenue);
 `;
 
-const Terminos = () => {
+/* Los otros documentos, al final: quien leyó privacidad suele buscar cookies. */
+const Otros = styled.nav`
+  margin-top: 26px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 14px;
+
+  a {
+    color: var(--marca-texto-fuerte);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+`;
+
+const Legal = ({ clave = 'terminos' }) => {
   const {
-    secciones, tablaDatos, indice, irASeccion, volver,
-    nombre, direccion, version, fecha, whatsappBorrado,
-  } = useTerminos();
+    documento, secciones, indice, irASeccion, volver,
+    nombre, direccion, negocio, version, fecha, whatsappBorrado, otros,
+  } = useDocumentoLegal(clave);
+
+  // El título de la pestaña del navegador dice qué documento es.
+  useEffect(() => {
+    const previo = document.title;
+    document.title = `${documento.titulo} · ${nombre}`;
+    return () => { document.title = previo; };
+  }, [documento.titulo, nombre]);
 
   return (
     <Contenedor>
@@ -201,13 +228,13 @@ const Terminos = () => {
       <Barra>
         <BarraInterior>
           <Volver onClick={volver}>
-            <ArrowLeft size={17} strokeWidth={2.3} />
+            <ArrowLeft size={17} strokeWidth={2.3} aria-hidden="true" />
             Volver
           </Volver>
         </BarraInterior>
       </Barra>
 
-      <Cuerpo>
+      <Cuerpo id="contenido">
         <Indice aria-label="Secciones del documento">
           <TituloIndice>En esta página</TituloIndice>
           {indice.map((s) => (
@@ -218,23 +245,29 @@ const Terminos = () => {
         </Indice>
 
         <Documento>
-          <Titulo>Términos y privacidad</Titulo>
+          <Titulo>{documento.titulo}</Titulo>
           <Firma>
             Versión {version} · {fecha} · {nombre}
           </Firma>
 
           <TextoTerminos
             secciones={secciones}
-            tablaDatos={tablaDatos}
             whatsappBorrado={whatsappBorrado}
             direccion={direccion}
+            nombre={nombre}
+            negocio={negocio}
           />
 
           <Cierre>
-            {nombre} · {direccion}
+            {[nombre, negocio.titular, direccion].filter(Boolean).join(' · ')}
             <br />
             Si algo de aquí no le cuadra, escríbanos antes de aceptar. Preferimos
             explicarlo a que se quede con la duda.
+            <Otros aria-label="Otros documentos legales">
+              {otros.map((d) => (
+                <Link key={d.clave} to={d.ruta}>{d.titulo}</Link>
+              ))}
+            </Otros>
           </Cierre>
         </Documento>
       </Cuerpo>
@@ -244,4 +277,4 @@ const Terminos = () => {
   );
 };
 
-export default Terminos;
+export default Legal;

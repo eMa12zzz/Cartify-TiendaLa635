@@ -68,8 +68,8 @@ const TituloBoton = styled.button`
 
   @media (hover: hover) and (pointer: fine) {
     & > svg { opacity: 0; transform: translateX(-5px); }
-    &:hover { color: var(--marca-700); }
-    &:hover > svg { opacity: 1; transform: translateX(0); color: var(--marca-600); }
+    &:hover { color: var(--marca-texto-fuerte); }
+    &:hover > svg { opacity: 1; transform: translateX(0); color: var(--marca-texto); }
   }
 
   &:active { transform: scale(0.99); }
@@ -94,7 +94,7 @@ const VerTodos = styled.button`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-700); }
+    &:hover { color: var(--marca-texto-fuerte); }
   }
   &:active { transform: scale(0.97); }
 `;
@@ -132,7 +132,7 @@ const Circulo = styled.button`
   transition: background-color var(--dur-press) var(--ease-out),
               border-color var(--dur-press) var(--ease-out),
               color var(--dur-press) var(--ease-out);
-  &:hover:not(:disabled) { border-color: var(--marca-600); color: var(--marca-600); background: var(--marca-50); }
+  &:hover:not(:disabled) { border-color: var(--marca-600); color: var(--marca-texto); background: var(--marca-50); }
   &:disabled { opacity: 0.35; cursor: default; }
 `;
 

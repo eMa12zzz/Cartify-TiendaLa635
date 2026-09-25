@@ -310,7 +310,7 @@ const Pagos = ({ alVolver }) => {
               </View>
               <View>
                 <Text style={estilos.etiquetaSaldo}>Su saldo</Text>
-                <Text style={[estilos.valorSaldo, { color: colores.marcaOscuro }]}>
+                <Text style={[estilos.valorSaldo, { color: colores.marcaTexto }]}>
                   ${saldo.toFixed(2)}
                 </Text>
               </View>
@@ -328,7 +328,7 @@ const Pagos = ({ alVolver }) => {
                 autoCorrect={false}
                 accessibilityLabel="Código de tarjeta de regalo"
               />
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={canjear}
                 disabled={canjeando || !codigoTarjeta.trim()}
                 style={({ pressed }) => [
@@ -442,7 +442,7 @@ const Pagos = ({ alVolver }) => {
                       ]}
                     >
                       <Icono size={15} color={activo ? colores.marca : COLORES.textoSuave} strokeWidth={2} />
-                      <Text style={[estilos.pildoraTipoTexto, activo && { color: colores.marca }]}>
+                      <Text style={[estilos.pildoraTipoTexto, activo && { color: colores.marcaTexto }]}>
                         {texto}
                       </Text>
                     </Pressable>
@@ -561,13 +561,13 @@ const Pagos = ({ alVolver }) => {
                 color={colores.marca}
                 colorPresionado={colores.marcaOscuro}
               />
-              <Pressable onPress={cerrarFormulario} hitSlop={8}>
+              <Pressable accessibilityRole="button" onPress={cerrarFormulario} hitSlop={8}>
                 <Text style={estilos.enlaceTenue}>Cancelar</Text>
               </Pressable>
             </View>
           ) : (
-            <Pressable onPress={() => setEscribiendo(true)} hitSlop={8}>
-              <Text style={[estilos.enlace, { color: colores.marca }]}>
+            <Pressable accessibilityRole="button" onPress={() => setEscribiendo(true)} hitSlop={8}>
+              <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>
                 {metodos.length === 0 ? '+ Agregar mi primer método de pago' : '+ Agregar otro método'}
               </Text>
             </Pressable>

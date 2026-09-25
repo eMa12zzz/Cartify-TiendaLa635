@@ -197,7 +197,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -245,7 +245,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
               )}
             </View>
 
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={localizarme}
               disabled={localizando}
               hitSlop={4}
@@ -261,7 +261,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
               ) : (
                 <LocateFixed size={15} color={colores.marca} />
               )}
-              <Text style={[estilos.textoUbicacion, { color: colores.marca }]}>
+              <Text style={[estilos.textoUbicacion, { color: colores.marcaTexto }]}>
                 {localizando ? 'Buscando su ubicación…' : 'Dirección actual'}
               </Text>
             </Pressable>
@@ -298,7 +298,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
             />
 
             <View style={estilos.filaBotones}>
-              <Pressable onPress={cerrarConAnimacion} hitSlop={8} style={estilos.botonCancelar}>
+              <Pressable accessibilityRole="button" onPress={cerrarConAnimacion} hitSlop={8} style={estilos.botonCancelar}>
                 <Text style={estilos.textoCancelar}>Cancelar</Text>
               </Pressable>
               <View style={estilos.botonGuardar}>

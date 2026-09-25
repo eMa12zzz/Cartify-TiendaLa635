@@ -71,6 +71,9 @@ import Preferencias from './cuenta/Preferencias';
 import Puntos from './cuenta/Puntos';
 import Recibos from './cuenta/Recibos';
 import ModalConfirmar from '../components/UI/ModalConfirmar';
+import HojaTerminos from '../components/UI/HojaTerminos';
+import { DOCUMENTOS_LEGALES } from '../utils/legales';
+import { navegarA } from '../navigation/navigationRef';
 import { registrarTokenPush } from '../api/clienteApi';
 import { tokenActual } from '../utils/notificaciones';
 
@@ -117,6 +120,8 @@ const Perfil = () => {
   const [confirmarSalida, setConfirmarSalida] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
   const [cliente, setCliente] = useState(null);
+  // El documento legal abierto encima (términos, privacidad, devoluciones) o null.
+  const [docLegal, setDocLegal] = useState(null);
 
   // Al personal no se le puede mostrar una cuenta de cliente: los endpoints de
   // esta pantalla van contra /client/:id y con un id de empleado dan 404. Entra
@@ -248,7 +253,37 @@ const Perfil = () => {
             </Text>
           </View>
         )}
+
+        {/*
+          Lo que se puede leer en cualquier momento, no solo al registrarse:
+          la presentación de Tiqui y los documentos legales. Van sueltos, como
+          enlaces, sin recuadro: no son secciones de la cuenta.
+        */}
+        <View style={estilos.extras}>
+          <Pressable
+            onPress={() => navegarA('ConoceATiqui')}
+            accessibilityRole="button"
+            style={({ pressed }) => [estilos.extraFila, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>Conoce a Tiqui, tu asistente</Text>
+            <ChevronRight size={16} color={colores.marca} strokeWidth={2.2} />
+          </Pressable>
+          <View style={estilos.legales}>
+            {DOCUMENTOS_LEGALES.map((d) => (
+              <Text
+                key={d.clave}
+                onPress={() => setDocLegal(d.clave)}
+                accessibilityRole="link"
+                style={estilos.legal}
+              >
+                {d.titulo}
+              </Text>
+            ))}
+          </View>
+        </View>
       </ScrollView>
+
+      {docLegal && <HojaTerminos clave={docLegal} alCerrar={() => setDocLegal(null)} />}
 
       {confirmarSalida && (
         <ModalConfirmar
@@ -404,6 +439,35 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     fontSize: 13.5,
     lineHeight: 21,
     color: COLORES.textoSuave,
+  },
+  // Separado del menú con una línea fina, no con otro recuadro.
+  extras: {
+    marginTop: 22,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORES.linea,
+    gap: 10,
+  },
+  extraFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+  },
+  extraTexto: {
+    fontSize: 14.5,
+    fontWeight: '700',
+  },
+  legales: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: 16,
+  },
+  legal: {
+    fontSize: 13,
+    color: COLORES.textoSuave,
+    textDecorationLine: 'underline',
+    paddingVertical: 8,
   },
 });
 

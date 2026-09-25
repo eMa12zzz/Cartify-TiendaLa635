@@ -1,33 +1,53 @@
 /*
  * ============================================================
- * HOJA DE TÉRMINOS — el documento, para leerlo
+ * HOJA DE LOS DOCUMENTOS LEGALES — el documento, para leerlo
  * ============================================================
  * Lo que en la web es `ModalTerminos` + `TextoTerminos`. Se abre desde el
- * enlace del registro y NO navega a otro lado: quien está a mitad del
- * formulario no puede perder lo escrito por ir a leer qué está aceptando.
+ * registro y NO navega a otro lado: quien está a mitad del formulario no
+ * puede perder lo escrito por ir a leer qué está aceptando.
  *
- * ── La tabla de datos ──
+ * Muestra cualquiera de los documentos (términos, privacidad, devoluciones;
+ * ver utils/legales). Los enlaces entre ellos cambian de documento DENTRO de
+ * la misma hoja, por lo mismo: sin salir del formulario.
  *
- * En la web es una tabla de cuatro columnas —qué dato, para qué, quién lo ve,
- * cuánto se guarda— y es el corazón del aviso. Cuatro columnas en un teléfono
- * son cuatro columnas de dos palabras cada una, ilegibles; y ponerla con
- * desplazamiento horizontal esconde justo las dos últimas, que son las que
- * importan ("quién más lo ve" y "cuánto lo guardan").
- *
- * Así que cada fila se vuelve una ficha con sus cuatro datos etiquetados, uno
- * debajo del otro. Ocupa más alto y se lee entera, que es de lo que se trata.
+ * ── Las tablas ──
+ * En la web son tablas de cuatro columnas. Cuatro columnas en un teléfono
+ * son ilegibles, y con desplazamiento horizontal se esconden justo las
+ * últimas. Así que cada fila se vuelve una ficha: el primer dato de título y
+ * los demás etiquetados, uno debajo del otro.
  * ============================================================
  */
 
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { Equis } from './Iconos';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
-import { FECHA_TERMINOS, SECCIONES, TABLA_DATOS, VERSION_TERMINOS } from '../../utils/terminos';
+import { useAjustesTienda } from '../../hooks/useAjustesTienda';
+import { enlaceWhatsApp } from '../../utils/tienda';
+import { documentoLegal, FECHA_LEGAL, VERSION_LEGAL, URL_WEB_LEGAL } from '../../utils/legales';
 
-const Bloque = ({ bloque }) => {
+const MENSAJE_BORRADO =
+  'Hola, quiero pedir que borren mi cuenta y mis datos personales de la tienda. Mi correo registrado es: ';
+
+// Los documentos que viven en la app. El de cookies es de la web: se abre allá.
+const EN_LA_APP = ['terminos', 'privacidad', 'devoluciones'];
+
+const Dato = ({ etiqueta, valor }) => {
   const estilos = useEstilos(crearEstilos);
+
+  return (
+    <View style={estilos.dato}>
+      <Text style={estilos.datoEtiqueta}>{etiqueta}</Text>
+      <Text style={estilos.datoValor}>{valor}</Text>
+    </View>
+  );
+};
+
+const Bloque = ({ bloque, negocio, direccion, nombre, irA }) => {
+  const estilos = useEstilos(crearEstilos);
+  const COLORES = useColores();
 
   switch (bloque.tipo) {
     case 'destacado':
@@ -59,68 +79,121 @@ const Bloque = ({ bloque }) => {
         </View>
       );
 
+    // Cada fila, una ficha: el primer dato es el título, los demás van etiquetados.
     case 'tabla':
       return (
         <View style={estilos.fichas}>
-          {TABLA_DATOS.map((fila) => (
-            <View key={fila.dato} style={estilos.ficha}>
-              <Text style={estilos.fichaTitulo}>{fila.dato}</Text>
-              <Dato etiqueta="Para qué" valor={fila.para} />
-              <Dato etiqueta="Quién lo ve" valor={fila.quien} />
-              <Dato etiqueta="Cuánto se guarda" valor={fila.cuanto} />
+          {bloque.filas.map((fila) => (
+            <View key={fila[0]} style={estilos.ficha}>
+              <Text style={estilos.fichaTitulo}>{fila[0]}</Text>
+              {fila.slice(1).map((valor, j) => (
+                <Dato key={j} etiqueta={bloque.columnas[j + 1]} valor={valor} />
+              ))}
             </View>
           ))}
         </View>
       );
+
+    // Los datos del negocio que puso el dueño. Lo vacío no se pinta.
+    case 'negocio': {
+      const filas = [
+        ['Negocio', nombre],
+        ['Titular', negocio.titular],
+        ['NIT', negocio.nit],
+        ['NRC', negocio.nrc],
+        ['Dirección', direccion ? `${direccion}, El Salvador` : ''],
+        ['Correo', negocio.correo],
+        ['Teléfono', negocio.telefono],
+        ['WhatsApp', negocio.whatsapp],
+        ['Horario', negocio.horario],
+      ].filter(([, valor]) => valor);
+      return (
+        <View style={estilos.negocio}>
+          {filas.map(([etiqueta, valor]) => <Dato key={etiqueta} etiqueta={etiqueta} valor={valor} />)}
+        </View>
+      );
+    }
+
+    // Otro documento: se abre en esta misma hoja (o en la web, el de cookies).
+    case 'enlace': {
+      const clave = bloque.a.replace('/', '');
+      const alTocar = () => (EN_LA_APP.includes(clave) ? irA(clave) : Linking.openURL(`${URL_WEB_LEGAL}${bloque.a}`));
+      return (
+        <Text style={[estilos.enlace, { color: COLORES.marcaTexto }]} accessibilityRole="link" onPress={alTocar}>
+          {bloque.texto} →
+        </Text>
+      );
+    }
+
+    // Pedir el borrado: WhatsApp con el mensaje ya escrito, o la tienda.
+    case 'borrado': {
+      const whatsapp = enlaceWhatsApp(MENSAJE_BORRADO, negocio.whatsapp);
+      return whatsapp ? (
+        <Pressable
+          onPress={() => Linking.openURL(whatsapp)}
+          accessibilityRole="link"
+          style={({ pressed }) => [estilos.botonBorrado, { borderColor: COLORES.marca }, pressed && { opacity: 0.8 }]}
+        >
+          <Text style={[estilos.botonBorradoTexto, { color: COLORES.marcaTexto }]}>Pedir que borren mis datos</Text>
+        </Pressable>
+      ) : (
+        <Text style={estilos.parrafo}>
+          Para pedir el borrado, pásese por la tienda{direccion ? ` en ${direccion}` : ''}.
+        </Text>
+      );
+    }
 
     default:
       return null;
   }
 };
 
-const Dato = ({ etiqueta, valor }) => {
-  const estilos = useEstilos(crearEstilos);
-
-  return (
-    <View style={estilos.dato}>
-      <Text style={estilos.datoEtiqueta}>{etiqueta}</Text>
-      <Text style={estilos.datoValor}>{valor}</Text>
-    </View>
-  );
-};
-
-const HojaTerminos = ({ alCerrar }) => {
+const HojaTerminos = ({ alCerrar, clave: claveInicial = 'terminos' }) => {
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
-  useBotonAtras(alCerrar);
+  const { ajustes } = useAjustesTienda();
+  const [clave, setClave] = useState(claveInicial);
+  const documento = documentoLegal(clave);
+  const nombre = `${ajustes.nombreLinea1 || ''} ${ajustes.nombreLinea2 || ''}`.trim();
+
+  // Atrás: si se saltó a otro documento, vuelve al que se abrió; si no, cierra.
+  useBotonAtras(() => (clave !== claveInicial ? setClave(claveInicial) : alCerrar()));
 
   return (
-    <View style={estilos.capa}>
+    <View style={estilos.capa} accessibilityViewIsModal>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-        <Text style={estilos.tituloBarra}>Términos y privacidad</Text>
+        <Text style={estilos.tituloBarra} accessibilityRole="header">{documento.titulo}</Text>
         <Pressable
           onPress={alCerrar}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar los términos"
+          accessibilityLabel={`Cerrar: ${documento.titulo}`}
           style={({ pressed }) => [estilos.cerrar, pressed && estilos.cerrarPresionado]}
         >
           <Equis size={16} color={COLORES.textoSuave} />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={estilos.cuerpo} showsVerticalScrollIndicator={false}>
-        {SECCIONES.map((seccion) => (
+      {/* `key`: al cambiar de documento, se empieza a leer desde arriba. */}
+      <ScrollView key={clave} contentContainerStyle={estilos.cuerpo} showsVerticalScrollIndicator={false}>
+        {documento.secciones.map((seccion) => (
           <View key={seccion.id} style={estilos.seccion}>
-            <Text style={estilos.tituloSeccion}>{seccion.titulo}</Text>
+            <Text style={estilos.tituloSeccion} accessibilityRole="header">{seccion.titulo}</Text>
             {seccion.bloques.map((bloque, i) => (
-              <Bloque key={i} bloque={bloque} />
+              <Bloque
+                key={i}
+                bloque={bloque}
+                negocio={ajustes.negocio || {}}
+                direccion={ajustes.direccion}
+                nombre={nombre}
+                irA={setClave}
+              />
             ))}
           </View>
         ))}
 
         <Text style={estilos.pie}>
-          Versión {VERSION_TERMINOS} · {FECHA_TERMINOS}
+          Versión {VERSION_LEGAL} · {FECHA_LEGAL}
         </Text>
       </ScrollView>
     </View>
@@ -144,14 +217,16 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     borderBottomColor: COLORES.linea,
   },
   tituloBarra: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '700',
     color: COLORES.tituloFuerte,
   },
+  // 44 × 44: el mínimo cómodo para el pulgar.
   cerrar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -257,6 +332,29 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     fontSize: 13.5,
     lineHeight: 20,
     color: COLORES.textoVentaja,
+  },
+  negocio: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  enlace: {
+    fontSize: 14,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+    paddingVertical: 8,
+  },
+  botonBorrado: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    marginVertical: 6,
+  },
+  botonBorradoTexto: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   pie: {
     fontSize: 12.5,

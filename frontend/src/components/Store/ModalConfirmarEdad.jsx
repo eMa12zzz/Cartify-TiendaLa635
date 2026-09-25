@@ -62,7 +62,7 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
           <div
             style={{
               width: 52, height: 52, borderRadius: 14, marginBottom: 16,
-              background: 'var(--marca-100)', color: 'var(--marca-700)',
+              background: 'var(--marca-100)', color: 'var(--marca-texto-fuerte)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >

@@ -48,7 +48,7 @@ const Opcion = ({ Icono, texto, activa, colores, onPress }) => {
       ]}
     >
       <Icono size={18} strokeWidth={2.1} color={activa ? colores.marca : COLORES.textoSuave} />
-      <Text style={[estilos.opcionTexto, activa && { color: colores.marca }]} numberOfLines={1}>
+      <Text style={[estilos.opcionTexto, activa && { color: colores.marcaTexto }]} numberOfLines={1}>
         {texto}
       </Text>
       {activa && <Check size={16} strokeWidth={2.6} color={colores.marca} />}
@@ -144,7 +144,7 @@ const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}

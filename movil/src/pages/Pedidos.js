@@ -422,7 +422,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   puntosTexto: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORES.marca,
+    color: COLORES.marcaTexto,
   },
   total: {
     fontSize: 15,

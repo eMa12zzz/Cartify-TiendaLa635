@@ -33,6 +33,9 @@ const DE_RESPALDO = {
   logoUrl: '',
   lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
+  // Quién responde por la tienda y cómo se le contacta. Vacío = no se muestra.
+  // Ver components/Admin/DatosNegocio.jsx y pages/legales.
+  negocio: { titular: '', nit: '', nrc: '', correo: '', telefono: '', whatsapp: '', horario: '' },
   // Envío por distancia (ver utils/envio.js). Sin ubicación de la tienda se
   // cobra solo la tarifa base.
   ubicacionTienda: { lat: null, lng: null },

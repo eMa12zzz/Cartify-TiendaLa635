@@ -92,7 +92,7 @@ const SinFoto = styled.div`
   height: 42px;
   border-radius: 50%;
   background: var(--marca-100);
-  color: var(--marca-600);
+  color: var(--marca-texto);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,7 +220,7 @@ const EnlaceTerminos = styled.button`
   border: none;
   padding: 0;
   font: inherit;
-  color: var(--marca-600);
+  color: var(--marca-texto);
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
@@ -281,7 +281,7 @@ const CompletarGoogle = () => {
     aceptoTerminos, onSubmit, cancelar,
   } = useCompletarGoogle();
 
-  const { abierto, abrir: abrirTerminos, cerrar: cerrarTerminos } = useModalTerminos();
+  const { abierto, abrir: abrirTerminos, cerrar: cerrarTerminos, clave: documentoAbierto } = useModalTerminos();
 
   /*
    * Sin token no hay nada que completar. Pasa si alguien recarga la página o
@@ -370,15 +370,19 @@ const CompletarGoogle = () => {
               <input
                 type="checkbox"
                 id="aceptaTerminos"
-                aria-label="He leído y acepto los términos y el aviso de privacidad"
+                aria-label="He leído y acepto los términos y condiciones y la política de privacidad"
                 {...register('aceptaTerminos', { required: true })}
               />
               <div>
                 <label htmlFor="aceptaTerminos">He leído y acepto los </label>
-                <EnlaceTerminos type="button" onClick={abrirTerminos}>
-                  términos y el aviso de privacidad
-                </EnlaceTerminos>
-                .
+                <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'terminos')}>
+                    términos y condiciones
+                  </EnlaceTerminos>
+                  {' y la '}
+                  <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'privacidad')}>
+                    política de privacidad
+                  </EnlaceTerminos>
+                  .
               </div>
             </Casilla>
 
@@ -415,7 +419,7 @@ const CompletarGoogle = () => {
         </Cancelar>
       </Tarjeta>
 
-      <ModalTerminos abierto={abierto} onCerrar={cerrarTerminos} />
+      <ModalTerminos abierto={abierto} onCerrar={cerrarTerminos} clave={documentoAbierto} />
     </Pantalla>
   );
 };

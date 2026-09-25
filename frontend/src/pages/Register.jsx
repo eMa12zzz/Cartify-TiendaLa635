@@ -169,8 +169,13 @@ const FooterText = styled.div`
   color: var(--tinta-tenue);
 `;
 
-const FooterLink = styled.span`
-  color: ${BROWN};
+// Botón con cara de enlace: el span de antes no se alcanzaba con Tab.
+const FooterLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--marca-texto);
   font-weight: 600;
   cursor: pointer;
   &:hover { text-decoration: underline; }
@@ -235,12 +240,12 @@ const EnlaceTerminos = styled.button`
   padding: 0;
   font-family: inherit;
   font-size: inherit;
-  color: ${BROWN};
+  color: var(--marca-texto);
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
 
-  &:hover { color: ${BROWN_HOVER}; }
+  &:hover { color: var(--marca-texto-fuerte); }
 `;
 
 // El renglón de la casilla de términos. Existe porque ahí el texto y el enlace
@@ -284,7 +289,7 @@ const Register = () => {
    * WhatsApp, por donde entra media tienda— que abren encima y se llevan todo
    * lo escrito. Ver useModalTerminos.
    */
-  const { abierto: terminosAbiertos, abrir: abrirTerminos, cerrar: cerrarTerminos } =
+  const { abierto: terminosAbiertos, abrir: abrirTerminos, cerrar: cerrarTerminos, clave: documentoAbierto } =
     useModalTerminos();
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
@@ -316,7 +321,7 @@ const Register = () => {
      * exigir por su cuenta: la casilla del navegador no le prueba nada a nadie.
      */
     if (!watch('aceptaTerminos')) {
-      toast.error('Marque primero que acepta los términos y el aviso de privacidad');
+      toast.error('Marque primero que acepta los términos y la política de privacidad');
       return;
     }
 
@@ -354,12 +359,13 @@ const Register = () => {
           <form onSubmit={handleSubmit(registrar)}>
             
             <InputContainer>
-              <Label>Nombre Completo</Label>
+              <Label htmlFor="campo-fullName">Nombre Completo</Label>
               <InputWrapper>
                 <IconWrapper><User size={18} /></IconWrapper>
                 <Input
                   type="text"
                   placeholder="Juan Pérez"
+                  id="campo-fullName"
                   {...register("fullName", { required: "El nombre es obligatorio" })}
                 />
                 {errors.fullName && <ErrorMsg>{errors.fullName.message}</ErrorMsg>}
@@ -367,12 +373,13 @@ const Register = () => {
             </InputContainer>
 
             <InputContainer>
-              <Label>Nombre de Usuario</Label>
+              <Label htmlFor="campo-userName">Nombre de Usuario</Label>
               <InputWrapper>
                 <IconWrapper><User size={18} /></IconWrapper>
                 <Input
                   type="text"
                   placeholder="juanperez99"
+                  id="campo-userName"
                   {...register("userName", { required: "El nombre de usuario es obligatorio" })}
                 />
                 {errors.userName && <ErrorMsg>{errors.userName.message}</ErrorMsg>}
@@ -386,18 +393,19 @@ const Register = () => {
               Va ANTES que el DUI porque es la que decide si el DUI se pide.
             */}
             <InputContainer>
-              <Label>Fecha de nacimiento</Label>
+              <Label htmlFor="campo-fechaNacimiento">Fecha de nacimiento</Label>
               <InputWrapper>
                 <IconWrapper><Calendar size={18} /></IconWrapper>
                 <Input
                   type="date"
                   max={new Date().toISOString().split('T')[0]}
+                  id="campo-fechaNacimiento"
                   {...register("fechaNacimiento", {
                     required: "La fecha de nacimiento es obligatoria",
                     validate: (v) => {
                       const edad = calcularEdad(v);
                       if (edad == null) return "Esa fecha no es válida";
-                      if (edad < 0 || edad > 120) return "Revisá la fecha";
+                      if (edad < 0 || edad > 120) return "Revise la fecha";
                       return true;
                     },
                   })}
@@ -413,7 +421,7 @@ const Register = () => {
             */}
             {puedeDui && (
               <InputContainer>
-                <Label>DUI (opcional)</Label>
+                <Label htmlFor="campo-dui">DUI (opcional)</Label>
                 <InputWrapper>
                   <IconWrapper><Hash size={18} /></IconWrapper>
                   <Input
@@ -421,6 +429,7 @@ const Register = () => {
                     inputMode="numeric"
                     maxLength={LARGO_DUI}
                     placeholder="00000000-0"
+                    id="campo-dui"
                     {...register("dui", reglaDuiOpcional)}
                     onKeyDown={bloquearNoDigitos}
                     // El guion se pone solo: si cada quien lo escribe a su manera,
@@ -433,7 +442,7 @@ const Register = () => {
             )}
 
             <InputContainer>
-              <Label>Teléfono</Label>
+              <Label htmlFor="campo-phoneNumber">Teléfono</Label>
               <InputWrapper>
                 <IconWrapper><Phone size={18} /></IconWrapper>
                 <Input
@@ -441,6 +450,7 @@ const Register = () => {
                   inputMode="numeric"
                   maxLength={LARGO_TELEFONO}
                   placeholder="7000-0000"
+                  id="campo-phoneNumber"
                   {...register("phoneNumber", reglaTelefono)}
                   onKeyDown={bloquearNoDigitos}
                   onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
@@ -458,12 +468,13 @@ const Register = () => {
             */}
 
             <InputContainer>
-              <Label>Correo Electrónico</Label>
+              <Label htmlFor="campo-email">Correo Electrónico</Label>
               <InputWrapper>
                 <IconWrapper><Mail size={18} /></IconWrapper>
                 <Input
                   type="email"
                   placeholder="juan@ejemplo.com"
+                  id="campo-email"
                   {...register("email", { 
                     required: "El correo es obligatorio",
                     pattern: {
@@ -477,13 +488,14 @@ const Register = () => {
             </InputContainer>
 
             <InputContainer>
-              <Label>Contraseña</Label>
+              <Label htmlFor="campo-password">Contraseña</Label>
               <InputWrapper>
                 <IconWrapper><Lock size={18} /></IconWrapper>
                 <Input
                   type={verPass ? 'text' : 'password'}
                   placeholder="********"
                   style={{ paddingRight: 44 }}
+                  id="campo-password"
                   {...register("password", {
                     required: "La contraseña es obligatoria",
                     minLength: { value: 6, message: "Mínimo 6 caracteres" }
@@ -522,15 +534,19 @@ const Register = () => {
                     y un lector de pantalla anunciaría "acepto los" a secas —
                     una casilla que no dice qué se está aceptando.
                   */
-                  aria-label="He leído y acepto los términos y el aviso de privacidad"
+                  aria-label="He leído y acepto los términos y condiciones y la política de privacidad"
                   {...register('aceptaTerminos', {
                     required: 'Hay que aceptar los términos para crear la cuenta',
                   })}
                 />
                 <TextoCasilla>
                   <label htmlFor="aceptaTerminos">He leído y acepto los </label>
-                  <EnlaceTerminos type="button" onClick={abrirTerminos}>
-                    términos y el aviso de privacidad
+                  <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'terminos')}>
+                    términos y condiciones
+                  </EnlaceTerminos>
+                  {' y la '}
+                  <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'privacidad')}>
+                    política de privacidad
                   </EnlaceTerminos>
                   .
                 </TextoCasilla>
@@ -580,12 +596,12 @@ const Register = () => {
 
           <FooterText>
             ¿Ya tienes una cuenta?{' '}
-            <FooterLink onClick={() => navigate('/iniciar-sesion')}>Iniciar Sesión</FooterLink>
+            <FooterLink type="button" onClick={() => navigate('/iniciar-sesion')}>Iniciar Sesión</FooterLink>
           </FooterText>
         </Card>
       </Body>
 
-      <ModalTerminos abierto={terminosAbiertos} onCerrar={cerrarTerminos} />
+      <ModalTerminos abierto={terminosAbiertos} onCerrar={cerrarTerminos} clave={documentoAbierto} />
     </Container>
   );
 };

@@ -42,7 +42,7 @@ const FilaProductos = ({ seccion, alVerTodos, alVerDetalle, alAgregar }) => {
             accessibilityLabel={`Ver los ${total} productos de ${seccion.titulo}`}
             style={({ pressed }) => [estilos.verTodos, pressed && { opacity: 0.6 }]}
           >
-            <Text style={[estilos.verTodosTexto, { color: colores.marca }]}>
+            <Text style={[estilos.verTodosTexto, { color: colores.marcaTexto }]}>
               Ver todos ({total})
             </Text>
           </Pressable>

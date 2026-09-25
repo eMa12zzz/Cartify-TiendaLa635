@@ -94,7 +94,7 @@ const Volver = styled.button`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: var(--marca-600); color: var(--marca-700); }
+    &:hover { border-color: var(--marca-600); color: var(--marca-texto-fuerte); }
   }
   &:active { transform: scale(0.97); }
 `;

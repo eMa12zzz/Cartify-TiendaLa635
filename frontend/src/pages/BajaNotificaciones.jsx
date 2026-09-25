@@ -51,7 +51,7 @@ const Icono = styled.div`
   margin: 0 auto 18px;
   border-radius: 50%;
   background: var(--marca-100);
-  color: var(--marca-600);
+  color: var(--marca-texto);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,7 +97,7 @@ const Boton = styled.button`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { ${(p) => (p.$primario ? 'background: var(--marca-700);' : 'border-color: var(--marca-600); color: var(--marca-600);')} }
+    &:hover { ${(p) => (p.$primario ? 'background: var(--marca-700);' : 'border-color: var(--marca-600); color: var(--marca-texto);')} }
   }
   &:active { transform: scale(0.985); }
 `;

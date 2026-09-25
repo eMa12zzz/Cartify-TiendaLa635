@@ -221,11 +221,30 @@ const ProductName = styled.div`
   line-height: 1.3;
 `;
 
-/* En el diseño el "quedan N" siempre va en rojo: es lo que empuja a comprar. */
+/*
+ * El nombre es el botón que abre el producto. Con el mouse da igual —la
+ * tarjeta entera responde al clic—, pero la tarjeta es un div y el teclado no
+ * llega a un div: sin esto, quien navega con Tab saltaba de corazón en "+" sin
+ * poder abrir nunca un producto. Se ve igual que el texto que era.
+ */
+const NombreBoton = styled.button`
+  all: unset;
+  cursor: pointer;
+  border-radius: 4px;
+
+  &:focus-visible {
+    outline: 2px solid var(--marca-600);
+    outline-offset: 2px;
+  }
+`;
+
+/* En el diseño el "quedan N" siempre va en rojo: es lo que empuja a comprar.
+   El token de alerta y no los naranjas que había (#E0763F daba 2,9:1): a 11 px
+   la letra tiene que llegar a 4,5:1. Lo escaso, además, en negrita. */
 const StockInfo = styled.div`
   font-size: 11px;
-  font-weight: 500;
-  color: ${props => (props.$bajoStock ? '#D8542C' : '#E0763F')};
+  font-weight: ${props => (props.$bajoStock ? 700 : 500)};
+  color: var(--alerta);
   margin-top: 3px;
   display: flex;
   align-items: center;
@@ -289,7 +308,7 @@ const Marca18 = styled.span`
   padding: 1px 6px;
   border-radius: var(--radio-pill);
   background: var(--alerta);
-  color: #fff;
+  color: var(--sobre-alerta);
   font-size: 10px;
   font-weight: 800;
   vertical-align: middle;
@@ -372,11 +391,20 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
 
   const bajoStock = producto.stock < 10;
 
+  const verDetalle = () => {
+    if (tapado) { pedirConfirmacion(() => onVerDetalle(producto)); return; }
+    onVerDetalle(producto);
+  };
+
   const handleClickCard = (e) => {
     if (e.target.closest('.add-button')) return;
     if (e.target.closest('.wishlist-button')) return;
-    if (tapado) { pedirConfirmacion(() => onVerDetalle(producto)); return; }
-    onVerDetalle(producto);
+    verDetalle();
+  };
+
+  const handleNombre = (e) => {
+    e.stopPropagation();
+    verDetalle();
   };
 
   const handleAgregar = (e) => {
@@ -409,8 +437,11 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
         className="wishlist-button"
         onClick={handleWishlist}
         $liked={liked}
+        aria-label={`Guardar ${producto.nombre} en favoritos`}
+        aria-pressed={liked}
       >
-        {liked ? '♥' : '♡'}
+        {/* El símbolo solo se ve: el lector lo leía "palo de corazones". */}
+        <span aria-hidden="true">{liked ? '♥' : '♡'}</span>
       </WishlistButton>
 
       <ImageWrapper ref={fotoRef}>
@@ -428,7 +459,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
           <CoberturaEdad>
             <Lock size={20} />
             <span style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.2 }}>Mayores de 18</span>
-            <span style={{ fontSize: 10.5, opacity: 0.85, lineHeight: 1.25 }}>Tocá para confirmar tu edad</span>
+            <span style={{ fontSize: 10.5, opacity: 0.85, lineHeight: 1.25 }}>Toque para confirmar su edad</span>
           </CoberturaEdad>
         )}
       </ImageWrapper>
@@ -436,7 +467,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
       <CardBody>
         <ProductBrand>{producto.marca}</ProductBrand>
         <ProductName>
-          {producto.nombre}
+          <NombreBoton type="button" onClick={handleNombre}>{producto.nombre}</NombreBoton>
           {/* +18 pegado al nombre: es una condición para comprarlo, no un
               adorno. Mejor enterarse aquí que en la puerta de la casa. */}
           {esSoloAdultos(producto) && <Marca18>+18</Marca18>}
@@ -477,7 +508,13 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
               <Contenido>{piezasEnTexto(producto)}</Contenido>
             )}
           </PriceBlock>
-          <AddButton className="add-button" onClick={handleAgregar}>+</AddButton>
+          <AddButton
+            className="add-button"
+            onClick={handleAgregar}
+            aria-label={`Agregar ${producto.nombre} al carrito`}
+          >
+            <span aria-hidden="true">+</span>
+          </AddButton>
         </PriceRow>
       </CardBody>
     </Card>

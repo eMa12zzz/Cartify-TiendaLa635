@@ -161,8 +161,8 @@ const Direcciones = ({ alVolver }) => {
           }
           ListFooterComponent={
             <View style={estilos.agregar}>
-              <Pressable onPress={() => setMostrarMapa(true)} hitSlop={8}>
-                <Text style={[estilos.enlace, { color: colores.marca }]}>
+              <Pressable accessibilityRole="button" onPress={() => setMostrarMapa(true)} hitSlop={8}>
+                <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>
                   {direcciones.length === 0 ? '+ Agregar mi primera dirección' : '+ Agregar otra dirección'}
                 </Text>
               </Pressable>

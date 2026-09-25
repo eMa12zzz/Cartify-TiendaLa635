@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { X, ExternalLink } from 'lucide-react';
 import TextoTerminos from './TextoTerminos';
-import { useTerminos } from '../../hooks/useTerminos';
+import { useDocumentoLegal } from '../../hooks/useTerminos';
 
 /*
  * ============================================================
@@ -94,7 +94,7 @@ const Salida = styled.a`
   white-space: nowrap;
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: var(--marca-700); }
+    &:hover { color: var(--marca-texto-fuerte); }
   }
 
   /* En el teléfono no cabe junto al título y al botón de cerrar; y ahí abrir
@@ -119,7 +119,7 @@ const Cerrar = styled.button`
               transform var(--dur-press) var(--ease-out);
 
   @media (hover: hover) and (pointer: fine) {
-    &:hover { border-color: var(--marca-600); color: var(--marca-700); }
+    &:hover { border-color: var(--marca-600); color: var(--marca-texto-fuerte); }
   }
   &:active { transform: scale(0.94); }
 `;
@@ -160,8 +160,9 @@ const BotonListo = styled.button`
   &:active { transform: scale(0.97); }
 `;
 
-const ModalTerminos = ({ abierto, onCerrar }) => {
-  const { secciones, tablaDatos, whatsappBorrado, direccion, version, fecha } = useTerminos();
+const ModalTerminos = ({ abierto, onCerrar, clave = 'terminos' }) => {
+  // Qué documento se lee: el registro abre términos o privacidad por separado.
+  const { documento, secciones, whatsappBorrado, direccion, nombre, negocio, version, fecha } = useDocumentoLegal(clave);
   const botonCerrar = useRef(null);
 
   // Al abrir, el foco entra al modal. Si no, el tabulador seguiría recorriendo
@@ -169,7 +170,6 @@ const ModalTerminos = ({ abierto, onCerrar }) => {
   useEffect(() => {
     if (abierto) botonCerrar.current?.focus();
   }, [abierto]);
-
   if (!abierto) return null;
 
   return (
@@ -182,16 +182,16 @@ const ModalTerminos = ({ abierto, onCerrar }) => {
       <Panel role="dialog" aria-modal="true" aria-labelledby="titulo-terminos">
         <Cabecera>
           <Titulos>
-            <h2 id="titulo-terminos">Términos y privacidad</h2>
+            <h2 id="titulo-terminos">{documento.titulo}</h2>
             <p>Versión {version} · {fecha}</p>
           </Titulos>
 
-          <Salida href="/terminos" target="_blank" rel="noopener noreferrer">
+          <Salida href={documento.ruta} target="_blank" rel="noopener noreferrer">
             <ExternalLink size={14} strokeWidth={2.2} />
             Ver la página completa
           </Salida>
 
-          <Cerrar ref={botonCerrar} onClick={onCerrar} aria-label="Cerrar los términos">
+          <Cerrar ref={botonCerrar} onClick={onCerrar} aria-label={`Cerrar: ${documento.titulo}`}>
             <X size={18} strokeWidth={2.3} />
           </Cerrar>
         </Cabecera>
@@ -199,9 +199,10 @@ const ModalTerminos = ({ abierto, onCerrar }) => {
         <Contenido>
           <TextoTerminos
             secciones={secciones}
-            tablaDatos={tablaDatos}
             whatsappBorrado={whatsappBorrado}
             direccion={direccion}
+            nombre={nombre}
+            negocio={negocio}
           />
         </Contenido>
 

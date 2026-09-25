@@ -33,7 +33,7 @@
  * ============================================================
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -101,6 +101,9 @@ const MisDatos = ({ alVolver }) => {
   const estilos = useEstilos(crearEstilos);
   const { avisar } = useAviso();
 
+  // "Siguiente" en el teclado: nombre → usuario → correo. Ver CampoTexto.
+  const campoUsuario = useRef(null);
+  const campoCorreo = useRef(null);
   const [form, setForm] = useState({
     fullName: '',
     userName: '',
@@ -282,6 +285,9 @@ const MisDatos = ({ alVolver }) => {
             marcador="Su nombre"
             error={errores.fullName}
             autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            siguiente={campoUsuario}
           />
 
           <CampoTexto
@@ -293,6 +299,10 @@ const MisDatos = ({ alVolver }) => {
             error={errores.userName}
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="username"
+            textContentType="username"
+            ref={campoUsuario}
+            siguiente={campoCorreo}
           />
 
           <CampoTexto
@@ -305,6 +315,9 @@ const MisDatos = ({ alVolver }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            ref={campoCorreo}
           />
 
           {/* El guion lo pone la máscara y el campo topa en 8 dígitos, así el

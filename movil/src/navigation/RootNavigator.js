@@ -42,6 +42,7 @@ import Checkout from '../pages/Checkout';
 import Confirmacion from '../pages/Confirmacion';
 import Seccion from '../pages/Seccion';
 import Impresiones from '../pages/Impresiones';
+import ConoceATiqui, { LLAVE_TIQUI_PRESENTADO } from '../pages/ConoceATiqui';
 import ModalProducto from '../components/Tienda/ModalProducto';
 import TabMenu from './TabMenu';
 
@@ -222,6 +223,20 @@ const ImpresionesRoute = ({ navigation }) => (
   <Impresiones alVolver={() => navigation.goBack()} />
 );
 
+/*
+ * La presentación de Tiqui. Al cerrarla (o terminarla) queda marcada como
+ * vista, para que no se vuelva a abrir sola; desde el asistente se puede ver
+ * otra vez cuando se quiera. Ver pages/Asistente.js.
+ */
+const ConoceATiquiRoute = ({ navigation }) => {
+  const terminar = () => {
+    guardar(LLAVE_TIQUI_PRESENTADO, '1');
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate('Tabs', { screen: 'asistente' });
+  };
+  return <ConoceATiqui alTerminar={terminar} />;
+};
+
 const RootNavigator = () => {
   /*
    * El fondo que react-navigation pone detrás de cada pantalla mientras
@@ -259,6 +274,7 @@ const RootNavigator = () => {
         <Stack.Screen name="Confirmacion" component={ConfirmacionRoute} />
         <Stack.Screen name="Seccion" component={SeccionRoute} />
         <Stack.Screen name="Impresiones" component={ImpresionesRoute} />
+        <Stack.Screen name="ConoceATiqui" component={ConoceATiquiRoute} options={{ animation: 'fade_from_bottom' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

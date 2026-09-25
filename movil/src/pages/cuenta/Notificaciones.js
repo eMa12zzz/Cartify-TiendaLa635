@@ -267,8 +267,8 @@ const Notificaciones = ({ alVolver }) => {
           <Text style={estilos.pie}>{pie}</Text>
 
           {avisos === 'sin-permiso' && (
-            <Pressable onPress={() => Linking.openSettings()} hitSlop={8}>
-              <Text style={[estilos.pie, estilos.pieEnlace, { color: colores.marca }]}>
+            <Pressable accessibilityRole="button" onPress={() => Linking.openSettings()} hitSlop={8}>
+              <Text style={[estilos.pie, estilos.pieEnlace, { color: colores.marcaTexto }]}>
                 Abrir los ajustes del teléfono
               </Text>
             </Pressable>

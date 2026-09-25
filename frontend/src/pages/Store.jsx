@@ -228,7 +228,7 @@ const NavCircle = styled.button`
   transition: background-color var(--dur-press) var(--ease-out),
               border-color var(--dur-press) var(--ease-out),
               color var(--dur-press) var(--ease-out);
-  &:hover:not(:disabled) { border-color: ${BROWN}; color: ${BROWN}; background: var(--marca-50); }
+  &:hover:not(:disabled) { border-color: ${BROWN}; color: var(--marca-texto); background: var(--marca-50); }
   &:disabled { opacity: 0.35; cursor: default; }
 `;
 
@@ -254,7 +254,7 @@ const FilterBtn = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
-  &:hover { border-color: ${BROWN}; color: ${BROWN}; background: ${BROWN_LIGHT}; }
+  &:hover { border-color: ${BROWN}; color: var(--marca-texto); background: ${BROWN_LIGHT}; }
 `;
 
 /* Dropdown panel – matches design exactly */
@@ -741,7 +741,7 @@ const Store = () => {
       {/* Chip para limpiar el filtro de promo */}
       {promoSeleccionada && (
         <div style={{ padding: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 14, color: 'var(--marca-600)', fontWeight: 600 }}>
+          <span style={{ fontSize: 14, color: 'var(--marca-texto)', fontWeight: 600 }}>
             Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
           </span>
           <button

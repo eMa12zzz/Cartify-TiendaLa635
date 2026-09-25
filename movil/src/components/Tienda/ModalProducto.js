@@ -190,7 +190,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
           panel, no un envoltorio: envolviéndolo, cada toque dentro del panel
           burbujearía hasta aquí y cerraría el detalle al intentar tocar "+".
         */}
-        <Pressable style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -265,7 +265,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
               <Text
                 style={[
                   estilos.estadoTexto,
-                  { color: colores.marcaOscuro },
+                  { color: colores.marcaTexto },
                   agotado && estilos.estadoTextoAgotado,
                 ]}
               >

@@ -1,5 +1,6 @@
 import styled from 'styled-components';
-import { MessageCircle, ShieldCheck, Info } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MessageCircle, ShieldCheck, Info, ArrowRight } from 'lucide-react';
 
 /*
  * ============================================================
@@ -54,7 +55,7 @@ const Destacado = styled.div`
   padding: 18px 20px;
   margin: 0 0 16px;
 
-  svg { flex-shrink: 0; color: var(--marca-600); margin-top: 2px; }
+  svg { flex-shrink: 0; color: var(--marca-texto); margin-top: 2px; }
 
   p {
     margin: 0;
@@ -93,7 +94,7 @@ const Lista = styled.ul`
     font-size: 15px;
     line-height: 1.65;
     color: var(--tinta-suave);
-    &::marker { color: var(--marca-600); }
+    &::marker { color: var(--marca-texto); }
   }
 `;
 
@@ -119,7 +120,7 @@ const Tabla = styled.table`
   border-collapse: collapse;
   font-size: 14px;
 
-  th {
+  thead th {
     text-align: left;
     font-size: 11px;
     font-weight: 700;
@@ -139,17 +140,30 @@ const Tabla = styled.table`
     border-bottom: 1px solid var(--linea);
   }
 
-  tbody tr:last-child td { border-bottom: none; }
+  /*
+   * La primera columna es el nombre del dato: el ancla de la fila. Va como
+   * encabezado de fila (th scope="row") para que el lector de pantalla diga
+   * "Teléfono" antes de cada dato de esa fila.
+   */
+  tbody th {
+    text-align: left;
+    padding: 14px 16px;
+    vertical-align: top;
+    line-height: 1.6;
+    color: var(--tinta);
+    font-weight: 600;
+    border-bottom: 1px solid var(--linea);
+  }
 
-  /* La primera columna es el nombre del dato: es el ancla de la fila. */
-  td:first-child { color: var(--tinta); font-weight: 600; }
+  tbody tr:last-child td,
+  tbody tr:last-child th { border-bottom: none; }
 
   @media (max-width: 760px) {
     thead { display: none; }
     tr { display: block; padding: 4px 0; border-bottom: 1px solid var(--linea); }
     tbody tr:last-child { border-bottom: none; }
-    td { display: block; border: none; padding: 6px 16px; }
-    td:first-child { padding-top: 14px; font-size: 15px; }
+    td, tbody th { display: block; border: none; padding: 6px 16px; }
+    tbody th { padding-top: 14px; font-size: 15px; }
     td:last-child { padding-bottom: 14px; }
 
     td[data-columna]:not(:first-child)::before {
@@ -174,7 +188,7 @@ const BotonBorrado = styled.a`
   border-radius: var(--radio-pill);
   border: 1px solid var(--marca-600);
   background: var(--papel);
-  color: var(--marca-700);
+  color: var(--marca-texto-fuerte);
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
@@ -188,11 +202,57 @@ const BotonBorrado = styled.a`
   &:active { transform: scale(0.97); }
 `;
 
-// Sin exportar: solo las usa esta pantalla, y un archivo que exporta cosas que
-// no son componentes deja de recargarse en caliente mientras se trabaja.
-const COLUMNAS = ['Dato', 'Para qué', 'Quién más lo ve', 'Cuánto se guarda'];
+// Los datos del negocio, como lista de dos columnas: qué es y el dato.
+const DatosNegocio = styled.dl`
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 18px;
+  margin: 4px 0 16px;
+  font-size: 14.5px;
+  line-height: 1.55;
 
-const TextoTerminos = ({ secciones, tablaDatos, whatsappBorrado, direccion }) => {
+  dt { color: var(--tinta-tenue); font-weight: 600; }
+  dd { margin: 0; color: var(--tinta); }
+  a { color: var(--marca-texto-fuerte); font-weight: 600; }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    dd { margin-bottom: 8px; }
+  }
+`;
+
+// El enlace a otro documento legal: "Ver la política de privacidad →".
+const EnlaceDocumento = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 18px 10px 0;
+  color: var(--marca-texto-fuerte);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+`;
+
+const TextoTerminos = ({ secciones, whatsappBorrado, direccion, nombre, negocio = {} }) => {
+  /*
+   * Los datos del negocio que haya: lo que el dueño dejó vacío no se pinta.
+   * Nada inventado en un texto legal.
+   */
+  const filasNegocio = [
+    ['Negocio', nombre],
+    ['Titular', negocio.titular],
+    ['NIT', negocio.nit],
+    ['NRC', negocio.nrc],
+    ['Dirección', direccion ? `${direccion}, El Salvador` : ''],
+    ['Correo', negocio.correo && <a href={`mailto:${negocio.correo}`}>{negocio.correo}</a>],
+    ['Teléfono', negocio.telefono && <a href={`tel:${negocio.telefono.replace(/[^\d+]/g, '')}`}>{negocio.telefono}</a>],
+    ['WhatsApp', negocio.whatsapp],
+    ['Horario', negocio.horario],
+  ].filter(([, valor]) => valor);
+
+
   // Cada tipo de bloque, una forma de pintarse. El texto no sabe nada de esto.
   const pintarBloque = (bloque, i) => {
     switch (bloque.tipo) {
@@ -219,25 +279,47 @@ const TextoTerminos = ({ secciones, tablaDatos, whatsappBorrado, direccion }) =>
           </Lista>
         );
 
+      // Cada tabla trae sus columnas y sus filas (arreglos en el mismo orden).
       case 'tabla':
         return (
           <EnvolturaTabla key={i}>
             <Tabla>
               <thead>
-                <tr>{COLUMNAS.map((c) => <th key={c} scope="col">{c}</th>)}</tr>
+                <tr>{bloque.columnas.map((c) => <th key={c} scope="col">{c}</th>)}</tr>
               </thead>
               <tbody>
-                {tablaDatos.map((fila) => (
-                  <tr key={fila.dato}>
-                    <td data-columna={COLUMNAS[0]}>{fila.dato}</td>
-                    <td data-columna={COLUMNAS[1]}>{fila.para}</td>
-                    <td data-columna={COLUMNAS[2]}>{fila.quien}</td>
-                    <td data-columna={COLUMNAS[3]}>{fila.cuanto}</td>
+                {bloque.filas.map((fila) => (
+                  <tr key={fila[0]}>
+                    {fila.map((celda, j) => (
+                      j === 0
+                        ? <th key={j} scope="row" data-columna={bloque.columnas[j]}>{celda}</th>
+                        : <td key={j} data-columna={bloque.columnas[j]}>{celda}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </Tabla>
           </EnvolturaTabla>
+        );
+
+      case 'negocio':
+        return (
+          <DatosNegocio key={i}>
+            {filasNegocio.map(([etiqueta, valor]) => (
+              <div key={etiqueta} style={{ display: 'contents' }}>
+                <dt>{etiqueta}</dt>
+                <dd>{valor}</dd>
+              </div>
+            ))}
+          </DatosNegocio>
+        );
+
+      case 'enlace':
+        return (
+          <EnlaceDocumento key={i} to={bloque.a}>
+            {bloque.texto}
+            <ArrowRight size={15} strokeWidth={2.4} aria-hidden="true" />
+          </EnlaceDocumento>
         );
 
       /*

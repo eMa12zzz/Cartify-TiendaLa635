@@ -187,7 +187,7 @@ const expandirSinonimos = (t) => {
  * Lo que la persona pidió en un pedazo de la frase, sin las palabras de pedir
  * ni la cantidad: de "dos galletas" queda "galletas".
  *
- * Con "quiero una manzana y dos galletas", y sin galletas en la tienda, se
+ * Con "quiero dos manzanas y una leche", y sin galletas en la tienda, se
  * agregaba la manzana y las galletas se callaban: "Agregué 1 Manzana. ¿Algo
  * más?", como si se hubiera hecho todo. Ahora se dice lo que no hay.
  */
@@ -730,7 +730,7 @@ export const useVoiceAssistant = ({
     }
 
     if (/\b(ayuda|que puedo decir|comandos|no se|no entiendo)\b/.test(t)) {
-      hablar('Puedes decirme: quiero una manzana y dos galletas, qué ofertas hay, quita una manzana, cuánto llevo, borra el carrito o comprar.');
+      hablar('Puedes decirme: quiero dos manzanas y una leche, qué ofertas hay, quita una manzana, cuánto llevo, borra el carrito o comprar.');
       return;
     }
     if (/\b(repite|repetir|otra vez|que dijiste)\b/.test(t)) {

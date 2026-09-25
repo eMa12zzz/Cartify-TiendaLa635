@@ -391,7 +391,7 @@ const flecha = {
   borderRadius: '50%',
   border: '1px solid var(--linea)',
   background: 'var(--papel)',
-  color: 'var(--marca-700)',
+  color: 'var(--marca-texto-fuerte)',
   fontSize: 20,
   lineHeight: 1,
   cursor: 'pointer',
