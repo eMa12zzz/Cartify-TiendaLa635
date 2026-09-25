@@ -31,7 +31,8 @@
  * ============================================================
  */
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 import { getAjustes } from '../api/ajustesApi';
 import { COLORES } from '../theme/colores';
 import { paletaOscura, temaActivo } from '../utils/temporadas';
@@ -59,33 +60,42 @@ export const TemaProvider = ({ children }) => {
   const [temporada, setTemporada] = useState(null);
   const [decoracionEncendida, setDecoracionEncendida] = useState(true);
 
-  useEffect(() => {
-    let vivo = true;
-
-    (async () => {
-      try {
-        const ajustes = await getAjustes();
-        if (!vivo) return;
-        setTemporada(ajustes?.temporada || null);
-        /*
-         * La decoración se puede apagar dejando solo los colores. Va encendida
-         * por defecto: quien elige poner Navidad espera que se note, no tener
-         * que ir a buscar un segundo interruptor.
-         */
-        setDecoracionEncendida(ajustes?.temporada?.decoracion !== false);
-      } catch {
-        /*
-         * Sin ajustes la tienda se ve con los colores de siempre, que es
-         * exactamente lo correcto. Que la portada no cargue porque falló el
-         * documento de configuración sería cambiar la tienda por un adorno.
-         */
-      }
-    })();
-
-    return () => {
-      vivo = false;
-    };
+  /*
+   * Trae los ajustes de la tienda (la temporada y su decoración). Devuelve si
+   * salió bien. Antes se pedían UNA sola vez al abrir la app: si el dueño
+   * cambiaba la temporada desde el panel, la app seguía con la vieja hasta
+   * cerrarla del todo — ni jalar para recargar la cambiaba.
+   */
+  const recargarAjustes = useCallback(async () => {
+    try {
+      const ajustes = await getAjustes();
+      setTemporada(ajustes?.temporada || null);
+      /*
+       * La decoración se puede apagar dejando solo los colores. Va encendida
+       * por defecto: quien elige poner Navidad espera que se note, no tener
+       * que ir a buscar un segundo interruptor.
+       */
+      setDecoracionEncendida(ajustes?.temporada?.decoracion !== false);
+      return true;
+    } catch {
+      /*
+       * Sin ajustes la tienda se ve con los colores de siempre, que es
+       * exactamente lo correcto. Que la portada no cargue porque falló el
+       * documento de configuración sería cambiar la tienda por un adorno.
+       */
+      return false;
+    }
   }, []);
+
+  useEffect(() => {
+    recargarAjustes();
+    // Y cada vez que se vuelve a la app (por ejemplo, después de cambiar la
+    // temporada en el panel desde el navegador).
+    const sub = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') recargarAjustes();
+    });
+    return () => sub.remove();
+  }, [recargarAjustes]);
 
   /*
    * La fecha se toma UNA vez por cálculo. A nadie le cambia la temporada
@@ -121,8 +131,10 @@ export const TemaProvider = ({ children }) => {
       decoracion: tema && decoracionEncendida ? tema.decoracion : null,
       // El saludo de los días sin temporada. En blanco no sale cinta.
       saludoNormal: (temporada?.saludoNormal || '').trim(),
+      // Para jalar para recargar: vuelve a traer la temporada.
+      recargarAjustes,
     };
-  }, [tema, decoracionEncendida, temporada, oscuro]);
+  }, [tema, decoracionEncendida, temporada, oscuro, recargarAjustes]);
 
   return <TemaContext.Provider value={valor}>{children}</TemaContext.Provider>;
 };

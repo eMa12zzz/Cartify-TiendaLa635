@@ -173,3 +173,37 @@ export const escucharToques = (alTocar) => {
 
   return () => sub.remove();
 };
+
+/*
+ * Un aviso que sale del MISMO teléfono, sin pasar por el servidor ni por
+ * Expo. Solo lo usa el simulador de pedidos (utils/simulacionPedido.js) para
+ * ver cómo se ven los avisos en un emulador, donde el push de verdad no se
+ * registra. Mismo canal ("avisos") y misma forma que el push del servidor,
+ * así que se ve igual y al tocarlo pasa lo mismo.
+ */
+// El permiso de mostrar avisos (en Android 13+ se pide aparte). Devuelve si lo hay.
+export const permisoParaAvisos = async () => {
+  try {
+    await prepararCanal();
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') ({ status } = await Notifications.requestPermissionsAsync());
+    return status === 'granted';
+  } catch {
+    return false;
+  }
+};
+
+export const avisoLocal = async ({ titulo, cuerpo, datos = {} }) => {
+  try {
+    if (!(await permisoParaAvisos())) return false;
+    await Notifications.scheduleNotificationAsync({
+      content: { title: titulo, body: cuerpo, data: datos, sound: 'default' },
+      // Inmediato, pero por el canal de la tienda (sin él, Android lo manda a uno sin sonido).
+      trigger: Platform.OS === 'android' ? { channelId: CANAL } : null,
+    });
+    return true;
+  } catch (error) {
+    console.log('avisos: no se pudo mostrar el aviso de prueba: ' + error?.message);
+    return false;
+  }
+};

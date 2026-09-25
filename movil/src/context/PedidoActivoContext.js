@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getPedidosDeCliente } from '../api/pedidosApi';
+import { suscribirseASimulacion } from '../utils/simulacionPedido';
 
 /*
  * ============================================================
@@ -80,6 +81,10 @@ export const PedidoActivoProvider = ({ children }) => {
     const reloj = setInterval(cargar, CADA_CUANTO_REFRESCAR_MS);
     return () => clearInterval(reloj);
   }, [cargar, esCliente]);
+
+  // En desarrollo, cada paso del pedido de prueba se ve al instante, sin
+  // esperar los 20 segundos de la siguiente consulta.
+  useEffect(() => (__DEV__ ? suscribirseASimulacion(cargar) : undefined), [cargar]);
 
   const cerrarPedidoAbierto = useCallback(() => setPedidoAbierto(null), []);
 

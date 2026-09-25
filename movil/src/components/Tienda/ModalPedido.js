@@ -301,8 +301,9 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               reseña de cada producto. Cada bloque decide solo si le toca
               aparecer.
             */}
-            <ValoracionServicio pedido={pedido} />
-            <ValoracionPedido pedido={pedido} />
+            {/* El pedido de prueba no se califica: guardaría reseñas de verdad. */}
+            {!pedido.simulado && <ValoracionServicio pedido={pedido} />}
+            {!pedido.simulado && <ValoracionPedido pedido={pedido} />}
 
             {pedido.pointsEarned > 0 && (
               <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>

@@ -53,7 +53,7 @@ import JalarParaRecargar from '../components/Tienda/JalarParaRecargar';
 import { useAviso } from '../context/AvisoContext';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
-  const { colores } = useTema();
+  const { colores, recargarAjustes } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const { isAuthenticated, user } = useAuth();
@@ -91,11 +91,15 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   const [productoAbierto, setProductoAbierto] = useState(null);
   const { avisar } = useAviso();
 
-  // Jalar para recargar: si no se pudo, se dice; si salió bien, se ve solo.
+  /*
+   * Jalar para recargar: los productos Y la temporada (si el dueño la cambió
+   * en el panel, se ve aquí sin cerrar la app). Si no se pudo, se dice; si
+   * salió bien, se ve solo.
+   */
   const refrescar = useCallback(async () => {
-    const bien = await refrescarCatalogo();
-    if (!bien) avisar('No se pudo recargar la tienda. Revisa tu conexión.', 'error');
-  }, [refrescarCatalogo, avisar]);
+    const [catalogo] = await Promise.all([refrescarCatalogo(), recargarAjustes?.()]);
+    if (!catalogo) avisar('No se pudo recargar la tienda. Revisa tu conexión.', 'error');
+  }, [refrescarCatalogo, recargarAjustes, avisar]);
   const [menuPasillosAbierto, setMenuPasillosAbierto] = useState(false);
 
   const verDetalle = useCallback((producto) => setProductoAbierto(producto), []);
