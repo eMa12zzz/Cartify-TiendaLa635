@@ -30,8 +30,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Search } from 'lucide-react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
@@ -49,6 +48,9 @@ import MenuPasillos from '../components/Tienda/MenuPasillos';
 import Boton from '../components/UI/Boton';
 import { Equis } from '../components/UI/Iconos';
 import { avisarActividad } from '../utils/actividadUsuario';
+import Mascota, { CargandoMascota } from '../components/Tiqui/Mascota';
+import JalarParaRecargar from '../components/Tienda/JalarParaRecargar';
+import { useAviso } from '../context/AvisoContext';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { colores } = useTema();
@@ -60,6 +62,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
     cargando,
     errorCarga,
     recargar,
+    refrescarCatalogo,
     pasillos,
     todosLosModulos,
     moduloSeleccionado,
@@ -86,6 +89,13 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   } = useTienda();
 
   const [productoAbierto, setProductoAbierto] = useState(null);
+  const { avisar } = useAviso();
+
+  // Jalar para recargar: si no se pudo, se dice; si salió bien, se ve solo.
+  const refrescar = useCallback(async () => {
+    const bien = await refrescarCatalogo();
+    if (!bien) avisar('No se pudo recargar la tienda. Revisa tu conexión.', 'error');
+  }, [refrescarCatalogo, avisar]);
   const [menuPasillosAbierto, setMenuPasillosAbierto] = useState(false);
 
   const verDetalle = useCallback((producto) => setProductoAbierto(producto), []);
@@ -202,9 +212,9 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
   const vacio = (
     <View style={estilos.vacio}>
-      {/* Mismo icono que Store.jsx en la web para "sin resultados"
-          (size 34, strokeWidth 1.6). */}
-      <Search size={34} strokeWidth={1.6} color={COLORES.marcador} />
+      {/* Como en Store.jsx de la web: buscando con su lupa si se filtró algo,
+          perdida si la tienda de verdad está vacía. */}
+      <Mascota pose={terminoBusqueda || categoriaSeleccionada ? 'buscando' : 'perdida'} alto={130} />
       {/*
         Una tienda recién montada está vacía hasta que le carguen productos.
         Decir 'No hay productos para ""' hacía parecer que la tienda estaba rota.
@@ -239,7 +249,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando la tienda…" />
         </View>
       ) : errorCarga ? (
         /*
@@ -248,6 +258,8 @@ const Inicio = ({ irACarrito, irASeccion }) => {
          * el segundo tiene arreglo — pero solo si se dice cuál de los dos es.
          */
         <View style={estilos.centro}>
+          {/* Como en la web: se le cortó el cordón y se cayó. */}
+          <Mascota pose="error" alto={150} style={{ marginBottom: 12 }} />
           <Text style={estilos.errorTitulo}>No se pudo cargar la tienda</Text>
           <Text style={estilos.errorTexto}>{errorCarga}</Text>
           <View style={estilos.botonError}>
@@ -260,7 +272,15 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           </View>
         </View>
       ) : (
+        /*
+         * Jalar la lista hacia abajo la recarga: baja Tiqui colgada en vez
+         * del círculo que gira. Ver JalarParaRecargar.
+         */
+        <JalarParaRecargar alRecargar={refrescar}>
+        {({ alDesplazar, propsLista }) => (
         <FlatList
+          {...propsLista}
+          onScroll={alDesplazar}
           data={productosFiltrados}
           keyExtractor={(p) => p.id}
           numColumns={2}
@@ -286,6 +306,8 @@ const Inicio = ({ irACarrito, irASeccion }) => {
           // ve una sola fila de productos.
           keyboardDismissMode="on-drag"
         />
+        )}
+        </JalarParaRecargar>
       )}
 
       {productoAbierto && (

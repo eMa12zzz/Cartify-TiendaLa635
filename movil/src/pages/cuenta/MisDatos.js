@@ -34,7 +34,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CargandoMascota, EsperaMascota } from '../../components/Tiqui/Mascota';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 // Los mismos iconos que el registro (y que la web): fecha `Calendar`, DUI `Hash`.
@@ -240,7 +241,7 @@ const MisDatos = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tu perfil…" />
         </View>
       ) : (
         <ScrollView
@@ -266,7 +267,7 @@ const MisDatos = ({ alVolver }) => {
 
               <View style={[estilos.botonCamara, { backgroundColor: colores.marca }]}>
                 {subiendoFoto ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <EsperaMascota alto={22} sobre="color" />
                 ) : (
                   <Camera size={15} color="#FFFFFF" strokeWidth={2.2} />
                 )}

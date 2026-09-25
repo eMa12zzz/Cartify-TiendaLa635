@@ -22,7 +22,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { CircleCheck, Receipt } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
@@ -135,7 +136,7 @@ const Recibos = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus recibos…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>

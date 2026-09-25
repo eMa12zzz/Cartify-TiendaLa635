@@ -12,6 +12,7 @@ import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import CodigoEntrega from './CodigoEntrega';
+import Mascota from '../Tiqui/Mascota';
 import PasosPedido from './PasosPedido';
 import MapaSeguimiento from './MapaSeguimiento';
 import ModalMapaSeguimiento from './ModalMapaSeguimiento';
@@ -334,7 +335,6 @@ const BurbujaPedido = () => {
    * no tapa la tienda y siempre se puede volver.
    */
   if (encogida) {
-    const Icono = estaEnCamino ? Bike : paso.Icono;
     return (
       <>
         <Animated.View style={[estilos.botonRedondo, posicion, estiloPresencia, { backgroundColor: colores.marca }]}>
@@ -344,7 +344,8 @@ const BurbujaPedido = () => {
             accessibilityLabel={`Ver su pedido: ${enCamino ? seguimiento.espera : paso.label}`}
             style={estilos.botonRedondoToque}
           >
-            <Icono size={19} color="#FFFFFF" strokeWidth={2.3} />
+            {/* Tiqui en el paso del pedido, como en la web (en patineta si va en camino). */}
+            <Mascota pose={estaEnCamino ? 'en-camino' : paso.pose} alto={34} sobre="color" />
           </Pressable>
         </Animated.View>
         {/* Ver el porqué de este catcher en el comentario grande junto al
@@ -499,11 +500,7 @@ const BurbujaPedido = () => {
          */
         hitSlop={{ top: 22, bottom: 22, left: 10, right: 14 }}
       >
-        {estaEnCamino ? (
-          <Bike size={19} color="#FFFFFF" strokeWidth={2.2} />
-        ) : (
-          <paso.Icono size={19} color="#FFFFFF" strokeWidth={2.2} />
-        )}
+        <Mascota pose={estaEnCamino ? 'en-camino' : paso.pose} alto={40} sobre="color" />
         <Text style={estilos.botonBurbujaTexto}>
           {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
         </Text>

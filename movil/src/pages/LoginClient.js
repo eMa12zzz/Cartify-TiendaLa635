@@ -33,7 +33,6 @@
 
 import { useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -43,6 +42,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import { EsperaMascota } from '../components/Tiqui/Mascota';
+import TiquiColgada from '../components/Tiqui/TiquiColgada';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
@@ -54,7 +55,7 @@ import { Lock, Mail } from 'lucide-react-native';
 import { googleLoginDB, loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
-import { useColores, useEstilos } from '../context/ModoContext';
+import { useEstilos } from '../context/ModoContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 import { URL_WEB_LEGAL } from '../utils/legales';
 
@@ -63,7 +64,6 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   // La paleta de la temporada: el botón y los enlaces se pintan con ella, igual
   // que la tienda. Fuera de temporada es el café de la marca de siempre.
   const { colores } = useTema();
-  const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const [valores, setValores] = useState({ email: '', password: '' });
   const [errores, setErrores] = useState({});
@@ -183,8 +183,15 @@ const LoginClient = ({ irARegistro, irATienda }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={estilos.titulo}>Bienvenido de nuevo</Text>
-          <Text style={estilos.subtitulo}>Inicie sesión para seguir con su compra.</Text>
+          {/*
+            Tiqui colgando junto al título, como en el inicio de sesión de la
+            web: contenta mientras entra, pensativa si algo no cuadró.
+          */}
+          <View style={estilos.tiqui} pointerEvents="none">
+            <TiquiColgada cara={cargando || cargandoGoogle ? 'feliz' : avisoServidor ? 'piensa' : 'normal'} alto={150} largo={90} />
+          </View>
+          <Text style={[estilos.titulo, estilos.conTiqui]}>Bienvenido de nuevo</Text>
+          <Text style={[estilos.subtitulo, estilos.conTiqui]}>Inicie sesión para seguir con su compra.</Text>
 
           <CampoTexto
             icono={Mail}
@@ -266,7 +273,10 @@ const LoginClient = ({ irARegistro, irATienda }) => {
             ]}
           >
             {cargandoGoogle ? (
-              <ActivityIndicator size="small" color={COLORES.textoTenue} />
+              <>
+                <EsperaMascota alto={22} />
+                <Text style={estilos.botonGoogleTexto}>Entrando…</Text>
+              </>
             ) : (
               <>
                 <LogoGoogle size={18} />
@@ -316,6 +326,15 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     fontSize: 14,
     color: COLORES.subtitulo,
     marginBottom: 26,
+  },
+  // Cuelga del borde de arriba, a la derecha; el título le deja su lugar.
+  tiqui: {
+    position: 'absolute',
+    top: 0,
+    right: 18,
+  },
+  conTiqui: {
+    paddingRight: 84,
   },
   fila: {
     flexDirection: 'row',

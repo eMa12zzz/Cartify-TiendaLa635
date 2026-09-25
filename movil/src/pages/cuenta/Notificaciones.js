@@ -33,7 +33,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
@@ -231,7 +232,7 @@ const Notificaciones = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus preferencias…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>

@@ -6,7 +6,8 @@ import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { Equis, Estrella, Paquete } from '../UI/Iconos';
-import { estadosPedido } from '../../utils/pasosPedido';
+import { estadosPedido, poseDeEstado } from '../../utils/pasosPedido';
+import Mascota from '../Tiqui/Mascota';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
 import ValoracionPedido from '../Cuenta/ValoracionPedido';
@@ -205,6 +206,11 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               </View>
             </View>
 
+            {/* Tiqui cuenta en qué va el pedido, como en "Estado del pedido" de la web. */}
+            <View style={estilos.tiquiEstado}>
+              <Mascota pose={poseDeEstado(pedido.status)} alto={120} />
+            </View>
+
             {esCancelado ? (
               <Text style={estilos.notaCancelado}>Este pedido fue cancelado.</Text>
             ) : (
@@ -389,6 +395,10 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   fecha: {
     fontSize: 12.5,
     color: COLORES.textoTenue,
+  },
+  tiquiEstado: {
+    alignItems: 'center',
+    marginVertical: 10,
   },
   chapa: {
     borderRadius: 999,

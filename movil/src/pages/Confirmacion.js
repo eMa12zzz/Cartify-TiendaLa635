@@ -31,6 +31,7 @@ import { StyleSheet, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bike, Check, Package } from 'lucide-react-native';
+import Mascota from '../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
@@ -173,8 +174,9 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   return (
     <View style={estilos.pantalla}>
       <ScrollView contentContainerStyle={[estilos.cuerpo, { paddingTop: ALTURA_ESTADO + 24 }]}>
-        <View style={[estilos.circulo, { backgroundColor: colores.marca }]}>
-          <Check size={34} color="#FFFFFF" strokeWidth={3.5} />
+        {/* Como en la web: Tiqui saltando con confeti. */}
+        <View style={estilos.festejo}>
+          <Mascota pose="fiesta" alto={130} />
         </View>
 
         <Text style={estilos.titulo}>Su pedido está hecho</Text>
@@ -371,13 +373,9 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     paddingBottom: 26,
     alignItems: 'center',
   },
-  circulo: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+  festejo: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   titulo: {
     fontSize: 22,

@@ -37,7 +37,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -45,6 +44,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { CargandoMascota } from '../components/Tiqui/Mascota';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, Clock, CreditCard, Gift, MapPin, Package, Store as Tienda, Wallet } from 'lucide-react-native';
@@ -386,7 +386,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       <View style={estilos.pantalla}>
         <Barra alVolver={alVolver} colores={colores} />
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Preparando el pago…" />
         </View>
       </View>
     );

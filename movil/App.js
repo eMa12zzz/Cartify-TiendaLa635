@@ -57,6 +57,7 @@
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Solo por su efecto secundario: deja GoogleSignin.configure() hecho desde
 // el arranque. Ver src/config/googleSignIn.js.
 import './src/config/googleSignIn';
@@ -70,6 +71,7 @@ import { PedidoActivoProvider } from './src/context/PedidoActivoContext';
 import { irATabs, navegarA } from './src/navigation/navigationRef';
 import { escucharToques } from './src/utils/notificaciones';
 import RootNavigator from './src/navigation/RootNavigator';
+import LimiteDeError from './src/components/UI/LimiteDeError';
 import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
 import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante';
 import VueloAlCarrito from './src/components/Tienda/VueloAlCarrito';
@@ -100,8 +102,11 @@ const AvisosTocados = () => {
   return null;
 };
 
+// GestureHandlerRootView: sin él no funcionan los gestos de jalar para
+// recargar (ver components/Tienda/JalarParaRecargar.js).
 export default function App() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <ModoProvider>
         <AvisoProvider>
@@ -113,7 +118,10 @@ export default function App() {
                     <PedidoActivoProvider>
                       <BarraDeEstado />
                       <AvisosTocados />
-                      <RootNavigator />
+                      {/* Si una pantalla se rompe, Tiqui caída en vez de la app en blanco. */}
+                      <LimiteDeError>
+                        <RootNavigator />
+                      </LimiteDeError>
                       <BurbujaPedido />
                       <PedidoDetalleFlotante />
                       <VueloAlCarrito />
@@ -126,5 +134,6 @@ export default function App() {
         </AvisoProvider>
       </ModoProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

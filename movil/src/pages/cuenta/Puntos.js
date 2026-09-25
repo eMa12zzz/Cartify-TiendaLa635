@@ -28,7 +28,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TriangleAlert } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
@@ -99,7 +100,7 @@ const Puntos = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus puntos…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
