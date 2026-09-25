@@ -11,6 +11,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useEstilos } from '../context/ModoContext';
 import Mascota from '../components/Tiqui/Mascota';
+import { FUENTE_MARCA } from '../theme/tipografia';
 
 const PantallaCarga = () => {
   const estilos = useEstilos(crearEstilos);
@@ -41,9 +42,11 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   },
   marcaNombre: {
     fontSize: 36,
-    fontWeight: '800',
+    lineHeight: 40,
+    fontFamily: FUENTE_MARCA,
     color: COLORES.tituloFuerte,
     letterSpacing: -0.5,
+    includeFontPadding: false,
   },
   indicador: {
     marginTop: 30,

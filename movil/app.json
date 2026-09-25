@@ -51,7 +51,14 @@
           "speechRecognitionPermission": "Se usa para entender lo que dice y armar su pedido."
         }
       ],
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/poppins/800ExtraBold/Poppins_800ExtraBold.ttf"
+          ]
+        }
+      ],
       "@react-native-google-signin/google-signin",
       [
         "expo-notifications",
