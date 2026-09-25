@@ -221,6 +221,18 @@ const Legal = ({ clave = 'terminos' }) => {
     return () => { document.title = previo; };
   }, [documento.titulo, nombre]);
 
+  /*
+   * Cada documento empieza desde arriba. Se llega aquí desde el pie de la
+   * tienda —o desde el enlace de otro documento—, o sea, con la página ya
+   * bajada hasta el fondo; y al pasar de un documento a otro el componente
+   * es el mismo, así que el navegador conservaba la altura y la persona caía
+   * a media página de algo que ni había empezado a leer. Sin animación: es
+   * un documento nuevo, no un desplazamiento.
+   */
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [clave]);
+
   return (
     <Contenedor>
       <HeaderTienda />

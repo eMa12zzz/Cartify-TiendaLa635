@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { X, ExternalLink } from 'lucide-react';
 import TextoTerminos from './TextoTerminos';
 import { useDocumentoLegal } from '../../hooks/useTerminos';
+import { DOCUMENTOS_LEGALES } from '../../utils/legales';
 
 /*
  * ============================================================
@@ -161,9 +162,33 @@ const BotonListo = styled.button`
 `;
 
 const ModalTerminos = ({ abierto, onCerrar, clave = 'terminos' }) => {
-  // Qué documento se lee: el registro abre términos o privacidad por separado.
-  const { documento, secciones, whatsappBorrado, direccion, nombre, negocio, version, fecha } = useDocumentoLegal(clave);
+  /*
+   * Qué documento se lee. Arranca con el que pidió el registro (términos o
+   * privacidad) y cambia si adentro se toca "Ver la política de…". Al
+   * cerrarse vuelve a empezar: la próxima vez abre el que se pida.
+   *
+   * Se reinicia comparando con el valor anterior de `abierto` durante el
+   * render, y no con un efecto: así no se pinta un cuadro con el documento
+   * viejo antes de corregirse.
+   */
+  const [elegido, setElegido] = useState(null);
+  const [abiertoAntes, setAbiertoAntes] = useState(abierto);
+  if (abierto !== abiertoAntes) {
+    setAbiertoAntes(abierto);
+    if (!abierto) setElegido(null);
+  }
+  const { documento, secciones, whatsappBorrado, direccion, nombre, negocio, version, fecha } =
+    useDocumentoLegal(elegido || clave);
   const botonCerrar = useRef(null);
+  const contenido = useRef(null);
+
+  // Otro documento empieza desde arriba, no a la altura del anterior.
+  const abrirDocumento = (ruta) => {
+    const otro = DOCUMENTOS_LEGALES.find((d) => d.ruta === ruta);
+    if (!otro) return;
+    setElegido(otro.clave);
+    contenido.current?.scrollTo(0, 0);
+  };
 
   // Al abrir, el foco entra al modal. Si no, el tabulador seguiría recorriendo
   // el formulario de atrás, que está tapado.
@@ -196,13 +221,14 @@ const ModalTerminos = ({ abierto, onCerrar, clave = 'terminos' }) => {
           </Cerrar>
         </Cabecera>
 
-        <Contenido>
+        <Contenido ref={contenido}>
           <TextoTerminos
             secciones={secciones}
             whatsappBorrado={whatsappBorrado}
             direccion={direccion}
             nombre={nombre}
             negocio={negocio}
+            alAbrirDocumento={abrirDocumento}
           />
         </Contenido>
 

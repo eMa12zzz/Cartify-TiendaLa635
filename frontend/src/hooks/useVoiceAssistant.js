@@ -48,8 +48,7 @@ const VELOCIDADES = [
  * como que apura. Solo re-pregunta tras VARIOS silencios seguidos Y si ya pasó
  * un buen rato desde la última vez. Entre medio sigue escuchando calladito.
  */
-const SILENCIOS_ANTES_DE_PREGUNTAR = 3;      // silencios seguidos antes de hablar
-const SILENCIO_COOLDOWN_MS = 30000;          // y no más seguido que cada 30 s
+const SILENCIOS_ANTES_DE_DESCANSAR = 3;      // silencios seguidos antes de dejar de escuchar
 const REINTENTO_SILENCIO_MS = 900;           // cada cuánto vuelve a escuchar en silencio
 
 /*
@@ -323,7 +322,6 @@ export const useVoiceAssistant = ({
   const hablarRef = useRef(null);
   const confirmandoRef = useRef(false); // esperando "sí" para comprar
   const silencioRef = useRef(0);
-  const ultimoSiguesRef = useRef(0);    // cuándo preguntó "¿sigue ahí?" por última vez
   const sugeridoRef = useRef(false);     // ya hicimos upsell esta sesión
   const idRef = useRef(0);
   /*
@@ -372,6 +370,9 @@ export const useVoiceAssistant = ({
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
+    // Lo que dijo en la vuelta anterior ya no es "en vivo": sin limpiarlo,
+    // la pantalla lo seguía mostrando en cursiva como si lo estuviera oyendo.
+    setTranscripcion('');
     rec.lang = 'es-SV';
     rec.continuous = false;
     rec.interimResults = true;
@@ -394,21 +395,21 @@ export const useVoiceAssistant = ({
         procesarRef.current?.(finalTexto.trim());
       } else if (activoRef.current && !hablandoRef.current) {
         /*
-         * Silencio. El asistente es paciente: sigue escuchando calladito y solo
-         * re-pregunta muy de vez en cuando. Hacen falta varios silencios
-         * seguidos Y que haya pasado el cooldown desde la última vez que
-         * preguntó; si no, vuelve a escuchar sin decir nada.
+         * Silencio. Tiqui es paciente: vuelve a escuchar calladita un par de
+         * veces por si la persona se está pensando la respuesta. Si nadie
+         * contesta, se queda callada y deja de escuchar: su última respuesta
+         * sigue en pantalla y se retoma tocando el micrófono.
+         *
+         * Antes, en vez de eso, decía "Aquí sigo cuando me necesites…", y esa
+         * frase TAPABA lo que acababa de responder: le preguntaban "¿cómo
+         * estás?", contestaba, y a los segundos la respuesta cambiaba por un
+         * recordatorio de compra que nadie pidió.
          */
         silencioRef.current += 1;
-        const ahora = Date.now();
-        const toca =
-          silencioRef.current >= SILENCIOS_ANTES_DE_PREGUNTAR &&
-          ahora - ultimoSiguesRef.current >= SILENCIO_COOLDOWN_MS;
-
-        if (toca) {
+        if (silencioRef.current >= SILENCIOS_ANTES_DE_DESCANSAR) {
           silencioRef.current = 0;
-          ultimoSiguesRef.current = ahora;
-          hablarRef.current?.('Aquí sigo cuando me necesites. Toca el micrófono y dime qué quieres llevar.');
+          activoRef.current = false;
+          setActivo(false);
         } else {
           setTimeout(() => arrancarReconocimiento(), REINTENTO_SILENCIO_MS);
         }

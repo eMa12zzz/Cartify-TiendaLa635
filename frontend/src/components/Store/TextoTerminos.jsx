@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { MessageCircle, ShieldCheck, Info, ArrowRight } from 'lucide-react';
 
@@ -223,7 +223,7 @@ const DatosNegocio = styled.dl`
 `;
 
 // El enlace a otro documento legal: "Ver la política de privacidad →".
-const EnlaceDocumento = styled(Link)`
+const estiloEnlace = css`
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -235,7 +235,25 @@ const EnlaceDocumento = styled(Link)`
   text-underline-offset: 3px;
 `;
 
-const TextoTerminos = ({ secciones, whatsappBorrado, direccion, nombre, negocio = {} }) => {
+const EnlaceDocumento = styled(Link)`${estiloEnlace}`;
+
+// El mismo enlace, como botón: dentro del modal no se navega (ver alAbrirDocumento).
+const BotonDocumento = styled.button.attrs({ type: 'button' })`
+  ${estiloEnlace}
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+`;
+
+/*
+ * `alAbrirDocumento`: lo pasa el modal de términos. Con él, "Ver la política
+ * de privacidad" cambia el documento DENTRO del modal en vez de navegar: el
+ * modal se abre desde el registro, y un enlace de verdad sacaba a la persona
+ * del formulario a medio llenar. En la página legal no se pasa y son enlaces.
+ */
+const TextoTerminos = ({ secciones, whatsappBorrado, direccion, nombre, negocio = {}, alAbrirDocumento }) => {
   /*
    * Los datos del negocio que haya: lo que el dueño dejó vacío no se pinta.
    * Nada inventado en un texto legal.
@@ -315,7 +333,12 @@ const TextoTerminos = ({ secciones, whatsappBorrado, direccion, nombre, negocio 
         );
 
       case 'enlace':
-        return (
+        return alAbrirDocumento ? (
+          <BotonDocumento key={i} onClick={() => alAbrirDocumento(bloque.a)}>
+            {bloque.texto}
+            <ArrowRight size={15} strokeWidth={2.4} aria-hidden="true" />
+          </BotonDocumento>
+        ) : (
           <EnlaceDocumento key={i} to={bloque.a}>
             {bloque.texto}
             <ArrowRight size={15} strokeWidth={2.4} aria-hidden="true" />

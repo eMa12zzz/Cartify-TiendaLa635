@@ -66,9 +66,8 @@ const VELOCIDADES = [
   { v: 1.15, label: 'Rápida' },
 ];
 
-// Mismos tiempos que la web: paciente con el silencio, no repregunta a cada rato.
-const SILENCIOS_ANTES_DE_PREGUNTAR = 3;
-const SILENCIO_COOLDOWN_MS = 30000;
+// Mismos tiempos que la web: tras unos silencios seguidos, deja de escuchar.
+const SILENCIOS_ANTES_DE_DESCANSAR = 3;
 const REINTENTO_SILENCIO_MS = 900;
 
 // A dónde puede llevar por voz. Solo lo que móvil de verdad tiene como ruta.
@@ -205,7 +204,6 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const arrancarRef = useRef(null);
   const confirmandoRef = useRef(false);
   const silencioRef = useRef(0);
-  const ultimoSiguesRef = useRef(0);
   const finalTextoRef = useRef('');
   const idRef = useRef(0);
   // La voz de Tiqui: si el servidor la tiene (y esta compilación trae
@@ -680,20 +678,20 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       return;
     }
 
-    // Silencio: paciente, solo repregunta tras varios seguidos y con
-    // cooldown — igual que la web (ver useVoiceAssistant.js allá).
+    /*
+     * Silencio: vuelve a escuchar calladita un par de veces y, si nadie
+     * contesta, deja de escuchar sin decir nada. Su última respuesta se queda
+     * en pantalla. Antes soltaba "Aquí sigo cuando me necesites…" y eso
+     * tapaba lo que acababa de responder (igual que en la web, ver
+     * useVoiceAssistant.js allá).
+     */
     if (!activoRef.current || hablandoRef.current) return;
 
     silencioRef.current += 1;
-    const ahora = Date.now();
-    const toca =
-      silencioRef.current >= SILENCIOS_ANTES_DE_PREGUNTAR &&
-      ahora - ultimoSiguesRef.current >= SILENCIO_COOLDOWN_MS;
-
-    if (toca) {
+    if (silencioRef.current >= SILENCIOS_ANTES_DE_DESCANSAR) {
       silencioRef.current = 0;
-      ultimoSiguesRef.current = ahora;
-      hablarRef.current?.('Aquí sigo cuando me necesites. Toca el micrófono y dime qué quieres llevar.');
+      activoRef.current = false;
+      setActivo(false);
     } else {
       setTimeout(() => arrancarRef.current?.(), REINTENTO_SILENCIO_MS);
     }
