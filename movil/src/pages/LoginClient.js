@@ -59,7 +59,7 @@ import { useEstilos } from '../context/ModoContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 import { URL_WEB_LEGAL } from '../utils/legales';
 
-const LoginClient = ({ irARegistro, irATienda }) => {
+const LoginClient = ({ irARegistro, irATienda, irAAdmin }) => {
   const { login } = useAuth();
   // La paleta de la temporada: el botón y los enlaces se pintan con ella, igual
   // que la tienda. Fuera de temporada es el café de la marca de siempre.
@@ -305,6 +305,20 @@ const LoginClient = ({ irARegistro, irATienda }) => {
               Regístrese
             </Text>
           </Text>
+
+          {/*
+            La puerta del dueño: en el teléfono entra directo a Tiqui del panel
+            (ver pages/admin/LoginAdmin.js). Discreta a propósito: la pantalla
+            es de los clientes.
+          */}
+          {irAAdmin ? (
+            <Text style={estilos.pieAdmin}>
+              ¿Administra la tienda?{' '}
+              <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irAAdmin} accessibilityRole="link">
+                Entre aquí
+              </Text>
+            </Text>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -426,6 +440,12 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   pieEnlace: {
     color: COLORES.marcaTexto,
     fontWeight: '600',
+  },
+  pieAdmin: {
+    textAlign: 'center',
+    fontSize: 12.5,
+    color: COLORES.textoTenue,
+    marginTop: 14,
   },
 });
 

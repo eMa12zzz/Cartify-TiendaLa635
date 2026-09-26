@@ -1,5 +1,4 @@
 import { isValidObjectId } from "mongoose";
-import { avisarCambioDePedidoEnSegundoPlano } from "../utils/avisosCliente.js";
 import orderModel from "../models/order.js";
 import clientModel from "../models/client.js";
 import loyaltyConfigModel from "../models/loyaltyConfig.js";
@@ -10,7 +9,8 @@ import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
 import { calcularEnvio } from "../utils/envio.js";
-import { generarCodigoEntrega, codigoCoincide } from "../utils/codigoEntrega.js";
+import { generarCodigoEntrega } from "../utils/codigoEntrega.js";
+import { cambiarEstadoDePedido } from "../utils/estadoPedido.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 
 const orderController = {};
@@ -468,130 +468,19 @@ orderController.getOrders = async (req, res) => {
 };
 
 // UPDATE — Cambiar el estado del pedido (preparando, entregado, cancelado).
+/*
+ * Lo que pasa al mover un pedido (sellos de hora, código de entrega, aviso al
+ * cliente) vive en utils/estadoPedido.js: lo comparte con Tiqui del panel,
+ * que también mueve pedidos cuando se lo piden. Aquí solo se traduce a HTTP.
+ */
 orderController.updateOrderStatus = async (req, res) => {
   try {
-    const { status } = req.body;
-    const validStatuses = ["pagado", "preparando", "en_camino", "listo", "entregado", "cancelado"];
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Estado inválido" });
-    }
-
-    /*
-     * Se sella la hora y el nombre de quien movió el pedido. `quien` lo manda
-     * la pantalla del empleado; si no viene, queda el sello de tiempo igual,
-     * que es lo que de verdad hace falta para saber cuánto tardó.
-     *
-     * Solo se escribe la primera vez: si alguien vuelve a marcar "preparando"
-     * después de un error, la hora original no se pierde.
-     */
-    const { quien } = req.body;
-    // +deliveryCode: hace falta para compararlo abajo. No sale de aquí: la
-    // respuesta se arma con el documento ya actualizado, que no lo trae.
-    const actual = await orderModel.findById(req.params.id).select("+deliveryCode");
-    if (!actual) {
-      return res.status(404).json({ message: "Pedido no encontrado" });
-    }
-
-    const cambios = { status };
-
-    /*
-     * ── NO SE ENTREGA SIN COMPROBAR A QUIÉN ──
-     *
-     * Este es el único punto del sistema donde el código de entrega sirve para
-     * algo. Todo lo demás —emitirlo, guardarlo, enseñárselo al cliente— existe
-     * para que esta comparación se pueda hacer.
-     *
-     * Se pide solo en el SALTO a entregado: volver a tocar el botón en un
-     * pedido ya entregado no puede exigir el código otra vez, porque el
-     * cliente ya se fue con su bolsa.
-     */
-    if (status === "entregado" && actual.status !== "entregado") {
-      const { codigoEntrega, omitirCodigo, motivoOmision } = req.body;
-
-      if (!actual.deliveryCode) {
-        /*
-         * Pedido anterior a esta función. No lleva código y no se le puede
-         * exigir uno: dejarlo trabado sería castigar al cliente por una
-         * mejora nuestra. Se entrega como se entregaba antes.
-         */
-      } else if (omitirCodigo) {
-        /*
-         * La salida de emergencia. Existe porque sin ella el personal
-         * terminaría marcando los pedidos como entregados ANTES de salir de
-         * la tienda, y ahí el código no valdría nada. Pero cuesta escribir
-         * por qué, y ese por qué queda guardado en el pedido.
-         */
-        const motivo = String(motivoOmision || "").trim();
-        if (motivo.length < 4) {
-          return res.status(400).json({
-            message: "Escriba por qué se entrega sin código.",
-          });
-        }
-        cambios.deliveryCodeOmitido = true;
-        cambios.deliveryCodeMotivo = motivo.slice(0, 200);
-      } else if (!codigoCoincide(actual.deliveryCode, codigoEntrega)) {
-        return res.status(400).json({
-          message: "El código no coincide. Pídale al cliente los 4 dígitos que ve en su pedido.",
-        });
-      } else {
-        cambios.deliveryCodeVerifiedAt = new Date();
-      }
-    }
-    if (status === "preparando" && !actual.preparedAt) {
-      cambios.preparedAt = new Date();
-      cambios.preparedBy = quien || "";
-    }
-    if (status === "en_camino" && !actual.enCaminoAt) {
-      cambios.enCaminoAt = new Date();
-      cambios.enCaminoBy = quien || "";
-    }
-    if (status === "listo" && !actual.listoAt) {
-      cambios.listoAt = new Date();
-      cambios.listoBy = quien || "";
-    }
-    if (status === "entregado" && !actual.deliveredAt) {
-      cambios.deliveredAt = new Date();
-      cambios.deliveredBy = quien || "";
-    }
-
-    /*
-     * Se acabó el viaje, se acaba el rastro. Cuando el pedido llega o se
-     * cancela, la posición del repartidor deja de tener sentido para todos:
-     * el cliente ya recibió y la tienda no necesita un mapa de por dónde
-     * anduvo su empleado. Se borra el punto, no solo se apaga.
-     */
-    if (status === "entregado" || status === "cancelado") {
-      cambios.courier = { active: false };
-    }
-
-    const updated = await orderModel.findByIdAndUpdate(
-      req.params.id,
-      cambios,
-      { new: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ message: "Pedido no encontrado" });
-    }
-
-    /*
-     * El aviso del paso, a quien lo pidió (preparando, en camino, listo,
-     * entregado o cancelado; ver utils/avisosCliente.js).
-     *
-     * Solo en el SALTO de estado, y por eso se mira el anterior: sin esa
-     * comprobación, un empleado que vuelve a tocar el botón —o que corrige el
-     * estado tras un error— le manda el mismo aviso otra vez a alguien que ya
-     * lo recibió.
-     *
-     * Sin await: el pedido ya se guardó y quien está en el mostrador no tiene
-     * por qué esperar a que salga un aviso.
-     */
-    if (status !== actual.status) {
-      avisarCambioDePedidoEnSegundoPlano(updated, status);
-    }
-
-    return res.status(200).json({ message: "Estado actualizado", order: updated });
+    const { status, quien, codigoEntrega, omitirCodigo, motivoOmision } = req.body;
+    const r = await cambiarEstadoDePedido({
+      id: req.params.id, status, quien: quien || "", codigoEntrega, omitirCodigo, motivoOmision,
+    });
+    if (!r.ok) return res.status(r.codigo).json({ message: r.message });
+    return res.status(200).json({ message: "Estado actualizado", order: r.order });
 
   } catch (error) {
     console.log("error " + error);

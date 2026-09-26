@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useInventory } from '../hooks/useInventory';
 import { Download, Plus, Search, ArrowDownUp } from 'lucide-react';
 import FilterSelect from '../components/UI/FilterSelect';
@@ -32,6 +33,15 @@ const Inventory = () => {
   const [pendingAction, setPendingAction] = useState({ type: null, data: null });
 
   const [searchTerm, setSearchTerm] = useState('');
+
+  // ?buscar=… en la dirección: así llega Tiqui del panel ("búscame la leche").
+  // Se ajusta en el mismo render al cambiar la dirección, sin un efecto de más.
+  const [params] = useSearchParams();
+  const [dirLeida, setDirLeida] = useState(null);
+  if (params.toString() !== dirLeida) {
+    setDirLeida(params.toString());
+    if (params.has('buscar')) setSearchTerm(params.get('buscar') || '');
+  }
   const [stockFilter, setStockFilter] = useState('Todos');
   const [orden, setOrden] = useState('nombre'); // 'nombre' | 'stock' | 'precio'
 

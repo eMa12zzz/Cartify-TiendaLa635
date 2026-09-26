@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { orderService } from '../api/orderService';
+import { alCambiarTiqui, TIPOS_PEDIDOS } from '../utils/cambiosDeTiqui';
 
 /*
  * useOrders — para el ADMIN/EMPLEADO: trae todos los pedidos y permite avanzar
@@ -24,6 +25,8 @@ export const useOrders = () => {
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
+  // Tiqui del panel movió un pedido: la lista se pone al día sola.
+  useEffect(() => alCambiarTiqui(TIPOS_PEDIDOS, cargar), [cargar]);
 
   /*
    * `extras` viaja tal cual al backend. Hoy lo usa la entrega para mandar el

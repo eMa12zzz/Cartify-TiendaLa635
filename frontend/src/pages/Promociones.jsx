@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { promotionService } from '../api/promotionService';
+import { alCambiarTiqui, TIPOS_PROMOCIONES } from '../utils/cambiosDeTiqui';
 import PromotionFormModal from '../components/Admin/PromotionFormModal';
 import GenericConfirmModal from '../components/Admin/GenericConfirmModal';
 import { etiquetaPromo, textoVencimiento, promoVencida } from '../utils/promos';
@@ -35,7 +36,11 @@ const Promociones = () => {
     }
   };
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    cargar();
+    // Tiqui del panel encendió o apagó una promoción: se recarga.
+    return alCambiarTiqui(TIPOS_PROMOCIONES, () => cargar());
+  }, []);
 
   const handleSave = async (formData, id) => {
     try {

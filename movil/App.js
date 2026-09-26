@@ -76,11 +76,62 @@ import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
 import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante';
 import VueloAlCarrito from './src/components/Tienda/VueloAlCarrito';
 import { ModoProvider, useModo } from './src/context/ModoContext';
+import { View } from 'react-native';
+// El administrador en el teléfono: la app entera pasa a ser solo Tiqui del panel.
+import { AdminProvider, useAdmin } from './src/context/AdminContext';
+import TiquiAdmin from './src/pages/admin/TiquiAdmin';
 
 // La hora y la batería en oscuro sobre fondo claro, y al revés.
 const BarraDeEstado = () => {
   const { oscuro } = useModo();
   return <StatusBar style={oscuro ? 'light' : 'dark'} />;
+};
+
+// La tienda: lo que ve cualquiera que no entró como administrador.
+const LaTienda = () => (
+  <AuthProvider>
+    <TemaProvider>
+      <EdadProvider>
+        <FavoritosProvider alPedirSesion={() => navegarA('Login')}>
+          <TiendaProvider>
+            <PedidoActivoProvider>
+              <BarraDeEstado />
+              <AvisosTocados />
+              {/* Si una pantalla se rompe, Tiqui caída en vez de la app en blanco. */}
+              <LimiteDeError>
+                <RootNavigator />
+              </LimiteDeError>
+              <BurbujaPedido />
+              <PedidoDetalleFlotante />
+              <VueloAlCarrito />
+            </PedidoActivoProvider>
+          </TiendaProvider>
+        </FavoritosProvider>
+      </EdadProvider>
+    </TemaProvider>
+  </AuthProvider>
+);
+
+/*
+ * El modo administrador: SOLO Tiqui del panel. Nada de la tienda se monta
+ * (ni el catálogo, ni el carrito, ni los avisos de pedidos de cliente): no
+ * es una pestaña más, es otra app. Ver context/AdminContext.js.
+ */
+const ModoAdministrador = () => (
+  <TemaProvider>
+    <BarraDeEstado />
+    <LimiteDeError>
+      <TiquiAdmin />
+    </LimiteDeError>
+  </TemaProvider>
+);
+
+const Contenido = () => {
+  const { sesion, cargando } = useAdmin();
+  const { colores } = useModo();
+  // Un instante, mientras se lee del almacén si hay sesión de administrador.
+  if (cargando) return <View style={{ flex: 1, backgroundColor: colores.fondo }} />;
+  return sesion ? <ModoAdministrador /> : <LaTienda />;
 };
 
 // GestureHandlerRootView: sin él no funcionan los gestos de jalar para
@@ -91,27 +142,9 @@ export default function App() {
     <SafeAreaProvider>
       <ModoProvider>
         <AvisoProvider>
-          <AuthProvider>
-            <TemaProvider>
-              <EdadProvider>
-                <FavoritosProvider alPedirSesion={() => navegarA('Login')}>
-                  <TiendaProvider>
-                    <PedidoActivoProvider>
-                      <BarraDeEstado />
-                      <AvisosTocados />
-                      {/* Si una pantalla se rompe, Tiqui caída en vez de la app en blanco. */}
-                      <LimiteDeError>
-                        <RootNavigator />
-                      </LimiteDeError>
-                      <BurbujaPedido />
-                      <PedidoDetalleFlotante />
-                      <VueloAlCarrito />
-                    </PedidoActivoProvider>
-                  </TiendaProvider>
-                </FavoritosProvider>
-              </EdadProvider>
-            </TemaProvider>
-          </AuthProvider>
+          <AdminProvider>
+            <Contenido />
+          </AdminProvider>
         </AvisoProvider>
       </ModoProvider>
     </SafeAreaProvider>
