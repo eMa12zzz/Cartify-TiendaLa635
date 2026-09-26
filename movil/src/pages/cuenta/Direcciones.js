@@ -102,7 +102,7 @@ const Direcciones = ({ alVolver }) => {
       await actualizarDirecciones(user.id, lista);
       setDirecciones(lista);
       setMostrarMapa(false);
-      avisar('Dirección guardada');
+      avisar('Dirección guardada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar la dirección', 'error');
     } finally {
@@ -117,7 +117,7 @@ const Direcciones = ({ alVolver }) => {
       await actualizarDirecciones(user.id, quedan);
       setDirecciones(quedan);
       setPorQuitar(null);
-      avisar('Dirección quitada');
+      avisar('Dirección quitada', 'quitar');
     } catch (e) {
       // No se toca la lista: si el servidor no la borró, sigue estando.
       avisar(e?.message || 'No se pudo quitar la dirección', 'error');

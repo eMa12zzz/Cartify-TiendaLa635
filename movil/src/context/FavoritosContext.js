@@ -80,7 +80,10 @@ export const FavoritosProvider = ({ children, alPedirSesion }) => {
 
       try {
         await alternarFavorito(user.id, id);
-        avisar(estaba ? `${nombre} salió de favoritos` : `${nombre} guardado en favoritos`);
+        avisar(
+          estaba ? `${nombre} salió de favoritos` : `${nombre} guardado en favoritos`,
+          estaba ? 'sinFavorito' : 'favorito'
+        );
       } catch {
         // Se deshace.
         setIds((prev) => (estaba ? [...prev, id] : prev.filter((x) => x !== id)));

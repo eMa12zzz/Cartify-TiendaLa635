@@ -458,7 +458,8 @@ export const TiendaProvider = ({ children }) => {
       avisar(
         nuevaCantidad > 1
           ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
-          : `${producto.nombre} agregado al carrito`
+          : `${producto.nombre} agregado al carrito`,
+        'exito'
       );
     },
     [carrito, guardarCarrito, avisar]
@@ -468,7 +469,7 @@ export const TiendaProvider = ({ children }) => {
     (productoId) => {
       const fuera = carrito.find((i) => i.id === productoId);
       guardarCarrito(carrito.filter((item) => item.id !== productoId));
-      avisar(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
+      avisar(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado', 'quitar');
     },
     [carrito, guardarCarrito, avisar]
   );
@@ -495,7 +496,7 @@ export const TiendaProvider = ({ children }) => {
   const limpiarCarrito = useCallback(() => {
     const cuantos = carrito.length;
     guardarCarrito([]);
-    if (cuantos) avisar(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
+    if (cuantos) avisar(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`, 'quitar');
   }, [carrito, guardarCarrito, avisar]);
 
   /*

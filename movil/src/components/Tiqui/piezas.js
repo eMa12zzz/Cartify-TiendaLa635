@@ -13,7 +13,6 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
 import { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { useColores } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
@@ -69,20 +68,9 @@ export const useDisfrazTiqui = () => {
   return useMemo(() => (tema && decoracion ? disfrazDeTema(tema) : null), [tema, decoracion]);
 };
 
-// Quien pidió menos movimiento en su teléfono la ve quieta.
-export const useMovimientoReducido = () => {
-  const [reducido, setReducido] = useState(false);
-  useEffect(() => {
-    let vivo = true;
-    AccessibilityInfo.isReduceMotionEnabled?.().then((si) => vivo && setReducido(!!si)).catch(() => {});
-    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', (si) => setReducido(!!si));
-    return () => {
-      vivo = false;
-      sub?.remove?.();
-    };
-  }, []);
-  return reducido;
-};
+// Quien pidió menos movimiento en su teléfono la ve quieta. El gancho vive en
+// hooks/ porque también lo usan los avisos; aquí se reexporta para Tiqui.
+export { useMovimientoReducido } from '../../hooks/useMovimientoReducido';
 
 // Parpadea cada tanto: es lo que hace que se sienta viva y no un dibujo.
 export const useParpadeo = (activo = true) => {

@@ -183,7 +183,7 @@ const MisDatos = ({ alVolver }) => {
         type: elegida.mimeType || 'image/jpeg',
       });
       setFoto(respuesta?.client?.image || elegida.uri);
-      avisar('Foto de perfil actualizada');
+      avisar('Foto de perfil actualizada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo subir la foto', 'error');
     } finally {
@@ -223,7 +223,7 @@ const MisDatos = ({ alVolver }) => {
        * de la tienda aunque acabe de guardarlo aquí.
        */
       actualizarUsuario({ dui });
-      avisar('Sus datos quedaron guardados');
+      avisar('Sus datos quedaron guardados', 'exito');
       alVolver?.();
     } catch (e) {
       avisar(e?.message || 'No se pudieron guardar sus datos', 'error');
