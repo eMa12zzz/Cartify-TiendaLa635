@@ -36,6 +36,7 @@ const LLAVE_SILENCIO = 'kartify:tiqui-panel-sin-voz';
 const SIN_RESPUESTA = {
   'sin-ia': 'Ahorita no tengo con qué pensar: falta configurar la IA en el servidor.',
   tope: 'Me hiciste muchas preguntas seguidas. Dame un minuto y seguimos.',
+  lento: 'El servidor se estaba despertando y tardó mucho. Pregúntame otra vez, ahora ya contesto rápido.',
   'sin-red': 'No me pude conectar con el servidor. Revisa la conexión y me vuelves a preguntar.',
 };
 const NO_ENTENDI = 'No te entendí bien. ¿Me lo repites?';

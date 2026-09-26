@@ -35,7 +35,7 @@ import { arranqueResuelto, destinoPendiente, irATabs, marcarArranqueResuelto, na
 import PantallaCarga from '../pages/PantallaCarga';
 import Onboarding from '../pages/Onboarding';
 import LoginClient from '../pages/LoginClient';
-import LoginAdmin from '../pages/admin/LoginAdmin';
+import LoginPersonal from '../pages/personal/LoginPersonal';
 import Register from '../pages/Register';
 import Verification from '../pages/Verification';
 import Carrito from '../pages/Carrito';
@@ -138,16 +138,17 @@ const LoginRoute = ({ navigation }) => (
       destinoPendiente.current = null;
       irATabs(null);
     }}
-    irAAdmin={() => navigation.navigate('LoginAdmin')}
+    irAPersonal={() => navigation.navigate('LoginPersonal')}
   />
 );
 
 /*
- * La entrada del administrador. Al terminar no navega: AdminContext guarda la
- * sesión y App.js cambia la app entera al modo administrador (solo Tiqui).
+ * "¿Trabajas en la tienda?": la entrada del personal. Al terminar no navega:
+ * PersonalContext guarda la sesión y App.js cambia la app entera al modo
+ * personal (Tiqui y Reparto para el administrador; Reparto para el empleado).
  */
-const LoginAdminRoute = ({ navigation }) => (
-  <LoginAdmin alVolver={() => navigation.goBack()} />
+const LoginPersonalRoute = ({ navigation }) => (
+  <LoginPersonal alVolver={() => navigation.goBack()} />
 );
 
 const RegisterRoute = ({ navigation }) => (
@@ -276,7 +277,7 @@ const RootNavigator = () => {
         <Stack.Screen name="Splash" component={SplashRoute} />
         <Stack.Screen name="Onboarding" component={OnboardingRoute} />
         <Stack.Screen name="Login" component={LoginRoute} />
-        <Stack.Screen name="LoginAdmin" component={LoginAdminRoute} />
+        <Stack.Screen name="LoginPersonal" component={LoginPersonalRoute} />
         <Stack.Screen name="Register" component={RegisterRoute} />
         <Stack.Screen name="Verification" component={VerificationRoute} />
         <Stack.Screen name="Tabs" component={TabMenu} />

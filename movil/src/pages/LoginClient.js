@@ -59,7 +59,7 @@ import { useEstilos } from '../context/ModoContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 import { URL_WEB_LEGAL } from '../utils/legales';
 
-const LoginClient = ({ irARegistro, irATienda, irAAdmin }) => {
+const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
   const { login } = useAuth();
   // La paleta de la temporada: el botón y los enlaces se pintan con ella, igual
   // que la tienda. Fuera de temporada es el café de la marca de siempre.
@@ -307,15 +307,15 @@ const LoginClient = ({ irARegistro, irATienda, irAAdmin }) => {
           </Text>
 
           {/*
-            La puerta del dueño: en el teléfono entra directo a Tiqui del panel
-            (ver pages/admin/LoginAdmin.js). Discreta a propósito: la pantalla
-            es de los clientes.
+            La puerta del personal: el administrador entra a Tiqui del panel y
+            al Reparto; el empleado, al Reparto (ver pages/personal). Discreta a
+            propósito: la pantalla es de los clientes.
           */}
-          {irAAdmin ? (
+          {irAPersonal ? (
             <Text style={estilos.pieAdmin}>
-              ¿Administra la tienda?{' '}
-              <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irAAdmin} accessibilityRole="link">
-                Entre aquí
+              ¿Trabajas en la tienda?{' '}
+              <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irAPersonal} accessibilityRole="link">
+                Entra aquí
               </Text>
             </Text>
           ) : null}

@@ -1,12 +1,13 @@
 /*
  * ============================================================
- * TIQUI DEL ADMINISTRADOR — la conversación (useTiquiAdmin.js)
+ * TIQUI DEL PANEL EN EL TELÉFONO — la conversación (useTiquiAdmin.js)
  * ============================================================
- * La asistente del equipo en el teléfono del administrador: la misma de la
+ * La asistente del equipo en el teléfono del administrador (solo él la ve:
+ * el empleado entra directo al Reparto, ver ModoPersonal). La misma de la
  * esquina del panel web (useTiquiPanel), con el micrófono y la voz del
  * teléfono. Es OTRA asistente que la de la tienda (useAsistenteVoz): no
  * comparten charla ni sesión, y nunca están montadas a la vez (App.js monta
- * la tienda o el modo administrador, no los dos), así que tampoco se pisan
+ * la tienda o el modo personal, no los dos), así que tampoco se pisan
  * los eventos del reconocedor de voz, que son globales.
  *
  * Cómo se conversa:
@@ -21,8 +22,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Speech from 'expo-speech';
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
-import { tiquiAdminApi } from '../api/tiquiAdminApi';
-import { useAdmin } from '../context/AdminContext';
+import { personalApi } from '../api/personalApi';
+import { usePersonal } from '../context/PersonalContext';
 import { decirConTiqui, callarTiqui, vozTiquiPosible, paraDecir } from '../utils/vozTiqui';
 
 const SILENCIOS_ANTES_DE_DESCANSAR = 2;
@@ -31,6 +32,7 @@ const REINTENTO_SILENCIO_MS = 900;
 const SIN_RESPUESTA = {
   'sin-ia': 'Ahorita no tengo con qué pensar: falta configurar la IA en el servidor.',
   tope: 'Me hiciste muchas preguntas seguidas. Dame un minuto y seguimos.',
+  lento: 'El servidor se estaba despertando y tardó mucho. Pregúntame otra vez, ahora ya contesto rápido.',
   'sin-red': 'No me pude conectar con el servidor. Revisa el internet y me vuelves a preguntar.',
 };
 const NO_ENTENDI = 'No te entendí bien. ¿Me lo repites?';
@@ -46,7 +48,7 @@ const respuestaCorta = (frase, patron) => {
 };
 
 export const useTiquiAdmin = () => {
-  const { sesion, salir } = useAdmin();
+  const { sesion, salir } = usePersonal();
   const token = sesion?.token;
 
   const [activo, setActivo] = useState(false);
@@ -94,7 +96,7 @@ export const useTiquiAdmin = () => {
   useEffect(() => {
     if (!token) return undefined;
     let vivo = true;
-    tiquiAdminApi.despertar(token).then(({ voz, origen }) => {
+    personalApi.despertar(token).then(({ voz, origen }) => {
       if (!vivo) return;
       if (origen === 'sesion') { salir(); return; }
       vozTiquiRef.current = voz && vozTiquiPosible;
@@ -138,7 +140,7 @@ export const useTiquiAdmin = () => {
     });
 
     if (!vozTiquiRef.current) { conElTelefono(); return; }
-    decirConTiqui(tiquiAdminApi.urlVoz(texto), {
+    decirConTiqui(personalApi.urlVoz(texto), {
       alTerminar: () => { fallasVozRef.current = 0; continuar(); },
       alFallar: () => {
         fallasVozRef.current += 1;
@@ -154,7 +156,7 @@ export const useTiquiAdmin = () => {
     if (!p) return;
     guardarPendiente(null);
     setPensando(true);
-    const r = await tiquiAdminApi.confirmar(tokenRef.current, p.token);
+    const r = await personalApi.confirmar(tokenRef.current, p.token);
     setPensando(false);
     if (r?.origen === 'sesion') { salir(); return; }
     hablar(r?.respuesta || SIN_RESPUESTA[r?.origen] || 'No pude hacerlo. Pídemelo otra vez.');
@@ -178,7 +180,7 @@ export const useTiquiAdmin = () => {
     }
 
     setPensando(true);
-    const r = await tiquiAdminApi.conversar(tokenRef.current, { frase, historial });
+    const r = await personalApi.conversar(tokenRef.current, { frase, historial });
     setPensando(false);
     if (r?.origen === 'sesion') { salir(); return; }
     if (r?.confirmar?.token) guardarPendiente({ token: r.confirmar.token, resumen: r.confirmar.resumen });
