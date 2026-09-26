@@ -1,18 +1,21 @@
 /*
  * ============================================================
- * ENTRADA DEL ADMINISTRADOR — LoginAdmin.js
+ * "¿TRABAJAS EN LA TIENDA?" — la entrada del personal (LoginPersonal.js)
  * ============================================================
- * Por aquí entra el dueño desde el teléfono para hablar con Tiqui del panel.
- * Es el MISMO inicio de sesión del panel web, con sus dos pasos: correo y
- * contraseña, y después el código que llega al correo. Sin el segundo paso,
- * quien adivine la contraseña podría mover pedidos y precios desde cualquier
- * teléfono.
+ * Por aquí entra quien trabaja en la tienda desde el teléfono. Es el MISMO
+ * inicio de sesión del panel web, con sus dos pasos: correo y contraseña, y
+ * después el código que llega al correo. Sin el segundo paso, quien adivine
+ * la contraseña podría mover pedidos y precios desde cualquier teléfono.
  *
- * Solo el administrador: los empleados usan el panel en la web. Si entra un
- * empleado, se le dice y se cierra la sesión que se acaba de abrir.
+ * Lo que ve después depende de su cuenta (ver ModoPersonal):
+ *   - el administrador, a Tiqui del panel y el Reparto;
+ *   - el empleado, el Reparto.
  *
- * Al terminar no se navega a ningún lado: AdminContext guarda la sesión y
- * App.js cambia la app entera al modo administrador (solo Tiqui).
+ * Reemplaza al "Estoy trabajando" de Mi cuenta en la web, que mezclaba la
+ * sesión de cliente con la de personal de la misma persona.
+ *
+ * Al terminar no se navega a ningún lado: PersonalContext guarda la sesión y
+ * App.js cambia la app entera al modo personal.
  * ============================================================
  */
 
@@ -23,16 +26,16 @@ import BarraMarca from '../../components/UI/BarraMarca';
 import Boton from '../../components/UI/Boton';
 import CampoTexto from '../../components/UI/CampoTexto';
 import TiquiColgada from '../../components/Tiqui/TiquiColgada';
-import { tiquiAdminApi } from '../../api/tiquiAdminApi';
-import { useAdmin } from '../../context/AdminContext';
+import { personalApi } from '../../api/personalApi';
+import { usePersonal } from '../../context/PersonalContext';
 import { useTema } from '../../context/TemaContext';
 import { useEstilos } from '../../context/ModoContext';
 import { validarCorreo } from '../../utils/validaciones';
 
-const LoginAdmin = ({ alVolver }) => {
+const LoginPersonal = ({ alVolver }) => {
   const estilos = useEstilos(crearEstilos);
   const { colores } = useTema();
-  const { iniciar } = useAdmin();
+  const { iniciar } = usePersonal();
 
   const [paso, setPaso] = useState('credenciales'); // 'credenciales' | 'codigo'
   const [email, setEmail] = useState('');
@@ -51,7 +54,7 @@ const LoginAdmin = ({ alVolver }) => {
     setError('');
     setCargando(true);
     try {
-      const r = await tiquiAdminApi.entrar({ email: email.trim(), password });
+      const r = await personalApi.entrar({ email: email.trim(), password });
       setCorreoEnmascarado(r?.email || '');
       setTwofaToken(r?.twofaToken || '');
       setPaso('codigo');
@@ -67,17 +70,11 @@ const LoginAdmin = ({ alVolver }) => {
     setError('');
     setCargando(true);
     try {
-      const r = await tiquiAdminApi.verificar({ code: codigo.trim(), twofaToken });
-      if (r?.tipo !== 'admin') {
-        // Un empleado: su lugar es el panel web. Se cierra lo que se abrió.
-        tiquiAdminApi.salir();
-        setError('En el teléfono, por ahora solo entra el administrador. El equipo usa el panel en la web.');
-        setPaso('credenciales');
-        setCodigo('');
-        return;
-      }
+      const r = await personalApi.verificar({ code: codigo.trim(), twofaToken });
       iniciar({
         token: r.token,
+        // Lo decide el servidor: con 'admin' se ve Tiqui además del Reparto.
+        tipo: r?.tipo === 'admin' ? 'admin' : 'employee',
         nombre: String(r.admin?.userName || '').trim().split(/\s+/)[0] || '',
         email: r.admin?.email || '',
       });
@@ -102,9 +99,9 @@ const LoginAdmin = ({ alVolver }) => {
 
           {paso === 'credenciales' ? (
             <>
-              <Text style={estilos.titulo} accessibilityRole="header">Entrar como administrador</Text>
+              <Text style={estilos.titulo} accessibilityRole="header">¿Trabajas en la tienda?</Text>
               <Text style={estilos.subtitulo}>
-                Con la misma cuenta del panel. En el teléfono va directo a Tiqui: le pregunta cómo va la tienda y le pide cambios.
+                Entre con la misma cuenta del panel. El equipo ve el reparto; el administrador, además, a Tiqui del panel para preguntarle cómo va la tienda y pedirle cambios.
               </Text>
 
               <CampoTexto
@@ -221,4 +218,4 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   pieEnlace: { textAlign: 'center', fontSize: 14, fontWeight: '600', marginTop: 20, paddingVertical: 6 },
 });
 
-export default LoginAdmin;
+export default LoginPersonal;

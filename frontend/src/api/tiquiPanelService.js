@@ -10,7 +10,8 @@ import api from './api';
 export const tiquiPanelService = {
   conversar: async ({ frase, historial, pantalla }) => {
     try {
-      const { data } = await api.post('/tiqui-panel', { frase, historial, pantalla }, { enSilencio: true, timeout: 15000 });
+      // 30 s: si Render estaba dormido, despertar tarda más que la IA.
+      const { data } = await api.post('/tiqui-panel', { frase, historial, pantalla }, { enSilencio: true, timeout: 30000 });
       return data;
     } catch (error) {
       return {
@@ -18,7 +19,7 @@ export const tiquiPanelService = {
         respuesta: '',
         entendido: false,
         // Un 429 es el tope de preguntas por minuto: se dice distinto que una caída.
-        origen: error?.response?.status === 429 ? 'tope' : 'sin-red',
+        origen: error?.response?.status === 429 ? 'tope' : error?.code === 'ECONNABORTED' ? 'lento' : 'sin-red',
       };
     }
   },
@@ -26,7 +27,7 @@ export const tiquiPanelService = {
   // La persona dijo que sí a un cambio que Tiqui propuso: se aplica (ver cambiosTiqui.js del backend).
   confirmar: async (token) => {
     try {
-      const { data } = await api.post('/tiqui-panel/confirmar', { token }, { enSilencio: true, timeout: 15000 });
+      const { data } = await api.post('/tiqui-panel/confirmar', { token }, { enSilencio: true, timeout: 30000 });
       return data;
     } catch {
       return { ok: false, respuesta: 'No me pude conectar para hacerlo. Revisa la conexión y me lo vuelves a pedir.' };

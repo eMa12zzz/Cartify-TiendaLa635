@@ -269,6 +269,19 @@ const Perfil = () => {
             <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>Conoce a Tiqui, tu asistente</Text>
             <ChevronRight size={16} color={colores.marca} strokeWidth={2.2} />
           </Pressable>
+          {/*
+            La puerta del personal también desde aquí: quien trabaja en la
+            tienda y además compra con su cuenta no tiene que cerrar sesión
+            para llegar al enlace del login. Ver pages/personal/LoginPersonal.js.
+          */}
+          <Pressable
+            onPress={() => navegarA('LoginPersonal')}
+            accessibilityRole="button"
+            style={({ pressed }) => [estilos.extraFila, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>¿Trabajas en la tienda? Entra aquí</Text>
+            <ChevronRight size={16} color={colores.marca} strokeWidth={2.2} />
+          </Pressable>
           <View style={estilos.legales}>
             {DOCUMENTOS_LEGALES.map((d) => (
               <Text

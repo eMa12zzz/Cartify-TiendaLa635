@@ -1,29 +1,27 @@
 /*
  * ============================================================
- * TIQUI DEL ADMINISTRADOR — la app entera en modo dueño (TiquiAdmin.js)
+ * TIQUI DEL PANEL EN EL TELÉFONO — solo el administrador (TiquiAdmin.js)
  * ============================================================
- * Cuando el administrador entra desde el teléfono, esto es TODO lo que ve:
- * Tiqui del panel, la asistente del equipo. Le pregunta cómo va la tienda y
- * le pide cambios ("pasa el pedido 88D230 a listo", "llegaron 20 leches",
- * "apaga la promo del 2x1"); ella propone y él confirma. La tienda (catálogo,
- * carrito) no está: para comprar se sale del modo administrador.
+ * La asistente del equipo: se le pregunta cómo va la tienda y se le piden
+ * cambios ("pasa el pedido 88D230 a listo", "llegaron 20 leches", "apaga la
+ * promo del 2x1"); ella propone y el administrador confirma. Es una de las dos
+ * secciones del modo personal (la otra es el Reparto); el empleado no la ve.
+ * Ver ModoPersonal, que pone el encabezado y el botón de salir.
  *
- * Solo pinta. La conversación vive en useTiquiAdmin; la sesión, en AdminContext.
+ * Solo pinta. La conversación vive en useTiquiAdmin; la sesión, en PersonalContext.
  * ============================================================
  */
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
+  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LogOut, SendHorizontal, Volume2, VolumeX } from 'lucide-react-native';
+import { SendHorizontal, Volume2, VolumeX } from 'lucide-react-native';
 import TiquiColgada from '../../components/Tiqui/TiquiColgada';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
-import { useAdmin } from '../../context/AdminContext';
 import { useTiquiAdmin } from '../../hooks/useTiquiAdmin';
-import { ALTURA_ESTADO } from '../../theme/pantalla';
 
 // Por dónde empezar, para quien no sabe qué pedirle.
 const SUGERENCIAS = ['¿Cómo vamos hoy?', '¿Qué pedidos esperan?', '¿Qué se está acabando?', '¿Cuánto les debemos a los proveedores?'];
@@ -33,7 +31,6 @@ const TiquiAdmin = () => {
   const COLORES = useColores();
   const { colores } = useTema();
   const { bottom } = useSafeAreaInsets();
-  const { sesion, salir } = useAdmin();
   const t = useTiquiAdmin();
   const [texto, setTexto] = useState('');
   const chatRef = useRef(null);
@@ -57,46 +54,21 @@ const TiquiAdmin = () => {
     setTexto('');
   };
 
-  const pedirSalir = () => {
-    Alert.alert(
-      'Salir del modo administrador',
-      'La app vuelve a ser la tienda. Para hablar otra vez con Tiqui del panel tendrás que entrar de nuevo.',
-      [{ text: 'Cancelar', style: 'cancel' }, { text: 'Salir', style: 'destructive', onPress: salir }]
-    );
-  };
-
   const conCharla = t.mensajes.length > 0;
 
   return (
     <KeyboardAvoidingView style={estilos.pantalla} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-        <View style={estilos.flexible}>
-          <Text style={estilos.titulo} accessibilityRole="header">Tiqui del panel</Text>
-          <Text style={estilos.subtitulo} numberOfLines={1}>
-            Administración{sesion?.nombre ? ` · ${sesion.nombre}` : ''}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={t.alternarVoz}
-          accessibilityRole="button"
-          accessibilityLabel={t.muteada ? 'Que Tiqui hable en voz alta' : 'Que Tiqui conteste sin voz'}
-          hitSlop={8}
-          style={estilos.accion}
-        >
-          {t.muteada
-            ? <VolumeX size={22} color={COLORES.textoSuave} strokeWidth={1.8} />
-            : <Volume2 size={22} color={colores.marca} strokeWidth={1.8} />}
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={pedirSalir}
-          accessibilityRole="button"
-          accessibilityLabel="Salir del modo administrador"
-          hitSlop={8}
-          style={estilos.accion}
-        >
-          <LogOut size={21} color={COLORES.textoSuave} strokeWidth={1.8} />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        onPress={t.alternarVoz}
+        accessibilityRole="button"
+        accessibilityLabel={t.muteada ? 'Que Tiqui hable en voz alta' : 'Que Tiqui conteste sin voz'}
+        hitSlop={8}
+        style={estilos.voz}
+      >
+        {t.muteada
+          ? <VolumeX size={22} color={COLORES.textoSuave} strokeWidth={1.8} />
+          : <Volume2 size={22} color={colores.marca} strokeWidth={1.8} />}
+      </TouchableOpacity>
 
       <ScrollView
         ref={chatRef}
@@ -217,18 +189,11 @@ const TiquiAdmin = () => {
 const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: COLORES.fondo },
   flexible: { flex: 1 },
-  barra: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORES.linea,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  // Arriba a la derecha, encima de la charla: 44 × 44 para atinarle con el pulgar.
+  voz: {
+    position: 'absolute', top: 6, right: 10, zIndex: 2,
+    width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
   },
-  titulo: { fontSize: 21, fontWeight: '800', color: COLORES.tituloFuerte, letterSpacing: -0.4 },
-  subtitulo: { fontSize: 13, color: COLORES.textoSuave, marginTop: 1 },
-  accion: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   cuerpo: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
   tiqui: { marginBottom: 6 },
   estado: { fontSize: 16, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
