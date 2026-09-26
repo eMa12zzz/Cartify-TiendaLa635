@@ -17,9 +17,19 @@ import { peticion, URL_API } from './api';
 
 const conToken = (token) => ({ Authorization: `Bearer ${token}` });
 
-// Por qué no se pudo, dicho para Tiqui: 'sesion' cierra el modo administrador.
+/*
+ * Por qué no se pudo, dicho para Tiqui: 'sesion' cierra el modo administrador;
+ * 'lento' es el servidor de Render despertándose (se duerme sin tráfico y la
+ * primera pregunta puede tardar medio minuto), que no es culpa del internet.
+ */
 const origenDe = (error) =>
-  error?.estado === 401 ? 'sesion' : error?.estado === 429 ? 'tope' : 'sin-red';
+  error?.estado === 401 ? 'sesion'
+    : error?.estado === 429 ? 'tope'
+    : error?.estado === 0 && /tard/.test(error?.message || '') ? 'lento'
+    : 'sin-red';
+
+// Lo que se le aguanta al servidor: si está despertando, tarda más que la IA.
+const ESPERA_MS = 30000;
 
 export const tiquiAdminApi = {
   /*
@@ -57,7 +67,7 @@ export const tiquiAdminApi = {
         metodo: 'POST',
         cuerpo: { frase, historial, pantalla: 'app' },
         cabeceras: conToken(token),
-        tiempoMaximo: 15000,
+        tiempoMaximo: ESPERA_MS,
       });
     } catch (error) {
       return { acciones: [], respuesta: '', entendido: false, origen: origenDe(error) };
@@ -70,7 +80,7 @@ export const tiquiAdminApi = {
         metodo: 'POST',
         cuerpo: { token: propuesta },
         cabeceras: conToken(token),
-        tiempoMaximo: 15000,
+        tiempoMaximo: ESPERA_MS,
       });
     } catch (error) {
       return { ok: false, respuesta: '', origen: origenDe(error) };

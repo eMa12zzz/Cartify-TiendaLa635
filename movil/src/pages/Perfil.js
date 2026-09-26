@@ -269,6 +269,19 @@ const Perfil = () => {
             <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>Conoce a Tiqui, tu asistente</Text>
             <ChevronRight size={16} color={colores.marca} strokeWidth={2.2} />
           </Pressable>
+          {/*
+            La puerta del dueño también desde aquí: un administrador que ya
+            compra con su cuenta no tiene que cerrar sesión para llegar al
+            enlace del login. Ver pages/admin/LoginAdmin.js.
+          */}
+          <Pressable
+            onPress={() => navegarA('LoginAdmin')}
+            accessibilityRole="button"
+            style={({ pressed }) => [estilos.extraFila, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>¿Administra la tienda? Entre aquí</Text>
+            <ChevronRight size={16} color={colores.marca} strokeWidth={2.2} />
+          </Pressable>
           <View style={estilos.legales}>
             {DOCUMENTOS_LEGALES.map((d) => (
               <Text
