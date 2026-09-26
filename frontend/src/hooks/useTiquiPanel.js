@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { tiquiPanelService } from '../api/tiquiPanelService';
 import { decirConTiqui, callarTiqui, paraDecir } from '../utils/vozTiqui';
+import { avisarCambioDeTiqui } from '../utils/cambiosDeTiqui';
 
 /*
  * ============================================================
@@ -39,6 +40,20 @@ const SIN_RESPUESTA = {
 };
 const NO_ENTENDI = 'No te entendí bien. ¿Me lo repites?';
 
+/*
+ * Cuando Tiqui propuso un cambio ("¿Lo hago?"), un "sí" o un "no" cortos lo
+ * contestan sin pasar por la IA. Cortos a propósito: "sí, pero ponlo a $8"
+ * no es un sí a lo de antes, es otro pedido, y va a la IA como cualquier frase.
+ */
+const plano = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const ES_SI = /^(si|sip|dale|hazlo|confirmo|confirmado|confirma|ok|okay|va|claro|adelante|de acuerdo|correcto|asi es|simon|sale|por favor)( .*)?$/;
+const ES_NO = /^(no|nel|cancela|cancelalo|mejor no|olvidalo|dejalo|espera|todavia no)( .*)?$/;
+const respuestaCorta = (frase, patron) => {
+  const t = plano(frase);
+  return t.split(' ').length <= 4 && patron.test(t);
+};
+
 // La voz del sistema (respaldo de la de Tiqui): una latinoamericana si hay.
 const ACENTOS = ['es-SV', 'es-MX', 'es-US', 'es-419', 'es-GT', 'es-CO'];
 const vozDelSistema = () => {
@@ -58,6 +73,9 @@ export const useTiquiPanel = () => {
   const [transcripcion, setTranscripcion] = useState('');
   const [mensajes, setMensajes] = useState([]);    // [{ id, quien: 'tiqui'|'persona', texto }]
   const [confundida, setConfundida] = useState(false);
+  // El cambio que Tiqui propuso y espera un sí: { token, resumen } (firmado por el servidor).
+  const [pendiente, setPendiente] = useState(null);
+  const pendienteRef = useRef(null);
   const [vozTiqui, setVozTiqui] = useState(false);
   const [sonandoTiqui, setSonandoTiqui] = useState(false);
   const [muteada, setMuteada] = useState(() => {
@@ -205,16 +223,50 @@ export const useTiquiPanel = () => {
     decirConElSistema(texto, continuar);
   }, [escuchar]);
 
+  const guardarPendiente = (p) => {
+    pendienteRef.current = p;
+    setPendiente(p);
+  };
+
+  // Hace el cambio que la persona confirmó (tocando "Sí, hazlo" o diciendo que sí).
+  const aplicar = useCallback(async () => {
+    const p = pendienteRef.current;
+    if (!p) return;
+    guardarPendiente(null);
+    setConfundida(false);
+    setPensando(true);
+    const r = await tiquiPanelService.confirmar(p.token);
+    setPensando(false);
+    if (r?.ok) avisarCambioDeTiqui(r.tipo);
+    else setConfundida(true);
+    hablar(r?.respuesta || 'No pude hacerlo. Inténtalo desde la pantalla.');
+  }, [hablar]);
+
+  const descartar = useCallback(() => {
+    if (!pendienteRef.current) return;
+    guardarPendiente(null);
+    hablar('Listo, no cambio nada.');
+  }, [hablar]);
+
   const procesar = useCallback(async (frase) => {
     // Lo de antes de esta frase: la frase misma viaja aparte.
     const historial = memoriaRef.current.slice(-6);
     registrar('persona', frase);
     setTranscripcion('');
     setConfundida(false);
-    setPensando(true);
 
+    // ¿Contesta al "¿Lo hago?" de un cambio propuesto?
+    if (pendienteRef.current) {
+      if (respuestaCorta(frase, ES_SI)) { aplicar(); return; }
+      if (respuestaCorta(frase, ES_NO)) { descartar(); return; }
+      // Pidió otra cosa: lo propuesto queda sin hacer.
+      guardarPendiente(null);
+    }
+
+    setPensando(true);
     const r = await tiquiPanelService.conversar({ frase, historial, pantalla: pantallaRef.current });
     setPensando(false);
+    if (r?.confirmar?.token) guardarPendiente({ token: r.confirmar.token, resumen: r.confirmar.resumen });
 
     const ruta = r?.acciones?.find((a) => a.tipo === 'ir')?.ruta;
     if (ruta) navigate(ruta);
@@ -222,7 +274,7 @@ export const useTiquiPanel = () => {
     const texto = r?.entendido && r.respuesta ? r.respuesta : SIN_RESPUESTA[r?.origen] || NO_ENTENDI;
     if (!r?.entendido) setConfundida(true);
     hablar(texto);
-  }, [navigate, hablar]);
+  }, [navigate, hablar, aplicar, descartar]);
 
   useEffect(() => {
     procesarRef.current = procesar;
@@ -303,6 +355,8 @@ export const useTiquiPanel = () => {
     abierta, activo, escuchando, pensando, hablando, transcripcion, mensajes, confundida,
     muteada, vozTiqui, sonandoTiqui, soportado,
     tocar, escribir, cerrar, alternarVoz,
+    // Un cambio propuesto esperando respuesta, y cómo contestarle con botones.
+    pendiente, confirmar: aplicar, descartar,
   };
 };
 

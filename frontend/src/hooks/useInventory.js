@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { alCambiarTiqui, TIPOS_INVENTARIO } from '../utils/cambiosDeTiqui';
 import toast from 'react-hot-toast';
 import { productService } from '../api/productService';
 import { productTypeService } from '../api/productTypeService';
@@ -53,6 +54,8 @@ export const useInventory = () => {
 
   useEffect(() => {
     fetchData();
+    // Tiqui del panel cambió existencias, un precio o un producto: se recarga.
+    return alCambiarTiqui(TIPOS_INVENTARIO, () => fetchData());
   }, []);
 
   const filteredProducts = selectedCategory === 'Todos' 

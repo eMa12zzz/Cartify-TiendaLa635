@@ -4,6 +4,9 @@ import employeeModel from "../models/employee.js";
 import { getIA, generarConCobertura } from "../utils/iaClient.js";
 import { vozDisponible } from "../utils/vozTiqui.js";
 import { panoramaDelNegocio, productosDeLaCharla } from "../utils/panoramaNegocio.js";
+import {
+  CAMBIOS_ADMIN, CAMBIOS_EMPLEADO, ESTADOS_DESTINO, aplicarCambio, firmarPropuesta, leerPropuesta, proponerCambio,
+} from "../utils/cambiosTiqui.js";
 
 /*
  * ============================================================
@@ -29,9 +32,12 @@ import { panoramaDelNegocio, productosDeLaCharla } from "../utils/panoramaNegoci
  * pedidos; clientes, proveedores, promociones y costos son del administrador,
  * igual que sus pantallas (ver ProtectedRoute soloAdmin en el frontend).
  *
- * Por ahora NO cambia datos: no mueve pedidos de estado ni toca precios. Lo
- * dice y abre la pantalla donde se hace. Cambiar datos por voz necesita una
- * confirmación de por medio, y es el siguiente paso, no este.
+ * También CAMBIA cosas cuando se lo piden (mover pedidos; y el administrador,
+ * además, existencias, precios, productos, promociones y temporada), pero
+ * nunca de una: propone, la persona confirma y recién ahí se aplica, con la
+ * misma lógica que las pantallas. Ver utils/cambiosTiqui.js.
+ *
+ * La usan el panel web y, para el administrador, la app del teléfono.
  * ============================================================
  */
 
@@ -102,8 +108,35 @@ const herramientasDe = (esAdmin) => [
                 ? "Solo si abrir = pedidos (nombre del cliente o número sin #) o inventario (el producto, como en un buscador: 'leche')."
                 : "Solo si abrir = pedidos: nombre del cliente o número del pedido sin #.",
             },
+            // ── Lo que pide cambiar (se propone; la tienda pide confirmación) ──
+            cambio: {
+              type: Type.STRING,
+              enum: ["nada", ...(esAdmin ? CAMBIOS_ADMIN : CAMBIOS_EMPLEADO)],
+              description: "Solo si te PIDEN cambiar algo. 'nada' en cualquier otro caso.",
+            },
+            pedido: { type: Type.STRING, description: "Para estado_pedido: el número del pedido, sin #." },
+            estado_nuevo: {
+              type: Type.STRING,
+              enum: ESTADOS_DESTINO,
+              description: "Para estado_pedido: preparando, en_camino (a domicilio), listo (para recoger), entregado o cancelado.",
+            },
+            codigo_entrega: { type: Type.STRING, description: "Para entregar: los 4 dígitos que dijo el cliente. Vacío si no lo dijeron." },
+            ...(esAdmin
+              ? {
+                  producto: { type: Type.STRING, description: "Para existencias, precio, mostrar u ocultar: el nombre EXACTO del producto." },
+                  cantidad: { type: Type.NUMBER, description: "Para existencias: cuántas unidades (o libras)." },
+                  modo: {
+                    type: Type.STRING,
+                    enum: ["fijar", "sumar", "restar"],
+                    description: "Para existencias: fijar ('déjalo en 40'), sumar ('llegaron 20') o restar ('se dañaron 3').",
+                  },
+                  precio: { type: Type.NUMBER, description: "Para precio: el precio nuevo en dólares." },
+                  promocion: { type: Type.STRING, description: "Para activar o desactivar: el nombre EXACTO de la promoción." },
+                  temporada: { type: Type.STRING, description: "Para temporada: la clave de la lista (navidad, halloween…), automatica o ninguna." },
+                }
+              : {}),
           },
-          required: ["texto", "abrir"],
+          required: ["texto", "abrir", "cambio"],
         },
       },
     ],
@@ -139,6 +172,8 @@ const instrucciones = ({ esAdmin, nombre }) => [
   "",
   "CÓMO HABLAS:",
   "- En primera persona y tuteando. Tiqui es ELLA: si hablas de ti con adjetivos, en femenino.",
+  "- De la persona NO sabes si es hombre o mujer: nada de adjetivos con género para ella",
+  "  ('tú misma', 'estás listo'). Di 'tú', 'hazlo tú', 'si quieres'.",
   "- Lo que dices se ESCUCHA: de una a tres frases cortas (máximo 280 caracteres), sin listas,",
   "  sin emojis, sin asteriscos. Directa, como una buena jefa de turno: primero el dato, luego",
   "  lo que conviene hacer. Cálida pero sin rodeos.",
@@ -157,7 +192,7 @@ const instrucciones = ({ esAdmin, nombre }) => [
   "  la pantalla con la lista completa.",
   esAdmin
     ? ""
-    : "- No tienes datos de proveedores, clientes, promociones ni costos: son del administrador. Si preguntan, dilo con amabilidad.",
+    : "- No tienes datos de proveedores, clientes, promociones ni costos: son del administrador. Si preguntan o piden cambiarlos, di que eso lo ve o lo cambia el administrador, sin ofrecer abrir pantallas que no son suyas.",
   "",
   "QUÉ PUEDES HACER (siempre con 'responder'):",
   "- Contestar con los datos. Y además, en 'abrir', llevar a una pantalla del panel: los",
@@ -169,9 +204,18 @@ const instrucciones = ({ esAdmin, nombre }) => [
   "  ('¿cómo vamos?', '¿cuánto vendimos?', '¿cuánta leche queda?') se contesta hablando,",
   "  sin abrir nada.",
   "- Si abres algo, dilo en el texto ('te abro los pedidos por preparar').",
-  "- NO puedes cambiar datos: no mueves pedidos de estado, no cambias precios ni existencias,",
-  "  no creas nada. Si te lo piden, di que eso todavía no lo puedes hacer tú y abre la pantalla",
-  "  donde se hace, para que lo hagan en un toque.",
+  "",
+  "CAMBIAR COSAS (en 'cambio', solo si te lo PIDEN):",
+  esAdmin
+    ? "- Puedes mover pedidos de estado, cambiar existencias o precios, mostrar u ocultar productos, encender o apagar promociones y cambiar la temporada de la tienda."
+    : "- Puedes mover pedidos de estado. Lo demás (precios, existencias, promociones) es del administrador.",
+  "- Tú solo PROPONES: la tienda le pregunta a la persona si lo confirma y lo hace ella. Nunca",
+  "  digas que ya lo hiciste. Usa los nombres y números EXACTOS de las listas.",
+  "- Para entregar un pedido hacen falta los 4 dígitos que el cliente ve en su pedido: si no te",
+  "  los dijeron, pregúntalos (cambio = nada). Nunca inventes un código.",
+  "- Si no sabes qué pedido o qué producto es, pregunta en vez de adivinar (cambio = nada).",
+  "- Crear o borrar cosas, cambiar fotos o datos de clientes todavía no lo puedes hacer: dilo y",
+  "  abre la pantalla donde se hace.",
   "",
   "LA CONVERSACIÓN:",
   "- Te paso lo último que se habló. Úsalo para entender respuestas cortas ('¿y ayer?', 'ábrelo',",
@@ -222,6 +266,8 @@ const armarPregunta = ({ frase, charla, panorama, productos, pantalla }) => {
   return [
     `Ahora es ${ahora}.`,
     PANTALLAS[pantalla] ? `Está viendo la pantalla: ${PANTALLAS[pantalla]}.` : "",
+    // Desde la app del teléfono solo está Tiqui: no hay pantallas del panel que abrir.
+    pantalla === "app" ? "Te habla desde la app del teléfono, donde solo estás tú: no hay pantallas que abrir (abrir = nada) y no digas 'te abro…'." : "",
     "",
     charla.length
       ? `Lo último que se habló (de lo más viejo a lo más nuevo):\n${charla.map((m) => `${m.quien}: ${m.texto}`).join("\n")}`
@@ -235,6 +281,17 @@ const armarPregunta = ({ frase, charla, panorama, productos, pantalla }) => {
       ? ["", "PRODUCTOS DE LOS QUE SE ESTÁ HABLANDO (nombre · existencia · precio · categoría · marca):", ...productos]
       : []),
   ].filter((l, i, arr) => l !== "" || arr[i - 1] !== "").join("\n");
+};
+
+// El estado al que se quiere mover un pedido, dicho con palabras de todos los días.
+const estadoDeLaFrase = (frase) => {
+  const t = String(frase).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  if (/cancel/.test(t)) return "cancelado";
+  if (/entreg/.test(t)) return "entregado";
+  if (/camino|sali[oa]|despach|reparto/.test(t)) return "en_camino";
+  if (/listo|recoger|retir/.test(t)) return "listo";
+  if (/prepar|armando|armar/.test(t)) return "preparando";
+  return "";
 };
 
 // Lo que dice Tiqui si el modelo abrió algo pero se olvidó de hablar.
@@ -284,8 +341,37 @@ tiquiPanelController.conversar = async (req, res) => {
        * tocan, pero no se le cree a ciegas.
        */
       const args = llamada.args || {};
-      const accion = accionDe(args, esAdmin);
+      const accion = pantalla === "app" ? null : accionDe(args, esAdmin);
       let dice = String(args.texto || "").trim();
+
+      /*
+       * Pidió cambiar algo: lo que se dice lo arma el servidor, no el modelo.
+       * Si la propuesta vale, es la frase exacta de lo que se va a hacer más
+       * "¿Lo hago?" (y viaja firmada para confirmarla); si no, por qué no se
+       * puede o qué falta saber. Así el modelo nunca dice "listo, ya lo hice"
+       * por algo que todavía nadie confirmó.
+       */
+      if (args.cambio && args.cambio !== "nada") {
+        /*
+         * A veces el modelo entiende "pasa el 88D230 a listo" pero deja el
+         * estado vacío (o lo pone en el filtro de pedidos). Se completa con
+         * la frase: pedirle a la persona que lo repita sería absurdo.
+         */
+        if (args.cambio === "estado_pedido" && !ESTADOS_DESTINO.includes(args.estado_nuevo)) {
+          args.estado_nuevo = ESTADOS_DESTINO.includes(args.estado_pedidos) ? args.estado_pedidos : estadoDeLaFrase(frase);
+        }
+        const propuesta = await proponerCambio(args, { esAdmin });
+        if (!propuesta.ok) {
+          return res.status(200).json({ acciones: accion ? [accion] : [], respuesta: propuesta.mensaje, entendido: true, origen: "ia" });
+        }
+        return res.status(200).json({
+          acciones: accion ? [accion] : [],
+          respuesta: `${propuesta.resumen} ¿Lo hago?`,
+          confirmar: { token: firmarPropuesta(propuesta.cambio, req.usuario), resumen: propuesta.resumen, tipo: propuesta.cambio.tipo },
+          entendido: true,
+          origen: "ia",
+        });
+      }
 
       if (!dice) dice = fraseDeRespaldo(accion);
       if (!dice) {
@@ -297,6 +383,29 @@ tiquiPanelController.conversar = async (req, res) => {
       console.log("IA no disponible para Tiqui del panel: " + errorIA.message);
       return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "error" });
     }
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * POST /api/tiqui-panel/confirmar
+ * Body: { token } — la propuesta firmada que devolvió /api/tiqui-panel.
+ * La persona dijo que sí: se aplica (ver utils/cambiosTiqui.js). La firma dice
+ * qué y para quién; si venció o es de otra sesión, no se aplica nada.
+ */
+tiquiPanelController.confirmar = async (req, res) => {
+  try {
+    const cambio = leerPropuesta(req.body?.token, req.usuario);
+    if (!cambio) {
+      return res.status(200).json({ ok: false, respuesta: "Esa confirmación ya venció. Pídemelo otra vez y lo hago." });
+    }
+    const r = await aplicarCambio(cambio, {
+      esAdmin: req.usuario.tipo === "Admin",
+      nombre: await nombreDe(req.usuario),
+    });
+    return res.status(200).json({ ok: r.ok, respuesta: r.mensaje, tipo: cambio.tipo });
   } catch (error) {
     console.log("error " + error);
     return res.status(500).json({ message: "Error interno del servidor" });

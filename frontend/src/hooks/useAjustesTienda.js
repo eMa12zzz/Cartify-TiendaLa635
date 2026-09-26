@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { storeSettingsService } from '../api/storeSettingsService';
+import { alCambiarTiqui, TIPOS_AJUSTES } from '../utils/cambiosDeTiqui';
 import { resolverPortada } from '../utils/portada';
 import { NOMBRE_TIENDA, DIRECCION_EN_UNA_LINEA } from '../utils/tienda';
 
@@ -73,6 +74,8 @@ export const useAjustesTienda = () => {
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
+  // Tiqui del panel cambió la temporada: Personalización se pone al día.
+  useEffect(() => alCambiarTiqui(TIPOS_AJUSTES, cargar), [cargar]);
 
   /*
    * La portada resuelta: el catálogo de bloques cruzado con lo guardado, en

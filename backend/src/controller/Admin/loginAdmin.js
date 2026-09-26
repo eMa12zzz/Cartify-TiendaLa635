@@ -10,6 +10,18 @@ import { sendEmail } from "../../utils/sendMailMailjet.js";
 
 const loginAdminController = {};
 
+// La huella del código de acceso: HMAC con la clave del servidor. Sin la
+// clave no se puede ir de la huella al código.
+const huellaDelCodigo = (codigo) =>
+  crypto.createHmac("sha256", config.JWT.secret).update(String(codigo)).digest("hex");
+
+// Comparación de tiempo constante: no deja adivinar la huella por lo que tarda.
+const mismaHuella = (a, b) => {
+  const x = Buffer.from(String(a));
+  const y = Buffer.from(String(b));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+};
+
 /*
  * ============================================================
  * LOGIN DEL PERSONAL (Admin Y Empleado) CON DOBLE FACTOR (2FA)
@@ -101,10 +113,17 @@ loginAdminController.login = async (req, res) => {
 
     const cuenta = resultado.cuenta;
 
-    const code = ("" + Math.floor(100000 + Math.random() * 900000));
+    const code = ("" + crypto.randomInt(100000, 1000000));
 
+    /*
+     * En el token va la HUELLA del código, nunca el código. Un JWT está
+     * firmado pero NO cifrado: cualquiera que lo tenga lee lo que trae con un
+     * base64. Antes llevaba el código tal cual, y como el token vuelve al mismo
+     * navegador que puso la contraseña, quien supiera solo la contraseña podía
+     * sacar el código de su propia cookie y saltarse el segundo paso.
+     */
     const twofaToken = jsonwebtoken.sign(
-      { id: cuenta._id, code, rol, purpose: "personal-2fa" },
+      { id: cuenta._id, huella: huellaDelCodigo(code), rol, purpose: "personal-2fa" },
       config.JWT.secret,
       { expiresIn: "10m" }
     );
@@ -132,6 +151,12 @@ loginAdminController.login = async (req, res) => {
       needs2FA: true,
       message: "Le enviamos un código a su correo",
       email: enmascarado,
+      /*
+       * La app del teléfono no guarda cookies como el navegador: se le da el
+       * token para que lo devuelva en el paso 2. Ya no trae el código (solo su
+       * huella), así que tenerlo no sirve de nada sin el correo.
+       */
+      ...(req.body.app ? { twofaToken } : {}),
     });
   } catch (error) {
     console.log("Error login personal:", error);
@@ -142,7 +167,8 @@ loginAdminController.login = async (req, res) => {
 // ── PASO 2: verifica el código y ABRE la sesión, con el rol correcto ──
 loginAdminController.verify2FA = async (req, res) => {
   const { code } = req.body;
-  const twofaToken = req.cookies?.twofaCookie;
+  // De la cookie en el navegador; en la app, del cuerpo (ver el paso 1).
+  const twofaToken = req.cookies?.twofaCookie || req.body.twofaToken;
 
   if (!twofaToken) {
     return res.status(400).json({ message: "El código venció. Vuelva a iniciar sesión." });
@@ -161,7 +187,7 @@ loginAdminController.verify2FA = async (req, res) => {
   if (datos.purpose !== "personal-2fa") {
     return res.status(400).json({ message: "Código no válido" });
   }
-  if (String(code).trim() !== String(datos.code)) {
+  if (!datos.huella || !mismaHuella(huellaDelCodigo(String(code).trim()), datos.huella)) {
     return res.status(401).json({ message: "El código no es correcto" });
   }
 

@@ -164,8 +164,33 @@ const TiquiPanel = () => {
               </p>
             )}
 
+            {/*
+              Tiqui propuso un cambio ("¿Lo hago?"): se contesta con un toque o
+              diciendo "sí" / "no". Nada se cambia sin esto.
+            */}
+            {t.pendiente && !t.pensando && (
+              <div className="flex gap-2" role="group" aria-label="Confirmar el cambio">
+                <button
+                  type="button"
+                  onClick={t.descartar}
+                  className="px-4 h-9 rounded-full text-sm font-semibold shadow-sm transition-transform active:scale-95"
+                  style={BOTON_CHICO}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={t.confirmar}
+                  className="px-4 h-9 rounded-full text-sm font-bold shadow-sm transition-transform active:scale-95"
+                  style={{ backgroundColor: 'var(--theme-primary)', color: 'var(--theme-button-text)' }}
+                >
+                  Sí, hazlo
+                </button>
+              </div>
+            )}
+
             {/* Por dónde empezar: solo antes de la primera pregunta. */}
-            {!t.mensajes.length && !t.escuchando && (
+            {!t.mensajes.length && !t.escuchando && !t.pendiente && (
               <div className="flex flex-wrap justify-end gap-1.5">
                 {sugerencias.map((s) => (
                   <button

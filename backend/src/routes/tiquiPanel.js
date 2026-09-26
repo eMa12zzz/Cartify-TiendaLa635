@@ -59,6 +59,27 @@ router.post("/", topeCharla, tiquiPanelController.conversar);
 
 /**
  * @swagger
+ * /api/tiqui-panel/confirmar:
+ *   post:
+ *     summary: Aplica un cambio que Tiqui propuso y la persona confirmó (solo personal)
+ *     tags: [Tiqui del panel]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token: { type: string, description: "La propuesta firmada que devolvió POST /api/tiqui-panel (dura 5 minutos)." }
+ *     responses:
+ *       200:
+ *         description: "{ ok, respuesta, tipo } — si se aplicó y qué dice Tiqui."
+ */
+router.post("/confirmar", topeCharla, tiquiPanelController.confirmar);
+
+/**
+ * @swagger
  * /api/tiqui-panel/listo:
  *   get:
  *     summary: Despierta el servidor y dice si hay voz de Tiqui

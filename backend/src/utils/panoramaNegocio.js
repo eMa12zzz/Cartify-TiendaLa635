@@ -7,6 +7,7 @@ import clientModel from "../models/client.js";
 import supplierModel from "../models/supplier.js";
 import supplierMovementModel from "../models/supplierMovement.js";
 import promotionModel from "../models/promotion.js";
+import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 import { estadoCuenta } from "./cuentaProveedor.js";
 import { DIAS_CADUCA, filtroStockBajo, inicioDelDia, numero } from "../controller/dashboardController.js";
 
@@ -207,11 +208,19 @@ const armarPanorama = async ({ esAdmin }) => {
     clientModel.countDocuments({ createdAt: { $gte: hace7 } }),
     supplierModel.find({}, "name").lean(),
     supplierMovementModel.find().lean(),
-    promotionModel
-      .find({ isActive: { $ne: false }, $or: [{ endsAt: null }, { endsAt: { $gt: ahora } }] }, "title etiqueta endsAt")
-      .lean(),
+    promotionModel.find({}, "title etiqueta endsAt isActive").lean(),
     orderModel.distinct("items.productId", noCancelado),
   ]);
+
+  // Lo que se puede prender, apagar o cambiar (ver tiquiPanelController).
+  const vigente = (p) => p.isActive !== false && (!p.endsAt || new Date(p.endsAt) > ahora);
+  const promosVigentes = promos.filter(vigente);
+  const promosApagadas = promos.filter((p) => !vigente(p));
+  const [ocultos, ajustes] = await Promise.all([
+    productModel.find({ isActive: false }, "name").limit(20).lean(),
+    storeSettingsModel.findOne({ clave: CLAVE_UNICA }, "temporada").lean(),
+  ]);
+  const temporadas = temporadasDisponibles(ajustes?.temporada);
 
   const sinMovimiento = await productModel
     .find({ isActive: { $ne: false }, _id: { $nin: vendidosIds.filter(Boolean) } }, "name")
@@ -244,12 +253,50 @@ const armarPanorama = async ({ esAdmin }) => {
       `- ${c.nombre}: debe ${plata(c.deuda)}${c.montoVencido > 0 ? `, ${plata(c.montoVencido)} vencido` : ""}`
     ),
     "",
-    promos.length
-      ? `PROMOCIONES VIGENTES: ${promos.map((p) => `${p.title || p.etiqueta || "Promoción"}${p.endsAt ? ` (termina el ${fechaCorta(p.endsAt)})` : ""}`).join("; ")}.`
-      : "PROMOCIONES VIGENTES: ninguna."
+    promosVigentes.length
+      ? `PROMOCIONES VIGENTES: ${promosVigentes.map((p) => `${p.title || p.etiqueta || "Promoción"}${p.endsAt ? ` (termina el ${fechaCorta(p.endsAt)})` : ""}`).join("; ")}.`
+      : "PROMOCIONES VIGENTES: ninguna.",
+    ...(promosApagadas.length
+      ? [`PROMOCIONES APAGADAS O VENCIDAS: ${promosApagadas.map((p) => `${p.title || p.etiqueta || "Promoción"}${p.endsAt && new Date(p.endsAt) <= ahora ? ` (venció el ${fechaCorta(p.endsAt)})` : ""}`).join("; ")}.`]
+      : []),
+    "",
+    ocultos.length ? `PRODUCTOS OCULTOS (no salen en la tienda): ${ocultos.map((p) => p.name).join(", ")}.` : "PRODUCTOS OCULTOS: ninguno.",
+    "",
+    `TEMPORADA DE LA TIENDA: ${describirTemporada(ajustes?.temporada, temporadas)}. Se puede poner: ${temporadas.map((t) => `${t.nombre} (${t.clave})`).join(", ")}, automática (según la fecha) o ninguna.`
   );
 
   return lineas.join("\n");
+};
+
+/*
+ * Las temporadas que se pueden poner: las de fábrica (las mismas de
+ * frontend/src/utils/temporadas.js: si allá se agrega una, se agrega aquí) y
+ * las que el dueño creó en Personalización.
+ */
+const TEMPORADAS_DE_FABRICA = [
+  { clave: "navidad", nombre: "Navidad" },
+  { clave: "halloween", nombre: "Halloween" },
+  { clave: "independencia", nombre: "Independencia" },
+  { clave: "san-valentin", nombre: "San Valentín" },
+];
+
+export const temporadasDisponibles = (temporada) => [
+  ...TEMPORADAS_DE_FABRICA,
+  ...(temporada?.personalizados || []).map((t) => ({ clave: t.clave, nombre: t.nombre })),
+];
+
+const describirTemporada = (temporada, lista) => {
+  const modo = temporada?.modo || "automatico";
+  if (modo === "ninguno") return "ninguna (los colores de siempre)";
+  if (modo === "automatico") return "automática (la elige la fecha)";
+  return `${lista.find((t) => t.clave === temporada?.tema)?.nombre || "ninguna"}, puesta a mano`;
+};
+
+// Después de cambiar algo, el siguiente panorama se arma de cero: Tiqui no
+// puede contestar con el número de antes del cambio que ella misma hizo.
+export const olvidarPanorama = () => {
+  enMemoria.clear();
+  catalogo = { en: 0, lista: null };
 };
 
 export const panoramaDelNegocio = async ({ esAdmin }) => {

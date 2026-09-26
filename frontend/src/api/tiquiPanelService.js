@@ -23,6 +23,16 @@ export const tiquiPanelService = {
     }
   },
 
+  // La persona dijo que sí a un cambio que Tiqui propuso: se aplica (ver cambiosTiqui.js del backend).
+  confirmar: async (token) => {
+    try {
+      const { data } = await api.post('/tiqui-panel/confirmar', { token }, { enSilencio: true, timeout: 15000 });
+      return data;
+    } catch {
+      return { ok: false, respuesta: 'No me pude conectar para hacerlo. Revisa la conexión y me lo vuelves a pedir.' };
+    }
+  },
+
   // Despierta el servidor (Render lo duerme) y pregunta si hay voz de Tiqui.
   despertar: async () => {
     try {
