@@ -274,7 +274,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       // siguiera saliendo a la anterior es justo el error que se quiere evitar.
       setIndiceDireccion(lista.length - 1);
       setMostrarMapa(false);
-      avisar('Dirección guardada');
+      avisar('Dirección guardada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar la dirección', 'error');
     } finally {
@@ -298,7 +298,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       setSaldo(nuevoSaldo);
       setCodigoTarjeta('');
       if (nuevoSaldo >= totalAPagar) setMetodoPago('saldo');
-      avisar(r?.message || 'Tarjeta canjeada');
+      avisar(r?.message || 'Tarjeta canjeada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo canjear la tarjeta', 'error');
     } finally {

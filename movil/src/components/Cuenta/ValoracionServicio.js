@@ -53,7 +53,7 @@ const ValoracionServicio = ({ pedido }) => {
     try {
       await valorarServicio(pedido._id, { rating: estrellas, comment: comentario.trim() });
       setGuardado(true);
-      avisar('¡Gracias por valorar el servicio!');
+      avisar('¡Gracias por valorar el servicio!', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar su valoración', 'error');
     } finally {

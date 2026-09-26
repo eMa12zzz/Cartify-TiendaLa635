@@ -168,7 +168,7 @@ const Pagos = ({ alVolver }) => {
       const r = await canjearTarjeta(limpio, user.id);
       setSaldo(Number(r?.balance) || 0);
       setCodigoTarjeta('');
-      avisar(r?.message || 'Tarjeta canjeada');
+      avisar(r?.message || 'Tarjeta canjeada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo canjear la tarjeta', 'error');
     } finally {
@@ -256,7 +256,7 @@ const Pagos = ({ alVolver }) => {
       await actualizarMetodosPago(user.id, lista);
       setMetodos(lista);
       cerrarFormulario();
-      avisar('Tarjeta guardada');
+      avisar('Tarjeta guardada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar el método de pago', 'error');
     } finally {
@@ -271,7 +271,7 @@ const Pagos = ({ alVolver }) => {
       await actualizarMetodosPago(user.id, quedan);
       setMetodos(quedan);
       setPorQuitar(null);
-      avisar('Método de pago quitado');
+      avisar('Método de pago quitado', 'quitar');
     } catch (e) {
       avisar(e?.message || 'No se pudo quitar el método de pago', 'error');
     } finally {

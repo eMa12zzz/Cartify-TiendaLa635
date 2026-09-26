@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { ICONOS } from '../utils/iconosAviso';
 import { orderService } from '../api/orderService';
 import { distanciaMetros, minutosDeViaje, textoDeEspera, formatoDistancia } from '../utils/geo';
 
@@ -110,6 +111,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
             toast('Su pedido ya casi toca su puerta', {
               id: `ya-casi-${pedidoId}`,
               duration: 8000,
+              icon: ICONOS.reparto,
             });
             // Un tirón en el bolsillo, para quien no tenga la tienda a la vista.
             navigator.vibrate?.([120, 60, 120]);

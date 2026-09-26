@@ -181,7 +181,7 @@ const Impresiones = ({ alVolver }) => {
       fd.append('paper', papel);
 
       const r = await crearPedidoImpresion(fd);
-      avisar(r?.emailedToPrinter ? '¡Enviado a la impresora!' : '¡Pedido de impresión creado!');
+      avisar(r?.emailedToPrinter ? '¡Enviado a la impresora!' : '¡Pedido de impresión creado!', 'exito');
       setArchivo(null);
       setCopias(1);
       setColor(false);

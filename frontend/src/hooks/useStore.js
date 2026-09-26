@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from 'react';
 import toast from 'react-hot-toast';
-import { avisarAgregado } from '../utils/avisoCarrito';
+import { avisarAgregado, avisarQuitado } from '../utils/avisoCarrito';
 import { volarAlCarrito } from '../utils/volarAlCarrito';
 import { productService } from '../api/productService';
 import { promotionService } from '../api/promotionService';
@@ -545,7 +545,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
   const eliminarDelCarrito = (productoId) => {
     const fuera = carrito.find((i) => i.id === productoId);
     guardarCarrito(carrito.filter((item) => item.id !== productoId));
-    toast(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
+    avisarQuitado(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
   };
 
   const actualizarCantidad = (productoId, nuevaCantidad) => {
@@ -574,7 +574,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
   const limpiarCarrito = ({ avisar = true } = {}) => {
     const cuantos = carrito.length;
     guardarCarrito([]);
-    if (cuantos && avisar) toast(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
+    if (cuantos && avisar) avisarQuitado(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
   };
 
   // Total del carrito, aplicando el NxM (cada N unidades, se pagan M).
