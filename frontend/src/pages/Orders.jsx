@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Search, Package, CheckCircle2, ChefHat, Printer, Eye, Download,
   MapPin, Store as StoreIcon, Bike, Banknote, CreditCard, Wallet, Clock, X,
@@ -105,6 +106,21 @@ const Orders = () => {
   const { orders, loading, cambiarEstado } = useOrders();
   const [filtro, setFiltro] = useState('pagado');
   const [busqueda, setBusqueda] = useState('');
+
+  /*
+   * ?estado=… y ?buscar=… en la dirección: así llega Tiqui del panel cuando le
+   * piden "muéstrame los pedidos por preparar" o "el pedido de María". Se lee
+   * también si ya se estaba en Pedidos: la dirección cambia sin recargar, y
+   * al cambiar se ajusta el filtro en el mismo render (sin un efecto de más).
+   */
+  const [params] = useSearchParams();
+  const [dirLeida, setDirLeida] = useState(null);
+  if (params.toString() !== dirLeida) {
+    setDirLeida(params.toString());
+    const estado = params.get('estado');
+    if (estado && filtros.some((f) => f.id === estado)) setFiltro(estado);
+    if (params.has('buscar')) setBusqueda(params.get('buscar') || '');
+  }
   /*
    * El pedido que se está por entregar, esperando que el cliente dicte su
    * código. `null` = el modal está cerrado. Ver ModalCodigoEntrega.
@@ -148,7 +164,9 @@ const Orders = () => {
 
   const visibles = orders.filter((o) => {
     const nombre = (o.clientId?.fullName || '').toLowerCase();
-    const coincide = nombre.includes(busqueda.toLowerCase());
+    // Por cliente o por número de pedido (el #A1B2C3 de la tarjeta).
+    const buscado = busqueda.toLowerCase().replace(/^#/, '').trim();
+    const coincide = nombre.includes(buscado) || String(o._id).slice(-6).toLowerCase().includes(buscado);
     if (filtro === 'todos') return coincide;
     return coincide && o.status === filtro;
   });
@@ -202,7 +220,7 @@ const Orders = () => {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar por cliente..."
+            placeholder="Buscar por cliente o número..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="pl-9 pr-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:border-[#003049] w-full sm:w-56 shadow-sm"

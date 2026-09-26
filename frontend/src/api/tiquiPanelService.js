@@ -1,0 +1,41 @@
+import api from './api';
+
+/*
+ * Tiqui del panel: la asistente del equipo. Es OTRA asistente que la de la
+ * tienda (aiService.asistente) y habla con su propia ruta, que solo abre una
+ * sesión de personal. Ver backend/src/controller/tiquiPanelController.js.
+ *
+ * `enSilencio`: si falla, lo dice Tiqui en su globo, no un aviso rojo encima.
+ */
+export const tiquiPanelService = {
+  conversar: async ({ frase, historial, pantalla }) => {
+    try {
+      const { data } = await api.post('/tiqui-panel', { frase, historial, pantalla }, { enSilencio: true, timeout: 15000 });
+      return data;
+    } catch (error) {
+      return {
+        acciones: [],
+        respuesta: '',
+        entendido: false,
+        // Un 429 es el tope de preguntas por minuto: se dice distinto que una caída.
+        origen: error?.response?.status === 429 ? 'tope' : 'sin-red',
+      };
+    }
+  },
+
+  // Despierta el servidor (Render lo duerme) y pregunta si hay voz de Tiqui.
+  despertar: async () => {
+    try {
+      const { data } = await api.get('/tiqui-panel/listo', { enSilencio: true, timeout: 45000 });
+      return { voz: Boolean(data?.voz) };
+    } catch {
+      return { voz: false };
+    }
+  },
+
+  // La voz sí es la misma de la tienda: convertir texto en audio no sabe de
+  // ninguna de las dos asistentes.
+  urlVoz: (texto) => `${api.defaults.baseURL}/ai/voz?t=${encodeURIComponent(texto)}`,
+};
+
+export default tiquiPanelService;

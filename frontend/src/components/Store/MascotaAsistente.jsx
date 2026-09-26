@@ -24,6 +24,8 @@ import { useDisfrazTiqui } from '../../hooks/useDisfrazTiqui';
  *           cambio, mientras escucha, asiente.
  *   compacta: la versión chiquita de la píldora de segundo plano, sin confeti
  *           ni signo de pregunta.
+ *   sobreClaro: para un fondo claro (el panel): cuerpo navy y rasgos blancos,
+ *           como la Tiqui del modo claro. Sin él, la de siempre: blanca.
  *   vozReal: suena la voz de Tiqui (utils/vozTiqui.js). La boca deja la
  *           animación en bucle y se abre con el volumen del audio, que llega
  *           en la variable CSS --voz-tiqui: se cierra en las pausas de verdad.
@@ -69,7 +71,10 @@ const CONFETI = [
   { x: 318, y: 150, c: '#F0707F', d: '-1.1s' },
 ];
 
-const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compacta = false, vozReal = false, className = '' }) => {
+const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compacta = false, vozReal = false, sobreClaro = false, className = '' }) => {
+  // El cuerpo y los rasgos, al revés sobre fondo claro (ver sobreClaro arriba).
+  const cuerpo = sobreClaro ? NAVY : BLANCO;
+  const tinta = sobreClaro ? BLANCO : NAVY;
   const raizRef = useRef(null);
   const caraRef = useRef(null);
   const ojosRef = useRef(null);
@@ -167,34 +172,34 @@ const MascotaAsistente = ({ estado = 'reposo', animo = 'normal', latido, compact
               <path d={CORDON} fill="none" stroke={ACENTO} strokeWidth="7" strokeLinecap="round" />
             </g>
 
-            <path d={CUERPO + AGUJERO} fillRule="evenodd" fill={BLANCO} />
+            <path d={CUERPO + AGUJERO} fillRule="evenodd" fill={cuerpo} />
 
             <g ref={caraRef} className="masc-cara">
-              <path className="masc-ceja masc-ceja-i" d="M162,224 Q174,213 186,224" fill="none" stroke={NAVY} strokeWidth="6.5" strokeLinecap="round" />
-              <path className="masc-ceja masc-ceja-d" d="M214,224 Q226,213 238,224" fill="none" stroke={NAVY} strokeWidth="6.5" strokeLinecap="round" />
+              <path className="masc-ceja masc-ceja-i" d="M162,224 Q174,213 186,224" fill="none" stroke={tinta} strokeWidth="6.5" strokeLinecap="round" />
+              <path className="masc-ceja masc-ceja-d" d="M214,224 Q226,213 238,224" fill="none" stroke={tinta} strokeWidth="6.5" strokeLinecap="round" />
 
               <g className="masc-ojos-abiertos">
                 <g ref={ojosRef} className="masc-ojos">
                   <g className="masc-parpadeo">
-                    <ellipse className="masc-ojo masc-ojo-i" cx="174" cy="252" rx="10" ry="14" fill={NAVY} />
-                    <ellipse className="masc-ojo masc-ojo-d" cx="226" cy="252" rx="10" ry="14" fill={NAVY} />
+                    <ellipse className="masc-ojo masc-ojo-i" cx="174" cy="252" rx="10" ry="14" fill={tinta} />
+                    <ellipse className="masc-ojo masc-ojo-d" cx="226" cy="252" rx="10" ry="14" fill={tinta} />
                   </g>
                 </g>
               </g>
-              <path className="masc-ojos-felices" d="M162,257 Q174,239 186,257 M214,257 Q226,239 238,257" fill="none" stroke={NAVY} strokeWidth="7" strokeLinecap="round" />
+              <path className="masc-ojos-felices" d="M162,257 Q174,239 186,257 M214,257 Q226,239 238,257" fill="none" stroke={tinta} strokeWidth="7" strokeLinecap="round" />
 
-              <path className="masc-boca masc-b-sonrisa" d="M184,284 Q200,300 216,284" fill="none" stroke={NAVY} strokeWidth="7.5" strokeLinecap="round" />
-              <ellipse className="masc-boca masc-b-o" cx="200" cy="291" rx="8" ry="10" fill={NAVY} />
+              <path className="masc-boca masc-b-sonrisa" d="M184,284 Q200,300 216,284" fill="none" stroke={tinta} strokeWidth="7.5" strokeLinecap="round" />
+              <ellipse className="masc-boca masc-b-o" cx="200" cy="291" rx="8" ry="10" fill={tinta} />
               <g className="masc-boca masc-b-habla">
-                <ellipse className="masc-habla" cx="200" cy="290" rx="11" ry="12" fill={NAVY} />
+                <ellipse className="masc-habla" cx="200" cy="290" rx="11" ry="12" fill={tinta} />
               </g>
-              <path className="masc-boca masc-b-abierta" d="M182,280 Q200,316 218,280 Z" fill={NAVY} stroke={NAVY} strokeWidth="4" strokeLinejoin="round" />
-              <path className="masc-boca masc-b-lado" d="M188,292 Q204,297 214,286" fill="none" stroke={NAVY} strokeWidth="7" strokeLinecap="round" />
-              <path className="masc-boca masc-b-ondulada" d="M180,292 q5,-7 10,0 q5,7 10,0 q5,-7 10,0 q5,7 10,0" fill="none" stroke={NAVY} strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path className="masc-boca masc-b-abierta" d="M182,280 Q200,316 218,280 Z" fill={tinta} stroke={tinta} strokeWidth="4" strokeLinejoin="round" />
+              <path className="masc-boca masc-b-lado" d="M188,292 Q204,297 214,286" fill="none" stroke={tinta} strokeWidth="7" strokeLinecap="round" />
+              <path className="masc-boca masc-b-ondulada" d="M180,292 q5,-7 10,0 q5,7 10,0 q5,-7 10,0 q5,7 10,0" fill="none" stroke={tinta} strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
             </g>
 
             {/* Lo de la temporada, dentro de la cabeza: asiente y salta con ella. */}
-            <DisfrazTiqui disfraz={disfraz} contorno={NAVY} />
+            <DisfrazTiqui disfraz={disfraz} contorno={tinta} />
           </g>
         </g>
 
