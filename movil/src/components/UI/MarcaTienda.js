@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { useAjustesTienda } from '../../hooks/useAjustesTienda';
 import { useColores } from '../../context/ModoContext';
+import { FUENTE_MARCA } from '../../theme/tipografia';
 
 const MarcaTienda = ({ tamano = 20, alto, color: colorPedido, centrado = false }) => {
   // Casi negro en claro, casi blanco en oscuro — el color del texto principal.
@@ -47,11 +48,11 @@ const MarcaTienda = ({ tamano = 20, alto, color: colorPedido, centrado = false }
 
   return (
     <View style={centrado && estilos.centrado}>
-      <Text style={[estilos.linea, { fontSize: tamano, lineHeight: tamano * 1.2, color }, centrado && estilos.textoCentrado]}>
+      <Text style={[estilos.linea, { fontSize: tamano, lineHeight: tamano * 1.12, color }, centrado && estilos.textoCentrado]}>
         {ajustes.nombreLinea1}
       </Text>
       {!!ajustes.nombreLinea2 && (
-        <Text style={[estilos.linea, { fontSize: tamano, lineHeight: tamano * 1.2, color }, centrado && estilos.textoCentrado]}>
+        <Text style={[estilos.linea, { fontSize: tamano, lineHeight: tamano * 1.12, color }, centrado && estilos.textoCentrado]}>
           {ajustes.nombreLinea2}
         </Text>
       )}
@@ -60,9 +61,11 @@ const MarcaTienda = ({ tamano = 20, alto, color: colorPedido, centrado = false }
 };
 
 const estilos = StyleSheet.create({
+  // La misma letra y el mismo apretado que la web (MarcaTienda.jsx). Ver theme/tipografia.js.
   linea: {
-    fontWeight: '800',
+    fontFamily: FUENTE_MARCA,
     letterSpacing: -0.5,
+    includeFontPadding: false,
   },
   centrado: {
     alignItems: 'center',

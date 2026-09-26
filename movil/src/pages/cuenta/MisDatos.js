@@ -34,7 +34,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CargandoMascota, EsperaMascota } from '../../components/Tiqui/Mascota';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 // Los mismos iconos que el registro (y que la web): fecha `Calendar`, DUI `Hash`.
@@ -182,7 +183,7 @@ const MisDatos = ({ alVolver }) => {
         type: elegida.mimeType || 'image/jpeg',
       });
       setFoto(respuesta?.client?.image || elegida.uri);
-      avisar('Foto de perfil actualizada');
+      avisar('Foto de perfil actualizada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo subir la foto', 'error');
     } finally {
@@ -222,7 +223,7 @@ const MisDatos = ({ alVolver }) => {
        * de la tienda aunque acabe de guardarlo aquí.
        */
       actualizarUsuario({ dui });
-      avisar('Sus datos quedaron guardados');
+      avisar('Sus datos quedaron guardados', 'exito');
       alVolver?.();
     } catch (e) {
       avisar(e?.message || 'No se pudieron guardar sus datos', 'error');
@@ -240,7 +241,7 @@ const MisDatos = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tu perfil…" />
         </View>
       ) : (
         <ScrollView
@@ -266,7 +267,7 @@ const MisDatos = ({ alVolver }) => {
 
               <View style={[estilos.botonCamara, { backgroundColor: colores.marca }]}>
                 {subiendoFoto ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <EsperaMascota alto={22} sobre="color" />
                 ) : (
                   <Camera size={15} color="#FFFFFF" strokeWidth={2.2} />
                 )}

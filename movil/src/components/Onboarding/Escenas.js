@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { FUENTE_MARCA } from '../../theme/tipografia';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
@@ -585,7 +586,7 @@ const estilos = StyleSheet.create({
     ...sombra,
   },
   cabTienda: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 34 },
-  nombreTienda: { fontSize: 13, fontWeight: '900', color: TINTA, letterSpacing: -0.3 },
+  nombreTienda: { fontSize: 13, fontFamily: FUENTE_MARCA, color: TINTA, letterSpacing: -0.3 },
   botonCarrito: {
     width: 32,
     height: 32,

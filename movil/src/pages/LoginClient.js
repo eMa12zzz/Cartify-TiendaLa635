@@ -33,7 +33,6 @@
 
 import { useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -43,6 +42,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import { EsperaMascota } from '../components/Tiqui/Mascota';
+import TiquiColgada from '../components/Tiqui/TiquiColgada';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
@@ -54,7 +55,7 @@ import { Lock, Mail } from 'lucide-react-native';
 import { googleLoginDB, loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
-import { useColores, useEstilos } from '../context/ModoContext';
+import { useEstilos } from '../context/ModoContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 import { URL_WEB_LEGAL } from '../utils/legales';
 
@@ -63,7 +64,6 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   // La paleta de la temporada: el botón y los enlaces se pintan con ella, igual
   // que la tienda. Fuera de temporada es el café de la marca de siempre.
   const { colores } = useTema();
-  const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const [valores, setValores] = useState({ email: '', password: '' });
   const [errores, setErrores] = useState({});
@@ -71,6 +71,8 @@ const LoginClient = ({ irARegistro, irATienda }) => {
   const [recordarme, setRecordarme] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [cargandoGoogle, setCargandoGoogle] = useState(false);
+  // Con la contraseña en foco, Tiqui se tapa los ojos: no está mirando.
+  const [enContrasena, setEnContrasena] = useState(false);
   // Del correo, "Siguiente" en el teclado salta aquí. Ver CampoTexto.
   const campoContrasena = useRef(null);
 
@@ -183,6 +185,18 @@ const LoginClient = ({ irARegistro, irATienda }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/*
+            Tiqui colgando arriba del formulario, como en el inicio de sesión
+            de la web: se tapa los ojos en la contraseña, se pone contenta
+            mientras entra y pensativa si algo no cuadró.
+          */}
+          <View style={estilos.tiqui} pointerEvents="none">
+            <TiquiColgada
+              cara={cargando || cargandoGoogle ? 'feliz' : avisoServidor ? 'piensa' : enContrasena ? 'tapada' : 'normal'}
+              alto={170}
+              largo={70}
+            />
+          </View>
           <Text style={estilos.titulo}>Bienvenido de nuevo</Text>
           <Text style={estilos.subtitulo}>Inicie sesión para seguir con su compra.</Text>
 
@@ -212,6 +226,8 @@ const LoginClient = ({ irARegistro, irATienda }) => {
             autoComplete="password"
             textContentType="password"
             ref={campoContrasena}
+            onFocus={() => setEnContrasena(true)}
+            onBlur={() => setEnContrasena(false)}
             alEnviar={enviar}
             accessibilityLabel="Contraseña"
             redondo
@@ -266,7 +282,10 @@ const LoginClient = ({ irARegistro, irATienda }) => {
             ]}
           >
             {cargandoGoogle ? (
-              <ActivityIndicator size="small" color={COLORES.textoTenue} />
+              <>
+                <EsperaMascota alto={22} />
+                <Text style={estilos.botonGoogleTexto}>Entrando…</Text>
+              </>
             ) : (
               <>
                 <LogoGoogle size={18} />
@@ -311,11 +330,20 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     fontWeight: '800',
     color: COLORES.tituloFuerte,
     marginBottom: 6,
+    textAlign: 'center',
   },
   subtitulo: {
     fontSize: 14,
     color: COLORES.subtitulo,
     marginBottom: 26,
+    textAlign: 'center',
+  },
+  // Cuelga del borde de arriba, centrada: el margen negativo se come el
+  // aire de arriba del cuerpo para que el broche quede pegado a la barra.
+  tiqui: {
+    alignItems: 'center',
+    marginTop: -28,
+    marginBottom: 10,
   },
   fila: {
     flexDirection: 'row',

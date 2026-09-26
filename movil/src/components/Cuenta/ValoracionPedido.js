@@ -97,7 +97,7 @@ const ValoracionPedido = ({ pedido }) => {
         )
       );
       setEnviado(true);
-      avisar('¡Gracias por calificar su pedido!');
+      avisar('¡Gracias por calificar su pedido!', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar su valoración', 'error');
     } finally {

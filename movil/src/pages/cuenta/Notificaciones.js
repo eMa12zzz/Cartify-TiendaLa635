@@ -33,7 +33,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
@@ -50,7 +51,11 @@ const POR_DEFECTO = { promociones: true, nuevosProductos: true, pedidoCerca: fal
 const OPCIONES = [
   { clave: 'promociones', titulo: 'Promociones nuevas', sub: 'Avíseme de ofertas y descuentos.' },
   { clave: 'nuevosProductos', titulo: 'Productos nuevos', sub: 'Avíseme cuando lleguen productos.' },
-  { clave: 'pedidoCerca', titulo: 'Mi pedido va en camino', sub: 'Avíseme cuando mi pedido esté cerca.' },
+  /*
+   * Los avisos del pedido en la app (preparando, en camino, listo, entregado)
+   * llegan siempre: son de servicio. Este interruptor es solo el correo.
+   */
+  { clave: 'pedidoCerca', titulo: 'Correo cuando mi pedido sale', sub: 'En la app los avisos de su pedido llegan siempre; esto suma un correo.' },
 ];
 
 // Mismo tiempo que --dur-press en la web: es el mismo interruptor, misma duración.
@@ -231,7 +236,7 @@ const Notificaciones = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus preferencias…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>

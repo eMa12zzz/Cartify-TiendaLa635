@@ -108,6 +108,8 @@ const estadoInfo = {
    * sobre el mismo pedido, a diez centimetros una de la otra.
    */
   en_camino:  { label: 'En camino',  color: 'var(--info-vivo)', bg: 'rgba(29,78,216,.14)' },
+  // Solo retiro en la tienda. Con los tokens de la marca, que ya se leen en claro y en oscuro.
+  listo:      { label: 'Listo para recoger', color: 'var(--marca-texto)', bg: 'var(--marca-100)' },
   entregado:  { label: 'Entregado',  color: 'var(--exito-vivo)', bg: 'rgba(22,163,74,.14)' },
   cancelado:  { label: 'Cancelado',  color: 'var(--peligro)', bg: 'rgba(220,38,38,.12)' },
 };

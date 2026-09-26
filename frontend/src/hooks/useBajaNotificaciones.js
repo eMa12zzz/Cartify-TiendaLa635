@@ -26,7 +26,7 @@ import { clientService } from '../api/clientService';
 const NOMBRES = {
   promociones: 'las promociones',
   nuevosProductos: 'los productos nuevos',
-  pedidoCerca: 'los avisos de su pedido',
+  pedidoCerca: 'el correo de su pedido en camino',
 };
 
 export const useBajaNotificaciones = () => {

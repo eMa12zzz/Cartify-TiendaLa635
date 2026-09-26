@@ -31,7 +31,7 @@ import { identificarComprador } from "../middlewares/identificarComprador.js";
  *         required: false
  *         schema:
  *           type: string
- *           enum: [pagado, preparando, entregado, cancelado]
+ *           enum: [pagado, preparando, en_camino, listo, entregado, cancelado]
  *         description: Filtra por estado del pedido.
  *     responses:
  *       200:

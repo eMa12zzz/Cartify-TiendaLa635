@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Tienda La 635",
+    "name": "Tienda la 635",
     "slug": "movil",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -51,12 +51,20 @@
           "speechRecognitionPermission": "Se usa para entender lo que dice y armar su pedido."
         }
       ],
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/poppins/800ExtraBold/Poppins_800ExtraBold.ttf"
+          ]
+        }
+      ],
       "@react-native-google-signin/google-signin",
       [
         "expo-notifications",
         {
-          "color": "#012D45",
+          "icon": "./assets/notificacion.png",
+          "color": "#003049",
           "defaultChannel": "avisos"
         }
       ],

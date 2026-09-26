@@ -28,8 +28,18 @@
  */
 
 import { peticion } from './api';
+import { esPedidoSimulado, pedidoSimulado, repartidorSimulado, simulacionActiva } from '../utils/simulacionPedido';
 
-export const getPedidosDeCliente = (clienteId) => peticion(`/order/client/${clienteId}`);
+/*
+ * En desarrollo, con el simulador encendido (utils/simulacionPedido.js), la
+ * lista lleva adelante el pedido de prueba. Nada de eso existe en el servidor.
+ */
+export const getPedidosDeCliente = async (clienteId) => {
+  const reales = await peticion(`/order/client/${clienteId}`);
+  if (!__DEV__ || !simulacionActiva()) return reales;
+  const lista = Array.isArray(reales) ? reales : [];
+  return [pedidoSimulado(), ...lista];
+};
 
 export const crearPedido = (datos) => peticion('/order', { metodo: 'POST', cuerpo: datos });
 
@@ -49,4 +59,8 @@ export const getTiempoPorZona = (lat, lng) =>
  * en curso — ver ese hook para el porqué del "cada pocos segundos" en vez de
  * un socket.
  */
-export const getCourierPosition = (pedidoId) => peticion(`/order/${pedidoId}/courier`);
+// El repartidor del pedido de prueba sale del simulador, no del servidor.
+export const getCourierPosition = (pedidoId) =>
+  __DEV__ && esPedidoSimulado(pedidoId)
+    ? Promise.resolve(repartidorSimulado())
+    : peticion(`/order/${pedidoId}/courier`);

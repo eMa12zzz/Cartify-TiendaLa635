@@ -71,7 +71,7 @@ const BurbujaPedido = () => {
    */
   const enCurso = user?.type === 'client'
     ? (orders || [])
-        .filter((o) => ['pagado', 'preparando', 'en_camino'].includes(o.status))
+        .filter((o) => ['pagado', 'preparando', 'en_camino', 'listo'].includes(o.status))
         .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0]
     : null;
 

@@ -20,13 +20,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { MapPin, Signpost, Trash2 } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
@@ -102,7 +102,7 @@ const Direcciones = ({ alVolver }) => {
       await actualizarDirecciones(user.id, lista);
       setDirecciones(lista);
       setMostrarMapa(false);
-      avisar('Dirección guardada');
+      avisar('Dirección guardada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar la dirección', 'error');
     } finally {
@@ -117,7 +117,7 @@ const Direcciones = ({ alVolver }) => {
       await actualizarDirecciones(user.id, quedan);
       setDirecciones(quedan);
       setPorQuitar(null);
-      avisar('Dirección quitada');
+      avisar('Dirección quitada', 'quitar');
     } catch (e) {
       // No se toca la lista: si el servidor no la borró, sigue estando.
       avisar(e?.message || 'No se pudo quitar la dirección', 'error');
@@ -132,7 +132,7 @@ const Direcciones = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus direcciones…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>

@@ -45,7 +45,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -53,6 +52,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { Banknote, CircleAlert, CreditCard, Gift, Lock, Trash2 } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
@@ -168,7 +168,7 @@ const Pagos = ({ alVolver }) => {
       const r = await canjearTarjeta(limpio, user.id);
       setSaldo(Number(r?.balance) || 0);
       setCodigoTarjeta('');
-      avisar(r?.message || 'Tarjeta canjeada');
+      avisar(r?.message || 'Tarjeta canjeada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo canjear la tarjeta', 'error');
     } finally {
@@ -256,7 +256,7 @@ const Pagos = ({ alVolver }) => {
       await actualizarMetodosPago(user.id, lista);
       setMetodos(lista);
       cerrarFormulario();
-      avisar('Tarjeta guardada');
+      avisar('Tarjeta guardada', 'exito');
     } catch (e) {
       avisar(e?.message || 'No se pudo guardar el método de pago', 'error');
     } finally {
@@ -271,7 +271,7 @@ const Pagos = ({ alVolver }) => {
       await actualizarMetodosPago(user.id, quedan);
       setMetodos(quedan);
       setPorQuitar(null);
-      avisar('Método de pago quitado');
+      avisar('Método de pago quitado', 'quitar');
     } catch (e) {
       avisar(e?.message || 'No se pudo quitar el método de pago', 'error');
     } finally {
@@ -285,7 +285,7 @@ const Pagos = ({ alVolver }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus métodos de pago…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>

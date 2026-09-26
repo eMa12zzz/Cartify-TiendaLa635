@@ -26,17 +26,22 @@ const CURVA_TRASLADO = Easing.bezier(0.45, 0, 0.55, 1);
 // el valor pasa brevemente por debajo de 0 antes de avanzar — eso dibuja el arco.
 const CURVA_VUELO = Easing.bezier(0.6, -0.4, 0.74, 0.05);
 
+/*
+ * Dos relojes y no uno con dos curvas: el animador nativo no acepta `easing`
+ * dentro de `interpolate` (en desarrollo lo avisaba en rojo con cada "+"), así
+ * que la curva va en cada `timing` y los dos corren a la vez. `pareja` mueve
+ * de lado; `arco` hace todo lo demás, y como su curva baja un poco de 0 antes
+ * de avanzar, la foto sube un poco antes de caer hacia el carrito.
+ */
 const Vuelo = ({ vuelo }) => {
   const { id, uri, origen, destino } = vuelo;
-  const raw = useRef(new Animated.Value(0)).current;
+  const pareja = useRef(new Animated.Value(0)).current;
+  const arco = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const animacion = Animated.timing(raw, {
-      toValue: 1,
-      duration: DURACION_VUELO,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    });
+    const reloj = (valor, easing) =>
+      Animated.timing(valor, { toValue: 1, duration: DURACION_VUELO, easing, useNativeDriver: true });
+    const animacion = Animated.parallel([reloj(pareja, CURVA_TRASLADO), reloj(arco, CURVA_VUELO)]);
     animacion.start(({ finished }) => {
       if (finished) terminarVuelo(id);
     });
@@ -53,11 +58,11 @@ const Vuelo = ({ vuelo }) => {
   const dx = destino.x + destino.width / 2 - (origen.x + origen.width / 2);
   const dy = destino.y + destino.height / 2 - (origen.y + origen.height / 2);
 
-  const trasladoX = raw.interpolate({ inputRange: [0, 1], outputRange: [0, dx], easing: CURVA_TRASLADO });
-  const trasladoY = raw.interpolate({ inputRange: [0, 1], outputRange: [0, dy], easing: CURVA_VUELO });
-  const escala = raw.interpolate({ inputRange: [0, 1], outputRange: [1, 0.12], easing: CURVA_VUELO });
-  const rotacion = raw.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '25deg'], easing: CURVA_VUELO });
-  const opacidad = raw.interpolate({ inputRange: [0, 1], outputRange: [1, 0.55], easing: CURVA_VUELO });
+  const trasladoX = pareja.interpolate({ inputRange: [0, 1], outputRange: [0, dx] });
+  const trasladoY = arco.interpolate({ inputRange: [0, 1], outputRange: [0, dy] });
+  const escala = arco.interpolate({ inputRange: [0, 1], outputRange: [1, 0.12] });
+  const rotacion = arco.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '25deg'] });
+  const opacidad = arco.interpolate({ inputRange: [0, 1], outputRange: [1, 0.55] });
 
   return (
     <Animated.View

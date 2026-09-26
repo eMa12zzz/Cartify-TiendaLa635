@@ -69,7 +69,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
           const faltan = distanciaMetros(courier, data.destino);
           if (faltan != null && faltan <= YA_CASI_M) {
             avisadoRef.current = true;
-            avisar('Su pedido ya casi toca su puerta');
+            avisar('Su pedido ya casi toca su puerta', 'reparto');
             Vibration.vibrate([120, 60, 120]);
           }
         }

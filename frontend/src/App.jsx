@@ -11,6 +11,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ModoProvider } from './context/ModoContext';
 import { useTemporada } from './hooks/useTemporada';
 import { useEstiloAvisos } from './hooks/useEstiloAvisos';
+import PildoraAviso from './components/UI/PildoraAviso';
 import DecoracionTemporada from './components/Store/DecoracionTemporada';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import LimiteDeError from './components/UI/LimiteDeError';
@@ -99,16 +100,25 @@ const PinturaDeTemporada = () => {
 };
 
 /*
- * El Toaster es UNO SOLO para toda la app —panel y tienda por igual—, pero no
- * se pinta igual en las dos mitades: la tienda va con el color de marca y el
- * panel con la paleta de accesibilidad que alguien eligió porque la necesita.
+ * El Toaster es UNO SOLO para toda la app —panel y tienda por igual— y cada
+ * aviso sale como la píldora de "agregado al carrito", abajo al centro (ver
+ * components/UI/PildoraAviso.jsx). No se pinta igual en las dos mitades: la
+ * tienda va con la tinta de la marca y el panel con la paleta de
+ * accesibilidad que alguien eligió porque la necesita.
  *
  * Es un componente y no un <Toaster> suelto porque para saber en cuál de las
  * dos está parada la persona hay que mirar la ruta, y eso solo se puede hacer
  * DENTRO del router. Lo que decide el color vive en useEstiloAvisos; aquí solo
  * se monta.
  */
-const Avisos = () => <Toaster position="top-right" gutter={10} toastOptions={useEstiloAvisos()} />;
+const Avisos = () => {
+  const { colores, opciones } = useEstiloAvisos();
+  return (
+    <Toaster position="bottom-center" gutter={10} toastOptions={opciones} containerStyle={colores}>
+      {(t) => <PildoraAviso t={t} />}
+    </Toaster>
+  );
+};
 
 
 /*

@@ -9,11 +9,11 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HelpCircle, Mic, Volume2, VolumeX } from 'lucide-react-native';
-import { useColores, useEstilos, useModo } from '../context/ModoContext';
-import Tiqui from '../components/Tiqui/Tiqui';
+import { HelpCircle, Volume2, VolumeX } from 'lucide-react-native';
+import { useColores, useEstilos } from '../context/ModoContext';
+import TiquiColgada from '../components/Tiqui/TiquiColgada';
 import { LLAVE_TIQUI_PRESENTADO } from './ConoceATiqui';
 import { leer } from '../utils/almacen';
 import { ALTURA_ESTADO } from '../theme/pantalla';
@@ -41,9 +41,7 @@ const Asistente = () => {
     mostrarProducto: setProductoAbierto,
   });
 
-  const pulso = useRef(new Animated.Value(1)).current;
   const chatRef = useRef(null);
-  const { oscuro } = useModo();
 
   /*
    * La primera vez que se entra aquí, Tiqui se presenta sola (ConoceATiqui).
@@ -58,43 +56,33 @@ const Asistente = () => {
     return () => { vivo = false; };
   }, []);
 
-  // El anillo late mientras escucha; se para en cuanto deja de hacerlo.
-  useEffect(() => {
-    if (!escuchando) {
-      pulso.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulso, { toValue: 1.12, duration: 550, useNativeDriver: true }),
-        Animated.timing(pulso, { toValue: 1, duration: 550, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [escuchando, pulso]);
-
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollToEnd({ animated: true });
   }, [historial]);
 
   const items = carrito.reduce((a, i) => a + i.cantidad, 0);
 
+  /*
+   * Tiqui ES el botón. Ya no hay micrófono: se le habla a ella. Mientras nadie
+   * le habla, duerme colgada de su cordón; tocarla la despierta y se pone a
+   * escuchar. Cuando la charla se apaga (nadie contestó o se detuvo), vuelve
+   * a dormirse, y su última respuesta se queda en el chat.
+   */
+  const dormida = !activo && !pensando && !hablando;
   const estadoTexto = pensando
     ? 'Pensando…'
-    : hablando ? 'Toca para interrumpir'
-    : !activo ? 'Toca para empezar'
-    : escuchando ? 'Escuchando…' : 'Un momento…';
-  const micColor = escuchando ? COLORES.error : activo ? '#D97706' : colores.marca;
+    : hablando ? 'Tócala para interrumpirla'
+    : dormida ? 'Despierta a Tiqui para empezar a hablar con ella'
+    : escuchando ? 'Te escucho…' : 'Un momento…';
+  const etiquetaToque = hablando
+    ? 'Interrumpir a Tiqui y hablar'
+    : dormida ? 'Despertar a Tiqui para hablar con ella'
+    : 'Dormir a Tiqui y dejar de escuchar';
 
-  const alTocarMic = hablando ? interrumpir : activo ? detener : iniciar;
+  const alTocarTiqui = hablando ? interrumpir : activo ? detener : iniciar;
 
-  // La cara de Tiqui dice lo mismo que el texto de estado, sin tener que leerlo.
-  const pose = escuchando ? 'escucha' : pensando ? 'piensa' : hablando ? 'habla' : historial.length === 0 ? 'saludo' : 'normal';
-  // Como en la web: navy con rasgos blancos, y al revés en modo oscuro.
-  const coloresTiqui = oscuro
-    ? { cuerpo: '#FFFFFF', rasgo: '#003049' }
-    : { cuerpo: '#003049', rasgo: '#FFFFFF' };
+  // Su cara dice lo mismo que el texto de estado, sin tener que leerlo.
+  const cara = dormida ? 'dormida' : escuchando ? 'escucha' : pensando ? 'piensa' : hablando ? 'habla' : 'normal';
 
   return (
     <View style={estilos.pantalla}>
@@ -125,24 +113,26 @@ const Asistente = () => {
       </View>
 
       <View style={estilos.cuerpo}>
-        {/* Tiqui, arriba del micrófono: a quien se le habla. Más chico cuando ya hay charla. */}
-        <Tiqui
-          pose={pose}
-          extra={escuchando ? 'ondas' : null}
-          alto={historial.length === 0 ? 150 : 96}
-          cuerpo={coloresTiqui.cuerpo}
-          rasgo={coloresTiqui.rasgo}
-          cordon="#009AEB"
-          acento="#009AEB"
-        />
+        {/*
+          Tiqui colgando del borde de arriba, agarrada con su broche. Más
+          chica cuando ya hay charla, para dejarle lugar al chat.
+        */}
+        <Pressable
+          onPress={alTocarTiqui}
+          accessibilityRole="button"
+          accessibilityLabel={etiquetaToque}
+          hitSlop={12}
+          style={({ pressed }) => [estilos.tiqui, pressed && { opacity: 0.85 }]}
+        >
+          <TiquiColgada cara={cara} alto={historial.length === 0 ? 250 : 170} largo={historial.length === 0 ? 170 : 110} />
+        </Pressable>
 
-        <Animated.View style={[estilos.circulo, { backgroundColor: micColor, transform: [{ scale: pulso }] }]}>
-          <TouchableOpacity style={estilos.tocable} onPress={alTocarMic} accessibilityRole="button" accessibilityLabel={estadoTexto}>
-            <Mic size={44} color="#fff" strokeWidth={1.8} />
-          </TouchableOpacity>
-        </Animated.View>
-
-        <Text style={[estilos.estado, { color: escuchando ? COLORES.error : colores.marca }]}>{estadoTexto}</Text>
+        <Text
+          style={[estilos.estado, { color: dormida ? COLORES.tituloFuerte : colores.marcaTexto }]}
+          accessibilityLiveRegion="polite"
+        >
+          {estadoTexto}
+        </Text>
 
         {escuchando && transcripcion ? (
           <Text style={estilos.transcripcion} numberOfLines={2}>…{transcripcion}</Text>
@@ -150,7 +140,7 @@ const Asistente = () => {
 
         {historial.length === 0 ? (
           <Text style={estilos.bajada}>
-            Soy Tiqui. Toca el micrófono y dime, por ejemplo: "quiero dos manzanas y una leche" o "¿qué ofertas hay?".
+            Tócala y dile, por ejemplo: "quiero dos manzanas y una leche" o "¿qué ofertas hay?".
           </Text>
         ) : (
           <ScrollView ref={chatRef} style={estilos.chat} contentContainerStyle={estilos.chatContenido}>
@@ -244,27 +234,19 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Sin aire arriba: Tiqui cuelga pegada al borde de la barra.
   cuerpo: {
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 28,
-    paddingTop: 16,
   },
-  circulo: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    marginTop: 8,
-    marginBottom: 14,
-  },
-  tocable: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tiqui: {
+    marginBottom: 6,
   },
   estado: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
+    textAlign: 'center',
     marginBottom: 10,
   },
   transcripcion: {

@@ -35,7 +35,7 @@ const SeguimientoCompacto = ({ pedido }) => {
   const { palette } = useTheme();
   const c = palette.colors;
 
-  const enCurso = ['pagado', 'preparando', 'en_camino'].includes(pedido?.status);
+  const enCurso = ['pagado', 'preparando', 'en_camino', 'listo'].includes(pedido?.status);
 
   /*
    * El hook va SIEMPRE, aunque el pedido esté entregado: llamarlo dentro de un

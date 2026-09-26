@@ -38,13 +38,6 @@ const ANCHO_PUNTO = 7;
 const ANCHO_PILDORA = 22;
 
 /*
- * El azul de la etiqueta chica ("1 DE 6 · CONOCE A TIQUI"). El azul de texto
- * del video (#0088D1) da 3,5:1 sobre este fondo: alcanza para el titular,
- * que es grande, pero la letra chica pide 4,5:1. Este da 5,3:1.
- */
-const AZUL_LETRA_CHICA = '#00659E';
-
-/*
  * Lo que cuenta Tiqui. Solo promete lo que la app de verdad hace: pedir por
  * voz, ofertas y recomendaciones, avisar lo que no hay (nunca agrega algo que
  * no se pidió), llevar a pagar y seguir el pedido en el mapa.
@@ -52,45 +45,39 @@ const AZUL_LETRA_CHICA = '#00659E';
 const DIAPOSITIVAS = [
   {
     clave: 'hola',
-    etiqueta: 'CONOCE A TIQUI',
     tituloPrefijo: '¡Hola! Soy ',
     tituloAcento: 'Tiqui',
     texto: 'Soy la etiqueta de precio de la tienda, pero con cara. Vivo en la app y te ayudo a comprar sin escribir nada.',
   },
   {
     clave: 'voz',
-    etiqueta: 'PÍDEME HABLANDO',
     tituloPrefijo: 'Háblame y armo\n',
     tituloAcento: 'tu pedido',
-    texto: 'Toca el micrófono y dime, por ejemplo: "quiero dos manzanas y una leche". Yo lo pongo en tu carrito.',
+    texto: 'Tócame para despertarme y dime, por ejemplo: "quiero dos manzanas y una leche". Yo lo pongo en tu carrito.',
   },
   {
     clave: 'ofertas',
-    etiqueta: 'OFERTAS Y CONSEJOS',
     tituloPrefijo: 'Te cuento lo que\n',
     tituloAcento: 'está en oferta',
     texto: 'Pregúntame qué hay en promoción o qué te recomiendo para el desayuno. Me conozco toda la tienda.',
   },
   {
     clave: 'honesto',
-    etiqueta: 'SIN SORPRESAS',
     tituloPrefijo: 'Si no lo tengo,\n',
     tituloAcento: 'te lo digo',
     texto: 'Nunca meto en tu carrito algo que no pediste. Si se acabó o no lo vendemos, te aviso y te ofrezco lo más parecido.',
   },
   {
     clave: 'pedido',
-    etiqueta: 'HASTA TU PUERTA',
     tituloPrefijo: 'Te llevo a pagar\n',
     tituloAcento: 'en un momento',
     texto: 'Cuando me dices que sí, te abro el pago. Después puedes seguir tu pedido en el mapa hasta que llegue.',
   },
   {
     clave: 'empezar',
-    etiqueta: '¿EMPEZAMOS?',
     tituloPrefijo: 'Me encuentras en\n',
     tituloAcento: 'Asistente',
-    texto: 'Toca el micrófono cuando quieras. Si hay ruido o no te entendí, te pido que lo repitas: no pasa nada.',
+    texto: 'Tócame cuando quieras y me despierto. Si hay ruido o no te entendí, te pido que lo repitas: no pasa nada.',
   },
 ];
 
@@ -201,9 +188,17 @@ const ConoceATiqui = ({ alTerminar }) => {
           return (
             <View key={d.clave} style={{ width: ancho, height: alto }}>
               <View style={[estilos.cuerpo, { paddingTop: ALTURA_ESTADO + 64, paddingBottom: Math.max(insets.bottom, 16) }]}>
-                {/* El titular es lo primero que lee el lector de pantalla: "¡Hola! Soy Tiqui". */}
-                <Animated.View style={[estilos.bloqueTitulo, animTitulo]} accessible accessibilityRole="header">
-                  <Text style={estilos.etiqueta}>{`${i + 1} DE ${DIAPOSITIVAS.length} · ${d.etiqueta}`}</Text>
+                {/*
+                  El titular es lo primero que lee el lector de pantalla. En
+                  pantalla ya no va el "1 DE 6": lo cuentan los puntos de abajo,
+                  y para el lector se dice aquí.
+                */}
+                <Animated.View
+                  style={[estilos.bloqueTitulo, animTitulo]}
+                  accessible
+                  accessibilityRole="header"
+                  accessibilityLabel={`${(d.tituloPrefijo + d.tituloAcento).replace(/\s+/g, ' ')}. ${i + 1} de ${DIAPOSITIVAS.length}`}
+                >
                   <Text style={estilos.titulo}>
                     {d.tituloPrefijo}
                     <Text style={estilos.tituloAcento}>{d.tituloAcento}</Text>
@@ -279,14 +274,7 @@ const estilos = StyleSheet.create({
   scroll: { flex: 1 },
   cuerpo: { flex: 1, paddingHorizontal: 24 },
   bloqueTitulo: { alignItems: 'center' },
-  etiqueta: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: AZUL_LETRA_CHICA,
-    letterSpacing: 1.3,
-  },
   titulo: {
-    marginTop: 10,
     fontSize: 29,
     lineHeight: 34,
     fontWeight: '900',

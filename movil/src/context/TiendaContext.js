@@ -138,6 +138,24 @@ export const TiendaProvider = ({ children }) => {
     traerCatalogo();
   }, [traerCatalogo]);
 
+  /*
+   * Volver a pedir el catálogo SIN pasar por "cargando": es el de jalar la
+   * lista para recargar. Con traerCatalogo la tienda entera se cambiaba por
+   * la pantalla de espera en medio del gesto. Devuelve si salió bien, para
+   * que quien jaló sepa si decir "listo" o "no se pudo".
+   */
+  const refrescarCatalogo = useCallback(async () => {
+    try {
+      const { productos: crudos, promociones: promos } = await cargarTienda();
+      setProductos(mapearCatalogo(crudos, promos));
+      setPromociones(promos);
+      setErrorCarga('');
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     let vivo = true;
     getModulos()
@@ -440,7 +458,8 @@ export const TiendaProvider = ({ children }) => {
       avisar(
         nuevaCantidad > 1
           ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
-          : `${producto.nombre} agregado al carrito`
+          : `${producto.nombre} agregado al carrito`,
+        'exito'
       );
     },
     [carrito, guardarCarrito, avisar]
@@ -450,7 +469,7 @@ export const TiendaProvider = ({ children }) => {
     (productoId) => {
       const fuera = carrito.find((i) => i.id === productoId);
       guardarCarrito(carrito.filter((item) => item.id !== productoId));
-      avisar(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
+      avisar(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado', 'quitar');
     },
     [carrito, guardarCarrito, avisar]
   );
@@ -477,7 +496,7 @@ export const TiendaProvider = ({ children }) => {
   const limpiarCarrito = useCallback(() => {
     const cuantos = carrito.length;
     guardarCarrito([]);
-    if (cuantos) avisar(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
+    if (cuantos) avisar(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`, 'quitar');
   }, [carrito, guardarCarrito, avisar]);
 
   /*
@@ -508,6 +527,7 @@ export const TiendaProvider = ({ children }) => {
       cargando,
       errorCarga,
       recargar: traerCatalogo,
+      refrescarCatalogo,
       pasillos,
       todosLosModulos,
       moduloSeleccionado,
@@ -523,6 +543,8 @@ export const TiendaProvider = ({ children }) => {
       productosDestacados,
       secciones,
       promosDelCarrusel,
+      // Todas, sin filtrar por pasillo: el aviso de una promo la busca aquí.
+      promociones,
       promoSeleccionada,
       setPromoSeleccionada,
       promoDetalle,
@@ -540,9 +562,9 @@ export const TiendaProvider = ({ children }) => {
       vaciarTrasPedido,
     }),
     [
-      productos, cargando, errorCarga, traerCatalogo, pasillos, todosLosModulos, moduloSeleccionado,
+      productos, cargando, errorCarga, traerCatalogo, refrescarCatalogo, pasillos, todosLosModulos, moduloSeleccionado,
       nombrePasillo, productosDelPasillo, categorias, categoriaSeleccionada,
-      terminoBusqueda, productosFiltrados, productosDestacados, secciones, promosDelCarrusel,
+      terminoBusqueda, productosFiltrados, productosDestacados, secciones, promosDelCarrusel, promociones,
       promoSeleccionada, promoDetalle, productosDePromo, abrirPromo, cerrarPromo,
       verPromoEnTienda, carrito, totalCarrito, cantidadItems, agregarAlCarrito,
       eliminarDelCarrito, actualizarCantidad, limpiarCarrito, vaciarTrasPedido,

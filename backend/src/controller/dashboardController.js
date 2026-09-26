@@ -191,8 +191,8 @@ dashboardController.getSummary = async (req, res) => {
         .limit(50),
 
       // ── Trabajo pendiente ──
-      orderModel.countDocuments({ status: { $in: ["pagado", "preparando", "en_camino"] } }),
-      orderModel.countDocuments({ channel: "impresion", status: { $in: ["pagado", "preparando", "en_camino"] } }),
+      orderModel.countDocuments({ status: { $in: ["pagado", "preparando", "en_camino", "listo"] } }),
+      orderModel.countDocuments({ channel: "impresion", status: { $in: ["pagado", "preparando", "en_camino", "listo"] } }),
 
       // ── Clientes nuevos esta semana ──
       clientModel.countDocuments({ createdAt: { $gte: hace7 } }),

@@ -6,7 +6,8 @@ import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { Equis, Estrella, Paquete } from '../UI/Iconos';
-import { estadosPedido } from '../../utils/pasosPedido';
+import { estadosPedido, poseDeEstado } from '../../utils/pasosPedido';
+import Mascota from '../Tiqui/Mascota';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
 import ValoracionPedido from '../Cuenta/ValoracionPedido';
@@ -205,6 +206,11 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               </View>
             </View>
 
+            {/* Tiqui cuenta en qué va el pedido, como en "Estado del pedido" de la web. */}
+            <View style={estilos.tiquiEstado}>
+              <Mascota pose={poseDeEstado(pedido.status)} alto={120} />
+            </View>
+
             {esCancelado ? (
               <Text style={estilos.notaCancelado}>Este pedido fue cancelado.</Text>
             ) : (
@@ -295,8 +301,9 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               reseña de cada producto. Cada bloque decide solo si le toca
               aparecer.
             */}
-            <ValoracionServicio pedido={pedido} />
-            <ValoracionPedido pedido={pedido} />
+            {/* El pedido de prueba no se califica: guardaría reseñas de verdad. */}
+            {!pedido.simulado && <ValoracionServicio pedido={pedido} />}
+            {!pedido.simulado && <ValoracionPedido pedido={pedido} />}
 
             {pedido.pointsEarned > 0 && (
               <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
@@ -389,6 +396,10 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   fecha: {
     fontSize: 12.5,
     color: COLORES.textoTenue,
+  },
+  tiquiEstado: {
+    alignItems: 'center',
+    marginVertical: 10,
   },
   chapa: {
     borderRadius: 999,

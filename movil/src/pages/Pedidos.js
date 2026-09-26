@@ -20,8 +20,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Package } from 'lucide-react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import Mascota, { CargandoMascota } from '../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { useAireBarraFlotante } from '../components/UI/BarraInferior';
 import { ALTURA_ESTADO } from '../theme/pantalla';
@@ -157,7 +157,6 @@ const Pedidos = () => {
   const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
   const { colores } = useTema();
-  const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   // El detalle (ModalPedido) se pinta en un solo lugar para toda la app —
   // ver el comentario grande de `pedidoAbierto` en PedidoActivoContext.js —
@@ -238,7 +237,7 @@ const Pedidos = () => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator size="large" color={colores.marca} />
+          <CargandoMascota texto="Cargando tus pedidos…" />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
@@ -256,7 +255,7 @@ const Pedidos = () => {
       ) : pedidos.length === 0 ? (
         // Vacío es una invitación, no una disculpa (igual que en la web).
         <View style={estilos.centro}>
-          <Package size={38} color={COLORES.marcador} strokeWidth={1.5} />
+          <Mascota pose="vacio" alto={120} />
           <Text style={estilos.vacioTitulo}>Todavía no tiene pedidos</Text>
           <Text style={estilos.vacioTexto}>
             Cuando compre en la tienda, sus pedidos van a aparecer aquí.
@@ -265,7 +264,7 @@ const Pedidos = () => {
       ) : pedidosFiltrados.length === 0 ? (
         // Un vacío distinto: sí ha comprado, solo que no en este período.
         <View style={estilos.centro}>
-          <Package size={38} color={COLORES.marcador} strokeWidth={1.5} />
+          <Mascota pose="buscando" alto={120} />
           <Text style={estilos.vacioTitulo}>Nada por aquí</Text>
           <Text style={estilos.vacioTexto}>No tiene pedidos en ese período.</Text>
         </View>

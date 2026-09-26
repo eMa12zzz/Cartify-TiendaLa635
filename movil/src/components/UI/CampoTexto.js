@@ -38,6 +38,10 @@ const CampoTexto = ({
    */
   siguiente,
   alEnviar,
+  // Se avisan hacia afuera sin pisar el borde de foco de aquí adentro
+  // (el login los usa para que Tiqui se tape los ojos en la contraseña).
+  onFocus,
+  onBlur,
   ...props
 }) => {
   const [enfocado, setEnfocado] = useState(false);
@@ -92,8 +96,8 @@ const CampoTexto = ({
           // El teclado de iOS del mismo color que la app.
           keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
           secureTextEntry={esContrasena && !verTexto}
-          onFocus={() => setEnfocado(true)}
-          onBlur={() => setEnfocado(false)}
+          onFocus={(e) => { setEnfocado(true); onFocus?.(e); }}
+          onBlur={(e) => { setEnfocado(false); onBlur?.(e); }}
           // Sin nombre propio, el lector anuncia la etiqueta (o el marcador),
           // y si el campo está mal, dice por qué justo después.
           accessibilityLabel={etiqueta || marcador}

@@ -30,7 +30,8 @@ const Toggle = ({ on, onClick, colors }) => (
 const opciones = [
   { clave: 'promociones',     titulo: 'Promociones nuevas',        sub: 'Avísame de ofertas y descuentos.' },
   { clave: 'nuevosProductos', titulo: 'Productos nuevos',          sub: 'Avísame cuando lleguen productos.' },
-  { clave: 'pedidoCerca',     titulo: 'Mi pedido va en camino',    sub: 'Avísame cuando mi pedido esté cerca.' },
+  // Solo el correo: en la app los avisos del pedido llegan siempre (son de servicio).
+  { clave: 'pedidoCerca',     titulo: 'Correo cuando mi pedido sale', sub: 'Te mandamos un correo cuando salga de la tienda.' },
 ];
 
 const Notificaciones = () => {

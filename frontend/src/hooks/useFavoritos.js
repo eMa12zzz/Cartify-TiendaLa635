@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { ICONOS } from '../utils/iconosAviso';
 import { clientService } from '../api/clientService';
 import { useAuth } from './useAuth';
 
@@ -64,7 +65,10 @@ export const useFavoritos = () => {
 
     try {
       await clientService.toggleFavorite(user.id, id);
-      toast.success(estaba ? `${nombre} salió de favoritos` : `${nombre} guardado en favoritos`);
+      toast.success(estaba ? `${nombre} salió de favoritos` : `${nombre} guardado en favoritos`, {
+        id: 'favorito',
+        icon: estaba ? ICONOS.sinFavorito : ICONOS.favorito,
+      });
       // La lista completa solo se recarga si estamos mostrándola.
       if (productos.length || !estaba) cargar();
     } catch (error) {

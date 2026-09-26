@@ -1,4 +1,4 @@
-import { Package, ChefHat, Bike, Check } from 'lucide-react';
+import { Package, ChefHat, Bike, Check, Store } from 'lucide-react';
 
 /*
  * ============================================================
@@ -31,6 +31,8 @@ export const PASOS_TODOS = [
   { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package, pose: 'recibido' },
   { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat, pose: 'preparando' },
   { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike, pose: 'en-camino' },
+  // Solo retiro en la tienda: el aviso de "ya puede pasar por él".
+  { id: 'listo', label: 'Listo para recoger', detalle: 'Ya puede pasar por él a la tienda', Icono: Store, pose: 'entregado' },
   { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check, pose: 'entregado' },
 ];
 
@@ -52,7 +54,7 @@ export const poseDeEstado = (estado) =>
  */
 export const pasosDe = (deliveryType) =>
   deliveryType === 'delivery'
-    ? PASOS_TODOS
+    ? PASOS_TODOS.filter((p) => p.id !== 'listo')
     : PASOS_TODOS.filter((p) => p.id !== 'en_camino');
 
 /*

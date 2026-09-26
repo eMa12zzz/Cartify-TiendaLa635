@@ -136,7 +136,7 @@ api.interceptors.response.use(
 
         // 4- Si no hay respuesta del servidor, es un error de red o conexión
         if (!error.response) {
-            toast.error('Error de conexión. Verifica que el servidor backend esté encendido.');
+            toast.error('Error de conexión. Verifica que el servidor backend esté encendido.', { id: 'sin-conexion' });
             return Promise.reject(error);
         }
 
@@ -157,11 +157,19 @@ api.interceptors.response.use(
          */
         const mensaje = mensajeEnEspanol(data?.message, status);
 
+        /*
+         * 5.2- Un mismo error, una sola píldora. Una pantalla que pide cuatro
+         * cosas al servidor y las cuatro fallan igual pintaba cuatro avisos
+         * idénticos apilados abajo al centro, tapando la tienda. Con el texto
+         * como id, el segundo reemplaza al primero en vez de sumarse.
+         */
+        const unaVez = { id: mensaje };
+
         // 6- Mostramos un mensaje diferente según el tipo de error recibido
         switch (status) {
             case 400:
                 // Error del cliente: datos incorrectos, campos vacíos, duplicados, etc.
-                toast.error(mensaje);
+                toast.error(mensaje, unaVez);
                 break;
             case 401:
                 // La sesión venció o nunca existió: se cierra el cajón y se
@@ -170,17 +178,17 @@ api.interceptors.response.use(
                 break;
             case 403:
                 // Prohibido: el usuario existe pero no tiene permiso para esa acción
-                toast.error('Acceso denegado. No tienes permisos para esta acción.');
+                toast.error('Acceso denegado. No tienes permisos para esta acción.', { id: 'sin-permiso' });
                 break;
             case 500:
                 // Error del servidor: algo falló en el backend (base de datos, etc.)
-                toast.error('Error interno del servidor.');
+                toast.error('Error interno del servidor.', { id: 'error-servidor' });
                 break;
             default:
                 // Cualquier otro error no contemplado arriba (404, 409, 422...).
                 // El traductor ya eligió un respaldo acorde al código, así que
                 // aquí no hace falta un `||` con un texto genérico.
-                toast.error(mensaje);
+                toast.error(mensaje, unaVez);
         }
 
         // 7- Rechazamos la promesa para que el catch() del componente también lo reciba

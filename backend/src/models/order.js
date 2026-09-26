@@ -78,7 +78,7 @@
  *           example: 6400
  *         status:
  *           type: string
- *           enum: [pagado, preparando, entregado, cancelado]
+ *           enum: [pagado, preparando, en_camino, listo, entregado, cancelado]
  *           default: pagado
  *         paymentMethod:
  *           type: string
@@ -125,7 +125,7 @@
  *       properties:
  *         status:
  *           type: string
- *           enum: [pagado, preparando, entregado, cancelado]
+ *           enum: [pagado, preparando, en_camino, listo, entregado, cancelado]
  *       required:
  *         - status
  *     PrintOrderInput:
@@ -192,7 +192,12 @@ const orderSchema = new Schema({
      */
     status: {
         type: String,
-        enum: ['pagado', 'preparando', 'en_camino', 'entregado', 'cancelado'],
+        /*
+         * 'listo': solo para retiro en la tienda. Antes un pedido para
+         * recoger pasaba de "preparando" a "entregado" sin ningún momento en
+         * que se le pudiera avisar al cliente que ya podía pasar por él.
+         */
+        enum: ['pagado', 'preparando', 'en_camino', 'listo', 'entregado', 'cancelado'],
         default: 'pagado',
     },
     /*
@@ -269,6 +274,8 @@ const orderSchema = new Schema({
     preparedBy: { type: String },        // nombre de quien lo preparó
     enCaminoAt: { type: Date },          // a qué hora salió el repartidor
     enCaminoBy: { type: String },
+    listoAt: { type: Date },             // a qué hora quedó listo para recoger
+    listoBy: { type: String },
     deliveredAt: { type: Date },
     deliveredBy: { type: String },
 
