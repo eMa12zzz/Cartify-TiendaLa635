@@ -8,6 +8,7 @@ import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promo
 import { usePromoAI } from '../../hooks/usePromoAI';
 import PromoCard from '../Store/PromoCard';
 import SubidorArchivo from '../UI/SubidorArchivo';
+import { ICONOS } from '../../utils/iconosAviso';
 import { TEMAS, TEMAS_BASE, TEMAS_FESTIVOS } from '../../utils/temasPromo';
 import { ICONOS_PROMO } from '../../utils/iconosPromo';
 
@@ -390,9 +391,9 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
     const costos = Object.fromEntries(productos.map((p) => [p._id, Number(p.priceCost) || 0]));
     const aviso = avisoVentaBajoCosto({ tipo: type, items, buyQty, payQty, costos, precios });
     if (aviso) {
-      // Aviso de perder plata: se queda más tiempo y con el borde en rojo,
-      // que se distingue de un "guardado" sin necesidad de un emoji.
-      toast(aviso, { duration: 7000, style: { maxWidth: 460, borderColor: '#D8542C' } });
+      // Aviso de perder plata: se queda más tiempo y con el triángulo
+      // naranja, que se distingue de un "guardado" de un vistazo.
+      toast(aviso, { duration: 7000, icon: ICONOS.atencion });
     }
 
     /*
