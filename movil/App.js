@@ -77,9 +77,9 @@ import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante
 import VueloAlCarrito from './src/components/Tienda/VueloAlCarrito';
 import { ModoProvider, useModo } from './src/context/ModoContext';
 import { View } from 'react-native';
-// El administrador en el teléfono: la app entera pasa a ser solo Tiqui del panel.
-import { AdminProvider, useAdmin } from './src/context/AdminContext';
-import TiquiAdmin from './src/pages/admin/TiquiAdmin';
+// Quien trabaja en la tienda: la app entera pasa a ser su herramienta de trabajo.
+import { PersonalProvider, usePersonal } from './src/context/PersonalContext';
+import ModoPersonal from './src/pages/personal/ModoPersonal';
 
 // La hora y la batería en oscuro sobre fondo claro, y al revés.
 const BarraDeEstado = () => {
@@ -87,7 +87,7 @@ const BarraDeEstado = () => {
   return <StatusBar style={oscuro ? 'light' : 'dark'} />;
 };
 
-// La tienda: lo que ve cualquiera que no entró como administrador.
+// La tienda: lo que ve cualquiera que no entró como personal.
 const LaTienda = () => (
   <AuthProvider>
     <TemaProvider>
@@ -113,25 +113,26 @@ const LaTienda = () => (
 );
 
 /*
- * El modo administrador: SOLO Tiqui del panel. Nada de la tienda se monta
- * (ni el catálogo, ni el carrito, ni los avisos de pedidos de cliente): no
- * es una pestaña más, es otra app. Ver context/AdminContext.js.
+ * El modo personal: Tiqui del panel y el Reparto para el administrador, solo
+ * el Reparto para el empleado. Nada de la tienda se monta (ni el catálogo, ni
+ * el carrito, ni los avisos de pedidos de cliente): no es una pestaña más, es
+ * otra app. Ver context/PersonalContext.js.
  */
-const ModoAdministrador = () => (
+const ModoDelPersonal = () => (
   <TemaProvider>
     <BarraDeEstado />
     <LimiteDeError>
-      <TiquiAdmin />
+      <ModoPersonal />
     </LimiteDeError>
   </TemaProvider>
 );
 
 const Contenido = () => {
-  const { sesion, cargando } = useAdmin();
+  const { sesion, cargando } = usePersonal();
   const { colores } = useModo();
-  // Un instante, mientras se lee del almacén si hay sesión de administrador.
+  // Un instante, mientras se lee del almacén si hay sesión del personal.
   if (cargando) return <View style={{ flex: 1, backgroundColor: colores.fondo }} />;
-  return sesion ? <ModoAdministrador /> : <LaTienda />;
+  return sesion ? <ModoDelPersonal /> : <LaTienda />;
 };
 
 // GestureHandlerRootView: sin él no funcionan los gestos de jalar para
@@ -142,9 +143,9 @@ export default function App() {
     <SafeAreaProvider>
       <ModoProvider>
         <AvisoProvider>
-          <AdminProvider>
+          <PersonalProvider>
             <Contenido />
-          </AdminProvider>
+          </PersonalProvider>
         </AvisoProvider>
       </ModoProvider>
     </SafeAreaProvider>

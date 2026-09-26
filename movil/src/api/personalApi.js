@@ -1,15 +1,18 @@
 /*
  * ============================================================
- * TIQUI DEL ADMINISTRADOR — tiquiAdminApi.js
+ * EL PERSONAL DE LA TIENDA — personalApi.js
  * ============================================================
- * Lo que habla la app cuando entra el administrador: su inicio de sesión (el
- * mismo del panel web, con el código que llega al correo) y Tiqui del panel
- * (/api/tiqui-panel), la asistente del equipo. Es OTRA asistente que la de
- * la tienda (asistenteApi): no comparten sesión ni charla.
+ * Lo que habla la app cuando entra alguien del personal: su inicio de sesión
+ * (el mismo del panel web, con el código que llega al correo), Tiqui del panel
+ * (/api/tiqui-panel, solo el administrador) y el Reparto (los pedidos a
+ * domicilio, moverlos de estado y mandar la ubicación del repartidor).
  *
- * El token del administrador va en cada llamada, a mano, y NO se instala como
- * el token de la app (establecerToken): ese es el del cliente, y mezclarlos
- * haría que la tienda hablara con el servidor como si fuera el dueño.
+ * Tiqui del panel es OTRA asistente que la de la tienda (asistenteApi): no
+ * comparten sesión ni charla.
+ *
+ * El token del personal va en cada llamada, a mano, y NO se instala como el
+ * token de la app (establecerToken): ese es el del cliente, y mezclarlos haría
+ * que la tienda hablara con el servidor como si fuera el dueño.
  * ============================================================
  */
 
@@ -18,11 +21,11 @@ import { peticion, URL_API } from './api';
 const conToken = (token) => ({ Authorization: `Bearer ${token}` });
 
 /*
- * Por qué no se pudo, dicho para Tiqui: 'sesion' cierra el modo administrador;
- * 'lento' es el servidor de Render despertándose (se duerme sin tráfico y la
- * primera pregunta puede tardar medio minuto), que no es culpa del internet.
+ * Por qué no se pudo: 'sesion' cierra el modo personal; 'lento' es el servidor
+ * de Render despertándose (se duerme sin tráfico y la primera pregunta puede
+ * tardar medio minuto), que no es culpa del internet.
  */
-const origenDe = (error) =>
+export const origenDe = (error) =>
   error?.estado === 401 ? 'sesion'
     : error?.estado === 429 ? 'tope'
     : error?.estado === 0 && /tard/.test(error?.message || '') ? 'lento'
@@ -31,7 +34,9 @@ const origenDe = (error) =>
 // Lo que se le aguanta al servidor: si está despertando, tarda más que la IA.
 const ESPERA_MS = 30000;
 
-export const tiquiAdminApi = {
+export const personalApi = {
+  // ── Entrar ──
+
   /*
    * Paso 1: correo y contraseña. El servidor manda un código al correo y, como
    * la app no guarda cookies como el navegador, devuelve el token del paso 2
@@ -40,7 +45,7 @@ export const tiquiAdminApi = {
   entrar: ({ email, password }) =>
     peticion('/loginAdmin/login', { metodo: 'POST', cuerpo: { email, password, app: true }, tiempoMaximo: 45000 }),
 
-  // Paso 2: el código del correo. Devuelve { token, tipo, admin }.
+  // Paso 2: el código del correo. Devuelve { token, tipo: 'admin'|'employee', admin }.
   verificar: ({ code, twofaToken }) =>
     peticion('/loginAdmin/verify-2fa', { metodo: 'POST', cuerpo: { code, twofaToken } }),
 
@@ -50,6 +55,8 @@ export const tiquiAdminApi = {
    * mandando en cada llamada.
    */
   salir: () => peticion('/logoutAdmin', { metodo: 'POST' }).catch(() => null),
+
+  // ── Tiqui del panel (solo el administrador) ──
 
   despertar: async (token) => {
     try {
@@ -89,6 +96,27 @@ export const tiquiAdminApi = {
 
   // La voz es la misma de la tienda: convertir texto en audio no sabe de ninguna asistente.
   urlVoz: (texto) => `${URL_API}/ai/voz?t=${encodeURIComponent(texto)}`,
+
+  // ── Reparto ──
+
+  // Todos los pedidos (la misma lista del panel); el Reparto se queda con los de domicilio.
+  pedidos: (token) => peticion('/order', { cabeceras: conToken(token), tiempoMaximo: ESPERA_MS }),
+
+  /*
+   * Mover un pedido: el mismo PUT que el botón de Pedidos del panel. `extras`
+   * lleva el código de entrega que dicta el cliente (o la omisión razonada).
+   */
+  avanzar: (token, pedidoId, status, quien, extras = {}) =>
+    peticion(`/order/${pedidoId}/status`, {
+      metodo: 'PUT',
+      cuerpo: { status, quien, ...extras },
+      cabeceras: conToken(token),
+      tiempoMaximo: ESPERA_MS,
+    }),
+
+  // Dónde va el repartidor ({ lat, lng, quien }) o dejar de compartir ({ activo: false }).
+  ubicacion: (token, pedidoId, datos) =>
+    peticion(`/order/${pedidoId}/courier`, { metodo: 'PUT', cuerpo: datos, cabeceras: conToken(token) }),
 };
 
-export default tiquiAdminApi;
+export default personalApi;

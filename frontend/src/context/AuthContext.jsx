@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../api/api';
-import { CAJON, areaDeRuta, LLAVE_MODO_TRABAJO, leerModoTrabajo } from '../utils/sesion';
+import { CAJON, areaDeRuta, LLAVE_MODO_TRABAJO } from '../utils/sesion';
 
 /*
  * ============================================================
@@ -102,14 +102,18 @@ export const AuthProvider = ({ children }) => {
   const { pathname } = useLocation();
 
   const [sesiones, setSesiones] = useState({ personal: null, cliente: null });
-  // "Estoy repartiendo". Ver LLAVE_MODO_TRABAJO en utils/sesion.js.
-  const [trabajando, setTrabajandoEstado] = useState(leerModoTrabajo);
   const [loading, setLoading] = useState(true);
 
   // 1- Al abrir la app se levantan los dos cajones de una vez, después de
   //    mudar lo que hubiera guardado el sistema anterior.
   useEffect(() => {
     mudarSesionVieja();
+    /*
+     * El "Estoy trabajando" de antes ya no existe (ver ClienteLayout). Quien lo
+     * dejó encendido tenía la bandera guardada: se borra, para que nadie quede
+     * atrapado en un modo que ya no tiene botón para apagarse.
+     */
+    try { localStorage.removeItem(LLAVE_MODO_TRABAJO); } catch { /* sin localStorage no hay nada que borrar */ }
     setSesiones({ personal: leerCajon('personal'), cliente: leerCajon('cliente') });
     setLoading(false);
   }, []);
@@ -125,35 +129,13 @@ export const AuthProvider = ({ children }) => {
    */
   const area = areaDeRuta(pathname);
   /*
-   * ¿Puede ESTA persona pasar a modo trabajo?
-   *
-   * Bastaba con que hubiera cualquier sesión de personal en el navegador, y
-   * eso mezclaba a dos personas: en la computadora del mostrador, con el
-   * dueño conectado al panel, un cliente que abría su cuenta veía "Estoy
-   * trabajando"… y al tocarlo quedaba adentro con la sesión del dueño,
-   * viendo el reparto con las direcciones de todos.
-   *
-   * El modo trabajo es para el repartidor que ADEMÁS es cliente — la misma
-   * persona con dos cuentas. Lo que las une es el correo. Si no coinciden, o
-   * falta alguno, no se ofrece: ante la duda, cada quien con la suya. Sin
-   * sesión de cliente no hay a quién confundir.
-   */
-  const correo = (s) => (s?.email || '').trim().toLowerCase();
-  const puedeTrabajar =
-    !!sesiones.personal &&
-    (!sesiones.cliente || (!!correo(sesiones.cliente) && correo(sesiones.cliente) === correo(sesiones.personal)));
-  const enModoTrabajo = trabajando && puedeTrabajar;
-
-  /*
-   * En la tienda manda el cliente… SALVO que la persona haya dicho que está
-   * trabajando. Ahí manda su sesión de personal aunque tenga la de cliente
-   * abierta, que es justamente el caso del repartidor que compra en la tienda
-   * donde reparte. Ver LLAVE_MODO_TRABAJO.
+   * En la tienda manda el cliente; si no hay, el personal (el dueño mirando su
+   * propia tienda, o el repartidor que entró con su cuenta de empleado).
    */
   const activa =
     area === 'personal'
       ? sesiones.personal
-      : (enModoTrabajo && sesiones.personal) || sesiones.cliente || sesiones.personal;
+      : sesiones.cliente || sesiones.personal;
 
   /*
    * El área, también en una referencia.
@@ -185,12 +167,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const alCambiarOtraPestana = (e) => {
       // e.key es null cuando alguien hizo localStorage.clear().
-      const llaves = [CAJON.personal, CAJON.cliente, LLAVE_MODO_TRABAJO];
+      const llaves = [CAJON.personal, CAJON.cliente];
       if (e.key !== null && !llaves.includes(e.key)) return;
       setSesiones({ personal: leerCajon('personal'), cliente: leerCajon('cliente') });
-      // El modo trabajo también viaja entre pestañas: si lo apagó en una, las
-      // demás no pueden seguir creyendo que sigue en la calle.
-      setTrabajandoEstado(leerModoTrabajo());
     };
     window.addEventListener('storage', alCambiarOtraPestana);
     return () => window.removeEventListener('storage', alCambiarOtraPestana);
@@ -234,19 +213,6 @@ export const AuthProvider = ({ children }) => {
    * cuentas distintas aunque compartan el correo, y cerrar una no dice nada
    * sobre la otra.
    */
-  /*
-   * Encender o apagar el modo trabajo. Se guarda antes de tocar el estado para
-   * que una recarga inmediata —el teléfono que se bloquea justo ahí— encuentre
-   * el valor nuevo y no el viejo.
-   */
-  const setTrabajando = useCallback((valor) => {
-    try {
-      if (valor) localStorage.setItem(LLAVE_MODO_TRABAJO, '1');
-      else localStorage.removeItem(LLAVE_MODO_TRABAJO);
-    } catch { /* sin localStorage vale solo para esta pestaña */ }
-    setTrabajandoEstado(!!valor);
-  }, []);
-
   const logout = useCallback((areaAcerrar) => {
     const cajon = areaAcerrar || areaRef.current;
 
@@ -269,8 +235,7 @@ export const AuthProvider = ({ children }) => {
    * 4.5- Cerrar TODO, a pedido — el botón "Cerrar sesión" del PANEL.
    *
    * `logout()` de arriba cierra un solo cajón a propósito: son dos cuentas
-   * distintas aunque compartan el correo, y es lo que hace posible el modo
-   * trabajo (un repartidor sigue conectado como cliente mientras reparte).
+   * distintas aunque compartan el correo.
    *
    * Pero desde el botón del panel eso confundía: alguien tocaba "Cerrar
    * sesión" en /dashboard, aterrizaba en /admin, y si volvía a la tienda se
@@ -278,12 +243,8 @@ export const AuthProvider = ({ children }) => {
    * conectado igual. Para quien vino a salir del todo, eso no se sintió como
    * un cierre de sesión.
    *
-   * Decisión explícita: el botón del panel cierra los DOS cajones. El costo
-   * es que ya no sirve para salir del modo trabajo sin perder la sesión de
-   * cliente — pero ese botón vive en el PANEL, no en Mi Cuenta, y quien
-   * trabaja no pasa por ahí para dejar de trabajar (usa el interruptor de
-   * ClienteLayout). El "Salir" de Mi Cuenta sigue cerrando solo lo suyo, ver
-   * `logout` arriba.
+   * Decisión explícita: el botón del panel cierra los DOS cajones. El
+   * "Salir" de Mi Cuenta sigue cerrando solo lo suyo, ver `logout` arriba.
    */
   const logoutTodo = useCallback(() => {
     api.post('/logoutAdmin').catch(() => {});
@@ -291,16 +252,7 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.removeItem(CAJON.personal);
     localStorage.removeItem(CAJON.cliente);
-    /*
-     * El modo trabajo también se apaga. Dejarlo prendido sería un cajón
-     * vacío con la bandera puesta: la próxima vez que alguien entre como
-     * personal en este navegador, "modo trabajo" se encendería solo, sin
-     * que nadie lo haya pedido esta vez.
-     */
-    try { localStorage.removeItem(LLAVE_MODO_TRABAJO); } catch { /* nada que limpiar */ }
-
     setSesiones({ personal: null, cliente: null });
-    setTrabajandoEstado(false);
   }, []);
 
   const valor = useMemo(
@@ -320,16 +272,8 @@ export const AuthProvider = ({ children }) => {
        */
       haySesionDePersonal: !!sesiones.personal,
       haySesionDeCliente: !!sesiones.cliente,
-      /*
-       * Para el menú de Mi Cuenta, que en modo trabajo se reduce a Reparto.
-       * Solo tiene sentido si la sesión de personal es de la misma persona
-       * que la de cliente. Ver `puedeTrabajar` arriba.
-       */
-      puedeTrabajar,
-      trabajando: enModoTrabajo,
-      setTrabajando,
     }),
-    [activa, login, logout, logoutTodo, actualizarUsuario, loading, sesiones.personal, sesiones.cliente, puedeTrabajar, enModoTrabajo, setTrabajando]
+    [activa, login, logout, logoutTodo, actualizarUsuario, loading, sesiones.personal, sesiones.cliente]
   );
 
   // 5- No se pintan los hijos hasta saber si hay sesión, para evitar el
