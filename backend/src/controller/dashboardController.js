@@ -16,19 +16,19 @@ import clientModel from "../models/client.js";
  * 10 televisores de un máximo de 12 (normal). Por eso comparamos contra su
  * propio maxQuantity; si el producto no lo tiene, usamos el respaldo fijo.
  */
-const RATIO_BAJO = 0.25;      // le queda 25% o menos de su máximo
-const STOCK_BAJO_ABS = 10;    // respaldo cuando no hay máximo definido
-const DIAS_CADUCA = 7;        // "caduca esta semana"
+export const RATIO_BAJO = 0.25;      // le queda 25% o menos de su máximo
+export const STOCK_BAJO_ABS = 10;    // respaldo cuando no hay máximo definido
+export const DIAS_CADUCA = 7;        // "caduca esta semana"
 
 /*
  * Convierte un campo a número dentro de la consulta. Hace falta porque algunos
  * productos guardaron stock/maxQuantity como texto (vienen de un formulario con
  * archivos), y Mongo no puede multiplicar cadenas.
  */
-const numero = (campo) => ({ $convert: { input: campo, to: "double", onError: 0, onNull: 0 } });
+export const numero = (campo) => ({ $convert: { input: campo, to: "double", onError: 0, onNull: 0 } });
 
 // Condición de "stock bajo" relativa al máximo de cada producto.
-const filtroStockBajo = {
+export const filtroStockBajo = {
   isActive: { $ne: false },
   $expr: {
     $lte: [
@@ -89,7 +89,7 @@ const inicioSerie = (periodo, hoy) => {
   return desde;
 };
 
-const inicioDelDia = (d) => {
+export const inicioDelDia = (d) => {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   return x;

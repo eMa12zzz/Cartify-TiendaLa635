@@ -185,8 +185,8 @@ const Aparte = ({ tipo, c }) => {
       return (
         <>
           <Path d="M200,0 L200,66 M200,66 l-8,12 M200,66 l0,14 M200,66 l8,12" stroke={c.cordon} strokeWidth={7} {...TRAZO} />
-          <Path d="M64,446 L336,446" stroke={c.linea} strokeWidth={5} {...TRAZO} />
-          <Path d="M74,392 l-16,-8 M70,414 l-20,0" stroke={c.suave} strokeWidth={5} opacity={0.6} {...TRAZO} />
+          <Path d="M64,446 L350,446" stroke={c.linea} strokeWidth={5} {...TRAZO} />
+          <Path d="M84,376 l-16,-8 M80,398 l-20,0" stroke={c.suave} strokeWidth={5} opacity={0.6} {...TRAZO} />
         </>
       );
     case 'confeti':
@@ -279,7 +279,8 @@ const Mascota = ({ pose = 'cargando', alto = 120, mini = false, sobre, disfraz, 
 
   // Cómo va puesta en el cuadro: corrida, caída (error) o inclinada (en camino).
   const colocar = p.caida
-    ? 'translate(210 356) rotate(-66) scale(0.88) translate(-200 -246)'
+    // Apoyada en el piso, sin atravesarlo (igual que en la web, Mascota.jsx).
+    ? 'translate(210 340) rotate(-66) scale(0.88) translate(-200 -246)'
     : p.inclinada
       ? 'rotate(8 200 382)'
       : `translate(${p.correr || 0} 0)`;

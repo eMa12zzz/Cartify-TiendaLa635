@@ -52,9 +52,13 @@ const POSES = {
     vista: '96 26 304 364', mira: [6, -3], cejas: 'preocupado', boca: 'o',
     cordon: 'enchufe', aparte: 'toma',
   },
-  // Se le cortó el cordón y se cayó.
+  /*
+   * Se le cortó el cordón y se cayó. Queda APOYADA en el piso: la esquina de
+   * más abajo toca justo el borde de arriba de la línea (y 443.5). Antes iba
+   * 16 más abajo y la etiqueta atravesaba el piso y rozaba el borde del dibujo.
+   */
   error: {
-    vista: '40 0 320 460', correr: 'translate(210 356) rotate(-66) scale(.88) translate(-200 -246)',
+    vista: '40 0 320 460', correr: 'translate(210 340) rotate(-66) scale(.88) translate(-200 -246)',
     ojos: 'x', boca: 'o', cordon: 'cortado', aparte: 'caida',
   },
   // Perdida, mirando a un lado. Es el "0" del 404.
@@ -206,8 +210,10 @@ const APARTE = {
       <g className="mascota-cabo">
         <path d="M200,0 L200,66 M200,66 l-8,12 M200,66 l0,14 M200,66 l8,12" stroke={CORDON_COLOR} strokeWidth="7" {...trazo} />
       </g>
-      <path d="M64,446 L336,446" stroke="var(--linea)" strokeWidth="5" {...trazo} />
-      <path d="M74,392 l-16,-8 M70,414 l-20,0" stroke="var(--tinta-suave)" strokeWidth="5" opacity=".6" {...trazo} />
+      {/* El piso, un poco más largo que la etiqueta tumbada (llega hasta x 337). */}
+      <path d="M64,446 L350,446" stroke="var(--linea)" strokeWidth="5" {...trazo} />
+      {/* Las rayas de la caída, a un lado de la etiqueta: suben con ella. */}
+      <path d="M84,376 l-16,-8 M80,398 l-20,0" stroke="var(--tinta-suave)" strokeWidth="5" opacity=".6" {...trazo} />
     </>
   ),
   confeti: (

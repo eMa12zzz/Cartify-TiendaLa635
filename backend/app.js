@@ -28,6 +28,8 @@ import printServiceRoutes from "./src/routes/printService.js";
 import printMaterialRoutes from "./src/routes/printMaterial.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import aiRoutes from "./src/routes/ai.js";
+// Tiqui del panel: otra asistente, solo para el personal (ver routes/tiquiPanel.js).
+import tiquiPanelRoutes from "./src/routes/tiquiPanel.js";
 import kioscoRoutes from "./src/routes/kiosco.js";
 import giftCardRoutes from "./src/routes/giftCard.js";
 import supplierCreditRoutes from "./src/routes/supplierCredit.js";
@@ -103,6 +105,7 @@ app.use("/api/printService", printServiceRoutes);
 app.use("/api/printMaterial", printMaterialRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/tiqui-panel", tiquiPanelRoutes);
 app.use("/api/giftCard", giftCardRoutes);
 app.use("/api/credito", supplierCreditRoutes);
 // Cómo se ve la tienda: nombre, logo, orden de la portada y temporada.

@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import TiquiPanel from '../Admin/TiquiPanel';
 import { useMenuPanel } from '../../hooks/useMenuPanel';
 import { overlayTransition } from '../../utils/motion';
 
@@ -59,6 +60,13 @@ const AdminLayout = () => {
           <Outlet />
         </main>
       </div>
+
+      {/*
+        Tiqui, la asistente del equipo: flota en la esquina de abajo en todas
+        las pantallas del panel, y la charla sigue al cambiar de pantalla.
+        Es otra asistente que la de la tienda. Ver TiquiPanel.
+      */}
+      <TiquiPanel />
     </div>
   );
 };
