@@ -106,7 +106,19 @@ export const TiendaProvider = ({ children }) => {
   const [promoDetalle, setPromoDetalle] = useState(null);
 
   // Las líneas guardadas: [{ id, cantidad }].
-  const [lineas, setLineas] = useState([]);
+  const [lineas, setLineasEstado] = useState([]);
+  /*
+   * Las mismas líneas, pero al día AL INSTANTE (el estado se actualiza recién
+   * en el próximo render). Agregar, quitar y cambiar parten de aquí: Tiqui hace
+   * varias cosas de una sola vez ("dos cocas, un pan y una leche") y, partiendo
+   * del carrito del render, la segunda pisaba a la primera y del pedido entero
+   * solo quedaba lo último.
+   */
+  const lineasRef = useRef([]);
+  const setLineas = useCallback((nuevas) => {
+    lineasRef.current = nuevas;
+    setLineasEstado(nuevas);
+  }, []);
   // Hasta no haber leído el almacén no se sabe qué hay: sin esto, el efecto
   // que guarda escribiría un carrito vacío encima del guardado.
   const [carritoLeido, setCarritoLeido] = useState(false);
@@ -373,7 +385,7 @@ export const TiendaProvider = ({ children }) => {
         if (!ok) avisar('Su carrito funciona, pero no se pudo guardar para la próxima vez', 'error');
       });
     },
-    [llaveActual, avisar]
+    [llaveActual, avisar, setLineas]
   );
 
   /*
@@ -424,29 +436,40 @@ export const TiendaProvider = ({ children }) => {
    * utils/volarAlCarrito.js). Sin foto de origen —el asistente de voz agrega
    * así— no hay de dónde volar, y no pasa nada más que el aviso de siempre.
    * Mismo contrato que `agregarAlCarrito` de useStore.js, en la web.
+   *
+   * `hastaDondeAlcance` es para Tiqui: si piden 74 y quedan 12, entran las 12
+   * (el "+" de una tarjeta, en cambio, no agrega nada de más). Devuelve cuánto
+   * entró DE VERDAD, para que Tiqui diga eso y no lo que se pidió.
    */
   const agregarAlCarrito = useCallback(
-    (producto, cantidad = 1, { origenRef } = {}) => {
-      if (!producto?.id) return;
+    (producto, cantidad = 1, { origenRef, hastaDondeAlcance = false } = {}) => {
+      if (!producto?.id) return 0;
       const stock = Number(producto.stock) || 0;
       if (stock <= 0) {
         avisar(`${producto.nombre} se quedó sin existencias`, 'error');
-        return;
+        return 0;
       }
 
-      const enCarrito = carrito.find((i) => i.id === producto.id)?.cantidad || 0;
-      const nuevaCantidad = enCarrito + cantidad;
-      if (nuevaCantidad > stock) {
-        // "Solo hay 3 unidades" de un queso que se vende por peso confunde: se
-        // dice en la unidad en que se vende. Ver utils/unidades.js.
-        avisar(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`, 'error');
-        return;
+      const id = String(producto.id);
+      const actuales = lineasRef.current;
+      const enCarrito = actuales.find((l) => l.id === id)?.cantidad || 0;
+      const cabe = stock - enCarrito;
+      let entra = cantidad;
+      if (cantidad > cabe) {
+        if (!hastaDondeAlcance || cabe <= 0) {
+          // "Solo hay 3 unidades" de un queso que se vende por peso confunde: se
+          // dice en la unidad en que se vende. Ver utils/unidades.js.
+          avisar(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`, 'error');
+          return 0;
+        }
+        entra = cabe;
       }
+      const nuevaCantidad = enCarrito + entra;
 
       guardarCarrito(
         enCarrito
-          ? carrito.map((item) => (item.id === producto.id ? { ...item, cantidad: nuevaCantidad } : item))
-          : [...carrito, { id: producto.id, cantidad }]
+          ? actuales.map((l) => (l.id === id ? { ...l, cantidad: nuevaCantidad } : l))
+          : [...actuales, { id, cantidad: entra }]
       );
 
       volarAlCarrito({ origenRef, uri: producto.imagen });
@@ -461,36 +484,44 @@ export const TiendaProvider = ({ children }) => {
           : `${producto.nombre} agregado al carrito`,
         'exito'
       );
+      return entra;
     },
-    [carrito, guardarCarrito, avisar]
+    [guardarCarrito, avisar]
   );
 
+  // Quitar y cambiar también parten de las líneas al día (ver lineasRef).
   const eliminarDelCarrito = useCallback(
     (productoId) => {
-      const fuera = carrito.find((i) => i.id === productoId);
-      guardarCarrito(carrito.filter((item) => item.id !== productoId));
+      const id = String(productoId);
+      const fuera = carrito.find((i) => String(i.id) === id);
+      guardarCarrito(lineasRef.current.filter((l) => l.id !== id));
       avisar(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado', 'quitar');
     },
     [carrito, guardarCarrito, avisar]
   );
 
+  // Devuelve la cantidad con la que quedó: si pidieron más de lo que hay, el tope.
   const actualizarCantidad = useCallback(
     (productoId, nuevaCantidad) => {
       if (nuevaCantidad <= 0) {
         eliminarDelCarrito(productoId);
-        return;
+        return 0;
       }
-      const item = carrito.find((i) => i.id === productoId);
-      if (!item) return;
+      const id = String(productoId);
+      const actuales = lineasRef.current;
+      const linea = actuales.find((l) => l.id === id);
+      const stock = Number(productos.find((p) => String(p.id) === id)?.stock) || 0;
+      if (!linea || stock <= 0) return 0;
       /*
        * El tope se respeta también aquí, no solo apagando el botón: el "+" se
        * pulsa más rápido de lo que el render alcanza a deshabilitarlo.
        */
-      const cantidad = Math.min(nuevaCantidad, item.stock);
-      if (cantidad === item.cantidad) return;
-      guardarCarrito(carrito.map((i) => (i.id === productoId ? { ...i, cantidad } : i)));
+      const cantidad = Math.min(nuevaCantidad, stock);
+      if (cantidad === linea.cantidad) return cantidad;
+      guardarCarrito(actuales.map((l) => (l.id === id ? { ...l, cantidad } : l)));
+      return cantidad;
     },
-    [carrito, guardarCarrito, eliminarDelCarrito]
+    [productos, guardarCarrito, eliminarDelCarrito]
   );
 
   const limpiarCarrito = useCallback(() => {
