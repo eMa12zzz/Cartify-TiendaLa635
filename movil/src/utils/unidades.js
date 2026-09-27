@@ -102,3 +102,39 @@ export const piezasEnTexto = (producto) => {
     ? `${n} ${n === 1 ? 'pieza' : 'piezas'}`
     : `Trae ${n} ${n === 1 ? 'unidad' : 'unidades'}`;
 };
+
+/*
+ * Una cantidad como se DICE, para la voz de Tiqui: "74 Manzanas", "1 Pan",
+ * "2 libras de Queso Fresco". En el carrito basta "74 u"; hablando, "74
+ * Manzana" suena a error y "74 u" no se entiende.
+ *
+ * El plural es sencillo a propósito: se pluraliza el nombre si es de una sola
+ * palabra ("Manzana" → "Manzanas", "Limón" → "Limones") o si la primera va
+ * seguida de "de", "con", "sin" o "en" ("Jugo de Naranja" → "Jugos de
+ * Naranja"). Un nombre como "Coca Cola 600ml" o una marca ("7UP") se deja
+ * como está: mal pluralizado se oye peor que en singular.
+ */
+const pluralDePalabra = (w) => {
+  if (/\d/.test(w) || (w.length > 1 && w === w.toUpperCase())) return w;
+  if (/[sx]$/i.test(w)) return w;
+  if (/[aeiouáéíóú]$/i.test(w)) return `${w}s`;
+  if (/z$/i.test(w)) return `${w.slice(0, -1)}ces`;
+  // "Limón" → "Limones": la tilde se va al sumarle una sílaba.
+  return `${w.replace(/[áéíóú](?=[nsr]$)/i, (v) => v.normalize('NFD')[0])}es`;
+};
+
+const pluralDeNombre = (nombre) => {
+  const palabras = String(nombre || '').trim().split(/\s+/);
+  if (palabras.length === 1) return pluralDePalabra(palabras[0]);
+  if (/^(de|del|con|sin|en)$/i.test(palabras[1])) {
+    return [pluralDePalabra(palabras[0]), ...palabras.slice(1)].join(' ');
+  }
+  return nombre;
+};
+
+export const cantidadParaDecir = (producto, cantidad) => {
+  const n = Number(cantidad) || 0;
+  const numero = Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+  if (esPorLibra(producto)) return `${numero} ${n === 1 ? 'libra' : 'libras'} de ${producto?.nombre}`;
+  return `${numero} ${n === 1 ? producto?.nombre : pluralDeNombre(producto?.nombre)}`;
+};

@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { aiService } from '../api/aiService';
 import { decirConTiqui, callarTiqui, paraDecir } from '../utils/vozTiqui';
+import { cantidadParaDecir } from '../utils/unidades';
 
 /*
  * useVoiceAssistant — el "cerebro" de Tiqui, el asistente por voz (Modo Kiosco).
@@ -186,6 +187,40 @@ const productosEnTexto = (lista) => {
 const fraseConfirmar = (lista, total) =>
   `Son ${productosEnTexto(lista)} y tu total es $${total.toFixed(2)}. ¿Confirmas la compra? Di sí para confirmar.`;
 const fraseLlevas = (lista, total) => `Llevas $${total.toFixed(2)} en ${productosEnTexto(lista)}.`;
+
+const enLista = (xs) => (xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
+
+/*
+ * ── Lo que entró de verdad ──
+ * Tiqui anunciaba lo PEDIDO: "Agregué 74 Manzana" sobre un carrito que había
+ * rechazado las 74 porque quedaban 12. Ahora el carrito agrega hasta donde
+ * alcance y dice cuánto entró (ver agregarAlCarrito en useStore), y la frase
+ * se arma con eso:
+ *
+ *   - entró todo      → "Agregué 74 Manzanas."
+ *   - entró una parte → "Solo me quedaban 12 Manzanas, y ya están en tu carrito."
+ *   - no entró nada   → ya lleva todo lo que hay: "Ya tienes en tu carrito 12
+ *                       Manzanas, que es todo lo que me queda."
+ */
+const agregarLoQueHaya = (fns, prod, pedido) => ({
+  prod,
+  pedido,
+  entro: Number(fns.agregarAlCarrito?.(prod, pedido, { hastaDondeAlcance: true })) || 0,
+});
+
+const fraseDeLoAgregado = (resultados) => {
+  const completos = resultados.filter((r) => r.entro >= r.pedido).map((r) => cantidadParaDecir(r.prod, r.pedido));
+  const partes = completos.length ? [`Agregué ${enLista(completos)}.`] : [];
+  for (const r of resultados) {
+    if (r.entro > 0 && r.entro < r.pedido) {
+      const uno = r.entro === 1;
+      partes.push(`Solo me ${uno ? 'quedaba' : 'quedaban'} ${cantidadParaDecir(r.prod, r.entro)}, y ya ${uno ? 'está' : 'están'} en tu carrito.`);
+    } else if (r.entro <= 0) {
+      partes.push(`Ya tienes en tu carrito ${cantidadParaDecir(r.prod, Number(r.prod.stock) || 0)}, que es todo lo que me queda.`);
+    }
+  }
+  return partes.join(' ');
+};
 
 const cantidadExplicita = (texto) => {
   const t = normalizar(texto);
@@ -573,13 +608,19 @@ export const useVoiceAssistant = ({
     return 0;
   };
 
+  /*
+   * En un empate gana el que TIENE existencias. Con "leche" y dos leches igual
+   * de parecidas, se quedaba con la primera de la lista aunque estuviera
+   * agotada, y Tiqui decía "se nos acabó" teniendo la otra en el estante.
+   */
+  const conStock = (p) => (Number(p?.stock) || 0) > 0;
   const buscarProducto = (texto) => {
     const t = expandirSinonimos(normalizar(texto));
     let mejor = null;
     let mejorPuntaje = 0;
     for (const p of dataRef.current.productos) {
       const puntaje = puntuarCoincidencia(p.nombre, t);
-      if (puntaje > mejorPuntaje) {
+      if (puntaje > mejorPuntaje || (puntaje > 0 && puntaje === mejorPuntaje && conStock(p) && !conStock(mejor))) {
         mejor = p;
         mejorPuntaje = puntaje;
       }
@@ -648,13 +689,17 @@ export const useVoiceAssistant = ({
       const { productos, carrito } = dataRef.current;
       let pideTotal = false;
       let pideComprar = false;
+      // Lo que entró de verdad (ver fraseDeLoAgregado) y los "cambiar" que
+      // toparon con lo que hay.
+      const resultados = [];
+      const topados = [];
 
       for (const accion of Array.isArray(idea.acciones) ? idea.acciones : []) {
         const prod = accion.producto ? productos.find((p) => p.nombre === accion.producto) : null;
 
         switch (accion.tipo) {
           case 'agregar':
-            if (prod) fns.agregarAlCarrito?.(prod, accion.cantidad || 1);
+            if (prod) resultados.push(agregarLoQueHaya(fns, prod, accion.cantidad || 1));
             break;
           case 'quitar': {
             const enCarrito = prod && carrito.find((i) => i.id === prod.id);
@@ -670,8 +715,15 @@ export const useVoiceAssistant = ({
             // "Mejor que sean dos": deja la cantidad exacta. Si todavía no
             // estaba en el carrito, se agrega con esa cantidad.
             if (!prod) break;
-            if (carrito.some((i) => i.id === prod.id)) fns.actualizarCantidad?.(prod.id, accion.cantidad || 1);
-            else fns.agregarAlCarrito?.(prod, accion.cantidad || 1);
+            const pedido = accion.cantidad || 1;
+            if (carrito.some((i) => i.id === prod.id)) {
+              const quedo = Number(fns.actualizarCantidad?.(prod.id, pedido)) || 0;
+              if (quedo > 0 && quedo < pedido) {
+                topados.push(`Solo me quedan ${cantidadParaDecir(prod, quedo)}, así que te dejé ${quedo === 1 ? 'esa' : 'esas'}.`);
+              }
+            } else {
+              resultados.push(agregarLoQueHaya(fns, prod, pedido));
+            }
             break;
           }
           case 'vaciar':
@@ -715,6 +767,14 @@ export const useVoiceAssistant = ({
       setTimeout(() => {
         const { carrito: ahora, totalCarrito } = dataRef.current;
         let dice = idea.respuesta;
+        /*
+         * Si algo no entró completo, lo que dijo la IA ya no es verdad
+         * ("te agregué 74"): se dice lo que se hizo de verdad. La IA ve
+         * cuántas quedan y casi siempre acierta; esto es por si no.
+         */
+        if (topados.length || resultados.some((r) => r.entro < r.pedido)) {
+          dice = `${[fraseDeLoAgregado(resultados), ...topados].filter(Boolean).join(' ')} ¿Algo más?`;
+        }
         if (pideComprar) {
           if (!ahora.length) {
             dice = 'Tu carrito está vacío. ¿Qué te gustaría llevar?';
@@ -872,7 +932,8 @@ export const useVoiceAssistant = ({
       return;
     }
     const noHay = [];
-    const agregados = [];
+    // Lo que se intentó agregar y cuánto entró de verdad (ver fraseDeLoAgregado).
+    const resultados = [];
     /*
      * Lo que se pidió pero está agotado. Antes se "agregaba" igual: el
      * carrito lo rechazaba en silencio y el asistente decía "Agregué 1 leche"
@@ -893,9 +954,7 @@ export const useVoiceAssistant = ({
           agotados.push(prod.nombre);
           continue;
         }
-        const cant = cantidadExplicita(parte) ?? 1;
-        fns.agregarAlCarrito?.(prod, cant);
-        agregados.push(`${cant} ${prod.nombre}`);
+        resultados.push(agregarLoQueHaya(fns, prod, cantidadExplicita(parte) ?? 1));
       }
     }
 
@@ -903,13 +962,15 @@ export const useVoiceAssistant = ({
       ? `Hoy se nos ${agotados.length === 1 ? 'acabó' : 'acabaron'} ${agotados.join(' y ')}.`
       : '';
     const sinEso = noHay.length ? `No tengo ${noHay.join(' ni ')}.` : '';
+    const loAgregado = fraseDeLoAgregado(resultados);
 
-    if (agregados.length === 0 && agotados.length) {
-      hablar(`${[seAcabo, sinEso].filter(Boolean).join(' ')} ¿Te busco otra cosa?`);
+    // No entró nada: estaba agotado, o ya lleva en el carrito todo lo que hay.
+    if (!resultados.some((r) => r.entro > 0) && (agotados.length || resultados.length)) {
+      hablar(`${[loAgregado, seAcabo, sinEso].filter(Boolean).join(' ')} ¿Te busco otra cosa?`);
       return;
     }
 
-    if (agregados.length === 0) {
+    if (resultados.length === 0) {
       /*
        * Aquí las reglas se dieron por vencidas. Antes se acababa la
        * conversación con un "no encontré ese producto"; ahora se le pregunta
@@ -924,9 +985,7 @@ export const useVoiceAssistant = ({
       return;
     }
 
-    let mensaje = agregados.length === 1
-      ? `Agregué ${agregados[0]}.`
-      : `Agregué ${agregados.slice(0, -1).join(', ')} y ${agregados[agregados.length - 1]}.`;
+    let mensaje = loAgregado;
     // Lo que se pidió y no hay se dice, no se calla. Ver loQuePidio.
     if (sinEso) mensaje += ` ${sinEso}`;
     mensaje += seAcabo ? ` ${seAcabo} ¿Algo más?` : ' ¿Algo más?';
