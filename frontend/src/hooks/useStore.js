@@ -436,6 +436,17 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
   const guardarCarrito = useCallback((lista) => escribirLineas(llave, lista), [llave]);
 
   /*
+   * Las líneas guardadas AHORA, no las de este render.
+   *
+   * Agregar, quitar y cambiar partían de `carrito`, que es la foto del último
+   * render. Tiqui hace varias cosas de una sola vez ("dos cocas, un pan y una
+   * leche"): la segunda partía de la misma foto que la primera y la pisaba, y
+   * del pedido entero solo quedaba lo último. localStorage se escribe al
+   * instante, así que leerlo aquí siempre trae lo más nuevo.
+   */
+  const lineasAhora = () => normalizarLineas(leerCrudo(llave));
+
+  /*
    * Cuando el catálogo termina de cargar, lo guardado se limpia de una vez:
    * lo que ya no existe se borra del navegador y lo que se recortó se guarda
    * recortado. Si no, la corrección se rehacía en cada visita y el aviso
@@ -503,28 +514,40 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
    * `origen` es la foto desde donde se tocó "+": si viene, sale volando hasta
    * el botón del carrito. El asistente de voz agrega sin foto de origen y ahí
    * no vuela nada — solo sale el aviso.
+   *
+   * `hastaDondeAlcance` es para Tiqui: si piden 74 y quedan 12, entran las 12
+   * (el "+" de una tarjeta, en cambio, no agrega nada de más). Devuelve cuánto
+   * entró DE VERDAD, para que Tiqui diga eso y no lo que se pidió: decía
+   * "Agregué 74 Manzana" sobre un carrito que había rechazado las 74.
    */
-  const agregarAlCarrito = (producto, cantidad = 1, { origen } = {}) => {
-    if (!producto?.id) return;
+  const agregarAlCarrito = (producto, cantidad = 1, { origen, hastaDondeAlcance = false } = {}) => {
+    if (!producto?.id) return 0;
     const stock = Number(producto.stock) || 0;
     if (stock <= 0) {
       toast.error(`${producto.nombre} se quedó sin existencias`);
-      return;
+      return 0;
     }
 
-    const enCarrito = carrito.find((i) => i.id === producto.id)?.cantidad || 0;
-    const nuevaCantidad = enCarrito + cantidad;
-    if (nuevaCantidad > stock) {
-      // "Solo hay 3 unidades" de un queso que se vende por peso confunde:
-      // se dice en la unidad en que se vende. Ver utils/unidades.js.
-      toast.error(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`);
-      return;
+    const id = String(producto.id);
+    const actuales = lineasAhora();
+    const enCarrito = actuales.find((l) => l.id === id)?.cantidad || 0;
+    const cabe = stock - enCarrito;
+    let entra = cantidad;
+    if (cantidad > cabe) {
+      if (!hastaDondeAlcance || cabe <= 0) {
+        // "Solo hay 3 unidades" de un queso que se vende por peso confunde:
+        // se dice en la unidad en que se vende. Ver utils/unidades.js.
+        toast.error(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`);
+        return 0;
+      }
+      entra = cabe;
     }
+    const nuevaCantidad = enCarrito + entra;
 
     guardarCarrito(
       enCarrito
-        ? carrito.map((item) => (item.id === producto.id ? { ...item, cantidad: nuevaCantidad } : item))
-        : [...carrito, { id: producto.id, cantidad }]
+        ? actuales.map((l) => (l.id === id ? { ...l, cantidad: nuevaCantidad } : l))
+        : [...actuales, { id, cantidad: entra }]
     );
 
     volarAlCarrito(origen);
@@ -540,26 +563,34 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
         ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
         : `${producto.nombre} agregado al carrito`
     );
+    return entra;
   };
 
+  // Quitar y cambiar también parten de lo guardado ahora (ver lineasAhora).
   const eliminarDelCarrito = (productoId) => {
-    const fuera = carrito.find((i) => i.id === productoId);
-    guardarCarrito(carrito.filter((item) => item.id !== productoId));
+    const id = String(productoId);
+    const fuera = carrito.find((i) => String(i.id) === id);
+    guardarCarrito(lineasAhora().filter((l) => l.id !== id));
     avisarQuitado(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
   };
 
+  // Devuelve la cantidad con la que quedó: si pidieron más de lo que hay, el tope.
   const actualizarCantidad = (productoId, nuevaCantidad) => {
     if (nuevaCantidad <= 0) {
       eliminarDelCarrito(productoId);
-      return;
+      return 0;
     }
-    const item = carrito.find((i) => i.id === productoId);
-    if (!item) return;
+    const id = String(productoId);
+    const actuales = lineasAhora();
+    const linea = actuales.find((l) => l.id === id);
+    const stock = Number(productos.find((p) => String(p.id) === id)?.stock) || 0;
+    if (!linea || stock <= 0) return 0;
     // El tope se respeta también aquí, no solo en el botón: en el teléfono el
     // "+" se pulsa más rápido de lo que el render alcanza a deshabilitarlo.
-    const cantidad = Math.min(nuevaCantidad, item.stock);
-    if (cantidad === item.cantidad) return;
-    guardarCarrito(carrito.map((i) => (i.id === productoId ? { ...i, cantidad } : i)));
+    const cantidad = Math.min(nuevaCantidad, stock);
+    if (cantidad === linea.cantidad) return cantidad;
+    guardarCarrito(actuales.map((l) => (l.id === id ? { ...l, cantidad } : l)));
+    return cantidad;
   };
 
   /*

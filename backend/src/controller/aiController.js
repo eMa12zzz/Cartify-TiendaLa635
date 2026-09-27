@@ -722,10 +722,16 @@ const armarPreguntaDeTiqui = ({ frase, carrito, charla, disponibles, agotados, c
     ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
     : "vacío";
 
+  /*
+   * Con cuántos quedan. Sin el número, la IA prometía lo que le pidieran ("te
+   * agregué 74 manzanas") y el carrito, que sí sabe, lo rechazaba: Tiqui decía
+   * una cosa y el carrito mostraba otra.
+   */
   const linea = (p) =>
     [
       p.nombre,
       p.precio != null ? `${plata(p.precio)}${p.porLibra ? " la libra" : ""}` : "",
+      `quedan ${p.stock}${p.porLibra ? " libras" : ""}`,
       p.categoria,
       p.marca,
       ofertas.porProducto.get(p.id) || "",
@@ -749,7 +755,7 @@ const armarPreguntaDeTiqui = ({ frase, carrito, charla, disponibles, agotados, c
       ? `Promociones vigentes hoy:\n${ofertas.resumen.join("\n")}`
       : "Hoy no hay promociones vigentes.",
     "",
-    "Productos con existencias (nombre · precio · categoría · marca · oferta):",
+    "Productos con existencias (nombre · precio · cuántos quedan · categoría · marca · oferta):",
     disponibles.map(linea).join("\n") || "(ninguno)",
     ...(agotados.length ? ["", `Agotados hoy, NO se pueden agregar: ${agotados.map((p) => p.nombre).join(", ")}`] : []),
   ].join("\n");
@@ -898,6 +904,11 @@ const MODO_TIQUI = [
   "- El total en dólares no lo calcules: llama 'ver_total' o 'ir_a_pagar' y la tienda dice",
   "  el monto exacto.",
   "- 'cambiar_cantidad' deja la cantidad FINAL: 'mejor que sean dos' es 2, no 2 más.",
+  "- Cada producto dice cuántos quedan. Lo que ya lleva en el carrito cuenta: no puede",
+  "  llevar más de lo que queda. Si pide más, agrega solo lo que falta para llegar a lo que",
+  "  queda y díselo ('Solo me quedan 12 Manzanas, te agregué las 12'). Si ya lleva todo,",
+  "  dile que ya tiene todo lo que queda. Un producto que tiene aunque sea 1 NO está",
+  "  agotado: nunca digas que no hay.",
   "- Si la frase no se entiende (se cortó, no tiene sentido), pide que la repita. Si se",
   "  entiende pero no es algo que puedas resolver, dilo y ofrece lo que sí puedes hacer.",
   "",
