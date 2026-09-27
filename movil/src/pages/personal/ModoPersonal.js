@@ -18,14 +18,16 @@
  * ============================================================
  */
 
-import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Bike, LogOut, Sparkles } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { usePersonal } from '../../context/PersonalContext';
 import { useRepartoPersonal } from '../../hooks/useRepartoPersonal';
+import { useMovimientoReducido } from '../../hooks/useMovimientoReducido';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
+import ModalConfirmar from '../../components/UI/ModalConfirmar';
 import TiquiAdmin from './TiquiAdmin';
 import Reparto from './Reparto';
 
@@ -33,6 +35,17 @@ const SECCIONES = [
   { clave: 'tiqui', nombre: 'Tiqui', Icono: Sparkles },
   { clave: 'reparto', nombre: 'Reparto', Icono: Bike },
 ];
+
+// El relleno del selector y el aire entre opciones: la píldora los necesita
+// para saber dónde pararse (las opciones son `flex: 1` a partes iguales).
+const RELLENO_SELECTOR = 4;
+const SEPARACION_OPCIONES = 4;
+
+const anchoOpcionPara = (anchoSelector) =>
+  (anchoSelector - RELLENO_SELECTOR * 2 - SEPARACION_OPCIONES * (SECCIONES.length - 1)) / SECCIONES.length;
+
+const xPara = (indice, anchoSelector) =>
+  RELLENO_SELECTOR + indice * (anchoOpcionPara(anchoSelector) + SEPARACION_OPCIONES);
 
 const ModoPersonal = () => {
   const estilos = useEstilos(crearEstilos);
@@ -43,26 +56,54 @@ const ModoPersonal = () => {
   // El administrador abre con Tiqui; el empleado solo tiene el Reparto.
   const [seccion, setSeccion] = useState(esAdmin ? 'tiqui' : 'reparto');
   const actual = esAdmin ? seccion : 'reparto';
+  const indiceActivo = SECCIONES.findIndex((s) => s.clave === actual);
 
-  const pedirSalir = () => {
-    Alert.alert(
-      'Salir',
-      reparto.enViaje.length
-        ? 'Está compartiendo su ubicación con un cliente: al salir se deja de compartir. La app vuelve a ser la tienda.'
-        : 'La app vuelve a ser la tienda. Para volver tendrá que entrar de nuevo con su cuenta y el código del correo.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Salir',
-          style: 'destructive',
-          onPress: () => {
-            // Nadie se queda viendo el punto de un repartidor que ya se fue.
-            reparto.enViaje.forEach((id) => reparto.quitarDelViaje(id));
-            salir();
-          },
-        },
-      ]
-    );
+  /*
+   * La píldora del selector: UNA sola vista que viaja de una opción a la otra,
+   * como la de la barra de abajo de la tienda. Lleva dentro una copia de las
+   * opciones en blanco que se corre al revés de lo que ella avanza, así que
+   * esa copia queda quieta en su lugar y la píldora solo la va destapando: el
+   * texto se pone blanco justo donde ella pasa, no de golpe antes de que
+   * llegue. Hasta que `onLayout` no mide el selector no hay dónde pararla.
+   */
+  const movimientoReducido = useMovimientoReducido();
+  const [anchoSelector, setAnchoSelector] = useState(0);
+  const pildoraX = useRef(new Animated.Value(0)).current;
+  const contraX = useRef(Animated.multiply(pildoraX, -1)).current;
+
+  useEffect(() => {
+    if (!anchoSelector) return;
+    const destino = xPara(indiceActivo, anchoSelector);
+    if (movimientoReducido) {
+      pildoraX.setValue(destino);
+      return;
+    }
+    Animated.timing(pildoraX, {
+      toValue: destino,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [indiceActivo]);
+
+  const etiqueta = (clave, nombre, Icono, color) => (
+    <>
+      <Icono size={17} color={color} strokeWidth={2} />
+      <Text style={[estilos.opcionTexto, { color }]}>
+        {nombre}
+        {clave === 'reparto' && reparto.pedidos.length ? ` (${reparto.pedidos.length})` : ''}
+      </Text>
+    </>
+  );
+
+  // La pregunta la hace ModalConfirmar, la misma de "¿Cerrar sesión?" en Mi
+  // cuenta del cliente: el Alert del sistema era un cuadro gris de Android.
+  const [confirmarSalida, setConfirmarSalida] = useState(false);
+
+  const salirDelModo = () => {
+    // Nadie se queda viendo el punto de un repartidor que ya se fue.
+    reparto.enViaje.forEach((id) => reparto.quitarDelViaje(id));
+    salir();
   };
 
   return (
@@ -76,7 +117,7 @@ const ModoPersonal = () => {
             <Text style={estilos.subtitulo}>{esAdmin ? 'Administración' : 'Equipo de la tienda'}</Text>
           </View>
           <TouchableOpacity
-            onPress={pedirSalir}
+            onPress={() => setConfirmarSalida(true)}
             accessibilityRole="button"
             accessibilityLabel="Salir del modo personal"
             hitSlop={8}
@@ -87,25 +128,60 @@ const ModoPersonal = () => {
         </View>
 
         {esAdmin && (
-          <View style={estilos.selector} accessibilityRole="tablist">
-            {SECCIONES.map(({ clave, nombre, Icono }) => {
-              const activa = actual === clave;
-              return (
-                <Pressable
-                  key={clave}
-                  onPress={() => setSeccion(clave)}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: activa }}
-                  style={[estilos.opcion, activa && { backgroundColor: colores.marca }]}
+          <View
+            style={estilos.selector}
+            accessibilityRole="tablist"
+            onLayout={(e) => {
+              const ancho = e.nativeEvent.layout.width;
+              // Al abrir no viaja: aparece ya puesta en la sección activa.
+              pildoraX.setValue(xPara(indiceActivo, ancho));
+              setAnchoSelector(ancho);
+            }}
+          >
+            {SECCIONES.map(({ clave, nombre, Icono }) => (
+              <Pressable
+                key={clave}
+                onPress={() => setSeccion(clave)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: actual === clave }}
+                style={estilos.opcion}
+              >
+                {etiqueta(clave, nombre, Icono, COLORES.textoSuave)}
+              </Pressable>
+            ))}
+
+            {/*
+              Va encima de las opciones pero no les roba el toque, y el lector
+              de pantalla no la lee: las opciones de verdad son las de abajo.
+            */}
+            {anchoSelector > 0 && (
+              <Animated.View
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={[
+                  estilos.pildora,
+                  {
+                    width: anchoOpcionPara(anchoSelector),
+                    backgroundColor: colores.marca,
+                    transform: [{ translateX: pildoraX }],
+                  },
+                ]}
+              >
+                <Animated.View
+                  style={[
+                    estilos.opcionesEnBlanco,
+                    { width: anchoSelector, transform: [{ translateX: contraX }] },
+                  ]}
                 >
-                  <Icono size={17} color={activa ? '#FFFFFF' : COLORES.textoSuave} strokeWidth={2} />
-                  <Text style={[estilos.opcionTexto, { color: activa ? '#FFFFFF' : COLORES.textoSuave }]}>
-                    {nombre}
-                    {clave === 'reparto' && reparto.pedidos.length ? ` (${reparto.pedidos.length})` : ''}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                  {SECCIONES.map(({ clave, nombre, Icono }) => (
+                    <View key={clave} style={estilos.opcion}>
+                      {etiqueta(clave, nombre, Icono, '#FFFFFF')}
+                    </View>
+                  ))}
+                </Animated.View>
+              </Animated.View>
+            )}
           </View>
         )}
       </View>
@@ -118,6 +194,22 @@ const ModoPersonal = () => {
       <View style={actual === 'reparto' ? estilos.flexible : estilos.oculta}>
         <Reparto reparto={reparto} />
       </View>
+
+      {confirmarSalida && (
+        <ModalConfirmar
+          titulo="¿Salir del modo personal?"
+          mensaje={
+            reparto.enViaje.length
+              ? 'Está compartiendo su ubicación con un cliente: al salir se deja de compartir. La app vuelve a ser la tienda.'
+              : 'La app vuelve a ser la tienda. Para volver tendrá que entrar de nuevo con su cuenta y el código del correo.'
+          }
+          textoConfirmar="Salir"
+          textoCancelar="Quedarme"
+          destructivo
+          alConfirmar={salirDelModo}
+          alCerrar={() => setConfirmarSalida(false)}
+        />
+      )}
     </View>
   );
 };
@@ -142,8 +234,28 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORES.papelGris,
     borderRadius: 999,
-    padding: 4,
-    gap: 4,
+    padding: RELLENO_SELECTOR,
+    gap: SEPARACION_OPCIONES,
+  },
+  pildora: {
+    position: 'absolute',
+    top: RELLENO_SELECTOR,
+    bottom: RELLENO_SELECTOR,
+    left: 0,
+    borderRadius: 999,
+    // Recorta la copia en blanco a la forma de la píldora.
+    overflow: 'hidden',
+  },
+  // Del mismo tamaño y con el mismo relleno que el selector, para que cada
+  // opción en blanco caiga exacto encima de la suya.
+  opcionesEnBlanco: {
+    position: 'absolute',
+    top: -RELLENO_SELECTOR,
+    bottom: -RELLENO_SELECTOR,
+    left: 0,
+    flexDirection: 'row',
+    padding: RELLENO_SELECTOR,
+    gap: SEPARACION_OPCIONES,
   },
   opcion: {
     flex: 1,
