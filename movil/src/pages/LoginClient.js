@@ -42,14 +42,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import { EsperaMascota } from '../components/Tiqui/Mascota';
 import TiquiColgada from '../components/Tiqui/TiquiColgada';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
-import { LogoGoogle } from '../components/UI/Iconos';
+import BotonGoogle from '../components/UI/BotonGoogle';
 // Los mismos iconos que la web (lucide): correo `Mail`, contraseña `Lock`.
 import { Lock, Mail } from 'lucide-react-native';
 import { googleLoginDB, loginClientDB } from '../api/authApi';
@@ -102,11 +101,24 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
       });
 
       /*
-       * El tipo lo dice el servidor: por esta misma puerta entran clientes y
-       * personal, y de eso depende qué se le muestra después.
+       * Un servidor sin actualizar todavía abre sesión del personal por esta
+       * puerta. No se guarda como si fuera de cliente: se le lleva a la suya.
        */
-      login(res.token, res.userType || 'client', res.client);
+      if (res.userType && res.userType !== 'client') {
+        irAPersonal?.(valores.email.trim());
+        return;
+      }
+      login(res.token, 'client', res.client);
     } catch (err) {
+      /*
+       * Escribió su cuenta del personal: el servidor ya no le abre sesión por
+       * aquí (se saltaba el código del segundo paso) y contesta `esPersonal`.
+       * Se le lleva a "¿Trabajas en la tienda?" con el correo ya puesto.
+       */
+      if (err.esPersonal && irAPersonal) {
+        irAPersonal(valores.email.trim());
+        return;
+      }
       /*
        * El error del servidor va dentro de la tarjeta y no en una alerta que
        * hay que cerrar: "la contraseña es incorrecta" se lee al lado del campo
@@ -151,13 +163,12 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
        * Esta pantalla es para ENTRAR, no para registrarse — igual que la web.
        * Si el correo de Google no tiene cuenta, el backend se niega a
        * crearla aquí (no hay dónde aceptar los términos ni dejar el
-       * teléfono) y contesta con `requiereConsentimiento`. La web manda a
-       * completar el registro con el token ya en mano; ese formulario
-       * todavía no existe en móvil, así que por ahora se le avisa claro y se
-       * le deja el camino de Registro de siempre.
+       * teléfono) y contesta con `requiereConsentimiento`. Se le avisa claro
+       * y se le manda a Registro, que tiene su propio botón de Google con
+       * las casillas de los términos al lado.
        */
       if (err.requiereConsentimiento) {
-        setAvisoServidor('No tiene una cuenta con ese correo de Google. Regístrese primero.');
+        setAvisoServidor('No tiene una cuenta con ese correo de Google. Regístrese primero: también puede hacerlo con Google.');
         return;
       }
       setAvisoServidor(err.message || 'No se pudo iniciar sesión con Google');
@@ -165,8 +176,6 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
       setCargandoGoogle(false);
     }
   };
-
-  const otroCargando = cargando || cargandoGoogle;
 
   return (
     <View style={estilos.pantalla}>
@@ -266,33 +275,18 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
 
           <View style={estilos.divisor}>
             <View style={estilos.linea} />
-            <Text style={estilos.divisorTexto}>O continúa con</Text>
+            {/* Solo "o", como la web: el "Continuar" ya lo dice el botón de abajo. */}
+            <Text style={estilos.divisorTexto}>o</Text>
             <View style={estilos.linea} />
           </View>
 
-          <Pressable
-            onPress={conGoogle}
-            disabled={otroCargando}
-            accessibilityRole="button"
-            accessibilityLabel="Continuar con Google"
-            style={({ pressed }) => [
-              estilos.botonGoogle,
-              otroCargando && estilos.botonGoogleInactivo,
-              pressed && !otroCargando && estilos.botonGooglePresionado,
-            ]}
-          >
-            {cargandoGoogle ? (
-              <>
-                <EsperaMascota alto={22} />
-                <Text style={estilos.botonGoogleTexto}>Entrando…</Text>
-              </>
-            ) : (
-              <>
-                <LogoGoogle size={18} />
-                <Text style={estilos.botonGoogleTexto}>Continuar con Google</Text>
-              </>
-            )}
-          </Pressable>
+          <BotonGoogle
+            texto="Continuar con Google"
+            textoCargando="Entrando…"
+            cargando={cargandoGoogle}
+            deshabilitado={cargando}
+            alPresionar={conGoogle}
+          />
 
           {/*
             La única puerta al registro que queda, y va aquí porque es donde
@@ -314,7 +308,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
           {irAPersonal ? (
             <Text style={estilos.pieAdmin}>
               ¿Trabajas en la tienda?{' '}
-              <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irAPersonal} accessibilityRole="link">
+              <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={() => irAPersonal()} accessibilityRole="link">
                 Entra aquí
               </Text>
             </Text>
@@ -389,7 +383,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     borderRadius: 28,
   },
 
-  // ── Divisor "O continúa con" ──
+  // ── Divisor "o" ──
   divisor: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -404,31 +398,6 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   divisorTexto: {
     fontSize: 12.5,
     color: COLORES.textoTenue,
-  },
-
-  // ── Botón de Google: outline, no relleno como el de iniciar sesión ──
-  botonGoogle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    width: '100%',
-    minHeight: 50,
-    borderRadius: 28,
-    borderWidth: 1.5,
-    borderColor: COLORES.borde,
-    backgroundColor: COLORES.fondo,
-  },
-  botonGooglePresionado: {
-    backgroundColor: COLORES.papelGris,
-  },
-  botonGoogleInactivo: {
-    opacity: 0.6,
-  },
-  botonGoogleTexto: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORES.texto,
   },
 
   pie: {

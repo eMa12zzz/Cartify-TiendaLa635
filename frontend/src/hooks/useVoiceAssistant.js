@@ -140,11 +140,37 @@ const SIN_VOCES = [];
  * suena lejos de la tienda y de la voz de Tiqui.
  */
 const ACENTOS_PREFERIDOS = ['es-SV', 'es-MX', 'es-US', 'es-419', 'es-GT', 'es-CO'];
+/*
+ * Primero las voces que viven EN el equipo (localService): suenan al instante.
+ * Las "en línea" (como "Google español") se descargan frase por frase y tardan
+ * en arrancar, que era parte del "tarda en sonar". Si no hay ninguna local,
+ * igual se usa una en línea antes que quedarse muda.
+ */
 const vozPreferida = (lista) =>
-  ACENTOS_PREFERIDOS.map((l) => lista.find((v) => v.lang === l)).find(Boolean) || lista[0];
+  ACENTOS_PREFERIDOS.map((l) => lista.find((v) => v.lang === l && v.localService)).find(Boolean) ||
+  lista.find((v) => v.localService) ||
+  ACENTOS_PREFERIDOS.map((l) => lista.find((v) => v.lang === l)).find(Boolean) ||
+  lista[0];
 
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const normalizar = (s) => sinAcentos(s).toLowerCase().trim();
+
+/*
+ * Cuántos productos DISTINTOS se nombran en un pedazo de la frase. Se cuenta
+ * la palabra que manda en cada nombre ("sandía", "coca", "queso"), sin
+ * repetir: "queso fresco" nombra un queso, aunque haya tres quesos en la
+ * tienda.
+ */
+const productosNombrados = (texto, productos) => {
+  const dichas = new Set(texto.split(/\s+/).map((w) => w.replace(/s$/, '')));
+  const vistas = new Set();
+  for (const p of productos) {
+    const principal = normalizar(p.nombre).split(/[\s-]+/).find((w) => w.length > 2);
+    const base = principal?.replace(/s$/, '');
+    if (base && dichas.has(base)) vistas.add(base);
+  }
+  return vistas.size;
+};
 const contarItems = (lista) => lista.reduce((a, i) => a + i.cantidad, 0);
 
 /*
@@ -833,6 +859,18 @@ export const useVoiceAssistant = ({
     // Lo mismo sin los sinónimos que se le pegan al final: así se nombra lo
     // que no hay tal como lo dijo ("soda", no "soda refresco").
     const dichas = normalizar(texto).split(SEPARA_PEDIDOS).map((s) => s.trim()).filter(Boolean);
+
+    /*
+     * Varios productos en un mismo pedazo: el reconocimiento de voz no pone
+     * comas, así que "quiero una sandía dos coca colas un queso fresco" llegaba
+     * como UN pedido y estas reglas se quedaban con el primero que
+     * encontraban (la sandía) y callaban el resto. Separar eso lo hace bien
+     * la IA; aquí solo se le pasa.
+     */
+    if (dichas.some((d) => productosNombrados(d, dataRef.current.productos) > 1)) {
+      preguntarALaIA(texto);
+      return;
+    }
     const noHay = [];
     const agregados = [];
     /*

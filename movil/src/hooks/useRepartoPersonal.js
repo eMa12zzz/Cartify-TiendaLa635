@@ -2,8 +2,8 @@
  * ============================================================
  * EL REPARTO EN EL TELÉFONO — useRepartoPersonal.js
  * ============================================================
- * Lo mismo que el Reparto de la web (frontend/src/hooks/useReparto.js y
- * useViajeEnVivo.js), en la app del personal:
+ * El único Reparto que queda (el de la web se quitó: repartir es cosa del
+ * teléfono), en la app del personal:
  *
  *   - Los pedidos a domicilio que faltan por entregar.
  *   - Moverlos de estado con el mismo PUT que el panel (la entrega pide el
@@ -15,7 +15,7 @@
  * Se lee con la app a la vista (permiso "mientras se usa"), no en segundo
  * plano: pedir la ubicación siempre, aun con la app cerrada, es un permiso más
  * delicado y otra compilación de la app. Por eso, mientras hay un viaje, la
- * pantalla no se apaga sola (expo-keep-awake), igual que la web con wakeLock.
+ * pantalla no se apaga sola (expo-keep-awake).
  *
  * ── No se manda de más ──
  * Como en la web: no más de un envío cada 10 segundos, ni por moverse menos de

@@ -138,7 +138,7 @@ const LoginRoute = ({ navigation }) => (
       destinoPendiente.current = null;
       irATabs(null);
     }}
-    irAPersonal={() => navigation.navigate('LoginPersonal')}
+    irAPersonal={(correo) => navigation.navigate('LoginPersonal', { correo })}
   />
 );
 
@@ -147,8 +147,8 @@ const LoginRoute = ({ navigation }) => (
  * PersonalContext guarda la sesión y App.js cambia la app entera al modo
  * personal (Tiqui y Reparto para el administrador; Reparto para el empleado).
  */
-const LoginPersonalRoute = ({ navigation }) => (
-  <LoginPersonal alVolver={() => navigation.goBack()} />
+const LoginPersonalRoute = ({ navigation, route }) => (
+  <LoginPersonal alVolver={() => navigation.goBack()} correoInicial={route.params?.correo || ''} />
 );
 
 const RegisterRoute = ({ navigation }) => (

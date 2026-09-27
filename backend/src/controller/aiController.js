@@ -7,7 +7,7 @@ import "../models/brand.js";
 import promotionModel from "../models/promotion.js";
 import storeSettingsModel from "../models/storeSettings.js";
 import { getIA, generarConIA, generarConCobertura } from "../utils/iaClient.js";
-import { vozDisponible, paraDecir, frasePrevia, guardarFrase, pedirVoz } from "../utils/vozTiqui.js";
+import { vozDisponible, comprobarVoz, paraDecir, frasePrevia, guardarFrase, pedirVoz } from "../utils/vozTiqui.js";
 import { generarCopyPlantilla } from "../utils/plantillasPromo.js";
 import { esFamiliaValida, LISTA_PARA_IA } from "../utils/familias.js";
 
@@ -388,7 +388,9 @@ aiController.listo = async (req, res) => {
   }
   // `voz`: si hay llave de ElevenLabs. Sin ella, los clientes hablan con la
   // voz del sistema y ni intentan pedir el audio.
-  return res.status(200).json({ listo: true, voz: vozDisponible() });
+  // `voz` comprobada de verdad (ver comprobarVoz): sin ella los clientes hablan
+  // con la voz del dispositivo de una vez, sin probar y esperar el error.
+  return res.status(200).json({ listo: true, voz: await comprobarVoz() });
 };
 
 /*
@@ -938,11 +940,58 @@ const PARIENTES = [
   ["yogurt", "yogur"],
 ];
 
+/*
+ * ── Cómo SUENA, no cómo se escribe ──
+ * El reconocimiento de voz se equivoca como se equivoca un oído: confunde s,
+ * z y c; b y v; y y ll; se come la h, y pega palabras. "Es queso fresco" llegó
+ * como "esquizofrezco": ninguna palabra dice "queso", pero suena igual. Tiqui
+ * lo entendía (el modelo agregaba el Queso Fresco) y esta revisión lo tiraba
+ * por no encontrar la palabra escrita.
+ *
+ * Así que además de comparar palabras, se compara el sonido: el nombre del
+ * producto, todo junto y en su versión "fonética", tiene que aparecer dentro
+ * de lo dicho con muy pocas letras de diferencia (una cada cinco).
+ */
+const sonido = (texto) =>
+  aTextoPlano(texto)
+    .replace(/[^a-z0-9]/g, "")
+    .replace(/ll/g, "y")
+    .replace(/h/g, "")
+    .replace(/v/g, "b")
+    .replace(/z/g, "s")
+    .replace(/c([ei])/g, "s$1")
+    .replace(/qu/g, "k")
+    .replace(/c/g, "k")
+    .replace(/(.)\1+/g, "$1");
+
+// Cuántas letras hay que cambiar, como mínimo, para encontrar `patron` en algún lugar de `texto`.
+const distanciaDentro = (patron, texto) => {
+  let previa = new Array(texto.length + 1).fill(0);
+  for (let i = 1; i <= patron.length; i++) {
+    const fila = [i];
+    for (let j = 1; j <= texto.length; j++) {
+      const cambio = patron[i - 1] === texto[j - 1] ? 0 : 1;
+      fila[j] = Math.min(previa[j] + 1, fila[j - 1] + 1, previa[j - 1] + cambio);
+    }
+    previa = fila;
+  }
+  return Math.min(...previa);
+};
+
+const suenaA = (nombre, dicho) => {
+  const patron = sonido(nombre);
+  // Nombres muy cortos ("Té") se parecen a cualquier cosa: esos, solo por palabra.
+  if (patron.length < 5) return false;
+  const tolerancia = Math.floor(patron.length / 5);
+  return distanciaDentro(patron, sonido(dicho)) <= tolerancia;
+};
+
 const fueNombrado = (producto, textos) => {
   const dichas = new Set(palabrasClave(textos.join(" ")));
-  return palabrasClave(`${producto.nombre} ${producto.marca || ""}`).some(
+  const porPalabra = palabrasClave(`${producto.nombre} ${producto.marca || ""}`).some(
     (w) => dichas.has(w) || PARIENTES.some((g) => g.includes(w) && g.some((x) => dichas.has(x)))
   );
+  return porPalabra || textos.some((t) => suenaA(producto.nombre, t));
 };
 
 // Palabras de cantidad, de pedir o de decir que sí: no dicen QUÉ se quiere.
@@ -961,21 +1010,41 @@ const SIN_PRODUCTO = new Set([
  * pidió y no hay. Se devuelven como las dijo la persona ("galletas", con su
  * plural y sus tildes), que es como Tiqui tiene que repetirlas.
  */
+/*
+ * Solo cuenta como "lo que pidió" la palabra que está donde va un producto:
+ * después de un artículo, una cantidad, "de", "por" o un verbo de pedir
+ * ("unas galletas", "dos cocas", "cámbialo por queso"). Antes era cualquier
+ * palabra que no fuera de un producto, y Tiqui decía "No tengo cambiáramos"
+ * de un verbo.
+ */
+const ANTES_DE_PRODUCTO = new Set([
+  "un", "una", "unos", "unas", "el", "la", "los", "las", "de", "del", "por", "otra", "otro", "mas",
+  "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "media", "medio", "libra", "libras",
+  "quiero", "dame", "deme", "agrega", "agregame", "agregue", "pon", "ponme", "trae", "traeme", "busco",
+  "tienes", "tienen", "hay", "vendes", "venden", "necesito", "llevo", "quisiera", "y", "e",
+]);
+
 const loQueNoHay = (frase, catalogo) => {
   const conocidas = new Set(catalogo.flatMap((p) => palabrasClave(`${p.nombre} ${p.marca || ""}`)));
   const vistas = new Set();
-  return String(frase || "")
+  const palabras = String(frase || "")
     .normalize("NFC")
     .toLowerCase()
     // Letras de cualquier alfabeto con sus tildes: una "é" que llega como "e"
     // más la tilde aparte no puede partir "también" en dos.
     .split(/[^\p{L}\p{M}\p{N}]+/u)
-    .filter((w) => {
-      const [plana] = palabrasClave(w);
-      if (!plana || SIN_PRODUCTO.has(aTextoPlano(w)) || /\d/.test(w) || conocidas.has(plana) || vistas.has(plana)) return false;
-      vistas.add(plana);
-      return true;
-    });
+    .filter(Boolean);
+  return palabras.filter((w, i) => {
+    const [plana] = palabrasClave(w);
+    if (!plana || SIN_PRODUCTO.has(aTextoPlano(w)) || /\d/.test(w) || conocidas.has(plana) || vistas.has(plana)) return false;
+    // Tiene que estar donde va un producto (o ser lo primero que se dice).
+    const anterior = i > 0 ? aTextoPlano(palabras[i - 1]) : "";
+    if (i > 0 && !ANTES_DE_PRODUCTO.has(anterior)) return false;
+    // Y no sonar a nada de la tienda: "esquizofrezco" es "es queso fresco" mal oído.
+    if (catalogo.some((p) => suenaA(p.nombre, palabras.slice(Math.max(0, i - 1), i + 2).join(" ")))) return false;
+    vistas.add(plana);
+    return true;
+  });
 };
 
 const enLista = (cosas, conector) =>
@@ -1085,8 +1154,15 @@ aiController.asistente = async (req, res) => {
       const faltan = loQueNoHay(frase, catalogo);
       const ultimoDeTiqui = [...charla].reverse().find((m) => m.quien === "Asistente")?.texto || "";
       const loDicho = [frase, ...charla.slice(-4).map((m) => m.texto)];
+      /*
+       * Lo que Tiqui acaba de ofrecer vale si la frase no pide nada nuevo, o si
+       * empieza diciendo que sí ("sí, me gustaría ese"): ahí la persona está
+       * contestando la oferta, aunque el reconocimiento le haya metido otras
+       * palabras.
+       */
+      const diceQueSi = /^(si|claro|dale|ok|okay|bueno|va|sale|perfecto|de acuerdo|esta bien|me gustaria|porfa|por favor)\b/.test(aTextoPlano(frase));
       const pidioEsto = (real) =>
-        fueNombrado(real, [frase]) || (!faltan.length && fueNombrado(real, [ultimoDeTiqui]));
+        fueNombrado(real, [frase]) || ((!faltan.length || diceQueSi) && fueNombrado(real, [ultimoDeTiqui]));
       const sustitutos = [];
       let descartados = 0;
 

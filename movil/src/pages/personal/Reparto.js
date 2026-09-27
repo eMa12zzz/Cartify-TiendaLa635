@@ -2,8 +2,8 @@
  * ============================================================
  * REPARTO — los pedidos a domicilio, para quien los lleva (Reparto.js)
  * ============================================================
- * La pantalla del repartidor en la app del personal. La misma de la web
- * (frontend/src/pages/cliente/Reparto.jsx): cada pedido con su dirección, la
+ * La pantalla del repartidor en la app del personal (la web ya no tiene
+ * Reparto: se repartía desde Mi Cuenta y se quitó). Cada pedido con su dirección, la
  * referencia, el teléfono del cliente y un botón que abre la ruta en el mapa
  * del teléfono, y los pasos del pedido:
  *
@@ -20,7 +20,7 @@
 
 import { useState } from 'react';
 import {
-  Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
+  Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { Bike, MapPin, Navigation, Phone, Radio, Signpost, TriangleAlert } from 'lucide-react-native';
 import { CargandoMascota } from '../../components/Tiqui/Mascota';
@@ -31,12 +31,26 @@ const dinero = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 const hora = (iso) => (iso ? new Date(iso).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' }) : '');
 const PAGO = { efectivo: 'Paga en efectivo', tarjeta: 'Paga con tarjeta', saldo: 'Pagado con saldo' };
 
-// La ruta en el mapa del teléfono, desde donde está el repartidor.
-const abrirRuta = (pedido) => {
-  const destino = pedido.deliveryLat != null && pedido.deliveryLng != null
-    ? `${pedido.deliveryLat},${pedido.deliveryLng}`
-    : encodeURIComponent(pedido.deliveryAddress || '');
-  Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${destino}`).catch(() => {});
+/*
+ * La ruta en la app de mapas del teléfono, desde donde está el repartidor.
+ * En Android va un enlace geo: y el teléfono pregunta con cuál abrirlo
+ * (Google Maps, Waze, el que tenga); en iPhone, Apple Maps. Ahí está la
+ * navegación de verdad: voz, tráfico, recalcular. Si no hay ninguna app que
+ * lo abra, queda Google Maps en el navegador.
+ */
+const abrirRuta = async (pedido) => {
+  const hayPunto = pedido.deliveryLat != null && pedido.deliveryLng != null;
+  const punto = hayPunto ? `${pedido.deliveryLat},${pedido.deliveryLng}` : '';
+  const texto = encodeURIComponent(pedido.deliveryAddress || '');
+  const quien = encodeURIComponent(`Entrega a ${pedido.clientId?.fullName || 'cliente'}`);
+  const enlace = Platform.OS === 'ios'
+    ? `https://maps.apple.com/?daddr=${hayPunto ? punto : texto}`
+    : hayPunto ? `geo:${punto}?q=${punto}(${quien})` : `geo:0,0?q=${texto}`;
+  try {
+    await Linking.openURL(enlace);
+  } catch {
+    Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${hayPunto ? punto : texto}`).catch(() => {});
+  }
 };
 
 /*

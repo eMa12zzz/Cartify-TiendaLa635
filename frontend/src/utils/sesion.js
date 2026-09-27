@@ -23,9 +23,10 @@ export const CAJON = {
 /*
  * La bandera del viejo "Estoy trabajando" de Mi Cuenta, que mezclaba en el
  * mismo navegador la sesión de cliente y la de personal de una persona. Ya no
- * existe: el personal entra con su propia cuenta (en el teléfono, por
- * "¿Trabajas en la tienda?" de la app). La llave queda solo para borrarla de
- * los navegadores donde se quedó encendida (ver AuthContext).
+ * existe, ni el Reparto de la web: el personal reparte desde la app y entra al
+ * panel por /admin ("¿Trabajas en la tienda?" en los dos logins). La llave
+ * queda solo para borrarla de los navegadores donde se quedó encendida (ver
+ * AuthContext).
  */
 export const LLAVE_MODO_TRABAJO = 'sesion:trabajando';
 
