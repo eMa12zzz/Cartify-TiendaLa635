@@ -110,13 +110,17 @@ export const verificarCodigoCorreo = (codigo) =>
  * Google (misma GOOGLE_CLIENT_ID que ya usan frontend y backend) y busca o
  * enlaza la cuenta. Misma respuesta que loginClientDB.
  *
- * Esta pantalla es solo para ENTRAR, así que no se manda `extra`: si el
- * correo de Google no tiene cuenta todavía, el backend contesta 403 con
- * `requiereConsentimiento` en vez de crearla — ver googleAuthClient.js en el
- * backend. `peticion()` deja ese campo pegado al error para quien llame.
+ * El inicio de sesión no manda `extra`: si el correo de Google no tiene
+ * cuenta todavía, el backend contesta 403 con `requiereConsentimiento` en vez
+ * de crearla — ver googleAuthClient.js en el backend. `peticion()` deja ese
+ * campo pegado al error para quien llame.
+ *
+ * El registro sí lo manda, igual que la web: `aceptaTerminos` y `promociones`
+ * de sus casillas, y lo que Google no da (`phoneNumber`, `fechaNacimiento`,
+ * `dui`) si ya estaba escrito. Con eso el backend crea la cuenta de una.
  */
-export const googleLoginDB = (credential) =>
+export const googleLoginDB = (credential, extra = {}) =>
   peticion('/loginClient/google', {
     metodo: 'POST',
-    cuerpo: { credential },
+    cuerpo: { credential, ...extra },
   });
