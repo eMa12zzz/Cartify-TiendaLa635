@@ -123,19 +123,17 @@ export const AuthProvider = ({ children }) => {
    *
    * En el panel es la del personal y nada más: si ahí valiera la del cliente,
    * una pantalla de administración terminaría pidiendo datos con el id
-   * equivocado. En la tienda manda la del cliente, pero si no hay se usa la
-   * del personal — el dueño mirando su propia tienda está conectado, y el
-   * repartidor entra a /mi-cuenta/reparto con su cuenta de empleado.
+   * equivocado. Y en la tienda, la del cliente y nada más.
+   *
+   * Antes, en la tienda, sin sesión de cliente se usaba la del personal: el
+   * repartidor trabajaba desde /mi-cuenta/reparto con su cuenta de empleado.
+   * El Reparto se fue a la app, y una sesión del panel en la tienda solo
+   * dejaba a medias pantallas que piden datos de CLIENTE (Mi Cuenta, el
+   * carrito). El dueño que mira su tienda la ve como un visitante; para
+   * comprar, entra con su cuenta de cliente.
    */
   const area = areaDeRuta(pathname);
-  /*
-   * En la tienda manda el cliente; si no hay, el personal (el dueño mirando su
-   * propia tienda, o el repartidor que entró con su cuenta de empleado).
-   */
-  const activa =
-    area === 'personal'
-      ? sesiones.personal
-      : sesiones.cliente || sesiones.personal;
+  const activa = area === 'personal' ? sesiones.personal : sesiones.cliente;
 
   /*
    * El área, también en una referencia.
@@ -176,8 +174,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // 3- Guardar una sesión. El cajón lo elige el tipo de cuenta, no la pantalla:
-  //    el personal también entra por la puerta de la tienda (desde el teléfono)
-  //    y su sesión tiene que caer igual en el cajón del personal.
+  //    así una sesión nunca cae en el cajón que no es suyo, entre por donde entre.
   const login = useCallback((nuevoToken, tipoUsuario = 'employee', datosUsuario = null) => {
     const sesion = { token: nuevoToken, type: tipoUsuario, ...(datosUsuario || {}) };
     const cajon = cajonDeTipo(tipoUsuario);

@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Store, Heart, Bike, SlidersHorizontal,
+  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Heart, SlidersHorizontal,
   ArrowLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
-import MarcaTienda from '../Store/MarcaTienda';
 import HeaderTienda from '../Store/HeaderTienda';
 
 /*
@@ -45,31 +44,22 @@ const navItems = [
 const ClienteLayout = () => {
   const { palette } = useTheme();
   const c = palette.colors;
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
-
-  const displayName = user?.userName || user?.fullName || 'Cliente';
-  const initials = displayName.substring(0, 1).toUpperCase();
   const [confirmarSalida, setConfirmarSalida] = useState(false);
 
   /*
-   * DOS MENÚS, Y LO DECIDE QUIÉN ENTRÓ.
+   * Mi Cuenta es SOLO del cliente.
    *
-   * El personal (el repartidor que entra con su cuenta de empleado) ve solo
-   * Reparto: es una herramienta de trabajo, y las demás pantallas piden datos
-   * de CLIENTE, que no es quien está adentro. Un cliente ve su cuenta completa.
-   *
-   * Antes lo decidía un interruptor, "Estoy trabajando", que mezclaba en el
-   * mismo navegador la sesión de cliente y la de personal de la misma persona.
-   * Se quitó: el personal entra con su propia cuenta (en el teléfono, por
-   * "¿Trabajas en la tienda?" de la app) y cada sesión queda con lo suyo.
+   * Aquí vivía también el Reparto del personal: quien entraba con su cuenta de
+   * empleado veía solo esa pestaña (primero con un interruptor, "Estoy
+   * trabajando", y después según el tipo de cuenta). Se fue a la app, que es
+   * donde se reparte: el GPS, la pantalla encendida y la app de mapas están en
+   * el teléfono. En la web el personal entra al panel por /admin (ver
+   * "¿Trabajas en la tienda?" en LoginClient).
    */
-  const esPersonal = !!user && user.type !== 'client';
-  const items = esPersonal
-    ? [{ to: '/mi-cuenta/reparto', label: 'Reparto', icon: Bike, ready: true }]
-    : navItems;
 
   /*
    * Al cerrar sesión se queda EN la tienda, no en un formulario de login.
@@ -77,17 +67,8 @@ const ClienteLayout = () => {
    * precios un rato más.
    */
   const handleLogout = () => {
-    /*
-     * Se cierra el cajón de QUIEN está dentro, no el que adivine la ruta.
-     *
-     * Sin esto, un repartidor —que entra con cuenta de empleado y trabaja
-     * desde /mi-cuenta/reparto— tocaba "Cerrar sesión", leía que tendría que
-     * volver a ingresar su contraseña… y no se cerraba nada: el área de
-     * /mi-cuenta es la de CLIENTE, así que se borraba un cajón vacío mientras
-     * su token de personal seguía vivo. En un teléfono que se usa en la calle
-     * eso deja abierto el panel entero. Ver AuthContext.
-     */
-    logout(user?.type === 'client' ? 'cliente' : 'personal');
+    // Solo la del cliente: la del panel, si la misma persona la tiene abierta, sigue.
+    logout('cliente');
     navigate('/');
   };
 
@@ -107,55 +88,8 @@ const ClienteLayout = () => {
         negocio, y para volver a comprar había que buscar la salida. Con
         HeaderTienda el carrito y el buscador siguen donde siempre (llevan a la
         tienda, igual que en Impresiones).
-
-        El personal se queda con la barra simple: es una herramienta de
-        reparto, y un repartidor en la calle no viene a buscar productos ni a
-        llenar un carrito.
       */}
-      {!esPersonal ? <HeaderTienda /> : (
-      <nav
-        className="h-16 px-4 sm:px-7 flex items-center justify-between gap-3 sticky top-0 z-30"
-        style={{ backgroundColor: c.topbarBg, borderBottom: `1px solid ${c.sidebarBorder}` }}
-      >
-        {/* La misma marca que el menú de la tienda, logo incluido. Antes esta
-            barra pintaba el nombre a 16px y nunca el logo. Ver MarcaTienda. */}
-        <Link to="/store" className="flex-none">
-          <MarcaTienda tamano={19} alto={38} color={c.textPrimary} />
-        </Link>
-
-        {/* Quién está dentro. Se mudó del menú lateral a aquí: ahora que la
-            navegación es horizontal, este es el único lugar donde el dato
-            cabe sin robarle sitio a las secciones. */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:flex items-center gap-2">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm overflow-hidden flex-none"
-              style={{ backgroundColor: c.primary, color: c.buttonText }}
-            >
-              {/* Su foto si la tiene; si no, la inicial de siempre. */}
-              {user?.image ? (
-                <img src={user.image} alt="Foto de perfil" className="w-full h-full object-cover" />
-              ) : (
-                initials
-              )}
-            </div>
-            <span className="text-sm font-semibold truncate max-w-[160px]" style={{ color: c.textPrimary }}>
-              {displayName}
-            </span>
-          </div>
-
-          {/* Misma píldora que "Carrito" / "Mi Cuenta" en la tienda: 44px de
-              alto, borde y texto de marca. */}
-          <Link
-            to="/store"
-            className="flex items-center gap-2 text-sm font-semibold px-4 h-11 rounded-full border transition-colors press"
-            style={{ borderColor: c.primary, color: c.primary }}
-          >
-            <Store className="w-4 h-4 flex-none" /> <span className="hidden sm:inline">Ir a la tienda</span>
-          </Link>
-        </div>
-      </nav>
-      )}
+      <HeaderTienda />
 
       {/*
         ── Cuerpo: sidebar + contenido ──
@@ -198,7 +132,7 @@ const ClienteLayout = () => {
           </Link>
           <span className="w-px h-5 mr-1 flex-shrink-0" style={{ backgroundColor: c.cardBorder }} aria-hidden="true" />
 
-          {items.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const active = location.pathname === item.to;
 

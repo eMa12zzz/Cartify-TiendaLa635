@@ -14,6 +14,10 @@
  * Reemplaza al "Estoy trabajando" de Mi cuenta en la web, que mezclaba la
  * sesión de cliente con la de personal de la misma persona.
  *
+ * `correoInicial`: si el personal escribió su cuenta en el login de CLIENTES,
+ * el servidor le contesta `esPersonal` y LoginClient lo manda aquí con el
+ * correo ya puesto; solo le falta la contraseña.
+ *
  * Al terminar no se navega a ningún lado: PersonalContext guarda la sesión y
  * App.js cambia la app entera al modo personal.
  * ============================================================
@@ -32,13 +36,13 @@ import { useTema } from '../../context/TemaContext';
 import { useEstilos } from '../../context/ModoContext';
 import { validarCorreo } from '../../utils/validaciones';
 
-const LoginPersonal = ({ alVolver }) => {
+const LoginPersonal = ({ alVolver, correoInicial = '' }) => {
   const estilos = useEstilos(crearEstilos);
   const { colores } = useTema();
   const { iniciar } = usePersonal();
 
   const [paso, setPaso] = useState('credenciales'); // 'credenciales' | 'codigo'
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(correoInicial);
   const [password, setPassword] = useState('');
   const [codigo, setCodigo] = useState('');
   const [correoEnmascarado, setCorreoEnmascarado] = useState('');
@@ -127,6 +131,7 @@ const LoginPersonal = ({ alVolver }) => {
                 autoComplete="password"
                 textContentType="password"
                 ref={campoContrasena}
+                autoFocus={!!correoInicial}
                 onFocus={() => setEnContrasena(true)}
                 onBlur={() => setEnContrasena(false)}
                 alEnviar={entrar}

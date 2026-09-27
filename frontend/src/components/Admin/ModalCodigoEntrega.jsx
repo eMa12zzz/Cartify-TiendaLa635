@@ -85,8 +85,9 @@ const ModalCodigoEntrega = ({ isOpen, onClose, onConfirm, pedido }) => {
         /*
          * z-[2000] Y NO z-60: este modal tiene que ganarle a Leaflet.
          *
-         * En el panel no habia mapas y 60 alcanzaba de sobra. Pero ahora el
-         * mismo modal se abre en /mi-cuenta/reparto, que si tiene mapa, y
+         * En el panel no habia mapas y 60 alcanzaba de sobra. Pero el mismo
+         * modal se abria en /mi-cuenta/reparto (ese Reparto ya se fue a la
+         * app), que si tenia mapa, y
          * Leaflet reparte a sus capas z-index propios que llegan hasta 1000
          * (los controles van en 800 y el contenedor en 1000). Con 60, el mapa
          * se dibujaba ENCIMA del modal: el repartidor veia el cuadro de

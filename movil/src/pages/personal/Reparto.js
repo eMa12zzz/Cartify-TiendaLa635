@@ -2,8 +2,8 @@
  * ============================================================
  * REPARTO — los pedidos a domicilio, para quien los lleva (Reparto.js)
  * ============================================================
- * La pantalla del repartidor en la app del personal. La misma de la web
- * (frontend/src/pages/cliente/Reparto.jsx): cada pedido con su dirección, la
+ * La pantalla del repartidor en la app del personal (la web ya no tiene
+ * Reparto: se repartía desde Mi Cuenta y se quitó). Cada pedido con su dirección, la
  * referencia, el teléfono del cliente y un botón que abre la ruta en el mapa
  * del teléfono, y los pasos del pedido:
  *

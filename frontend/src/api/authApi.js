@@ -119,7 +119,10 @@ export const loginClientDB = async (data) => {
   });
   if (!response.ok) {
     const err = await response.json();
-    throw new Error(err.message || 'Error en inicio de sesión de cliente');
+    const error = new Error(err.message || 'Error en inicio de sesión de cliente');
+    // La cuenta es del personal: la pantalla lo lleva a su login (/admin).
+    error.esPersonal = !!err.esPersonal;
+    throw error;
   }
   return response.json();
 };

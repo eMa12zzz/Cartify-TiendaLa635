@@ -126,7 +126,7 @@ const Boton = styled.button`
 const NoEncontrado = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, esCliente } = useAuth();
+  const { esCliente, haySesionDePersonal } = useAuth();
   /*
    * Sin escala derivada. Esta pantalla la calculaba del color que el dueño
    * hubiera elegido y la pintaba en línea, porque en las rutas del panel
@@ -135,8 +135,12 @@ const NoEncontrado = () => {
    * Así que var(--marca-*) ya resuelve bien sin ayuda de nadie.
    */
 
-  // Personal = tiene sesión pero no es cliente. Su casa es el panel.
-  const esPersonal = isAuthenticated && !esCliente;
+  /*
+   * Personal = tiene la sesión del panel y ninguna de cliente. Su casa es el
+   * panel. Se mira el cajón y no la sesión activa: esta pantalla cuenta como
+   * tienda, y en la tienda la sesión del panel ya no es la activa.
+   */
+  const esPersonal = haySesionDePersonal && !esCliente;
   const casa = esPersonal ? '/dashboard' : '/';
 
   return (

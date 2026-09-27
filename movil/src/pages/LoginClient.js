@@ -102,11 +102,24 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
       });
 
       /*
-       * El tipo lo dice el servidor: por esta misma puerta entran clientes y
-       * personal, y de eso depende qué se le muestra después.
+       * Un servidor sin actualizar todavía abre sesión del personal por esta
+       * puerta. No se guarda como si fuera de cliente: se le lleva a la suya.
        */
-      login(res.token, res.userType || 'client', res.client);
+      if (res.userType && res.userType !== 'client') {
+        irAPersonal?.(valores.email.trim());
+        return;
+      }
+      login(res.token, 'client', res.client);
     } catch (err) {
+      /*
+       * Escribió su cuenta del personal: el servidor ya no le abre sesión por
+       * aquí (se saltaba el código del segundo paso) y contesta `esPersonal`.
+       * Se le lleva a "¿Trabajas en la tienda?" con el correo ya puesto.
+       */
+      if (err.esPersonal && irAPersonal) {
+        irAPersonal(valores.email.trim());
+        return;
+      }
       /*
        * El error del servidor va dentro de la tarjeta y no en una alerta que
        * hay que cerrar: "la contraseña es incorrecta" se lee al lado del campo
@@ -314,7 +327,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
           {irAPersonal ? (
             <Text style={estilos.pieAdmin}>
               ¿Trabajas en la tienda?{' '}
-              <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irAPersonal} accessibilityRole="link">
+              <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={() => irAPersonal()} accessibilityRole="link">
                 Entra aquí
               </Text>
             </Text>
