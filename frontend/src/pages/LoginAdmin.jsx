@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { loginAdminDB, verify2FAAdmin } from '../api/authApi';
@@ -40,13 +40,21 @@ const LoginAdmin = () => {
     logout('personal');
   }, [logout]);
 
+  /*
+   * El correo que ya escribió en el login de la TIENDA, si llegó rebotado de
+   * ahí por ser del personal (ver LoginClient). Viaja en el estado de la
+   * navegación, no en la URL, y se escribe solo: le falta la contraseña.
+   */
+  const { state } = useLocation();
+  const correoTraido = typeof state?.correo === 'string' ? state.correo : '';
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      email: '',
+      email: correoTraido,
       password: '',
       rememberMe: false,
     }
@@ -172,6 +180,7 @@ const LoginAdmin = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña</label>
               <CampoContrasena
+                autoFocus={!!correoTraido}
                 placeholder="••••••••"
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[var(--marca-600)]'} focus:outline-none focus:ring-1 focus:ring-[var(--marca-600)] transition-colors text-sm tracking-widest`}
                 {...register('password', {

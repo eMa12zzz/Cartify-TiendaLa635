@@ -29,7 +29,28 @@
 const VOZ_POR_DEFECTO = "p5EUznrYaWnafKvUkNiR";
 const MODELO_POR_DEFECTO = "eleven_flash_v2_5";
 
-export const vozDisponible = () => Boolean(process.env.ELEVENLABS_API_KEY);
+/*
+ * ── ¿De verdad hay voz? ──
+ * Tener la llave no basta. Con la cuenta en el plan gratis ElevenLabs contesta
+ * 402 a cada frase, pero /ai/listo decía "hay voz" igual: la web y la app
+ * pedían el audio en cada respuesta, esperaban el error y recién ahí hablaban
+ * con la voz del dispositivo. Esa espera era el "tarda en sonar".
+ *
+ * Ahora se recuerda: si ElevenLabs rechaza la llave o la cuenta (401, 402,
+ * 403), no se le vuelve a preguntar en 30 minutos; si es el tope por minuto
+ * (429), en uno. Y al abrir un asistente se comprueba con una sola palabra
+ * (comprobarVoz), así el aviso "no hay voz" llega ANTES de la primera frase.
+ */
+const MEDIA_HORA = 30 * 60 * 1000;
+let rotaHasta = 0;
+let comprobadaEn = 0;
+
+const recordarRechazo = (estado) => {
+  if ([401, 402, 403].includes(estado)) rotaHasta = Date.now() + MEDIA_HORA;
+  else if (estado === 429) rotaHasta = Date.now() + 60 * 1000;
+};
+
+export const vozDisponible = () => Boolean(process.env.ELEVENLABS_API_KEY) && Date.now() >= rotaHasta;
 
 /*
  * Lo que se escribe no siempre es lo que se dice.
@@ -113,8 +134,29 @@ export const pedirVoz = async (texto, { signal } = {}) => {
   });
 
   if (!respuesta.ok) {
+    recordarRechazo(respuesta.status);
     const detalle = await respuesta.text().catch(() => "");
     throw new Error(`ElevenLabs ${respuesta.status}: ${detalle.slice(0, 200)}`);
   }
+  comprobadaEn = Date.now();
   return respuesta;
+};
+
+/*
+ * Lo que contestan /ai/listo y /tiqui-panel/listo. Si la voz funcionó hace
+ * poco, sí; si se sabe rota, no; y si no se sabe, se prueba con una palabra
+ * (cuesta cinco caracteres cada media hora). Máximo 4 segundos: si
+ * ElevenLabs no contesta a tiempo, mejor la voz del dispositivo.
+ */
+export const comprobarVoz = async () => {
+  if (!vozDisponible()) return false;
+  if (Date.now() - comprobadaEn < MEDIA_HORA) return true;
+  try {
+    const respuesta = await pedirVoz("Hola.", { signal: AbortSignal.timeout(4000) });
+    await respuesta.body?.cancel?.();
+    return true;
+  } catch {
+    // Si fue un rechazo, pedirVoz ya lo recordó.
+    return false;
+  }
 };

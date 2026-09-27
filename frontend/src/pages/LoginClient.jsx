@@ -12,6 +12,7 @@ import EncabezadoAcceso from '../components/Store/EncabezadoAcceso';
 import { EsperaMascota } from '../components/UI/Mascota';
 import MascotaColgada from '../components/UI/MascotaColgada';
 import { consumirRecienRegistrado } from '../utils/primerIngreso';
+import { ICONOS } from '../utils/iconosAviso';
 
 const BROWN = 'var(--marca-600)';
 
@@ -376,10 +377,16 @@ const FooterLink = styled(Link)`
   &:hover { text-decoration: underline; }
 `;
 
+// La puerta del personal: más chica y al final, la pantalla es de los clientes.
+const PiePersonal = styled(FooterText)`
+  margin-top: 12px;
+  font-size: 12.5px;
+`;
+
 const LoginClient = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { login, logout } = useAuth();
+  const { login, haySesionDePersonal } = useAuth();
   const [loading, setLoading] = useState(false);
   const [verPass, setVerPass] = useState(false);
 
@@ -420,31 +427,48 @@ const LoginClient = () => {
   const estadoMascota = loading ? 'entrando' : noCuadro ? 'error' : 'reposo';
 
   /*
+   * "¿Trabajas en la tienda?": la puerta del personal es la del panel, con su
+   * código de dos pasos. Si ya tiene la sesión del panel abierta, directo
+   * adentro: /admin cierra la sesión al entrar y le haría pedir otro código.
+   */
+  const puertaDelPersonal = haySesionDePersonal ? '/dashboard' : '/admin';
+
+  /*
+   * Alguien del personal escribió su cuenta AQUÍ, en el login de la tienda.
+   * El servidor ya no le abre sesión por esta puerta (se saltaba el código del
+   * panel), pero tampoco le dice "contraseña incorrecta", que sería mentira:
+   * contesta `esPersonal`. Se le lleva a su login con el correo ya escrito.
+   *
+   * Siempre a /admin, aunque haya una sesión del panel abierta: puede ser la
+   * de OTRA persona en la computadora del mostrador, y quien escribió su
+   * cuenta tiene que entrar con la suya.
+   */
+  const irAlPanel = (correo) => {
+    toast('Tu cuenta es del personal: entra por aquí, con tu código.', {
+      id: 'a-su-puerta',
+      icon: ICONOS.atencion,
+      duration: 5000,
+    });
+    navigate('/admin', { state: { correo } });
+  };
+
+  /*
    * Lo que pasa DESPUÉS de que el backend confirmó la sesión, sea por
    * contraseña o por Google: se guarda en el contexto y se decide a dónde ir.
    * Se comparte para que las dos puertas se comporten igual.
    */
-  const alEntrar = (res) => {
+  const alEntrar = (res, correo) => {
+      /*
+       * Un servidor sin actualizar todavía abre sesión del personal por aquí.
+       * No se guarda: la tienda es de clientes y el personal tiene su puerta.
+       */
+      if (res.userType && res.userType !== 'client') {
+        irAlPanel(correo);
+        return;
+      }
+
       // 3- Guardamos el token y datos del cliente en el contexto
-      /*
-       * El tipo lo dice el servidor: por esta misma puerta entran clientes y
-       * personal, y de eso depende que se vea "Reparto" en el menú.
-       */
-      login(res.token, res.userType || 'client', res.client);
-
-      const esPersonal = res.userType && res.userType !== 'client';
-
-      /*
-       * Si entró personal, se cierra la sesión de CLIENTE que hubiera abierta.
-       *
-       * Su sesión cae en el cajón del personal (la decide el tipo de cuenta),
-       * pero fuera del panel manda el cajón de cliente si existe. En el
-       * teléfono del mostrador —donde alguien dejó su sesión abierta— el
-       * repartidor acababa de entrar con su usuario, veía el nombre del cliente
-       * anterior y Reparto le decía "esta pantalla es para el personal". Un
-       * login que aparentaba funcionar y dejaba muerto justo su flujo.
-       */
-      if (esPersonal) logout('cliente');
+      login(res.token, 'client', res.client);
 
       /*
        * El saludo con el mapa es SOLO para quien acaba de crear su cuenta.
@@ -457,12 +481,12 @@ const LoginClient = () => {
        * Se consume acá aunque después mande a otro lado, para que no quede
        * dando vueltas y aparezca días más tarde sin venir a cuento.
        */
-      const recienRegistrado = !esPersonal && consumirRecienRegistrado();
+      const recienRegistrado = consumirRecienRegistrado();
 
       /*
-       * Primero manda a dónde iba; si llegó aquí por su cuenta, al personal lo
-       * espera el reparto, al recién llegado el mapa donde deja su dirección, y
-       * a todos los demás la tienda.
+       * Primero manda a dónde iba; si llegó aquí por su cuenta, al recién
+       * llegado lo espera el mapa donde deja su dirección, y a todos los demás
+       * la tienda.
        *
        * El `volver` se revisa antes de seguirlo: tiene que ser una ruta de la
        * casa. Sin esa comprobación, un enlace con ?volver=https://otro-sitio
@@ -478,7 +502,6 @@ const LoginClient = () => {
        * pantalla que ya cumplió y a la que nadie quiere volver.
        */
       if (destino) navigate(destino, { replace: true });
-      else if (esPersonal) navigate('/mi-cuenta/reparto', { replace: true });
       else navigate(recienRegistrado ? '/bienvenida' : '/', { replace: true });
   };
 
@@ -487,8 +510,12 @@ const LoginClient = () => {
     try {
       setLoading(true);
       const res = await loginClientDB({ email: data.email, password: data.password });
-      alEntrar(res);
+      alEntrar(res, data.email);
     } catch (err) {
+      if (err.esPersonal) {
+        irAlPanel(data.email);
+        return;
+      }
       negar();
       toast.error(err.message || 'Credenciales inválidas');
     } finally {
@@ -672,6 +699,15 @@ const LoginClient = () => {
             ¿No tiene una cuenta?{' '}
             <FooterLink to="/register">Regístrese</FooterLink>
           </FooterText>
+
+          {/*
+            La puerta del personal, igual que en la app. Aquí no abre Tiqui ni
+            el Reparto (esos viven en la app): lleva al login del panel.
+          */}
+          <PiePersonal>
+            ¿Trabajas en la tienda?{' '}
+            <FooterLink to={puertaDelPersonal}>Entra aquí</FooterLink>
+          </PiePersonal>
         </Card>
       </Body>
     </Container>

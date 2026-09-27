@@ -58,14 +58,9 @@ export const orderService = {
   },
 
   /*
-   * Seguimiento en vivo. El repartidor escribe su punto mientras maneja;
-   * `activo: false` apaga el compartir y borra la última posición.
+   * Seguimiento en vivo. El punto del repartidor lo escribe la app (su
+   * Reparto, ver movil/src/hooks/useRepartoPersonal.js); aquí solo se lee.
    */
-  updateCourierPosition: async (id, { lat, lng, quien, activo }) => {
-    const response = await api.put(`/order/${id}/courier`, { lat, lng, quien, activo });
-    return response.data;
-  },
-
   // Dónde va el repartidor de un pedido. Se consulta cada pocos segundos,
   // por eso el backend devuelve solo el punto y no el pedido completo.
   getCourierPosition: async (id) => {

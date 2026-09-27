@@ -75,7 +75,6 @@ import MisPedidos from './pages/cliente/MisPedidos';
 import EstadoPedido from './pages/cliente/EstadoPedido';
 import Favoritos from './pages/cliente/Favoritos';
 import Bienvenida from './pages/Bienvenida';
-import Reparto from './pages/cliente/Reparto';
 import Recibidos from './pages/cliente/Recibidos';
 import DetallesCuenta from './pages/cliente/DetallesCuenta';
 import Direcciones from './pages/cliente/Direcciones';
@@ -327,8 +326,7 @@ function App() {
               {/* Estado de UN pedido: línea de tiempo, envío y mapa en vivo */}
               <Route path="/mi-cuenta/pedido/:id" element={<EstadoPedido />} />
               <Route path="/mi-cuenta/favoritos" element={<Favoritos />} />
-              {/* Reparto: la usa el personal desde el teléfono, en la calle */}
-              <Route path="/mi-cuenta/reparto"   element={<Reparto />} />
+              {/* El Reparto del personal ya no vive aquí: está en la app. Ver ClienteLayout. */}
 
               <Route path="/mi-cuenta/recibidos"   element={<Recibidos />} />
               <Route path="/mi-cuenta/direcciones"    element={<Direcciones />} />

@@ -26,9 +26,8 @@ import SinPermiso from '../../pages/SinPermiso';
  * ============================================================
  */
 /*
- * `soloPersonal` marca las rutas del panel. Es opcional a propósito: el área
- * "Mi Cuenta" tiene que seguir abierta a los dos, porque /mi-cuenta/reparto es
- * la pantalla que usa el repartidor desde su teléfono, en la calle.
+ * `soloPersonal` marca las rutas del panel. Sin él, la ruta es del área de
+ * cliente (Mi Cuenta), donde solo vale la sesión del cliente (ver AuthContext).
  */
 const ProtectedRoute = ({ soloPersonal = false, soloAdmin = false }) => {
   const { isAuthenticated, esCliente, haySesionDeCliente, user } = useAuth();

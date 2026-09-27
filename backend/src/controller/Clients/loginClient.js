@@ -9,16 +9,20 @@ import { config } from "../../../config.js";
 const loginClientController = {};
 
 /*
- * El personal también entra por aquí.
+ * El personal ya NO entra por aquí: se le indica su puerta.
  *
- * Esta puerta solo miraba la colección de clientes, así que un empleado o un
- * administrador con sus credenciales correctas recibía "el correo o
- * contraseña son incorrectos" — un mensaje que además miente, porque estaban
- * bien. Y sin poder entrar, no llegaban a la pantalla de Reparto, que vive
- * justamente en el área de cliente porque se usa desde el teléfono.
+ * Esta puerta abría sesión de personal con solo correo y contraseña, para que
+ * el repartidor llegara al Reparto de la tienda web. Eso dejaba a un
+ * administrador entrar sin el código del 2FA que le pide /loginAdmin, con una
+ * sesión de 30 días que también abría el panel. El Reparto ahora vive en la
+ * app (por "¿Trabajas en la tienda?", con su código), y el personal entra al
+ * panel por /admin.
  *
- * Se busca primero en clientes (es lo normal) y solo si no aparece se prueba
- * con el personal.
+ * Pero decirle "correo o contraseña incorrectos" sería mentirle: están bien.
+ * Así que, si la contraseña es la de su cuenta del personal, se le contesta
+ * `esPersonal` y la web y la app lo llevan a su login con el correo puesto.
+ * Solo con la contraseña correcta: sin ella no se revela de quién es el
+ * correo.
  */
 const buscarPersonal = async (email) => {
   const admin = await adminModel.findOne({ email });
@@ -30,45 +34,14 @@ const buscarPersonal = async (email) => {
   return null;
 };
 
-/*
- * Entrada del personal: se comprueba la contraseña y que la cuenta esté
- * activa. No lleva el bloqueo por intentos fallidos de los clientes porque
- * esos campos no existen en sus modelos; el panel administrativo sigue siendo
- * su puerta principal.
- */
-const entrarComoPersonal = async (res, { doc, tipo }, password) => {
-  if (doc.isActive === false) {
-    return res.status(403).json({ message: "Cuenta desactivada" });
-  }
+const esContrasenaDelPersonal = (personal, password) =>
+  bcryptjs.compare(password, personal.doc.password || "");
 
-  const coincide = await bcryptjs.compare(password, doc.password || "");
-  if (!coincide) {
-    return res.status(401).json({ message: "El correo o contraseña son incorrectos" });
-  }
-
-  const token = jsonwebtoken.sign(
-    { id: doc._id, userType: tipo === "admin" ? "Admin" : "Employee" },
-    config.JWT.secret,
-    { expiresIn: "30d" }
-  );
-
-  // Entró por la puerta de la tienda, pero es personal: su sesión va en la
-  // cookie del personal, no en la de cliente.
-  res.cookie("authCookie", token, opcionesCookie(30 * 24 * 60 * 60 * 1000));
-
-  return res.status(200).json({
-    message: "Sesión iniciada",
-    token,
-    userType: tipo,
-    client: {
-      id: doc._id,
-      fullName: doc.fullName || doc.name || "",
-      email: doc.email,
-      userName: doc.userName || "",
-      image: doc.image,
-    },
+const aSuPuerta = (res) =>
+  res.status(403).json({
+    esPersonal: true,
+    message: "Esa cuenta es del personal. Entra por «¿Trabajas en la tienda?», al final de esta pantalla.",
   });
-};
 
 loginClientController.login = async (req, res) => {
   const { email, password } = req.body;
@@ -90,9 +63,9 @@ loginClientController.login = async (req, res) => {
     const clientFound = await clientModel.findOne({ email });
 
     if (!clientFound) {
-      // Puede ser alguien del personal entrando a la tienda desde su teléfono.
+      // Puede ser alguien del personal que tocó la puerta de la tienda.
       const personal = await buscarPersonal(email);
-      if (personal) return entrarComoPersonal(res, personal, password);
+      if (personal && (await esContrasenaDelPersonal(personal, password))) return aSuPuerta(res);
 
       return res.status(401).json({ message: "El correo o contraseña son incorrectos" });
     }
@@ -123,18 +96,14 @@ loginClientController.login = async (req, res) => {
     if (!isMatch) {
       /*
        * Un mismo correo puede tener cuenta de cliente Y de personal, cada una
-       * con su contraseña. Si la del cliente no coincide, se prueba la del
-       * personal antes de dar el error: quien administra la tienda espera
-       * entrar con las credenciales que usa todos los días.
+       * con su contraseña. Si escribió la del personal, se le dice por dónde
+       * entrar en vez de "contraseña incorrecta".
        *
-       * Va ANTES de sumar el intento fallido a propósito: entrar con la
+       * Va ANTES de sumar el intento fallido a propósito: escribir la
        * contraseña de admin no debe ir bloqueando la cuenta de cliente.
        */
       const personal = await buscarPersonal(email);
-      if (personal) {
-        const comoPersonal = await bcryptjs.compare(password, personal.doc.password || "");
-        if (comoPersonal) return entrarComoPersonal(res, personal, password);
-      }
+      if (personal && (await esContrasenaDelPersonal(personal, password))) return aSuPuerta(res);
 
       clientFound.loginAttemps = (clientFound.loginAttemps || 0) + 1;
 
