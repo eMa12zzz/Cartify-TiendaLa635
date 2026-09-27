@@ -18,13 +18,14 @@
  * ============================================================
  */
 
-import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Easing, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Bike, LogOut, Sparkles } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { usePersonal } from '../../context/PersonalContext';
 import { useRepartoPersonal } from '../../hooks/useRepartoPersonal';
+import { useMovimientoReducido } from '../../hooks/useMovimientoReducido';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import TiquiAdmin from './TiquiAdmin';
 import Reparto from './Reparto';
@@ -34,10 +35,87 @@ const SECCIONES = [
   { clave: 'reparto', nombre: 'Reparto', Icono: Bike },
 ];
 
-const ModoPersonal = () => {
+// El aire alrededor de las opciones y entre ellas (igual que en los estilos).
+const RELLENO = 4;
+const ESPACIO = 4;
+
+/*
+ * Tiqui | Reparto. La píldora azul no salta de una opción a la otra: se
+ * desliza, con un resorte corto, y así se ve hacia dónde se fue. Quien pidió
+ * menos movimiento en su teléfono la ve cambiar de lugar sin recorrido.
+ *
+ * El ancho de cada opción se mide en pantalla (onLayout): depende del
+ * teléfono, y la píldora tiene que medir exactamente una opción.
+ */
+const SelectorSeccion = ({ actual, alCambiar, pedidos }) => {
   const estilos = useEstilos(crearEstilos);
   const COLORES = useColores();
   const { colores } = useTema();
+  const reducido = useMovimientoReducido();
+  const [ancho, setAncho] = useState(0);
+  const indice = SECCIONES.findIndex((sec) => sec.clave === actual);
+  const posicion = useRef(new Animated.Value(indice)).current;
+
+  useEffect(() => {
+    if (reducido) {
+      posicion.setValue(indice);
+      return;
+    }
+    Animated.timing(posicion, {
+      toValue: indice,
+      duration: 320,
+      // Arranca rápido y se asienta con un rebote mínimo, como un interruptor.
+      easing: Easing.bezier(0.34, 1.3, 0.64, 1),
+      useNativeDriver: true,
+    }).start();
+  }, [indice, reducido, posicion]);
+
+  const anchoOpcion = ancho ? (ancho - RELLENO * 2 - ESPACIO * (SECCIONES.length - 1)) / SECCIONES.length : 0;
+
+  return (
+    <View
+      style={estilos.selector}
+      accessibilityRole="tablist"
+      onLayout={(e) => setAncho(e.nativeEvent.layout.width)}
+    >
+      {anchoOpcion > 0 && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            estilos.pildora,
+            {
+              width: anchoOpcion,
+              backgroundColor: colores.marca,
+              transform: [{ translateX: posicion.interpolate({ inputRange: [0, 1], outputRange: [0, anchoOpcion + ESPACIO] }) }],
+            },
+          ]}
+        />
+      )}
+      {SECCIONES.map(({ clave, nombre, Icono }) => {
+        const activa = actual === clave;
+        return (
+          <Pressable
+            key={clave}
+            onPress={() => alCambiar(clave)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activa }}
+            style={estilos.opcion}
+          >
+            <Icono size={17} color={activa ? '#FFFFFF' : COLORES.textoSuave} strokeWidth={2} />
+            <Text style={[estilos.opcionTexto, { color: activa ? '#FFFFFF' : COLORES.textoSuave }]}>
+              {nombre}
+              {clave === 'reparto' && pedidos ? ` (${pedidos})` : ''}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+};
+
+const ModoPersonal = () => {
+  const estilos = useEstilos(crearEstilos);
+  const COLORES = useColores();
   const { sesion, esAdmin, salir } = usePersonal();
   const reparto = useRepartoPersonal();
   // El administrador abre con Tiqui; el empleado solo tiene el Reparto.
@@ -87,26 +165,7 @@ const ModoPersonal = () => {
         </View>
 
         {esAdmin && (
-          <View style={estilos.selector} accessibilityRole="tablist">
-            {SECCIONES.map(({ clave, nombre, Icono }) => {
-              const activa = actual === clave;
-              return (
-                <Pressable
-                  key={clave}
-                  onPress={() => setSeccion(clave)}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: activa }}
-                  style={[estilos.opcion, activa && { backgroundColor: colores.marca }]}
-                >
-                  <Icono size={17} color={activa ? '#FFFFFF' : COLORES.textoSuave} strokeWidth={2} />
-                  <Text style={[estilos.opcionTexto, { color: activa ? '#FFFFFF' : COLORES.textoSuave }]}>
-                    {nombre}
-                    {clave === 'reparto' && reparto.pedidos.length ? ` (${reparto.pedidos.length})` : ''}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <SelectorSeccion actual={actual} alCambiar={setSeccion} pedidos={reparto.pedidos.length} />
         )}
       </View>
 
@@ -142,8 +201,16 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORES.papelGris,
     borderRadius: 999,
-    padding: 4,
-    gap: 4,
+    padding: RELLENO,
+    gap: ESPACIO,
+  },
+  // La píldora azul, debajo de las opciones: se desliza a la que está elegida.
+  pildora: {
+    position: 'absolute',
+    top: RELLENO,
+    bottom: RELLENO,
+    left: RELLENO,
+    borderRadius: 999,
   },
   opcion: {
     flex: 1,
