@@ -2,7 +2,7 @@ import { FunctionCallingConfigMode, Type } from "@google/genai";
 import adminModel from "../models/admin.js";
 import employeeModel from "../models/employee.js";
 import { getIA, generarConCobertura } from "../utils/iaClient.js";
-import { vozDisponible } from "../utils/vozTiqui.js";
+import { comprobarVoz } from "../utils/vozTiqui.js";
 import { panoramaDelNegocio, productosDeLaCharla } from "../utils/panoramaNegocio.js";
 import {
   CAMBIOS_ADMIN, CAMBIOS_EMPLEADO, ESTADOS_DESTINO, aplicarCambio, firmarPropuesta, leerPropuesta, proponerCambio,
@@ -423,7 +423,7 @@ tiquiPanelController.listo = async (req, res) => {
   } catch {
     // Si la base tarda, igual se contesta: el objetivo era despertar el servidor.
   }
-  return res.status(200).json({ listo: true, voz: vozDisponible() });
+  return res.status(200).json({ listo: true, voz: await comprobarVoz() });
 };
 
 export default tiquiPanelController;

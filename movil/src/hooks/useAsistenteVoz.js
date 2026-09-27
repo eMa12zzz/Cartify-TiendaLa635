@@ -100,6 +100,23 @@ const PIDE_IR = /\b(ver|vamos|llevame|llévame|muestrame|muéstrame|enseñame|en
 
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const normalizar = (s) => sinAcentos(s).toLowerCase().trim();
+
+/*
+ * Cuántos productos DISTINTOS se nombran en un pedazo de la frase. Se cuenta
+ * la palabra que manda en cada nombre ("sandía", "coca", "queso"), sin
+ * repetir: "queso fresco" nombra un queso, aunque haya tres quesos en la
+ * tienda.
+ */
+const productosNombrados = (texto, productos) => {
+  const dichas = new Set(texto.split(/\s+/).map((w) => w.replace(/s$/, '')));
+  const vistas = new Set();
+  for (const p of productos) {
+    const principal = normalizar(p.nombre).split(/[\s-]+/).find((w) => w.length > 2);
+    const base = principal?.replace(/s$/, '');
+    if (base && dichas.has(base)) vistas.add(base);
+  }
+  return vistas.size;
+};
 const contarItems = (lista) => lista.reduce((a, i) => a + i.cantidad, 0);
 
 /*
@@ -588,6 +605,18 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     // Sin los sinónimos que se le pegan al final, para nombrar lo que no hay
     // tal como lo dijo.
     const dichas = normalizar(texto).split(SEPARA_PEDIDOS).map((s) => s.trim()).filter(Boolean);
+
+    /*
+     * Varios productos en un mismo pedazo: el reconocimiento de voz no pone
+     * comas, así que "quiero una sandía dos coca colas un queso fresco" llegaba
+     * como UN pedido y estas reglas se quedaban con el primero que
+     * encontraban (la sandía) y callaban el resto. Separar eso lo hace bien
+     * la IA; aquí solo se le pasa.
+     */
+    if (dichas.some((d) => productosNombrados(d, dataRef.current.productos) > 1)) {
+      preguntarALaIA(texto);
+      return;
+    }
     const noHay = [];
     const agregados = [];
     // Productos +18 encontrados pero NO agregados: sin confirmar la edad, la

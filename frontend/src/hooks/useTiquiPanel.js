@@ -59,7 +59,11 @@ const respuestaCorta = (frase, patron) => {
 const ACENTOS = ['es-SV', 'es-MX', 'es-US', 'es-419', 'es-GT', 'es-CO'];
 const vozDelSistema = () => {
   const voces = (window.speechSynthesis?.getVoices?.() || []).filter((v) => (v.lang || '').toLowerCase().startsWith('es'));
-  return ACENTOS.map((a) => voces.find((v) => v.lang === a)).find(Boolean) || voces[0] || null;
+  // Primero las del equipo (suenan al instante); las "en línea" tardan en arrancar.
+  return ACENTOS.map((a) => voces.find((v) => v.lang === a && v.localService)).find(Boolean)
+    || voces.find((v) => v.localService)
+    || ACENTOS.map((a) => voces.find((v) => v.lang === a)).find(Boolean)
+    || voces[0] || null;
 };
 
 export const useTiquiPanel = () => {
