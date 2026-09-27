@@ -37,6 +37,13 @@
  * Enviar NO crea la cuenta: el backend guarda los datos 15 minutos y manda un
  * código de 6 caracteres al correo. Por eso de aquí se sale a Verificación y
  * no a la tienda.
+ *
+ * ── Registrarse con Google ──
+ *
+ * Ese camino SÍ crea la cuenta de una, como en la web: el correo ya viene
+ * confirmado por Google, así que no hay código que mandar y se entra directo
+ * a la tienda. Si el correo ya tenía cuenta, simplemente inicia esa sesión
+ * (el backend la enlaza).
  * ============================================================
  */
 
@@ -52,8 +59,10 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import BarraMarca from '../components/UI/BarraMarca';
 import Boton from '../components/UI/Boton';
+import BotonGoogle from '../components/UI/BotonGoogle';
 import CampoTexto from '../components/UI/CampoTexto';
 import Casilla from '../components/UI/Casilla';
 import HojaTerminos from '../components/UI/HojaTerminos';
@@ -62,7 +71,8 @@ import HojaTerminos from '../components/UI/HojaTerminos';
 // contraseña `Lock`, foto `Camera`.
 import { Calendar, Camera, Hash, Lock, Mail, Phone, User } from 'lucide-react-native';
 import { Equis } from '../components/UI/Iconos';
-import { registrarCliente } from '../api/authApi';
+import { googleLoginDB, registrarCliente } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { calcularEdad, esMayorDeEdad } from '../utils/edad';
@@ -153,6 +163,8 @@ const Register = ({ irALogin, alPedirCodigo }) => {
   const [errores, setErrores] = useState({});
   const [avisoServidor, setAvisoServidor] = useState('');
   const [cargando, setCargando] = useState(false);
+  const { login } = useAuth();
+  const [cargandoGoogle, setCargandoGoogle] = useState(false);
 
   /*
    * El consentimiento va aparte de `valores` porque no son campos de texto y
@@ -248,6 +260,54 @@ const Register = ({ irALogin, alPedirCodigo }) => {
       setAvisoServidor(err.message || 'No se pudo completar el registro');
     } finally {
       setCargando(false);
+    }
+  };
+
+  /*
+   * Registrarse con Google. El consentimiento viaja TAMBIÉN por este camino,
+   * igual que en la web: sin la casilla de los términos no se molesta al
+   * servidor (y el servidor lo vuelve a exigir por su cuenta).
+   *
+   * Lo que Google no da —teléfono, fecha de nacimiento, DUI— se aprovecha si
+   * ya lo escribió arriba y está bien; si no, la cuenta nace sin eso, como en
+   * la web. Uno a medio escribir no se manda: guardaría basura.
+   */
+  const conGoogle = async () => {
+    if (!aceptaTerminos) {
+      setErrorTerminos('Marque primero que acepta los términos y la política de privacidad');
+      return;
+    }
+
+    const escritoYValido = (campo) => !!valores[campo] && !REGLAS[campo](valores[campo]);
+
+    try {
+      setAvisoServidor('');
+      setCargandoGoogle(true);
+
+      await GoogleSignin.hasPlayServices();
+      const respuesta = await GoogleSignin.signIn();
+      // Cerró el selector de cuenta sin elegir ninguna: no hay nada que avisar.
+      if (respuesta.type === 'cancelled') return;
+
+      const idToken = respuesta.data.idToken;
+      if (!idToken) {
+        setAvisoServidor('No se recibió la respuesta de Google');
+        return;
+      }
+
+      const res = await googleLoginDB(idToken, {
+        aceptaTerminos: true,
+        promociones,
+        ...(escritoYValido('phoneNumber') ? { phoneNumber: valores.phoneNumber } : {}),
+        ...(escritoYValido('fechaNacimiento') ? { fechaNacimiento: fechaISO(valores.fechaNacimiento) } : {}),
+        ...(puedeDui && escritoYValido('dui') ? { dui: valores.dui } : {}),
+      });
+      // Con la sesión puesta, RootNavigator (AuthWatcher) lleva a la tienda.
+      login(res.token, res.userType || 'client', res.client);
+    } catch (err) {
+      setAvisoServidor(err.message || 'No se pudo registrar con Google');
+    } finally {
+      setCargandoGoogle(false);
     }
   };
 
@@ -474,9 +534,24 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             texto="Continuar"
             alPresionar={enviar}
             cargando={cargando}
+            deshabilitado={cargandoGoogle}
             estilo={estilos.boton}
             color={colores.marca}
             colorPresionado={colores.marcaOscuro}
+          />
+
+          {/* Solo "o", como la web: lo que se hace lo dice el botón de abajo. */}
+          <View style={estilos.divisor}>
+            <View style={estilos.linea} />
+            <Text style={estilos.divisorTexto}>o</Text>
+            <View style={estilos.linea} />
+          </View>
+
+          <BotonGoogle
+            texto="Registrarse con Google"
+            cargando={cargandoGoogle}
+            deshabilitado={cargando}
+            alPresionar={conGoogle}
           />
 
           <Text style={estilos.pie}>
@@ -615,6 +690,22 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   boton: {
     marginTop: 10,
     borderRadius: 28,
+  },
+  // ── Divisor "o", el mismo del inicio de sesión ──
+  divisor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 22,
+  },
+  linea: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORES.linea,
+  },
+  divisorTexto: {
+    fontSize: 12.5,
+    color: COLORES.textoTenue,
   },
   pie: {
     textAlign: 'center',
