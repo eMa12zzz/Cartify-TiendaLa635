@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Bike, Navigation, Signpost, Phone, Package, MapPin, Radio, Sun, TriangleAlert } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
-import { useReparto, enlaceDeRuta } from '../../hooks/useReparto';
+import { useReparto, enlaceDeRuta, abreEnOtraPestana } from '../../hooks/useReparto';
 import { useViajeEnVivo } from '../../hooks/useViajeEnVivo';
 import { useAjustesCtx } from '../../context/AjustesContext';
 import ModalCodigoEntrega from '../../components/Admin/ModalCodigoEntrega';
@@ -251,8 +251,7 @@ const Reparto = () => {
                     */}
                     <a
                       href={enlaceDeRuta(p, ajustes.direccion)}
-                      target="_blank"
-                      rel="noreferrer"
+                      {...(abreEnOtraPestana(enlaceDeRuta(p, ajustes.direccion)) ? { target: '_blank', rel: 'noreferrer' } : {})}
                       className="press flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold"
                       style={{ backgroundColor: c.primary, color: c.buttonText }}
                     >

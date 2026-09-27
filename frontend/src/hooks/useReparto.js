@@ -94,17 +94,36 @@ export const useReparto = () => {
  * Con coordenadas apunta al portón exacto; sin ellas, lo mejor que se puede
  * hacer es buscar el texto de la dirección.
  *
+ * ── Qué app se abre ──
+ *   - Teléfono Android: un enlace geo:, y el teléfono pregunta con qué abrirlo
+ *     (Google Maps, Waze, el que tenga). Antes iba siempre a Google Maps.
+ *   - iPhone: Apple Maps, que es el que trae el teléfono.
+ *   - Computadora: Google Maps en el navegador, como antes.
+ *
  * `origenTienda` es DE DÓNDE sale el reparto — la dirección que se guardó en
- * Personalización, no "mi ubicación" del teléfono que abre el enlace. Sin
- * origin, Google Maps arranca la ruta desde donde esté el GPS del celular en
- * ese momento, que en unas pruebas —o si el repartidor ya anda a medio
- * camino de otra entrega— no es de dónde sale el reparto de verdad.
+ * Personalización. Solo se usa en la computadora: ahí no hay GPS y la ruta
+ * tiene que salir de algún lado. En el teléfono la app de mapas arranca desde
+ * donde está el repartidor, que es lo que sirve para manejar.
  */
+const esAndroid = () => typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+const esIPhone = () =>
+  typeof navigator !== 'undefined' &&
+  (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
 export const enlaceDeRuta = (pedido, origenTienda) => {
-  const origin = origenTienda ? `&origin=${encodeURIComponent(origenTienda)}` : '';
-  if (pedido?.deliveryLat != null && pedido?.deliveryLng != null) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${pedido.deliveryLat},${pedido.deliveryLng}${origin}`;
-  }
+  const hayPunto = pedido?.deliveryLat != null && pedido?.deliveryLng != null;
+  const punto = hayPunto ? `${pedido.deliveryLat},${pedido.deliveryLng}` : '';
   const texto = encodeURIComponent(pedido?.deliveryAddress || '');
-  return `https://www.google.com/maps/dir/?api=1&destination=${texto}${origin}`;
+
+  if (esAndroid()) {
+    const quien = encodeURIComponent(`Entrega a ${pedido?.clientId?.fullName || 'cliente'}`);
+    return hayPunto ? `geo:${punto}?q=${punto}(${quien})` : `geo:0,0?q=${texto}`;
+  }
+  if (esIPhone()) return `https://maps.apple.com/?daddr=${hayPunto ? punto : texto}`;
+
+  const origin = origenTienda ? `&origin=${encodeURIComponent(origenTienda)}` : '';
+  return `https://www.google.com/maps/dir/?api=1&destination=${hayPunto ? punto : texto}${origin}`;
 };
+
+// Un geo: se abre en la misma pestaña (lo toma la app de mapas); una página, en otra.
+export const abreEnOtraPestana = (enlace) => /^https?:/.test(enlace);
