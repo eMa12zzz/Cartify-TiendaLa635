@@ -451,11 +451,14 @@ input:disabled {
   & .text-gray-600, 
   & .text-gray-500 { color: var(--theme-text-secondary) !important; }
   
-  /* Text Accents */
+  /*
+    Text Accents: el acento PARA TEXTO de la paleta, no el acento a secas. El
+    acento es de adorno (el celeste de Mi marca, el naranja de Deuteranopía) y
+    como letra sobre fondo claro no llegaba a 3. Ver ThemeContext.
+  */
   & .text-\[\#066494\],
   & .text-\[\#003049\],
-  & .text-\[\#003049\],
-  & .text-\[\#009AEB\] { color: var(--theme-accent) !important; }
+  & .text-\[\#009AEB\] { color: var(--theme-accent-text) !important; }
 
   /* Primary button bg + readable text */
   & .bg-\[\#003049\],
@@ -526,10 +529,14 @@ input:disabled {
   & .bg-red-500 h2 { color: #fff !important; }
   & .hover\:bg-red-600:hover { background-color: #dc2626 !important; }
 
-  /* PROTECT STATUS COLORS */
-  & .text-green-500 { color: #22c55e !important; }
-  & .text-red-500   { color: #ef4444 !important; }
-  & .text-orange-500 { color: #f97316 !important; }
+  /*
+    Los colores de estado ("Activo", "Sin verificar", "▲ 250%"), con el tono
+    de cada paleta. Estaban fijos en el verde y el naranja claros de Tailwind:
+    sobre blanco daban 2.3 y 2.8, y "Activo" casi no se leía.
+  */
+  & .text-green-500 { color: var(--theme-exito) !important; }
+  & .text-red-500   { color: var(--theme-peligro) !important; }
+  & .text-orange-500 { color: var(--theme-aviso) !important; }
   & .text-purple-500 { color: #a855f7 !important; }
   & .text-blue-500   { color: #3b82f6 !important; }
 
@@ -609,6 +616,72 @@ input:disabled {
   /* Divisores y bordes sueltos */
   & .divide-gray-100 > * + * { border-color: var(--theme-card-border) !important; }
   & .border-gray-50 { border-color: var(--theme-card-border) !important; }
+
+  /*
+    ── Lo que se quedaba fuera del mapeo ──
+    En las paletas oscuras (Modo oscuro, Alto contraste) estas clases no se
+    veían: el texto del panel se vuelve claro y ellas seguían pintando fondos
+    o textos pensados para el blanco.
+  */
+
+  /* Superficies gris claro (chips, fondos de sección): blanco sobre gris claro. */
+  & .bg-gray-100,
+  & .hover\:bg-gray-100:hover {
+    background-color: color-mix(in srgb, var(--theme-card-border) 55%, var(--theme-card-bg)) !important;
+  }
+
+  /* El hover de los botones grises ("Cancelar"): un paso más marcado que su reposo. */
+  & .hover\:bg-gray-300:hover,
+  & .hover\:bg-gray-400:hover {
+    background-color: color-mix(in srgb, var(--theme-card-border) 80%, var(--theme-text-primary)) !important;
+    color: var(--theme-text-primary) !important;
+  }
+
+  /* Textos que se oscurecían al pasar el mouse: gris oscuro sobre fondo oscuro. */
+  & .hover\:text-gray-700:hover,
+  & .hover\:text-gray-800:hover,
+  & .hover\:text-gray-900:hover { color: var(--theme-text-primary) !important; }
+
+  /*
+    El botón oscuro secundario ("Descargar inventario"): gris casi negro fijo,
+    en Modo oscuro se fundía con la tarjeta. Se pinta invertido a la paleta.
+  */
+  & .bg-gray-800 {
+    background-color: var(--theme-text-primary) !important;
+    color: var(--theme-card-bg) !important;
+  }
+  & .hover\:bg-black:hover {
+    background-color: color-mix(in srgb, var(--theme-text-primary) 85%, var(--theme-card-bg)) !important;
+  }
+
+  /* El anillo de foco navy no se veía sobre fondo oscuro. */
+  & .focus\:ring-\[\#00283D\]:focus,
+  & .focus\:ring-\[\#003049\]:focus { --tw-ring-color: var(--theme-primary) !important; }
+
+  /*
+    Los recuadros de estado (error, "ojo", "listo") y sus textos: cada paleta
+    trae su propio tono (ThemeContext, ESTADOS_*), oscuro sobre claro y claro
+    sobre oscuro. El fondo es ese tono apenas mezclado con la tarjeta: rosado
+    pálido en las claras, un vino oscuro en las oscuras.
+  */
+  & .text-red-600,
+  & .text-red-700,
+  & .hover\:text-red-600:hover { color: var(--theme-peligro) !important; }
+  & .text-amber-600,
+  & .text-amber-700,
+  & .text-amber-800,
+  & .text-orange-600 { color: var(--theme-aviso) !important; }
+  & .text-green-600 { color: var(--theme-exito) !important; }
+
+  & .bg-red-50,
+  & .hover\:bg-red-50:hover { background-color: color-mix(in srgb, var(--theme-peligro) 12%, var(--theme-card-bg)) !important; }
+  & .bg-red-50\/40 { background-color: color-mix(in srgb, var(--theme-peligro) 7%, var(--theme-card-bg)) !important; }
+  & .bg-amber-50 { background-color: color-mix(in srgb, var(--theme-aviso) 12%, var(--theme-card-bg)) !important; }
+  & .bg-amber-50\/40 { background-color: color-mix(in srgb, var(--theme-aviso) 7%, var(--theme-card-bg)) !important; }
+  & .bg-green-50 { background-color: color-mix(in srgb, var(--theme-exito) 12%, var(--theme-card-bg)) !important; }
+
+  & .border-red-200 { border-color: color-mix(in srgb, var(--theme-peligro) 35%, var(--theme-card-bg)) !important; }
+  & .border-amber-200 { border-color: color-mix(in srgb, var(--theme-aviso) 35%, var(--theme-card-bg)) !important; }
 }
 
 /*

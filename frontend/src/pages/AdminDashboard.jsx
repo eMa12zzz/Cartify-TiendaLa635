@@ -449,7 +449,8 @@ const AdminDashboard = () => {
                 tan chico sea frente al vecino.
               */}
               <LineChart data={grafica} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                {/* La cuadrícula con el borde de la paleta: gris claro fijo, en Modo oscuro brillaba. */}
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={c.cardBorder} />
                 <XAxis dataKey="etiqueta" tick={{ fontSize: 12, fill: c.textSecondary }} />
                 <YAxis tick={{ fontSize: 12, fill: c.textSecondary }} tickFormatter={ejeMoneda} width={60} />
                 <RechartsTooltip

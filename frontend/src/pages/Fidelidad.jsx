@@ -72,8 +72,8 @@ const Fidelidad = () => {
   return (
     <div className="flex flex-col gap-6 w-full pb-8 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Award className="w-8 h-8" style={{ color: 'var(--theme-accent)' }} />
-        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>Programa de Fidelidad</h1>
+        <Award className="w-8 h-8" style={{ color: 'var(--theme-accent-text)' }} />
+        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent-text)' }}>Programa de Fidelidad</h1>
       </div>
 
       {loading ? (

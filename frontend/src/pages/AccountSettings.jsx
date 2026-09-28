@@ -95,7 +95,7 @@ const AccountSettings = () => {
   return (
     <div className="flex-1 w-full max-w-5xl pb-10" style={{ backgroundColor: 'var(--theme-main-bg)' }}>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>Cuenta</h1>
+        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent-text)' }}>Cuenta</h1>
         <div className="flex items-center gap-4">
           <div className="text-xs px-3 py-1 rounded-full font-medium capitalize" 
                style={{ backgroundColor: 'var(--theme-card-border)', color: 'var(--theme-text-primary)' }}>
