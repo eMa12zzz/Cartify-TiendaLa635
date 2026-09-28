@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Settings, X } from 'lucide-react';
+import { ChevronDown, LifeBuoy, Settings, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
@@ -163,7 +163,12 @@ const Sidebar = ({ abierto = false, oculto = false, onCerrar, onTocarNavegacion 
         })}
       </nav>
 
-      <div className="p-4" style={{ borderTop: `1px solid ${c.sidebarBorder}` }}>
+      <div className="p-4 space-y-1" style={{ borderTop: `1px solid ${c.sidebarBorder}` }}>
+        {/* Cómo funciona cada apartado. Ver pages/AyudaPanel.jsx. */}
+        <Link to="/ayuda" className={fila} style={estilo(pathname === '/ayuda')}>
+          <LifeBuoy className="w-5 h-5" style={{ color: pathname === '/ayuda' ? c.primary : c.textMuted }} />
+          Ayuda
+        </Link>
         <Link to="/cuenta" className={fila} style={estilo(pathname === '/cuenta')}>
           <Settings className="w-5 h-5" style={{ color: pathname === '/cuenta' ? c.primary : c.textMuted }} />
           Cuenta

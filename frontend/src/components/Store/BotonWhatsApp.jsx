@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageCircle, X } from 'lucide-react';
+import { RUTAS_DEL_PANEL } from '../../utils/sesion';
 
 /*
  * BotonWhatsApp — el botón flotante para escribirle a la tienda.
@@ -26,10 +27,13 @@ const CLAVE_GLOBO = 'la635_globo_whatsapp';
  * excluye (y no de lo que se incluye) para que cualquier pantalla nueva del
  * cliente lo herede sola, sin tener que acordarse de agregarla aquí.
  */
+/*
+ * Las del panel salen de la lista oficial (utils/sesion.js): escritas a mano
+ * aquí, se habían quedado atrás Tarjetas y Personalización, y el botón verde
+ * de los clientes salía encima del panel.
+ */
 const RUTAS_SIN_BOTON = [
-  '/admin', '/dashboard', '/inventario', '/pedidos', '/modulos', '/marcas',
-  '/empleados', '/clientes', '/proveedores', '/categorias', '/fidelidad',
-  '/promociones', '/servicios-impresion', '/cuenta',
+  ...RUTAS_DEL_PANEL,
   '/register', '/forgot-password', '/verification', '/create-password', '/login-password',
 ];
 

@@ -1,6 +1,7 @@
-import { ChevronDown, Menu, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, HelpCircle, Menu, Settings, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { temaDeRuta } from '../../utils/ayudaPanel';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useDropdown } from '../../hooks/useDropdown';
@@ -11,6 +12,7 @@ const TopBar = ({ onAlternarMenu, menuAbierto = false }) => {
   const c = palette.colors;
   const { user, logoutTodo } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { isOpen, toggle, close, ref } = useDropdown();
 
   /*
@@ -56,6 +58,20 @@ const TopBar = ({ onAlternarMenu, menuAbierto = false }) => {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        {/*
+          La ayuda de ESTA pantalla: abre /ayuda justo en el tema de donde se
+          está parado (o en "Cómo se usa el panel" si la pantalla no tiene uno).
+        */}
+        <Link
+          to={`/ayuda?tema=${temaDeRuta(pathname) || 'primeros-pasos'}`}
+          aria-label="Ayuda de esta pantalla"
+          title="¿Cómo funciona esta pantalla?"
+          className="w-10 h-10 rounded-full border flex items-center justify-center flex-none press"
+          style={{ borderColor: c.cardBorder, color: c.textSecondary, backgroundColor: c.cardBg }}
+        >
+          <HelpCircle className="w-5 h-5" />
+        </Link>
+
         {/* Selector de accesibilidad: paletas a un clic desde cualquier pantalla */}
         <ThemeSwitcher />
 
