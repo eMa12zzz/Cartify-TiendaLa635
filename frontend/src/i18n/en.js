@@ -574,6 +574,10 @@ const EN = {
   'Algo se nos rompió acá': 'Something broke on our end',
   'No fue culpa suya. Esta pantalla no cargó bien; ya quedó anotado. Puede volver a intentarlo o regresar a la tienda.': 'It wasn\'t your fault. This screen didn\'t load properly; we\'ve logged it. You can try again or go back to the store.',
   'Volver a intentar': 'Try again',
+
+  // ── Menú de Mi Cuenta ──
+  'Ver las secciones anteriores': 'See previous sections',
+  'Ver más secciones': 'See more sections',
 };
 
 export default EN;

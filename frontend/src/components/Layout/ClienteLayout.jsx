@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
-  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, LogOut, Heart, SlidersHorizontal,
-  ArrowLeft,
+  User, ShoppingBag, MapPin, CreditCard, Bell, Star, Receipt, HelpCircle, Heart, SlidersHorizontal,
+  ArrowLeft, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
-import { useAuth } from '../../hooks/useAuth';
+import { useFilaDeslizable } from '../../hooks/useFilaDeslizable';
 import HeaderTienda from '../Store/HeaderTienda';
 import { useIdioma } from '../../hooks/useIdioma';
 
@@ -42,15 +42,45 @@ const navItems = [
   { to: '/mi-cuenta/preferencias',   label: 'Preferencias',   titulo: 'Apariencia e idioma',   icon: SlidersHorizontal, ready: true },
 ];
 
+// Lo que tapa cada flecha: al llevar la pestaña activa a la vista, se deja ese margen.
+const ANCHO_FLECHA = 48;
+
+/*
+ * La flecha de cada orilla, sobre un degradado del color de la barra: el
+ * degradado dice "aquí sigue" aunque la flecha no se mire, y deja ver que la
+ * pestaña de abajo está cortada en vez de taparla de golpe.
+ */
+const FlechaMenu = ({ lado, onClick, etiqueta, c }) => {
+  const izquierda = lado === 'izquierda';
+  const Icono = izquierda ? ChevronLeft : ChevronRight;
+  return (
+    <div
+      className={`pointer-events-none absolute top-0 bottom-0 flex items-center ${izquierda ? 'left-0 justify-start' : 'right-0 justify-end'}`}
+      style={{
+        width: ANCHO_FLECHA,
+        background: `linear-gradient(to ${izquierda ? 'right' : 'left'}, ${c.topbarBg} 55%, transparent)`,
+      }}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={etiqueta}
+        title={etiqueta}
+        className="press pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full shadow-sm"
+        style={{ backgroundColor: c.cardBg, border: `1px solid ${c.cardBorder}`, color: c.textPrimary }}
+      >
+        <Icono className="h-4 w-4" aria-hidden="true" />
+      </button>
+    </div>
+  );
+};
+
 const ClienteLayout = () => {
   const { palette } = useTheme();
   const c = palette.colors;
-  const { logout } = useAuth();
   const { t } = useIdioma();
   const location = useLocation();
-  const navigate = useNavigate();
   const reduce = useReducedMotion();
-  const [confirmarSalida, setConfirmarSalida] = useState(false);
 
   /*
    * Mi Cuenta es SOLO del cliente.
@@ -61,24 +91,50 @@ const ClienteLayout = () => {
    * donde se reparte: el GPS, la pantalla encendida y la app de mapas están en
    * el teléfono. En la web el personal entra al panel por /admin (ver
    * "¿Trabajas en la tienda?" en LoginClient).
+   *
+   * "Cerrar sesión" tampoco vive aquí: está en Mis datos, al lado de
+   * "Guardar cambios" (ver BotonCerrarSesion). Como última pestaña era la que
+   * siempre se quedaba fuera de la pantalla.
    */
 
   /*
-   * Al cerrar sesión se queda EN la tienda, no en un formulario de login.
-   * Salirse de la cuenta no es salirse del negocio: la mayoría sigue viendo
-   * precios un rato más.
+   * EL MENÚ CON EL MOUSE.
+   *
+   * La barra se desliza de lado cuando no caben todas las secciones, pero con
+   * la barra de desplazamiento escondida y la rueda moviendo la página, con
+   * el mouse no había forma de llegar a las últimas. Ahora hay tres caminos:
+   * las flechas de las orillas (solo cuando hay algo escondido de ese lado),
+   * la rueda del mouse encima del menú, y la pestaña abierta, que se trae
+   * sola a la vista al cambiar de sección.
    */
-  const handleLogout = () => {
-    // Solo la del cliente: la del panel, si la misma persona la tiene abierta, sigue.
-    logout('cliente');
-    navigate('/');
-  };
+  const { fila, puedeIzq, puedeDer, izquierda, derecha } = useFilaDeslizable({ rueda: true });
+  const nav = useRef(null);
+  const engancharNav = useCallback((el) => {
+    nav.current = el;
+    fila(el);
+  }, [fila]);
+
+  useEffect(() => {
+    const el = nav.current;
+    const activa = el?.querySelector('[aria-current="page"]');
+    if (!el || !activa) return;
+    const desde = activa.offsetLeft;
+    const hasta = desde + activa.offsetWidth;
+    const comportamiento = reduce ? 'auto' : 'smooth';
+    if (desde - ANCHO_FLECHA < el.scrollLeft) {
+      el.scrollTo({ left: Math.max(0, desde - ANCHO_FLECHA), behavior: comportamiento });
+    } else if (hasta + ANCHO_FLECHA > el.scrollLeft + el.clientWidth) {
+      el.scrollTo({ left: hasta + ANCHO_FLECHA - el.clientWidth, behavior: comportamiento });
+    }
+  }, [location.pathname, reduce]);
 
   /*
    * El sombreado al pasar el mouse se fue con el menú lateral: en pestañas
    * horizontales el subrayado ya dice cuál está activa, y pintarles el fondo
    * encima las volvía botones apretados uno contra otro.
    */
+
+  const enAyuda = location.pathname === '/mi-cuenta/ayuda';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: c.mainBg, color: c.textPrimary }}>
@@ -94,115 +150,111 @@ const ClienteLayout = () => {
       <HeaderTienda />
 
       {/*
-        ── Cuerpo: sidebar + contenido ──
-        El menú va ARRIBA, en horizontal, y el contenido al centro con aire a
-        los lados.
+        ── Menú de secciones ──
+        Va ARRIBA, en horizontal, y el contenido al centro con aire a los
+        lados. Con el menú de lado, cada página arrancaba corrida a la derecha
+        y el ojo tenía que saltar la columna del menú antes de llegar a lo que
+        venía a ver.
 
-        Con el menú de lado, cada página arrancaba corrida a la derecha y el
-        ojo tenía que saltar la columna del menú antes de llegar a lo que
-        venía a ver. Arriba se recorre de un vistazo —son ocho secciones, no
-        cuarenta— y deja la pantalla entera para el contenido.
-      */}
-      {/*
         Sin raya abajo: la barra de arriba ya trae la suya, y dos líneas
         paralelas a pocos píxeles una de otra dejaban el menú metido en una
         franja aparte en vez de leerse como parte de la página.
       */}
       <div className="px-4 sm:px-6" style={{ backgroundColor: c.topbarBg }}>
-        {/*
-          Deslizable en pantalla chica: en un teléfono no caben ocho pestañas,
-          y partirlas en dos filas movía el contenido hacia abajo cada vez.
-        */}
-        <nav
-          className="flex items-center gap-1 overflow-x-auto max-w-6xl mx-auto"
-          style={{ scrollbarWidth: 'none' }}
-        >
+        <div className="relative max-w-6xl mx-auto">
           {/*
-            La vuelta a comprar, primera y siempre a la vista. Con el
-            encabezado de la tienda arriba parecía que ya no hacía falta, pero
-            ahí el nombre abre los pasillos (no lleva a la tienda) y el
-            buscador y el carrito solo llevan de rebote: no había un "volver"
-            que se viera como tal.
+            Deslizable cuando no cabe: en un teléfono no caben las pestañas,
+            y partirlas en dos filas movía el contenido hacia abajo cada vez.
+            `relative` es para que cada pestaña mida su posición desde aquí
+            (ver el efecto que trae la activa a la vista).
           */}
-          <Link
-            to="/"
-            title={t('Volver a la tienda')}
-            className="flex items-center gap-1.5 pl-1 pr-3 py-3 text-[13.5px] font-bold whitespace-nowrap transition-colors"
-            style={{ color: c.primary }}
+          <nav
+            ref={engancharNav}
+            aria-label={t('Mi cuenta')}
+            className="relative flex items-center gap-1 overflow-x-auto"
+            style={{ scrollbarWidth: 'none' }}
           >
-            <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden="true" /> {t('Ir a la tienda')}
-          </Link>
-          <span className="w-px h-5 mr-1 flex-shrink-0" style={{ backgroundColor: c.cardBorder }} aria-hidden="true" />
+            {/*
+              La vuelta a comprar, primera y siempre a la vista. Con el
+              encabezado de la tienda arriba parecía que ya no hacía falta, pero
+              ahí el nombre abre los pasillos (no lleva a la tienda) y el
+              buscador y el carrito solo llevan de rebote: no había un "volver"
+              que se viera como tal.
+            */}
+            <Link
+              to="/"
+              title={t('Volver a la tienda')}
+              className="flex items-center gap-1.5 pl-1 pr-3 py-3 text-[13.5px] font-bold whitespace-nowrap transition-colors"
+              style={{ color: c.primary }}
+            >
+              <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden="true" /> {t('Ir a la tienda')}
+            </Link>
+            <span className="w-px h-5 mr-1 flex-shrink-0" style={{ backgroundColor: c.cardBorder }} aria-hidden="true" />
 
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = location.pathname === item.to;
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = location.pathname === item.to;
 
-            // Ítems aún no cableados: visibles pero deshabilitados.
-            if (!item.ready) {
+              // Ítems aún no cableados: visibles pero deshabilitados.
+              if (!item.ready) {
+                return (
+                  <div
+                    key={item.to}
+                    title={t('Próximamente')}
+                    className="flex items-center gap-2 px-3 py-3 text-sm whitespace-nowrap cursor-not-allowed opacity-50"
+                    style={{ color: c.textMuted }}
+                  >
+                    <Icon className="w-4 h-4" /> {t(item.label)}
+                  </div>
+                );
+              }
+
               return (
-                <div
+                <Link
                   key={item.to}
-                  title={t('Próximamente')}
-                  className="flex items-center gap-2 px-3 py-3 text-sm whitespace-nowrap cursor-not-allowed opacity-50"
-                  style={{ color: c.textMuted }}
+                  to={item.to}
+                  title={t(item.titulo || item.label)}
+                  aria-current={active ? 'page' : undefined}
+                  className="flex items-center gap-1.5 px-2 py-3 text-[13.5px] whitespace-nowrap transition-colors relative"
+                  style={{
+                    color: active ? c.primary : c.textSecondary,
+                    fontWeight: active ? 700 : 500,
+                  }}
                 >
-                  <Icon className="w-4 h-4" /> {t(item.label)}
-                </div>
+                  <Icon className="w-4 h-4 flex-shrink-0" /> {t(item.label)}
+                  {/* La rayita de abajo: dice dónde está uno sin pintar toda la
+                      pestaña, que en horizontal se ve pesado */}
+                  {active && (
+                    <span
+                      className="absolute left-2 right-2 bottom-0 h-[3px] rounded-t"
+                      style={{ backgroundColor: c.primary }}
+                    />
+                  )}
+                </Link>
               );
-            }
+            })}
 
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                title={t(item.titulo || item.label)}
-                className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors relative"
-                style={{
-                  color: active ? c.primary : c.textSecondary,
-                  fontWeight: active ? 700 : 500,
-                }}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" /> {t(item.label)}
-                {/* La rayita de abajo: dice dónde está uno sin pintar toda la
-                    pestaña, que en horizontal se ve pesado */}
-                {active && (
-                  <span
-                    className="absolute left-2 right-2 bottom-0 h-[3px] rounded-t"
-                    style={{ backgroundColor: c.primary }}
-                  />
-                )}
-              </Link>
-            );
-          })}
+            {/* La ayuda se va al final, separada: no es una sección de la
+                cuenta sino algo que se consulta desde ella. */}
+            <span className="flex-1 min-w-[8px]" />
 
-          {/* Ayuda y salir se van al final, separados: no son secciones de la
-              cuenta sino cosas que se hacen desde ella. */}
-          <span className="flex-1 min-w-[8px]" />
+            <Link
+              to="/mi-cuenta/ayuda"
+              title={t('Centro de ayuda')}
+              aria-current={enAyuda ? 'page' : undefined}
+              className="flex items-center gap-1.5 px-2 py-3 text-[13.5px] whitespace-nowrap transition-colors"
+              style={{
+                color: enAyuda ? c.primary : c.textSecondary,
+                fontWeight: enAyuda ? 700 : 500,
+              }}
+            >
+              <HelpCircle className="w-4 h-4 flex-shrink-0" /> {t('Ayuda')}
+            </Link>
+          </nav>
 
-          <Link
-            to="/mi-cuenta/ayuda"
-            title={t('Centro de ayuda')}
-            className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors"
-            style={{
-              color: location.pathname === '/mi-cuenta/ayuda' ? c.primary : c.textSecondary,
-              fontWeight: location.pathname === '/mi-cuenta/ayuda' ? 700 : 500,
-            }}
-          >
-            <HelpCircle className="w-4 h-4 flex-shrink-0" /> {t('Ayuda')}
-          </Link>
-
-          {/* Cerrar sesión pide confirmación: es la única acción del menú que
-              te saca de la aplicación. */}
-          <button
-            onClick={() => setConfirmarSalida(true)}
-            title={t('Cerrar sesión')}
-            className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors"
-            style={{ color: c.textSecondary }}
-          >
-            <LogOut className="w-4 h-4 flex-shrink-0" /> {t('Salir')}
-          </button>
-        </nav>
+          {puedeIzq && <FlechaMenu lado="izquierda" onClick={izquierda} etiqueta={t('Ver las secciones anteriores')} c={c} />}
+          {puedeDer && <FlechaMenu lado="derecha" onClick={derecha} etiqueta={t('Ver más secciones')} c={c} />}
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-7">
@@ -225,59 +277,6 @@ const ClienteLayout = () => {
           </AnimatePresence>
         </main>
       </div>
-
-      {/* Confirmación de cierre de sesión */}
-      <AnimatePresence>
-        {confirmarSalida && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-              className="absolute inset-0 bg-black/45"
-              onClick={() => setConfirmarSalida(false)}
-            />
-            <motion.div
-              initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}
-              transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
-              className="relative z-10 w-full max-w-sm rounded-2xl p-6 shadow-xl"
-              style={{ backgroundColor: c.cardBg || 'var(--papel)', color: c.textPrimary }}
-              role="dialog"
-              aria-modal="true"
-            >
-              <div
-                className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
-                style={{ backgroundColor: c.primaryLight, color: c.primary }}
-              >
-                <LogOut className="h-5 w-5" />
-              </div>
-              <h2 className="mb-1 text-center text-lg font-bold">{t('¿Cerrar sesión?')}</h2>
-              <p className="mb-6 text-center text-sm" style={{ color: c.textSecondary }}>
-                {t('Tendrá que volver a ingresar su correo y contraseña para entrar de nuevo.')}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmarSalida(false)}
-                  className="press flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-colors"
-                  style={{ backgroundColor: c.primaryLight, color: c.textPrimary }}
-                >
-                  {t('Quedarme')}
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="press flex-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-                  style={{ backgroundColor: c.primary }}
-                >
-                  {t('Cerrar sesión')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
