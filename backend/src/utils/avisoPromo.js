@@ -65,6 +65,79 @@ const armarItems = (promo) =>
     });
 
 /*
+ * ── Lo que dice la notificación del teléfono ──
+ * Iba el título de la promo y su descripción entera: en la vista previa del
+ * teléfono (una línea de título y una de texto, unos 40 caracteres cada una
+ * en Android) salía cortada a la mitad y con demasiado texto, y lo que se
+ * alcanzaba a leer no daba ganas de abrirla.
+ *
+ * Ahora se arma aparte del correo, corta y con un poco de misterio:
+ *   - el título dice el gancho ("Tenemos un 2x1 para usted", "Hasta 25%
+ *     menos en la tienda") en 40 caracteres o menos;
+ *   - el texto no cuenta todo ("¿En qué producto? Toque y descúbralo.") o
+ *     apura si vence pronto ("Solo hasta el domingo. Toque para verlo."), en
+ *     45 o menos.
+ * El qué y el cuánto quedan para cuando la abren (y para el correo, que sí
+ * trae el detalle). De "usted", como las demás notificaciones de la tienda.
+ */
+const MAX_TITULO = 40;
+const MAX_CUERPO = 45;
+
+// La misma promo siempre elige la misma variante (así se puede probar y no cambia si se reenvía).
+const elegir = (opciones, semilla) => {
+  const n = [...String(semilla)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return opciones[n % opciones.length];
+};
+
+// Por si algún día una plantilla se pasa: se corta en una palabra, nunca a media.
+const caber = (texto, max) => {
+  if (texto.length <= max) return texto;
+  const corto = texto.slice(0, max - 1);
+  return `${corto.slice(0, corto.lastIndexOf(" ")).replace(/[,.:;¿¡]+$/, "")}…`;
+};
+
+const DIA = 24 * 60 * 60 * 1000;
+
+export const textoDelPush = (promo, items) => {
+  const semilla = String(promo._id || promo.title || "");
+  const descuentos = items.map((i) => i.descuento).filter((d) => d > 0);
+  const maximo = descuentos.length ? Math.max(...descuentos) : 0;
+  const parejo = descuentos.length === items.length && new Set(descuentos).size === 1;
+
+  let titulo;
+  if (promo.type === "nxm") {
+    const nxm = `${Number(promo.buyQty) || 2}x${Number(promo.payQty) || 1}`;
+    titulo = elegir([`Tenemos un ${nxm} para usted`, `Llegó un ${nxm} a la tienda`], semilla);
+  } else if (promo.type === "descuento" && maximo > 0) {
+    titulo = parejo
+      ? elegir([`${maximo}% menos, solo en la tienda`, `Tenemos ${maximo}% menos para usted`], semilla)
+      : `Hasta ${maximo}% menos en la tienda`;
+  } else if (promo.type === "precio_fijo") {
+    titulo = elegir(["Tenemos un precio especial", "Bajamos un precio para usted"], semilla);
+  } else {
+    titulo = elegir(["Llegó algo nuevo a la tienda", "Tenemos una novedad para usted"], semilla);
+  }
+
+  let cuerpo;
+  const vence = promo.endsAt ? new Date(promo.endsAt) : null;
+  const faltan = vence ? vence.getTime() - Date.now() : Infinity;
+  if (faltan < DIA) {
+    cuerpo = "Solo por hoy. Toque para verlo.";
+  } else if (faltan < 7 * DIA) {
+    const dia = vence.toLocaleDateString("es-SV", { weekday: "long", timeZone: "America/El_Salvador" });
+    cuerpo = `Solo hasta el ${dia}. Toque para verlo.`;
+  } else if (promo.type === "anuncio") {
+    cuerpo = "Toque para ver qué es.";
+  } else if (items.length > 1) {
+    cuerpo = `Son ${items.length} productos. ¿Adivina cuáles?`;
+  } else {
+    cuerpo = "¿En qué producto? Toque y descúbralo.";
+  }
+
+  return { titulo: caber(titulo, MAX_TITULO), cuerpo: caber(cuerpo, MAX_CUERPO) };
+};
+
+/*
  * Los destinatarios. Solo el correo: no hace falta traerse la cuenta entera de
  * cada cliente —con sus direcciones y sus métodos de pago— para mandar un
  * volante.
@@ -142,8 +215,8 @@ export const avisarPromoNueva = async (promoId) => {
    * `avisoEnviadoEn` de más arriba, que ya cortó si esta promo se anunció.
    */
   enviarPushEnSegundoPlano(await dispositivosDe("promociones"), {
-    titulo: promo.title || "Nueva promoción",
-    cuerpo: promo.promoDescription || "Aprovéchela en la tienda.",
+    // Corto y con misterio, para la vista previa del teléfono (ver textoDelPush).
+    ...textoDelPush(promo, items),
     datos: { tipo: "promo", promoId: String(promo._id || "") },
   });
 

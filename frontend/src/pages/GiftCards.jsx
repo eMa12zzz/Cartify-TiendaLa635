@@ -45,8 +45,8 @@ const GiftCards = () => {
     <div className="flex flex-col gap-6 w-full pb-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Gift className="w-8 h-8" style={{ color: 'var(--theme-accent)' }} />
-          <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>Tarjetas de regalo</h1>
+          <Gift className="w-8 h-8" style={{ color: 'var(--theme-accent-text)' }} />
+          <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent-text)' }}>Tarjetas de regalo</h1>
         </div>
         <button
           onClick={() => setModalOpen(true)}

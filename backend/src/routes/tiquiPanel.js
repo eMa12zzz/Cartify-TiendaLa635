@@ -86,7 +86,7 @@ router.post("/confirmar", topeCharla, tiquiPanelController.confirmar);
  *     tags: [Tiqui del panel]
  *     responses:
  *       200:
- *         description: "{ listo: true, voz: boolean }"
+ *         description: "{ listo: true, voz: boolean, consejo: string } — consejo: solo al administrador, lo más importante para vender mejor (vacío si no hay nada)"
  */
 router.get("/listo", tiquiPanelController.listo);
 

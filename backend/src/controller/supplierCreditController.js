@@ -4,6 +4,32 @@ import { estadoCuenta, creditoDisponible } from "../utils/cuentaProveedor.js";
 
 const supplierCreditController = {};
 
+/*
+ * ── El número de la factura, solo ──
+ * Se escribía a mano y muchas veces quedaba vacío: en el estado de cuenta
+ * salía "Sin número" y no había cómo cotejar con el papel ni decirle al
+ * proveedor de cuál se hablaba. Ahora se numera en orden, por proveedor:
+ * F-0001, F-0002… las compras y R-0001… los pagos.
+ *
+ * Se toma el MAYOR número que ya tenga ese formato, no la cantidad de
+ * movimientos: si se borra uno, contarlos repetiría un número. Y lo que el
+ * dueño escribió a mano (el número que trae el papel del proveedor) no
+ * estorba: no calza con el formato y se deja tal cual.
+ */
+const PREFIJO = { compra: "F", pago: "R" };
+
+const siguienteNumero = (movimientos, type) => {
+  const prefijo = PREFIJO[type];
+  const formato = new RegExp(`^${prefijo}-(\\d+)$`, "i");
+  const mayor = movimientos
+    .filter((m) => m.type === type)
+    .reduce((max, m) => {
+      const n = String(m.reference || "").trim().match(formato);
+      return n ? Math.max(max, Number(n[1])) : max;
+    }, 0);
+  return `${prefijo}-${String(mayor + 1).padStart(4, "0")}`;
+};
+
 /* ── Estado de cuenta de UN proveedor ── */
 supplierCreditController.getAccount = async (req, res) => {
   try {
@@ -26,6 +52,9 @@ supplierCreditController.getAccount = async (req, res) => {
       ...cuenta,
       disponible: creditoDisponible(proveedor.creditLimit, cuenta.deuda),
       movimientos,
+      // Lo que va a llevar la próxima compra o el próximo pago si no se escribe otro.
+      siguienteFactura: siguienteNumero(movimientos, "compra"),
+      siguienteRecibo: siguienteNumero(movimientos, "pago"),
     });
   } catch (error) {
     console.log("error " + error);
@@ -126,13 +155,17 @@ supplierCreditController.insertMovement = async (req, res) => {
       }
     }
 
+    // Sin número escrito, se le pone el siguiente (ver siguienteNumero).
+    const numero = String(reference || "").trim()
+      || siguienteNumero(await supplierMovementModel.find({ supplierId, type }, "type reference").lean(), type);
+
     const movimiento = await new supplierMovementModel({
       supplierId,
       type,
       amount: monto,
       date: fecha,
       dueDate: type === "compra" ? vence : undefined,
-      reference,
+      reference: numero,
       note,
       shoppingId: shoppingId || undefined,
     }).save();

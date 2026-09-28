@@ -38,9 +38,10 @@ export const tiquiPanelService = {
   despertar: async () => {
     try {
       const { data } = await api.get('/tiqui-panel/listo', { enSilencio: true, timeout: 45000 });
-      return { voz: Boolean(data?.voz) };
+      // `consejo`: el consejo de ventas más importante, solo para el administrador.
+      return { voz: Boolean(data?.voz), consejo: String(data?.consejo || '') };
     } catch {
-      return { voz: false };
+      return { voz: false, consejo: '' };
     }
   },
 
