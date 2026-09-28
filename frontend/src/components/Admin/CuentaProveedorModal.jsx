@@ -84,6 +84,9 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
 
   const inputCls = 'bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-[#00283D]';
 
+  // El número que va a llevar si no se escribe otro (lo calcula el servidor).
+  const numeroAutomatico = (form.type === 'compra' ? cuenta?.siguienteFactura : cuenta?.siguienteRecibo) || '';
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -211,12 +214,23 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
                         <input type="date" value={form.date}
                           onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputCls} />
                       </div>
+                      {/*
+                        El número se pone solo (F-0001, R-0001…, lo calcula el
+                        servidor por proveedor) y ya viene escrito en el campo.
+                        Si el papel del proveedor trae otro, se escribe encima y
+                        manda ese; si se borra todo, vuelve el automático.
+                      */}
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">
                           {form.type === 'compra' ? 'N.º factura' : 'N.º recibo'}
+                          {!form.reference && <span className="ml-1 text-gray-400">· automático</span>}
                         </label>
-                        <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })}
-                          className={`${inputCls} w-32`} placeholder="F-001" />
+                        <input
+                          value={form.reference || numeroAutomatico}
+                          onChange={(e) => setForm({ ...form, reference: e.target.value === numeroAutomatico ? '' : e.target.value })}
+                          className={`${inputCls} w-32`}
+                          aria-label={form.type === 'compra' ? 'Número de factura' : 'Número de recibo'}
+                        />
                       </div>
                       <button type="submit" disabled={guardando}
                         className="press ml-auto bg-[#003049] hover:bg-[#00283D] text-white text-sm font-medium px-6 py-2 rounded-full disabled:opacity-60">
