@@ -45,7 +45,7 @@ export const TEMAS_AYUDA = [
     resumen: 'El panel es donde se maneja la tienda: pedidos, productos, precios, promociones y personas.',
     pasos: [
       'El menú de la izquierda (en el teléfono, el botón ☰ de arriba) tiene todas las pantallas. Dashboard, Pedidos e Inventario son las del día a día; Catálogo, Ventas y Personas se despliegan cuando hay que configurar algo.',
-      'El botón con la paleta, arriba, cambia los colores del panel. Hay paletas pensadas para quien ve poco, para el daltonismo y para descansar la vista.',
+      'El botón con la paleta, arriba, cambia los colores del panel y el tamaño del texto. Hay paletas pensadas para quien ve poco, para leer mucho rato y para descansar la vista.',
       'El botón “?” de arriba abre la ayuda de la pantalla en la que usted está.',
       'Tiqui, abajo a la derecha, contesta preguntas sobre la tienda y hace cambios si se los pide.',
       'Para salir, toque su nombre arriba a la derecha y elija “Cerrar sesión”.',
@@ -322,11 +322,14 @@ export const TEMAS_AYUDA = [
     resumen: 'Sus datos, su contraseña y los colores del panel.',
     pasos: [
       'Actualice su nombre, usuario, correo, teléfono y contraseña.',
-      'En la pestaña de colores elija la paleta que le resulte más cómoda: Mi marca (la de siempre), Alto contraste (para quien ve poco), Deuteranopía y Tritanopía (para el daltonismo), Modo oscuro, Calma y Calma noche.',
+      'En “Colores y lectura” elija la paleta que le resulte más cómoda: Mi marca (la de siempre), Lectura (sepia, para leer mucho rato), Contraste reforzado (para quien ve poco), Modo oscuro, Calma y Calma noche.',
+      'Debajo, en Lectura: el tamaño del texto (normal, grande o muy grande), más espacio entre líneas, menos animaciones y resaltar enlaces y foco.',
     ],
     consejos: [
+      'Lo mismo está a un clic desde cualquier pantalla, en el botón de la paleta de la barra de arriba.',
       'Calma y Calma noche usan colores suaves y menos brillo, sin dejar de leerse bien: pensadas para quien se cansa o se abruma con la pantalla. Calma es clara y Calma noche es su versión oscura.',
-      'La paleta se guarda en esta computadora o teléfono: cada persona puede tener la suya.',
+      'Contraste reforzado se lee mejor junto con el texto grande.',
+      'Los colores y la lectura se guardan en esta computadora o teléfono: cada persona puede tener los suyos.',
     ],
   },
 ];

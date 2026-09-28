@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import TiquiPanel from '../Admin/TiquiPanel';
@@ -16,8 +17,15 @@ import { overlayTransition } from '../../utils/motion';
  */
 const AdminLayout = () => {
   const { abierto, oculto, cerrar, alternar, alTocarNavegacion } = useMenuPanel();
+  const { lectura } = useTheme();
 
   return (
+    /*
+     * "Menos animaciones" (Cuenta o el botón de la paleta): las animaciones de
+     * framer-motion no las alcanza el CSS, así que se apagan aquí. Sin la
+     * opción, se respeta lo que diga el sistema del equipo.
+     */
+    <MotionConfig reducedMotion={lectura?.movimiento ? 'always' : 'user'}>
     <div className="admin-theme flex min-h-screen" style={{ backgroundColor: 'var(--theme-main-bg)' }}>
 
       <Sidebar
@@ -68,6 +76,7 @@ const AdminLayout = () => {
       */}
       <TiquiPanel />
     </div>
+    </MotionConfig>
   );
 };
 

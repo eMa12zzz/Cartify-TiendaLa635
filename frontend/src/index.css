@@ -682,6 +682,65 @@ input:disabled {
 
   & .border-red-200 { border-color: color-mix(in srgb, var(--theme-peligro) 35%, var(--theme-card-bg)) !important; }
   & .border-amber-200 { border-color: color-mix(in srgb, var(--theme-aviso) 35%, var(--theme-card-bg)) !important; }
+
+  /*
+    Los tamaños escritos en píxeles, pasados a rem (el mismo tamaño en
+    "Normal"): así también crecen con "Texto grande". En píxeles se quedaban
+    chicos justo los que más lo necesitan, como los encabezados de columna.
+  */
+  & .text-\[10px\] { font-size: 0.625rem !important; }
+  & .text-\[11px\] { font-size: 0.6875rem !important; }
+  & .text-\[11\.5px\] { font-size: 0.71875rem !important; }
+  & .text-\[12\.5px\] { font-size: 0.78125rem !important; }
+  & .text-\[13px\] { font-size: 0.8125rem !important; }
+  & .text-\[13\.5px\] { font-size: 0.84375rem !important; }
+  & .text-\[15px\] { font-size: 0.9375rem !important; }
+  & .text-\[19px\] { font-size: 1.1875rem !important; }
+}
+
+/*
+  ==========================================
+  OPCIONES DE LECTURA DEL PANEL (ThemeContext, LECTURA)
+  ==========================================
+  Atributos del <html> que pone ThemeContext. Todo va condicionado a que el
+  panel esté en pantalla (:has(.admin-theme)): la tienda tiene su propio
+  diseño y no se toca.
+*/
+
+/*
+  Texto más grande: se agranda la medida base (rem) mientras el panel está a
+  la vista. Todo lo del panel se mide en rem —letras, rellenos, el ancho del
+  menú—, así que crece en proporción, como el zoom del navegador, sin que
+  nada se monte encima de nada.
+*/
+html[data-panel-texto="grande"]:has(.admin-theme) { font-size: 115%; }
+html[data-panel-texto="muy-grande"]:has(.admin-theme) { font-size: 130%; }
+
+/* Más espacio entre líneas y letras: ayuda a no perder el renglón. */
+html[data-panel-espaciado] .admin-theme :where(p, li, td, th, label, dd, dt, span, a, small) {
+  line-height: 1.75 !important;
+  letter-spacing: 0.012em;
+  word-spacing: 0.06em;
+}
+
+/* Menos animaciones (las de framer-motion las apaga MotionConfig en AdminLayout). */
+html[data-panel-movimiento] .admin-theme *,
+html[data-panel-movimiento] .admin-theme *::before,
+html[data-panel-movimiento] .admin-theme *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Resaltar enlaces y foco: el borde grueso dice dónde está el teclado. */
+html[data-panel-foco] .admin-theme :focus-visible {
+  outline: 3px solid var(--theme-primary) !important;
+  outline-offset: 3px !important;
+}
+html[data-panel-foco] .admin-theme main a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /*
