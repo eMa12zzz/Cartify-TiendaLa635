@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Search, Package, CheckCircle2, ChefHat, Printer, Eye, Download,
-  MapPin, Store as StoreIcon, Bike, Banknote, CreditCard, Wallet, Clock, X,
+  MapPin, Store as StoreIcon, Bike, Banknote, CreditCard, Wallet, Clock, X, CircleX,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EASE_OUT, DUR, stagger } from '../utils/motion';
 import { useOrders } from '../hooks/useOrders';
 import ModalCodigoEntrega from '../components/Admin/ModalCodigoEntrega';
+import ModalCancelarPedido from '../components/Admin/ModalCancelarPedido';
+
+// Los que todavía se pueden cancelar: los entregados ya no, y los cancelados ya lo están.
+const SE_PUEDE_CANCELAR = ['pagado', 'preparando', 'en_camino', 'listo'];
 
 /*
  * Orders (Admin/Empleado) — pantalla de PREPARACIÓN de pedidos.
@@ -38,6 +42,7 @@ const filtros = [
   { id: 'en_camino',  label: 'En camino' },
   { id: 'listo',      label: 'Listos para recoger' },
   { id: 'entregado',  label: 'Entregados' },
+  { id: 'cancelado',  label: 'Cancelados' },
   { id: 'todos',      label: 'Todos' },
 ];
 
@@ -60,6 +65,19 @@ const haceCuanto = (iso) => {
   const h = Math.round(min / 60);
   if (h < 24) return `hace ${h} h`;
   return `hace ${Math.round(h / 24)} d`;
+};
+
+// "Lo canceló Ana · hace 5 min · se devolvieron $4.50 al saldo y 200 puntos"
+const detalleCancelacion = (order) => {
+  const saldo = Number(order.reembolso?.saldo) || 0;
+  const puntos = Number(order.reembolso?.puntos) || 0;
+  const devuelto = [saldo > 0 ? `$${saldo.toFixed(2)} al saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
+    .filter(Boolean).join(' y ');
+  return [
+    order.cancelledBy ? `Lo canceló ${order.cancelledBy}` : '',
+    order.cancelledAt ? haceCuanto(order.cancelledAt) : '',
+    devuelto ? `se devolvieron ${devuelto}` : '',
+  ].filter(Boolean).join(' · ');
 };
 
 // Abre el archivo listo para imprimir. Si es imagen, abre una ventana con la
@@ -140,6 +158,20 @@ const Orders = () => {
     } catch {
       // El aviso ya lo pintó el interceptor de api.js. Aquí solo se decide
       // no cerrar.
+    }
+  };
+
+  /*
+   * El pedido que se está por cancelar, esperando el motivo. Como en la
+   * entrega, si el servidor dice que no, el modal se queda abierto.
+   */
+  const [pedidoACancelar, setPedidoACancelar] = useState(null);
+  const confirmarCancelacion = async (motivo) => {
+    try {
+      await cambiarEstado(pedidoACancelar._id, 'cancelado', { motivoCancelacion: motivo });
+      setPedidoACancelar(null);
+    } catch {
+      // El aviso ya lo pintó el interceptor de api.js.
     }
   };
 
@@ -368,11 +400,44 @@ const Orders = () => {
                     </div>
                   )}
 
+                  {/*
+                    Cancelado: el motivo que se le mandó al cliente, quién y
+                    cuándo, y lo que se le devolvió. Es lo primero que se
+                    pregunta si el cliente llama.
+                  */}
+                  {order.status === 'cancelado' && (
+                    <div className="rounded-xl p-3 mb-3 text-sm bg-red-50 border border-red-200">
+                      <div className="font-semibold text-red-600 mb-0.5">Motivo de la cancelación</div>
+                      <div style={{ color: 'var(--theme-text-primary)' }}>
+                        {order.cancelReason || 'Se canceló sin motivo (antes de que se pidiera).'}
+                      </div>
+                      {detalleCancelacion(order) && (
+                        <div className="text-xs mt-1.5" style={{ color: 'var(--theme-text-secondary)' }}>
+                          {detalleCancelacion(order)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Pie: total + acción */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                     <span className="text-base font-bold" style={{ color: 'var(--theme-text-primary)' }}>
                       Total: ${Number(order.total).toFixed(2)}
                     </span>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                    {/*
+                      Cancelar va de segundo y sin relleno: es la salida, no el
+                      paso siguiente, y no tiene que competir con él.
+                    */}
+                    {SE_PUEDE_CANCELAR.includes(order.status) && (
+                      <button
+                        onClick={() => setPedidoACancelar(order)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <CircleX className="w-4 h-4" /> Cancelar
+                      </button>
+                    )}
 
                     {order.status === 'pagado' && (
                       <button
@@ -427,6 +492,12 @@ const Orders = () => {
                         <CheckCircle2 className="w-4 h-4" /> Entregado
                       </span>
                     )}
+                    {order.status === 'cancelado' && (
+                      <span className="flex items-center gap-1 text-sm font-semibold text-red-500">
+                        <X className="w-4 h-4" /> Cancelado
+                      </span>
+                    )}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -451,6 +522,15 @@ const Orders = () => {
         pedido={pedidoAEntregar}
         onClose={() => setPedidoAEntregar(null)}
         onConfirm={confirmarEntrega}
+      />
+
+      {/* El mismo truco del `key`: el motivo del pedido anterior no se queda escrito. */}
+      <ModalCancelarPedido
+        key={`cancelar-${pedidoACancelar?._id || 'ninguno'}`}
+        isOpen={!!pedidoACancelar}
+        pedido={pedidoACancelar}
+        onClose={() => setPedidoACancelar(null)}
+        onConfirm={confirmarCancelacion}
       />
     </div>
   );

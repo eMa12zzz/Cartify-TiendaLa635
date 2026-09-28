@@ -8,6 +8,7 @@ import { orderService } from '../../api/orderService';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import SeguimientoCompacto from '../../components/Store/SeguimientoCompacto';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
+import { textoDevuelto } from '../../utils/pasosPedido';
 
 /*
  * MisPedidos — historial de pedidos del cliente (área "Mi Cuenta").
@@ -172,6 +173,22 @@ const MisPedidos = () => {
                 */}
                 <SeguimientoCompacto pedido={order} />
 
+                {/* Cancelado: por qué, y lo que se le devolvió. */}
+                {order.status === 'cancelado' && (order.cancelReason || textoDevuelto(order)) && (
+                  <div
+                    className="mb-3 rounded-xl px-3 py-2 text-sm"
+                    style={{ backgroundColor: 'rgba(220,38,38,.08)', color: c.textSecondary }}
+                  >
+                    {order.cancelReason && (
+                      <p>
+                        <span className="font-semibold" style={{ color: 'var(--peligro)' }}>Motivo: </span>
+                        {order.cancelReason}
+                      </p>
+                    )}
+                    {textoDevuelto(order) && <p className="mt-0.5 text-xs">{textoDevuelto(order)}</p>}
+                  </div>
+                )}
+
                 {/*
                   El código de entrega, en pequeño. En la lista va la versión
                   compacta y no la tarjeta entera: aquí solo hace falta poder
@@ -209,7 +226,8 @@ const MisPedidos = () => {
                   className="flex items-center justify-between pt-3"
                   style={{ borderTop: `1px solid ${c.cardBorder}` }}
                 >
-                  {order.pointsEarned > 0 ? (
+                  {/* Un cancelado ya no da puntos: se retiraron al cancelarlo. */}
+                  {order.pointsEarned > 0 && order.status !== 'cancelado' ? (
                     <span className="flex items-center gap-1 text-xs font-medium" style={{ color: c.accent }}>
                       <Star className="w-3.5 h-3.5" /> +{order.pointsEarned} puntos
                     </span>

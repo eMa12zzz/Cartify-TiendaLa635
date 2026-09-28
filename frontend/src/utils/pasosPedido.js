@@ -68,3 +68,17 @@ export const indiceDePaso = (pasos, estado) => {
   const i = pasos.findIndex((p) => p.id === estado);
   return i === -1 ? 0 : i;
 };
+
+/*
+ * Lo que se le devolvió al cliente al cancelar su pedido, dicho en una frase:
+ * "Le devolvimos $4.50 a su saldo y 200 puntos." Vacío si no hubo nada que
+ * devolver (pagó en efectivo sin canjear puntos). Lo anota el servidor en
+ * `reembolso` al cancelar; ver backend/src/utils/devolverPedido.js.
+ */
+export const textoDevuelto = (pedido) => {
+  const saldo = Number(pedido?.reembolso?.saldo) || 0;
+  const puntos = Number(pedido?.reembolso?.puntos) || 0;
+  const partes = [saldo > 0 ? `$${saldo.toFixed(2)} a su saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
+    .filter(Boolean);
+  return partes.length ? `Le devolvimos ${partes.join(' y ')}.` : '';
+};

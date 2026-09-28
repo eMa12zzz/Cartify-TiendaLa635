@@ -95,6 +95,7 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
   const estilos = useEstilos(crearEstilos);
   const ESTADOS = estadosPedido(COLORES.oscuro);
   const estado = ESTADOS[pedido.status] || ESTADOS.pagado;
+  const esCancelado = pedido.status === 'cancelado';
 
   return (
     <Pressable
@@ -135,8 +136,17 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
         ))}
       </View>
 
+      {/* Cancelado: el motivo, en una o dos líneas; el detalle completo está al tocarlo. */}
+      {esCancelado && !!pedido.cancelReason && (
+        <Text style={estilos.motivo} numberOfLines={2}>
+          <Text style={estilos.motivoTitulo}>Motivo: </Text>
+          {pedido.cancelReason}
+        </Text>
+      )}
+
       <View style={estilos.pie}>
-        {pedido.pointsEarned > 0 ? (
+        {/* Un cancelado ya no da puntos: se retiraron al cancelarlo. */}
+        {pedido.pointsEarned > 0 && !esCancelado ? (
           <View style={estilos.puntos}>
             <Estrella size={13} color={COLORES.marca} />
             <Text style={estilos.puntosTexto}>+{pedido.pointsEarned} puntos</Text>
@@ -403,6 +413,19 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   lineaPrecio: {
     fontSize: 13.5,
     color: COLORES.textoVentaja,
+  },
+  motivo: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORES.textoSuave,
+    backgroundColor: COLORES.peligroFondo,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  motivoTitulo: {
+    fontWeight: '700',
+    color: COLORES.peligro,
   },
   pie: {
     flexDirection: 'row',

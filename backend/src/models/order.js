@@ -126,6 +126,9 @@
  *         status:
  *           type: string
  *           enum: [pagado, preparando, en_camino, listo, entregado, cancelado]
+ *         motivoCancelacion:
+ *           type: string
+ *           description: Obligatorio para cancelar. Lo lee el cliente (mínimo 4 caracteres, máximo 300).
  *       required:
  *         - status
  *     PrintOrderInput:
@@ -278,6 +281,26 @@ const orderSchema = new Schema({
     listoBy: { type: String },
     deliveredAt: { type: Date },
     deliveredBy: { type: String },
+
+    /*
+     * La cancelación: cuándo, quién y POR QUÉ.
+     *
+     * El motivo no es una nota interna: lo lee el cliente en su pedido (web y
+     * app), en la notificación y en el correo. Se escribe para él. Sin motivo
+     * no se cancela: un "su pedido fue cancelado" a secas deja a la persona
+     * pensando que hizo algo mal. Ver utils/estadoPedido.js.
+     *
+     * `reembolso` es la constancia de lo que se le devolvió al cancelar: el
+     * saldo si pagó con él y los puntos que había canjeado. El stock vuelve
+     * a la tienda, pero eso no es del cliente y no se anota aquí.
+     */
+    cancelledAt: { type: Date },
+    cancelledBy: { type: String },
+    cancelReason: { type: String, maxlength: 300 },
+    reembolso: {
+        saldo: { type: Number },
+        puntos: { type: Number },
+    },
 
     /*
      * Valoración del SERVICIO de entrega (no del producto).

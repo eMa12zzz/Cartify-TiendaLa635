@@ -5,7 +5,8 @@ import { alCambiarTiqui, TIPOS_PEDIDOS } from '../utils/cambiosDeTiqui';
 
 /*
  * useOrders — para el ADMIN/EMPLEADO: trae todos los pedidos y permite avanzar
- * su estado (pagado → preparando → entregado). La lógica vive aquí; la página
+ * su estado (pagado → preparando → entregado) o cancelarlo con un motivo
+ * (extras.motivoCancelacion). La lógica vive aquí; la página
  * Orders solo pinta las tarjetas y llama a cambiarEstado.
  */
 export const useOrders = () => {
@@ -34,9 +35,18 @@ export const useOrders = () => {
    */
   const cambiarEstado = async (id, status, extras = {}) => {
     try {
-      await orderService.updateStatus(id, status, undefined, extras);
-      // Actualización optimista: reflejamos el cambio sin recargar todo.
-      setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, status } : o)));
+      const r = await orderService.updateStatus(id, status, undefined, extras);
+      /*
+       * Se refleja el cambio sin recargar todo. De la respuesta se toman los
+       * sellos que pone el servidor (el motivo de la cancelación, quién y lo
+       * devuelto), pero no el pedido entero: ese viene sin el cliente ni los
+       * productos poblados, y la tarjeta se quedaría sin nombre.
+       */
+      const sellos = {};
+      ['cancelReason', 'cancelledAt', 'cancelledBy', 'reembolso'].forEach((k) => {
+        if (r?.order?.[k] !== undefined) sellos[k] = r.order[k];
+      });
+      setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, ...sellos, status } : o)));
       const etiquetas = { preparando: 'En preparación', en_camino: 'En camino', listo: 'Listo para recoger', entregado: 'Entregado', cancelado: 'Cancelado' };
       toast.success(`Pedido: ${etiquetas[status] || status}`);
     } catch (error) {

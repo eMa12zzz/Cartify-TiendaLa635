@@ -186,3 +186,71 @@ export const plantillaPedidoEnCamino = ({ pedido, nombreCliente, tienda }) => {
     texto,
   };
 };
+
+/*
+ * PEDIDO CANCELADO — con el motivo y lo que se le devolvió.
+ *
+ * Este correo sale siempre, sin interruptor: es la única forma de enterarse
+ * para quien compró en la web y no tiene la app. Quien espera un pedido que
+ * ya no va a llegar tiene que saberlo, y saber por qué.
+ */
+export const plantillaPedidoCancelado = ({ pedido, nombreCliente, tienda }) => {
+  const saluda = nombreCliente ? `${nombreCliente.split(' ')[0]}, lo` : 'Lo';
+  const numero = String(pedido._id).slice(-6).toUpperCase();
+  const enlace = `${urlTienda()}/mi-cuenta/pedido/${pedido._id}`;
+  const motivo = pedido.cancelReason || '';
+  const saldo = Number(pedido.reembolso?.saldo) || 0;
+  const puntos = Number(pedido.reembolso?.puntos) || 0;
+
+  const devuelto = [
+    saldo > 0 ? `${dinero(saldo)} a su saldo` : '',
+    puntos > 0 ? `${puntos} puntos a su cuenta` : '',
+  ].filter(Boolean);
+
+  const cuerpo = `
+    <p class="texto" style="margin:0 0 18px;font-size:15px;color:#555555;line-height:1.6;">
+      ${limpio(saluda)} sentimos: tuvimos que cancelar su pedido #${numero}.
+    </p>
+    ${motivo ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;">
+      <tr>
+        <td style="padding:14px 16px;">
+          <div class="tenue" style="font-size:12px;color:#9C9691;margin-bottom:4px;">El motivo</div>
+          <div class="titulo" style="font-size:15px;color:#1C1614;line-height:1.5;">${limpio(motivo)}</div>
+        </td>
+      </tr>
+    </table>` : ''}
+    ${devuelto.length ? `
+    <p class="texto" style="margin:16px 0 0;font-size:14px;color:#555555;line-height:1.55;">
+      Ya le devolvimos ${limpio(devuelto.join(' y '))}.
+    </p>` : ''}
+    <p class="tenue" style="margin:16px 0 0;font-size:13px;color:#9C9691;line-height:1.55;">
+      Si tiene dudas, escríbanos y lo revisamos.
+    </p>`;
+
+  const texto = [
+    'Su pedido fue cancelado',
+    '',
+    `${saluda} sentimos: tuvimos que cancelar su pedido #${numero}.`,
+    motivo ? `Motivo: ${motivo}` : '',
+    devuelto.length ? `Ya le devolvimos ${devuelto.join(' y ')}.` : '',
+    '',
+    `Ver el pedido: ${enlace}`,
+    '',
+    'Si tiene dudas, escríbanos y lo revisamos.',
+  ].filter((l, i, arr) => l !== '' || arr[i - 1] !== '').join('\n');
+
+  return {
+    asunto: `Su pedido #${numero} fue cancelado — ${tienda.nombre}`,
+    html: sobre({
+      tienda,
+      encabezado: 'Su pedido fue cancelado',
+      subtitulo: `Pedido #${numero}`,
+      cuerpo,
+      accion: { texto: 'Ver el pedido', url: enlace },
+      // Sin enlace de baja, igual que "va en camino": no es publicidad.
+      enlaceBaja: null,
+    }),
+    texto,
+  };
+};

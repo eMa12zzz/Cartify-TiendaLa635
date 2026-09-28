@@ -5,6 +5,8 @@ import loyaltyConfigModel from "../models/loyaltyConfig.js";
 import loyaltyLedgerModel from "../models/loyaltyLedger.js";
 import printServiceModel from "../models/printService.js";
 import productModel from "../models/product.js";
+import adminModel from "../models/admin.js";
+import employeeModel from "../models/employee.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
@@ -473,11 +475,34 @@ orderController.getOrders = async (req, res) => {
  * cliente) vive en utils/estadoPedido.js: lo comparte con Tiqui del panel,
  * que también mueve pedidos cuando se lo piden. Aquí solo se traduce a HTTP.
  */
+/*
+ * El nombre de quien mueve el pedido, sacado de su sesión. La pantalla de
+ * Pedidos no lo manda, así que los sellos (preparedBy, deliveredBy…) quedaban
+ * vacíos: el pedido decía a qué hora se entregó pero no quién lo entregó.
+ */
+const nombreDelPersonal = async (usuario) => {
+  if (!usuario?.id || usuario.tipo === "Client") return "";
+  try {
+    const doc = usuario.tipo === "Admin"
+      ? await adminModel.findById(usuario.id, "userName").lean()
+      : await employeeModel.findById(usuario.id, "fullnName userName").lean();
+    return String(doc?.fullnName || doc?.userName || "").trim();
+  } catch {
+    return "";
+  }
+};
+
 orderController.updateOrderStatus = async (req, res) => {
   try {
-    const { status, quien, codigoEntrega, omitirCodigo, motivoOmision } = req.body;
+    const { status, quien, codigoEntrega, omitirCodigo, motivoOmision, motivoCancelacion } = req.body;
     const r = await cambiarEstadoDePedido({
-      id: req.params.id, status, quien: quien || "", codigoEntrega, omitirCodigo, motivoOmision,
+      id: req.params.id,
+      status,
+      quien: quien || await nombreDelPersonal(req.usuario),
+      codigoEntrega,
+      omitirCodigo,
+      motivoOmision,
+      motivoCancelacion,
     });
     if (!r.ok) return res.status(r.codigo).json({ message: r.message });
     return res.status(200).json({ message: "Estado actualizado", order: r.order });

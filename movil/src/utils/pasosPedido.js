@@ -88,3 +88,18 @@ const ESTADOS_PEDIDO_OSCURO = {
 };
 
 export const estadosPedido = (oscuro) => (oscuro ? ESTADOS_PEDIDO_OSCURO : ESTADOS_PEDIDO);
+
+/*
+ * Lo que se le devolvió al cliente al cancelar su pedido, en una frase:
+ * "Le devolvimos $4.50 a su saldo y 200 puntos." Vacío si no hubo nada que
+ * devolver. Lo anota el servidor en `reembolso` al cancelar (ver
+ * backend/src/utils/devolverPedido.js). La web tiene la misma función en
+ * frontend/src/utils/pasosPedido.js: si cambia una, cambia la otra.
+ */
+export const textoDevuelto = (pedido) => {
+  const saldo = Number(pedido?.reembolso?.saldo) || 0;
+  const puntos = Number(pedido?.reembolso?.puntos) || 0;
+  const partes = [saldo > 0 ? `$${saldo.toFixed(2)} a su saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
+    .filter(Boolean);
+  return partes.length ? `Le devolvimos ${partes.join(' y ')}.` : '';
+};

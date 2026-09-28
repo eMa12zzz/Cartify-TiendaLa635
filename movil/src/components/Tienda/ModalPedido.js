@@ -6,7 +6,7 @@ import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { Equis, Estrella, Paquete } from '../UI/Iconos';
-import { estadosPedido, poseDeEstado } from '../../utils/pasosPedido';
+import { estadosPedido, poseDeEstado, textoDevuelto } from '../../utils/pasosPedido';
 import Mascota from '../Tiqui/Mascota';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
@@ -211,8 +211,25 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               <Mascota pose={poseDeEstado(pedido.status)} alto={120} />
             </View>
 
+            {/*
+              Cancelado: por qué y lo que se le devolvió, igual que en la web.
+              Los pedidos cancelados antes de que se pidiera un motivo no
+              traen ninguno y se quedan con la frase de siempre.
+            */}
             {esCancelado ? (
-              <Text style={estilos.notaCancelado}>Este pedido fue cancelado.</Text>
+              <View style={estilos.notaCancelado}>
+                <Text style={estilos.notaCanceladoTexto}>
+                  {pedido.cancelReason ? (
+                    <>
+                      <Text style={estilos.notaCanceladoTitulo}>Motivo: </Text>
+                      {pedido.cancelReason}
+                    </>
+                  ) : 'Este pedido fue cancelado.'}
+                </Text>
+                {!!textoDevuelto(pedido) && (
+                  <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoDevuelto]}>{textoDevuelto(pedido)}</Text>
+                )}
+              </View>
             ) : (
               <View style={estilos.bloquePasos}>
                 <PasosPedido deliveryType={pedido.deliveryType} estado={pedido.status} />
@@ -305,7 +322,8 @@ const ModalPedido = ({ pedido, alCerrar }) => {
             {!pedido.simulado && <ValoracionServicio pedido={pedido} />}
             {!pedido.simulado && <ValoracionPedido pedido={pedido} />}
 
-            {pedido.pointsEarned > 0 && (
+            {/* Un cancelado ya no da puntos: se retiraron al cancelarlo. */}
+            {pedido.pointsEarned > 0 && !esCancelado && (
               <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
                 <Estrella size={14} color={colores.marca} />
                 <Text style={[estilos.puntosTexto, { color: colores.marcaTexto }]}>
@@ -418,12 +436,23 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     marginBottom: 14,
   },
   notaCancelado: {
-    fontSize: 13.5,
-    color: COLORES.textoSuave,
     backgroundColor: COLORES.peligroFondo,
     borderRadius: 12,
     padding: 12,
     marginBottom: 14,
+    gap: 4,
+  },
+  notaCanceladoTexto: {
+    fontSize: 13.5,
+    lineHeight: 19,
+    color: COLORES.textoSuave,
+  },
+  notaCanceladoTitulo: {
+    fontWeight: '700',
+    color: COLORES.peligro,
+  },
+  notaCanceladoDevuelto: {
+    fontSize: 12.5,
   },
   tarjeta: {
     borderWidth: 1,

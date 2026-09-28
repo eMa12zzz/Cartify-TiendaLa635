@@ -8,7 +8,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { orderService } from '../../api/orderService';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import MapaSeguimiento from '../../components/Store/MapaSeguimiento';
-import { pasosDe, indiceDePaso, poseDeEstado } from '../../utils/pasosPedido';
+import { pasosDe, indiceDePaso, poseDeEstado, textoDevuelto } from '../../utils/pasosPedido';
 import ValoracionPedido from '../../components/Store/ValoracionPedido';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
@@ -178,6 +178,24 @@ const EstadoPedido = () => {
                     ? (seguimiento.yaCasi ? 'Ya casi llega a su puerta' : seguimiento.espera)
                     : (PASOS[pasoActual] || PASOS[0]).detalle}
               </div>
+
+              {/*
+                El porqué, que es lo primero que uno se pregunta, y lo que se
+                le devolvió. Los pedidos cancelados antes de que se pidiera un
+                motivo no traen ninguno: ahí solo queda la invitación a escribir.
+              */}
+              {cancelado && (
+                <div className="mt-3 max-w-md text-center text-sm" style={{ color: c.textSecondary }}>
+                  {pedido.cancelReason && (
+                    <p>
+                      <span className="font-semibold" style={{ color: c.textPrimary }}>Motivo: </span>
+                      {pedido.cancelReason}
+                    </p>
+                  )}
+                  {textoDevuelto(pedido) && <p className="mt-1">{textoDevuelto(pedido)}</p>}
+                  <p className="mt-1" style={{ color: c.textMuted }}>Si tiene dudas, escríbanos y lo revisamos.</p>
+                </div>
+              )}
             </div>
 
             {!cancelado && (

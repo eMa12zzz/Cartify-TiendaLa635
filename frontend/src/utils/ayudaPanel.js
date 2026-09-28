@@ -103,9 +103,11 @@ export const TEMAS_AYUDA = [
       'Para marcarlo entregado hace falta el código de 4 dígitos que el cliente ve en su pedido: así se sabe que llegó a la persona correcta.',
       'Busque por el nombre del cliente o por el número del pedido, el que empieza con #.',
       'En los pedidos de impresiones, “Imprimir” abre el archivo que mandó el cliente, listo para la impresora.',
+      'Para cancelar un pedido, toque “Cancelar” y escriba el motivo (o elija uno de los rápidos). Al cliente le llega tal cual. Los productos vuelven al inventario y, si pagó con su saldo o canjeó puntos, se le devuelven solos.',
     ],
     consejos: [
-      'Al cliente le llega un aviso cada vez que su pedido cambia de estado, también si se cancela.',
+      'Al cliente le llega un aviso cada vez que su pedido cambia de estado. Si se cancela, le llega también el motivo, por notificación y por correo.',
+      'Un pedido entregado ya no se cancela, y uno cancelado ya no se reabre: si hubo un error, se hace un pedido nuevo. Los cancelados se ven en el filtro “Cancelados”.',
       'El reparto con GPS se hace desde la app del teléfono: “¿Trabajas en la tienda?” en el inicio de sesión.',
     ],
   },
