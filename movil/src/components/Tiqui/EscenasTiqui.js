@@ -1,8 +1,10 @@
 /*
  * ============================================================
- * ESCENAS DE TIQUI — las ilustraciones del tutorial
+ * ESCENAS DE TIQUI — las ilustraciones de los tutoriales
  * ============================================================
- * Seis ilustraciones planas de Tiqui, con la MISMA línea gráfica de su video
+ * Las seis de su tutorial (ConoceATiqui) y las de la bienvenida de la app
+ * (Onboarding: la tienda, el mapa y los puntos; la de pedir hablando se
+ * comparte). Ilustraciones planas de Tiqui, con la MISMA línea gráfica de su video
  * (video-tiqui/herramientas/piezas.mjs) y de la web: fondo claro con
  * etiquetas fantasma casi invisibles, un brillo azul detrás de ella, Tiqui en
  * navy con rasgos blancos y su cordón azul, y las piezas de siempre
@@ -273,6 +275,76 @@ const Empezar = ({ alto, parpadeo }) => (
   </Lienzo>
 );
 
+/* ── Las de la bienvenida de la app (Onboarding) ───────── */
+
+// La tienda "a un toque": la bolsa con lo que se compró y el celular donde se toca.
+const Tienda = ({ alto, parpadeo }) => (
+  <Lienzo alto={alto}>
+    <Fondo id="brillo-tienda" />
+    <Path d={estrella(96, 120, 16)} fill={AMARILLO} />
+    <Path d={estrella(336, 150, 10)} fill={AZUL} />
+    {/* Lo que asoma de la bolsa va antes: la bolsa lo tapa de la cintura para abajo. */}
+    <Jugo x={50} y={262} k={0.42} giro={-8} />
+    <Manzana x={88} y={286} k={0.34} />
+    <Path d="M22,300 L110,300 L102,392 Q101,400 93,400 L39,400 Q31,400 30,392 Z" fill={AMARILLO} />
+    <Path d="M46,300 Q46,272 66,272 Q86,272 86,300" stroke={NAVY} strokeWidth={6} {...trazo} />
+    <Path d="M38,330 H94" stroke={BLANCO} strokeOpacity={0.7} strokeWidth={6} strokeLinecap="round" />
+    {/* El celular, con la tienda en la pantalla y el toque sobre el botón. */}
+    <Rect x={298} y={236} width={72} height={130} rx={14} fill={NAVY} />
+    <Rect x={306} y={252} width={56} height={98} rx={6} fill={BLANCO} />
+    {[[312, 260, RUBOR], [336, 260, AMARILLO], [312, 284, HOJA], [336, 284, AZUL]].map(([x, y, color]) => (
+      <Rect key={`${x}-${y}`} x={x} y={y} width={20} height={20} rx={5} fill={color} />
+    ))}
+    <Rect x={312} y={316} width={44} height={16} rx={8} fill={AZUL} />
+    <Circle cx={346} cy={324} r={16} fill="none" stroke={AZUL} strokeWidth={4} opacity={0.6} />
+    <Circle cx={346} cy={324} r={27} fill="none" stroke={AZUL} strokeWidth={3} opacity={0.3} />
+    <Tiqui ojos="guino" boca="sonrisa" rubor parpadeo={parpadeo} />
+  </Lienzo>
+);
+
+// El mapa: la ruta punteada de la tienda a la casa, el repartidor en camino y
+// el pin de destino, que Tiqui mira.
+const Mapa = ({ alto, parpadeo }) => (
+  <Lienzo alto={alto}>
+    <Fondo id="brillo-mapa" />
+    <Path
+      d="M104,394 Q200,446 318,420 Q372,406 356,306 Q346,226 322,160"
+      stroke={NAVY}
+      strokeWidth={6}
+      strokeDasharray="2 15"
+      opacity={0.45}
+      {...trazo}
+    />
+    {/* La casa, donde empieza la ruta. */}
+    <Path d="M22,334 L66,292 L110,334 Z" fill={NAVY} />
+    <Rect x={34} y={330} width={64} height={62} rx={6} fill={BLANCO} stroke={NAVY} strokeWidth={5} />
+    <Rect x={56} y={352} width={20} height={40} rx={4} fill={AZUL} />
+    {/* El repartidor: el puntito que se ve avanzar en el mapa. */}
+    <Circle cx={238} cy={429} r={15} fill={AZUL} stroke={BLANCO} strokeWidth={5} />
+    {/* El pin de destino. */}
+    <Path d="M322,150 C300,122 290,108 290,94 A32,32 0 1 1 354,94 C354,108 344,122 322,150 Z" fill={AZUL} />
+    <Circle cx={322} cy={94} r={12} fill={BLANCO} />
+    <Tiqui ojos="normal" mira={[8, -5]} boca="sonrisa" parpadeo={parpadeo} />
+  </Lienzo>
+);
+
+// Los puntos y los favoritos: la moneda de puntos, "+10" y los corazones.
+const Puntos = ({ alto, parpadeo }) => (
+  <Lienzo alto={alto}>
+    <Fondo id="brillo-puntos" />
+    <Circle cx={88} cy={150} r={40} fill={AMARILLO} />
+    <Circle cx={88} cy={150} r={30} fill="none" stroke={BLANCO} strokeWidth={4} opacity={0.6} />
+    <Path d={estrella(88, 150, 17)} fill={BLANCO} />
+    <SvgText x={88} y={226} fontSize={28} fontWeight="900" fill={AZUL_TEXTO} textAnchor="middle">+10</SvgText>
+    <Corazon x={332} y={168} escala={1.6} />
+    <Corazon x={352} y={262} escala={0.9} />
+    <Path d={estrella(320, 338, 12)} fill={AMARILLO} />
+    <Path d={estrella(68, 318, 10)} fill={AZUL} />
+    <Path d={estrella(342, 76, 9)} fill={AMARILLO} />
+    <Tiqui ojos="felices" boca="abierta" rubor parpadeo={parpadeo} />
+  </Lienzo>
+);
+
 export const ESCENAS_TIQUI = {
   hola: Hola,
   voz: Voz,
@@ -280,4 +352,7 @@ export const ESCENAS_TIQUI = {
   honesto: Honesto,
   pedido: Pedido,
   empezar: Empezar,
+  tienda: Tienda,
+  mapa: Mapa,
+  puntos: Puntos,
 };
