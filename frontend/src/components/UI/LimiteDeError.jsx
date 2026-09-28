@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { RotateCcw, Store } from 'lucide-react';
 import { areaDeRuta } from '../../utils/sesion';
 import Mascota from './Mascota';
+import { traducir, leerIdiomaGuardado } from '../../utils/idioma';
 
 /*
  * ============================================================
@@ -172,22 +173,23 @@ class LimiteDeError extends Component {
 
     // Dónde reventó decide con qué paleta se pinta la disculpa.
     const panel = !!this.props.enPanel;
+    // Es una clase (sin ganchos): lee el idioma al pintarse. En el panel, español.
+    const t = (texto) => traducir(panel ? 'es' : leerIdiomaGuardado(), texto);
 
     return (
       <Pantalla role="alert" $panel={panel}>
         <Contenido>
           <Ilustracion><Mascota pose="error" alto={180} /></Ilustracion>
-          <Titulo $panel={panel}>Algo se nos rompió acá</Titulo>
+          <Titulo $panel={panel}>{t('Algo se nos rompió acá')}</Titulo>
           <Texto $panel={panel}>
-            No fue culpa suya. Esta pantalla no cargó bien; ya quedó anotado.
-            Puede volver a intentarlo o regresar a la tienda.
+            {t('No fue culpa suya. Esta pantalla no cargó bien; ya quedó anotado. Puede volver a intentarlo o regresar a la tienda.')}
           </Texto>
           <Botones>
             <Boton type="button" $primario $panel={panel} onClick={this.recargar}>
-              <RotateCcw size={15} strokeWidth={2.2} /> Volver a intentar
+              <RotateCcw size={15} strokeWidth={2.2} /> {t('Volver a intentar')}
             </Boton>
             <Boton type="button" $panel={panel} onClick={this.irALaTienda}>
-              <Store size={15} strokeWidth={2.2} /> Ir a la tienda
+              <Store size={15} strokeWidth={2.2} /> {t('Ir a la tienda')}
             </Boton>
           </Botones>
 

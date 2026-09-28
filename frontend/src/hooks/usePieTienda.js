@@ -6,6 +6,7 @@ import { useAjustesCtx } from '../context/AjustesContext';
 import { flujoDeModulo } from '../utils/modulos';
 import { enlaceWhatsApp } from '../utils/tienda';
 import { DOCUMENTOS_LEGALES } from '../utils/legales';
+import { useIdioma } from './useIdioma';
 
 /*
  * usePieTienda — qué se puede ofrecer en el pie de página, y a dónde lleva cada
@@ -62,6 +63,7 @@ export const usePieTienda = () => {
    * igual y nadie se entera.
    */
   const { ajustes } = useAjustesCtx();
+  const { t } = useIdioma();
 
   /*
    * Los pasillos que se recorren dentro de la tienda llevan a la portada con
@@ -102,7 +104,7 @@ export const usePieTienda = () => {
     enlacesCuenta,
     enlacesLegales: ENLACES_LEGALES,
     ir,
-    whatsapp: enlaceWhatsApp(SALUDO_WHATSAPP, ajustes.negocio?.whatsapp),
+    whatsapp: enlaceWhatsApp(t(SALUDO_WHATSAPP), ajustes.negocio?.whatsapp),
     direccion: ajustes.direccion,
     // Los datos del negocio que puso el dueño (Personalización → Identidad).
     // Lo que esté vacío no se pinta.

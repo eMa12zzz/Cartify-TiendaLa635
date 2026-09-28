@@ -4,6 +4,7 @@ import { MapPin, ChevronDown, Check, Plus, Signpost, TriangleAlert } from 'lucid
 import { useDropdown } from '../../hooks/useDropdown';
 import { useDireccionCtx } from '../../context/DireccionContext';
 import { useAuth } from '../../hooks/useAuth';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -233,6 +234,7 @@ const SelectorDireccion = () => {
   const { isOpen, toggle, close, ref } = useDropdown();
   const { direcciones, indice, etiqueta, cargando, elegir, activa } = useDireccionCtx();
   const { user } = useAuth();
+  const { t } = useIdioma();
 
   // Una dirección "completa" es la que trae punto en el mapa; sin eso no hay
   // seguimiento en vivo ni tiempo estimado, solo un texto para el repartidor.
@@ -273,13 +275,13 @@ const SelectorDireccion = () => {
         aria-haspopup="listbox"
         /* Con el texto escondido el botón se quedaba sin nombre: en el teléfono
            esto es lo único que dice qué hace ese pin. */
-        aria-label={`Entregar en ${etiqueta || 'elegir dirección'}`}
+        aria-label={t('Entregar en {lugar}', { lugar: etiqueta || t('elegir dirección') })}
       >
         <Pin><MapPin size={19} strokeWidth={2.2} /></Pin>
         <Detalle>
           <Textos>
-            <Arriba>Entregar en</Arriba>
-            <Nombre>{etiqueta || 'Elegir dirección'}</Nombre>
+            <Arriba>{t('Entregar en')}</Arriba>
+            <Nombre>{etiqueta || t('Elegir dirección')}</Nombre>
           </Textos>
           <ChevronDown size={16} strokeWidth={2.4} color="var(--tinta-suave)" />
         </Detalle>
@@ -287,20 +289,20 @@ const SelectorDireccion = () => {
 
       {isOpen && (
         <Panel role="listbox">
-          <Titulo>Sus direcciones</Titulo>
+          <Titulo>{t('Sus direcciones')}</Titulo>
 
           {activa && sinPunto(activa) && (
             <Aviso>
               <TriangleAlert size={14} strokeWidth={2.3} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                <strong>Complete los detalles de esta dirección.</strong> No tiene un punto
-                marcado en el mapa, así que no podrá seguir su pedido en vivo.
+                <strong>{t('Complete los detalles de esta dirección.')}</strong>{' '}
+                {t('No tiene un punto marcado en el mapa, así que no podrá seguir su pedido en vivo.')}
               </span>
             </Aviso>
           )}
 
           {direcciones.length === 0 ? (
-            <Vacio>Todavía no tiene direcciones guardadas. Marque en el mapa dónde le dejamos sus pedidos.</Vacio>
+            <Vacio>{t('Todavía no tiene direcciones guardadas. Marque en el mapa dónde le dejamos sus pedidos.')}</Vacio>
           ) : (
             direcciones.map((dir, i) => (
               <Opcion
@@ -335,7 +337,7 @@ const SelectorDireccion = () => {
                       cuál conviene usar antes de tocarla */}
                   {sinPunto(dir) && (
                     <SinPunto>
-                      <TriangleAlert size={11} strokeWidth={2.4} /> Complete los detalles
+                      <TriangleAlert size={11} strokeWidth={2.4} /> {t('Complete los detalles')}
                     </SinPunto>
                   )}
                 </span>
@@ -345,7 +347,7 @@ const SelectorDireccion = () => {
           )}
 
           <Agregar onClick={abrirMapa}>
-            <Plus size={15} strokeWidth={2.6} /> Agregar en el mapa
+            <Plus size={15} strokeWidth={2.6} /> {t('Agregar en el mapa')}
           </Agregar>
         </Panel>
       )}

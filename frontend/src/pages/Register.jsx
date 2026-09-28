@@ -17,6 +17,7 @@ import { useRegistro } from '../hooks/useRegistro';
 import { useModalTerminos } from '../hooks/useModalTerminos';
 import { googleLoginDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
+import { useIdioma } from '../hooks/useIdioma';
 
 const BROWN = 'var(--marca-600)';
 const BROWN_HOVER = 'var(--marca-700)';
@@ -278,6 +279,7 @@ const ErrorCasilla = styled.span`
 const Register = () => {
   const navigate = useNavigate();
   const [verPass, setVerPass] = useState(false);
+  const { t, idioma } = useIdioma();
 
   // Armar el envío, subir la foto y llevar a la verificación: todo eso vive en
   // el hook. Aquí solo se pinta el formulario. Ver useRegistro.
@@ -306,7 +308,7 @@ const Register = () => {
   const onGoogle = async (credentialResponse) => {
     const credential = credentialResponse?.credential;
     if (!credential) {
-      toast.error('No se recibió la respuesta de Google');
+      toast.error(t('No se recibió la respuesta de Google'));
       return;
     }
     /*
@@ -321,7 +323,7 @@ const Register = () => {
      * exigir por su cuenta: la casilla del navegador no le prueba nada a nadie.
      */
     if (!watch('aceptaTerminos')) {
-      toast.error('Marque primero que acepta los términos y la política de privacidad');
+      toast.error(t('Marque primero que acepta los términos y la política de privacidad'));
       return;
     }
 
@@ -337,7 +339,7 @@ const Register = () => {
       login(res.token, res.userType || 'client', res.client);
       navigate('/', { replace: true });
     } catch (err) {
-      toast.error(err.message || 'No se pudo registrar con Google');
+      toast.error(t(err.message || 'No se pudo registrar con Google'));
     } finally {
       setEntrandoGoogle(false);
     }
@@ -354,35 +356,35 @@ const Register = () => {
 
       <Body>
         <Card>
-          <SectionTitle>Regístrate</SectionTitle>
+          <SectionTitle>{t('Regístrate')}</SectionTitle>
 
           <form onSubmit={handleSubmit(registrar)}>
             
             <InputContainer>
-              <Label htmlFor="campo-fullName">Nombre Completo</Label>
+              <Label htmlFor="campo-fullName">{t('Nombre Completo')}</Label>
               <InputWrapper>
                 <IconWrapper><User size={18} /></IconWrapper>
                 <Input
                   type="text"
-                  placeholder="Juan Pérez"
+                  placeholder={t('Juan Pérez')}
                   id="campo-fullName"
                   {...register("fullName", { required: "El nombre es obligatorio" })}
                 />
-                {errors.fullName && <ErrorMsg>{errors.fullName.message}</ErrorMsg>}
+                {errors.fullName && <ErrorMsg>{t(errors.fullName.message)}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
             <InputContainer>
-              <Label htmlFor="campo-userName">Nombre de Usuario</Label>
+              <Label htmlFor="campo-userName">{t('Nombre de Usuario')}</Label>
               <InputWrapper>
                 <IconWrapper><User size={18} /></IconWrapper>
                 <Input
                   type="text"
-                  placeholder="juanperez99"
+                  placeholder={t('juanperez99')}
                   id="campo-userName"
                   {...register("userName", { required: "El nombre de usuario es obligatorio" })}
                 />
-                {errors.userName && <ErrorMsg>{errors.userName.message}</ErrorMsg>}
+                {errors.userName && <ErrorMsg>{t(errors.userName.message)}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
@@ -393,7 +395,7 @@ const Register = () => {
               Va ANTES que el DUI porque es la que decide si el DUI se pide.
             */}
             <InputContainer>
-              <Label htmlFor="campo-fechaNacimiento">Fecha de nacimiento</Label>
+              <Label htmlFor="campo-fechaNacimiento">{t('Fecha de nacimiento')}</Label>
               <InputWrapper>
                 <IconWrapper><Calendar size={18} /></IconWrapper>
                 <Input
@@ -410,7 +412,7 @@ const Register = () => {
                     },
                   })}
                 />
-                {errors.fechaNacimiento && <ErrorMsg>{errors.fechaNacimiento.message}</ErrorMsg>}
+                {errors.fechaNacimiento && <ErrorMsg>{t(errors.fechaNacimiento.message)}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
@@ -421,7 +423,7 @@ const Register = () => {
             */}
             {puedeDui && (
               <InputContainer>
-                <Label htmlFor="campo-dui">DUI (opcional)</Label>
+                <Label htmlFor="campo-dui">{t('DUI (opcional)')}</Label>
                 <InputWrapper>
                   <IconWrapper><Hash size={18} /></IconWrapper>
                   <Input
@@ -436,13 +438,13 @@ const Register = () => {
                     // el mismo DUI termina guardado de tres formas distintas.
                     onInput={(e) => { e.target.value = formatearDui(e.target.value); }}
                   />
-                  {errors.dui && <ErrorMsg>{errors.dui.message}</ErrorMsg>}
+                  {errors.dui && <ErrorMsg>{t(errors.dui.message)}</ErrorMsg>}
                 </InputWrapper>
               </InputContainer>
             )}
 
             <InputContainer>
-              <Label htmlFor="campo-phoneNumber">Teléfono</Label>
+              <Label htmlFor="campo-phoneNumber">{t('Teléfono')}</Label>
               <InputWrapper>
                 <IconWrapper><Phone size={18} /></IconWrapper>
                 <Input
@@ -455,7 +457,7 @@ const Register = () => {
                   onKeyDown={bloquearNoDigitos}
                   onInput={(e) => { e.target.value = formatearTelefono(e.target.value); }}
                 />
-                {errors.phoneNumber && <ErrorMsg>{errors.phoneNumber.message}</ErrorMsg>}
+                {errors.phoneNumber && <ErrorMsg>{t(errors.phoneNumber.message)}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
@@ -468,12 +470,12 @@ const Register = () => {
             */}
 
             <InputContainer>
-              <Label htmlFor="campo-email">Correo Electrónico</Label>
+              <Label htmlFor="campo-email">{t('Correo Electrónico')}</Label>
               <InputWrapper>
                 <IconWrapper><Mail size={18} /></IconWrapper>
                 <Input
                   type="email"
-                  placeholder="juan@ejemplo.com"
+                  placeholder={t('juan@ejemplo.com')}
                   id="campo-email"
                   {...register("email", { 
                     required: "El correo es obligatorio",
@@ -483,12 +485,12 @@ const Register = () => {
                     }
                   })}
                 />
-                {errors.email && <ErrorMsg>{errors.email.message}</ErrorMsg>}
+                {errors.email && <ErrorMsg>{t(errors.email.message)}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
             <InputContainer>
-              <Label htmlFor="campo-password">Contraseña</Label>
+              <Label htmlFor="campo-password">{t('Contraseña')}</Label>
               <InputWrapper>
                 <IconWrapper><Lock size={18} /></IconWrapper>
                 <Input
@@ -502,11 +504,11 @@ const Register = () => {
                   })}
                 />
                 <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} />
-                {errors.password && <ErrorMsg>{errors.password.message}</ErrorMsg>}
+                {errors.password && <ErrorMsg>{t(errors.password.message)}</ErrorMsg>}
               </InputWrapper>
             </InputContainer>
 
-            <Label>Foto de Perfil (Opcional)</Label>
+            <Label>{t('Foto de Perfil (Opcional)')}</Label>
             <BloqueFoto>
               {/* Recorte "cover": es una foto de perfil, se ve como se verá después. */}
               <SubidorArchivo
@@ -517,9 +519,9 @@ const Register = () => {
                 alto={140}
                 altoPreview={180}
                 radio={8}
-                titulo="Arrastra tu foto o haz clic para elegirla"
-                ayuda="JPG o PNG, hasta 8 MB"
-                etiquetaAria="Subir foto de perfil"
+                titulo={t('Arrastra tu foto o haz clic para elegirla')}
+                ayuda={t('JPG o PNG, hasta 8 MB')}
+                etiquetaAria={t('Subir foto de perfil')}
               />
             </BloqueFoto>
 
@@ -534,25 +536,25 @@ const Register = () => {
                     y un lector de pantalla anunciaría "acepto los" a secas —
                     una casilla que no dice qué se está aceptando.
                   */
-                  aria-label="He leído y acepto los términos y condiciones y la política de privacidad"
+                  aria-label={t('He leído y acepto los términos y condiciones y la política de privacidad')}
                   {...register('aceptaTerminos', {
                     required: 'Hay que aceptar los términos para crear la cuenta',
                   })}
                 />
                 <TextoCasilla>
-                  <label htmlFor="aceptaTerminos">He leído y acepto los </label>
+                  <label htmlFor="aceptaTerminos">{t('He leído y acepto los')} </label>
                   <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'terminos')}>
-                    términos y condiciones
+                    {t('términos y condiciones')}
                   </EnlaceTerminos>
-                  {' y la '}
+                  {` ${t('y la')} `}
                   <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'privacidad')}>
-                    política de privacidad
+                    {t('política de privacidad')}
                   </EnlaceTerminos>
                   .
                 </TextoCasilla>
               </Casilla>
               {errors.aceptaTerminos && (
-                <ErrorCasilla>{errors.aceptaTerminos.message}</ErrorCasilla>
+                <ErrorCasilla>{t(errors.aceptaTerminos.message)}</ErrorCasilla>
               )}
 
               {/*
@@ -563,21 +565,21 @@ const Register = () => {
               <Casilla>
                 <input type="checkbox" id="promociones" {...register('promociones')} />
                 <label htmlFor="promociones">
-                  Quiero recibir promociones y novedades por correo.
+                  {t('Quiero recibir promociones y novedades por correo.')}
                   <Aclaracion>
-                    Opcional. Puede desactivarlo cuando quiera desde Mi cuenta.
+                    {t('Opcional. Puede desactivarlo cuando quiera desde Mi cuenta.')}
                   </Aclaracion>
                 </label>
               </Casilla>
             </BloqueConsentimiento>
 
             <Button type="submit" disabled={cargando}>
-              {cargando ? <><EsperaMascota sobre="color" /> Un momento…</> : 'Continuar'}
+              {cargando ? <><EsperaMascota sobre="color" /> {t('Un momento…')}</> : t('Continuar')}
             </Button>
 
           </form>
 
-          <Divisor>o</Divisor>
+          <Divisor>{t('o')}</Divisor>
 
           <GoogleFila>
             {entrandoGoogle ? (
@@ -585,18 +587,18 @@ const Register = () => {
             ) : (
               <GoogleLogin
                 onSuccess={onGoogle}
-                onError={() => toast.error('No se pudo registrar con Google')}
+                onError={() => toast.error(t('No se pudo registrar con Google'))}
                 text="signup_with"
                 shape="pill"
-                locale="es"
+                locale={idioma}
                 width="320"
               />
             )}
           </GoogleFila>
 
           <FooterText>
-            ¿Ya tienes una cuenta?{' '}
-            <FooterLink type="button" onClick={() => navigate('/iniciar-sesion')}>Iniciar Sesión</FooterLink>
+            {t('¿Ya tienes una cuenta?')}{' '}
+            <FooterLink type="button" onClick={() => navigate('/iniciar-sesion')}>{t('Iniciar sesión')}</FooterLink>
           </FooterText>
         </Card>
       </Body>

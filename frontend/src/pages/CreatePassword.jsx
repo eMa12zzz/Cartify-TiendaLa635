@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import api from '../api/api';
 import { BotonOjo } from '../components/UI/CampoContrasena';
+import { useIdioma } from '../hooks/useIdioma';
 
 const BROWN = 'var(--marca-600)';
 
@@ -116,6 +117,7 @@ const CreatePassword = () => {
   const [loading, setLoading] = useState(false);
   const [verNueva, setVerNueva] = useState(false);
   const [verConfirma, setVerConfirma] = useState(false);
+  const { t } = useIdioma();
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
   
   // 1- Observamos el valor de la nueva contraseña para validar la confirmación
@@ -132,7 +134,7 @@ const CreatePassword = () => {
         confirmNewPassword: data.confirmNewPassword
       });
 
-      toast.success('¡Contraseña actualizada con éxito!');
+      toast.success(t('¡Contraseña actualizada con éxito!'));
       
       // Limpiamos los rastros y redirigimos a iniciar sesión
       localStorage.removeItem('verificationFlow');
@@ -153,19 +155,19 @@ const CreatePassword = () => {
 
       <Body>
         <Card>
-          <BackButton type="button" aria-label="Volver" onClick={() => navigate('/verification')}>←</BackButton>
+          <BackButton type="button" aria-label={t('Volver')} onClick={() => navigate('/verification')}>←</BackButton>
 
-          <SectionTitle>Crea una contraseña</SectionTitle>
+          <SectionTitle>{t('Crea una contraseña')}</SectionTitle>
 
           <form onSubmit={handleSubmit(onSubmit)}>
             
-            <Label htmlFor="campo-newPassword">Nueva Contraseña</Label>
+            <Label htmlFor="campo-newPassword">{t('Nueva Contraseña')}</Label>
             {/* Con el ojo se puede revisar antes de mandar: en esta pantalla
                 un dedazo se descubre hasta el próximo inicio de sesión. */}
             <div style={{ position: 'relative' }}>
               <Input
                 type={verNueva ? 'text' : 'password'}
-                placeholder="Nueva Contraseña"
+                placeholder={t('Nueva Contraseña')}
                 style={{ paddingRight: 44 }}
                 $error={!!errors.newPassword}
                 id="campo-newPassword"
@@ -176,13 +178,13 @@ const CreatePassword = () => {
               />
               <BotonOjo visible={verNueva} onToggle={() => setVerNueva((v) => !v)} />
             </div>
-            {errors.newPassword && <ErrorMsg>{errors.newPassword.message}</ErrorMsg>}
+            {errors.newPassword && <ErrorMsg>{t(errors.newPassword.message)}</ErrorMsg>}
 
-            <Label htmlFor="campo-confirmNewPassword">Confirmar Contraseña</Label>
+            <Label htmlFor="campo-confirmNewPassword">{t('Confirmar Contraseña')}</Label>
             <div style={{ position: 'relative' }}>
               <Input
                 type={verConfirma ? 'text' : 'password'}
-                placeholder="Confirmar Contraseña"
+                placeholder={t('Confirmar Contraseña')}
                 style={{ paddingRight: 44 }}
                 $error={!!errors.confirmNewPassword}
                 id="campo-confirmNewPassword"
@@ -193,10 +195,10 @@ const CreatePassword = () => {
               />
               <BotonOjo visible={verConfirma} onToggle={() => setVerConfirma((v) => !v)} />
             </div>
-            {errors.confirmNewPassword && <ErrorMsg>{errors.confirmNewPassword.message}</ErrorMsg>}
+            {errors.confirmNewPassword && <ErrorMsg>{t(errors.confirmNewPassword.message)}</ErrorMsg>}
 
             <Button type="submit" disabled={loading}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Restablecer Contraseña →'}
+              {loading ? <Loader2 size={18} className="animate-spin" /> : t('Restablecer Contraseña →')}
             </Button>
 
           </form>

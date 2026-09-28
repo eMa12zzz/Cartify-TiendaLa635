@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { ArrowLeft, Store, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import Mascota from '../components/UI/Mascota';
+import { useIdioma } from '../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -142,6 +143,9 @@ const NoEncontrado = () => {
    */
   const esPersonal = haySesionDePersonal && !esCliente;
   const casa = esPersonal ? '/dashboard' : '/';
+  // Con la sesión del panel, en español: el idioma es de la tienda.
+  const { t: tTienda } = useIdioma();
+  const t = esPersonal ? (s) => s : tTienda;
 
   return (
     <Fondo>
@@ -151,10 +155,9 @@ const NoEncontrado = () => {
           <Mascota pose="perdida" alto="1.45em" />
           <span>4</span>
         </Cuatro>
-        <Titulo>Esta página no existe</Titulo>
+        <Titulo>{t('Esta página no existe')}</Titulo>
         <Texto>
-          Puede que la dirección esté mal escrita, o que la página se haya
-          movido de lugar. No es nada que usted haya hecho mal.
+          {t('Puede que la dirección esté mal escrita, o que la página se haya movido de lugar. No es nada que usted haya hecho mal.')}
         </Texto>
         <Ruta>{pathname}</Ruta>
 
@@ -162,7 +165,7 @@ const NoEncontrado = () => {
           <Boton $principal onClick={() => navigate(casa)}>
             {esPersonal
               ? <><LayoutDashboard size={16} strokeWidth={2.2} /> Ir al panel</>
-              : <><Store size={16} strokeWidth={2.2} /> Ir a la tienda</>}
+              : <><Store size={16} strokeWidth={2.2} /> {t('Ir a la tienda')}</>}
           </Boton>
           {/*
             El "atrás" propio se ofrece de segundo y solo si hay a dónde
@@ -171,7 +174,7 @@ const NoEncontrado = () => {
           */}
           {window.history.length > 1 && (
             <Boton onClick={() => navigate(-1)}>
-              <ArrowLeft size={16} strokeWidth={2.2} /> Volver atrás
+              <ArrowLeft size={16} strokeWidth={2.2} /> {t('Volver atrás')}
             </Boton>
           )}
         </Botones>

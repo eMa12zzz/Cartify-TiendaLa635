@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useIdioma } from './useIdioma';
 
 /*
  * ============================================================
@@ -43,6 +44,7 @@ export const useRastroTienda = ({
   promoSeleccionada,
   setPromoSeleccionada,
 }) => {
+  const { t } = useIdioma();
   return useMemo(() => {
     // Dejar la tienda en blanco. Es lo que hace "Inicio", y también el punto
     // de partida de cualquier otro escalón: cada uno vuelve a poner lo suyo.
@@ -55,7 +57,7 @@ export const useRastroTienda = ({
 
     const escalones = [
       {
-        etiqueta: 'Inicio',
+        etiqueta: t('Inicio'),
         alTocar: () => { limpiarTodo(); },
       },
     ];
@@ -101,7 +103,7 @@ export const useRastroTienda = ({
 
     if (promoSeleccionada) {
       escalones.push({
-        etiqueta: promoSeleccionada.title || promoSeleccionada.promoDescription || 'Promoción',
+        etiqueta: promoSeleccionada.title || promoSeleccionada.promoDescription || t('Promoción'),
         // Ya se está viendo la promo filtrada: cerrar la ficha basta.
         alTocar: () => {},
       });
@@ -112,6 +114,6 @@ export const useRastroTienda = ({
     moduloSeleccionado, setModuloSeleccionado, nombrePasillo,
     categoriaSeleccionada, setCategoriaSeleccionada,
     terminoBusqueda, setTerminoBusqueda,
-    promoSeleccionada, setPromoSeleccionada,
+    promoSeleccionada, setPromoSeleccionada, t,
   ]);
 };

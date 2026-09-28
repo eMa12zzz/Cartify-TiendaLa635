@@ -3,6 +3,8 @@ import { MessageCircle, MapPin, ArrowUpRight, Clock, Phone, Mail } from 'lucide-
 import { usePieTienda } from '../../hooks/usePieTienda';
 import { abrirAvisoCookies } from '../../utils/consentimiento';
 import { LANDING_URL } from '../../utils/tienda';
+import { useIdioma } from '../../hooks/useIdioma';
+import SelectorIdioma from './SelectorIdioma';
 
 /*
  * ============================================================
@@ -228,6 +230,7 @@ const PieTienda = () => {
     pasillos, enlacesCuenta, enlacesLegales, ir, whatsapp, direccion, nombre, anio,
     nombreLinea1, nombreLinea2, logoUrl, lema, negocio,
   } = usePieTienda();
+  const { t } = useIdioma();
 
   return (
     <Banda>
@@ -246,7 +249,7 @@ const PieTienda = () => {
             {/* Aparte y en otra pestaña: es su propia página, y así quien la
                 abre no pierde el carrito ni el lugar donde iba en la tienda. */}
             <EnlaceLanding href={LANDING_URL} target="_blank" rel="noopener noreferrer">
-              Así funciona la tienda <ArrowUpRight size={14} strokeWidth={2.4} />
+              {t('Así funciona la tienda')} <ArrowUpRight size={14} strokeWidth={2.4} />
             </EnlaceLanding>
             <Dato>
               <MapPin size={15} strokeWidth={2} aria-hidden="true" />
@@ -277,7 +280,7 @@ const PieTienda = () => {
             {whatsapp && (
               <BotonWhats href={whatsapp} target="_blank" rel="noopener noreferrer">
                 <MessageCircle size={15} strokeWidth={2.2} />
-                Escríbanos por WhatsApp
+                {t('Escríbanos por WhatsApp')}
               </BotonWhats>
             )}
           </Marca>
@@ -286,7 +289,7 @@ const PieTienda = () => {
               aparece sola aquí abajo sin que nadie venga a agregarla. */}
           {pasillos.length > 0 && (
             <div>
-              <TituloColumna>Pasillos</TituloColumna>
+              <TituloColumna>{t('Pasillos')}</TituloColumna>
               <Lista>
                 {pasillos.map((p) => (
                   <li key={p.id}>
@@ -298,11 +301,11 @@ const PieTienda = () => {
           )}
 
           <div>
-            <TituloColumna>Mi cuenta</TituloColumna>
+            <TituloColumna>{t('Mi cuenta')}</TituloColumna>
             <Lista>
               {enlacesCuenta.map((e) => (
                 <li key={e.ruta}>
-                  <Enlace onClick={() => ir(e.ruta)}>{e.texto}</Enlace>
+                  <Enlace onClick={() => ir(e.ruta)}>{t(e.texto)}</Enlace>
                 </li>
               ))}
             </Lista>
@@ -311,14 +314,17 @@ const PieTienda = () => {
 
         <Cierre>
           <span>© {anio} {nombre}{negocio.titular ? ` · ${negocio.titular}` : ''}</span>
-          <nav aria-label="Documentos legales" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+          <nav aria-label={t('Documentos legales')} style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
             {enlacesLegales.map((e) => (
-              <EnlaceCierre key={e.ruta} onClick={() => ir(e.ruta)}>{e.texto}</EnlaceCierre>
+              <EnlaceCierre key={e.ruta} onClick={() => ir(e.ruta)}>{t(e.texto)}</EnlaceCierre>
             ))}
             {/* Para cambiar lo que eligió en el aviso de cookies, cuando quiera. */}
-            <EnlaceCierre onClick={abrirAvisoCookies}>Configurar cookies</EnlaceCierre>
+            <EnlaceCierre onClick={abrirAvisoCookies}>{t('Configurar cookies')}</EnlaceCierre>
           </nav>
-          <span>Hecho en El Salvador</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <SelectorIdioma />
+            {t('Hecho en El Salvador')}
+          </span>
         </Cierre>
       </Interior>
     </Banda>

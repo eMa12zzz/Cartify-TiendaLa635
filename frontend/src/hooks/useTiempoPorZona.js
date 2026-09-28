@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { orderService } from '../api/orderService';
+import { useIdioma } from './useIdioma';
 
 /*
  * ============================================================
@@ -27,6 +28,7 @@ export const useTiempoPorZona = (lat, lng) => {
    */
   const clave = lat != null && lng != null ? `${lat},${lng}` : null;
   const [datos, setDatos] = useState(null);
+  const { t } = useIdioma();
 
   useEffect(() => {
     // Sin punto en el mapa no hay zona que consultar: pasa con las
@@ -57,12 +59,12 @@ export const useTiempoPorZona = (lat, lng) => {
    */
   const texto = actual?.hayDatos
     ? (actual.tipico === actual.holgado
-        ? `Llega en unos ${actual.tipico} min`
-        : `Llega entre ${actual.tipico} y ${actual.holgado} min`)
+        ? t('Llega en unos {n} min', { n: actual.tipico })
+        : t('Llega entre {min} y {max} min', { min: actual.tipico, max: actual.holgado }))
     : '';
 
   const respaldo = actual?.hayDatos
-    ? `Según ${actual.entregas} ${actual.entregas === 1 ? 'entrega' : 'entregas'} a su zona`
+    ? t(actual.entregas === 1 ? 'Según {n} entrega a su zona' : 'Según {n} entregas a su zona', { n: actual.entregas })
     : '';
 
   return {

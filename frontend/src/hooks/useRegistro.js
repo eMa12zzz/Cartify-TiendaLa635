@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/api';
 import { VERSION_TERMINOS } from '../utils/terminos';
+import { tAhora } from '../utils/idioma';
 
 /*
  * ============================================================
@@ -70,7 +71,7 @@ export const useRegistro = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      toast.success(`¡Código enviado a ${datos.email}! Revisa tu bandeja de entrada.`, {
+      toast.success(tAhora('¡Código enviado a {correo}! Revisa tu bandeja de entrada.', { correo: datos.email }), {
         duration: 5000,
       });
 

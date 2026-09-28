@@ -4,6 +4,7 @@ import { X, ExternalLink } from 'lucide-react';
 import TextoTerminos from './TextoTerminos';
 import { useDocumentoLegal } from '../../hooks/useTerminos';
 import { DOCUMENTOS_LEGALES } from '../../utils/legales';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -181,6 +182,7 @@ const ModalTerminos = ({ abierto, onCerrar, clave = 'terminos' }) => {
     useDocumentoLegal(elegido || clave);
   const botonCerrar = useRef(null);
   const contenido = useRef(null);
+  const { t, idioma } = useIdioma();
 
   // Otro documento empieza desde arriba, no a la altura del anterior.
   const abrirDocumento = (ruta) => {
@@ -207,16 +209,19 @@ const ModalTerminos = ({ abierto, onCerrar, clave = 'terminos' }) => {
       <Panel role="dialog" aria-modal="true" aria-labelledby="titulo-terminos">
         <Cabecera>
           <Titulos>
-            <h2 id="titulo-terminos">{documento.titulo}</h2>
-            <p>Versión {version} · {fecha}</p>
+            <h2 id="titulo-terminos">{t(documento.titulo)}</h2>
+            <p>
+              {t('Versión {version} · {fecha}', { version, fecha })}
+              {idioma !== 'es' && <> · {t('Solo disponible en español')}</>}
+            </p>
           </Titulos>
 
           <Salida href={documento.ruta} target="_blank" rel="noopener noreferrer">
             <ExternalLink size={14} strokeWidth={2.2} />
-            Ver la página completa
+            {t('Ver la página completa')}
           </Salida>
 
-          <Cerrar ref={botonCerrar} onClick={onCerrar} aria-label={`Cerrar: ${documento.titulo}`}>
+          <Cerrar ref={botonCerrar} onClick={onCerrar} aria-label={t('Cerrar: {titulo}', { titulo: t(documento.titulo) })}>
             <X size={18} strokeWidth={2.3} />
           </Cerrar>
         </Cabecera>
@@ -238,7 +243,7 @@ const ModalTerminos = ({ abierto, onCerrar, clave = 'terminos' }) => {
           dentro convertiría "cerré la ventana" en "estuve de acuerdo".
         */}
         <Pie>
-          <BotonListo onClick={onCerrar}>Listo</BotonListo>
+          <BotonListo onClick={onCerrar}>{t('Listo')}</BotonListo>
         </Pie>
       </Panel>
     </Velo>

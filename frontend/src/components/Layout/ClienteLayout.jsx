@@ -8,6 +8,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
 import HeaderTienda from '../Store/HeaderTienda';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ClienteLayout — el "marco" compartido del área "Mi Cuenta" del cliente.
@@ -38,13 +39,14 @@ const navItems = [
   { to: '/mi-cuenta/notificaciones', label: 'Avisos',         titulo: 'Notificaciones',        icon: Bell,        ready: true },
   { to: '/mi-cuenta/puntos',         label: 'Puntos',         titulo: 'Puntos de fidelidad',   icon: Star,        ready: true },
   { to: '/mi-cuenta/recibidos',      label: 'Recibos',        titulo: 'Recibos',               icon: Receipt,     ready: true },
-  { to: '/mi-cuenta/preferencias',   label: 'Preferencias',   titulo: 'Modo claro u oscuro',   icon: SlidersHorizontal, ready: true },
+  { to: '/mi-cuenta/preferencias',   label: 'Preferencias',   titulo: 'Apariencia e idioma',   icon: SlidersHorizontal, ready: true },
 ];
 
 const ClienteLayout = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { logout } = useAuth();
+  const { t } = useIdioma();
   const location = useLocation();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
@@ -124,11 +126,11 @@ const ClienteLayout = () => {
           */}
           <Link
             to="/"
-            title="Volver a la tienda"
+            title={t('Volver a la tienda')}
             className="flex items-center gap-1.5 pl-1 pr-3 py-3 text-[13.5px] font-bold whitespace-nowrap transition-colors"
             style={{ color: c.primary }}
           >
-            <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden="true" /> Ir a la tienda
+            <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden="true" /> {t('Ir a la tienda')}
           </Link>
           <span className="w-px h-5 mr-1 flex-shrink-0" style={{ backgroundColor: c.cardBorder }} aria-hidden="true" />
 
@@ -141,11 +143,11 @@ const ClienteLayout = () => {
               return (
                 <div
                   key={item.to}
-                  title="Próximamente"
+                  title={t('Próximamente')}
                   className="flex items-center gap-2 px-3 py-3 text-sm whitespace-nowrap cursor-not-allowed opacity-50"
                   style={{ color: c.textMuted }}
                 >
-                  <Icon className="w-4 h-4" /> {item.label}
+                  <Icon className="w-4 h-4" /> {t(item.label)}
                 </div>
               );
             }
@@ -154,14 +156,14 @@ const ClienteLayout = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                title={item.titulo || item.label}
+                title={t(item.titulo || item.label)}
                 className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors relative"
                 style={{
                   color: active ? c.primary : c.textSecondary,
                   fontWeight: active ? 700 : 500,
                 }}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" /> {item.label}
+                <Icon className="w-4 h-4 flex-shrink-0" /> {t(item.label)}
                 {/* La rayita de abajo: dice dónde está uno sin pintar toda la
                     pestaña, que en horizontal se ve pesado */}
                 {active && (
@@ -180,25 +182,25 @@ const ClienteLayout = () => {
 
           <Link
             to="/mi-cuenta/ayuda"
-            title="Centro de ayuda"
+            title={t('Centro de ayuda')}
             className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors"
             style={{
               color: location.pathname === '/mi-cuenta/ayuda' ? c.primary : c.textSecondary,
               fontWeight: location.pathname === '/mi-cuenta/ayuda' ? 700 : 500,
             }}
           >
-            <HelpCircle className="w-4 h-4 flex-shrink-0" /> Ayuda
+            <HelpCircle className="w-4 h-4 flex-shrink-0" /> {t('Ayuda')}
           </Link>
 
           {/* Cerrar sesión pide confirmación: es la única acción del menú que
               te saca de la aplicación. */}
           <button
             onClick={() => setConfirmarSalida(true)}
-            title="Cerrar sesión"
+            title={t('Cerrar sesión')}
             className="flex items-center gap-1.5 px-2.5 py-3 text-[13.5px] whitespace-nowrap transition-colors"
             style={{ color: c.textSecondary }}
           >
-            <LogOut className="w-4 h-4 flex-shrink-0" /> Salir
+            <LogOut className="w-4 h-4 flex-shrink-0" /> {t('Salir')}
           </button>
         </nav>
       </div>
@@ -252,9 +254,9 @@ const ClienteLayout = () => {
               >
                 <LogOut className="h-5 w-5" />
               </div>
-              <h2 className="mb-1 text-center text-lg font-bold">¿Cerrar sesión?</h2>
+              <h2 className="mb-1 text-center text-lg font-bold">{t('¿Cerrar sesión?')}</h2>
               <p className="mb-6 text-center text-sm" style={{ color: c.textSecondary }}>
-                Tendrá que volver a ingresar su correo y contraseña para entrar de nuevo.
+                {t('Tendrá que volver a ingresar su correo y contraseña para entrar de nuevo.')}
               </p>
               <div className="flex gap-3">
                 <button
@@ -262,14 +264,14 @@ const ClienteLayout = () => {
                   className="press flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition-colors"
                   style={{ backgroundColor: c.primaryLight, color: c.textPrimary }}
                 >
-                  Quedarme
+                  {t('Quedarme')}
                 </button>
                 <button
                   onClick={handleLogout}
                   className="press flex-1 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-colors"
                   style={{ backgroundColor: c.primary }}
                 >
-                  Cerrar sesión
+                  {t('Cerrar sesión')}
                 </button>
               </div>
             </motion.div>

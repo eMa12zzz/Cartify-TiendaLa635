@@ -9,6 +9,7 @@ import { familiasQueCoinciden } from '../utils/familias';
 import { familiaDeProducto } from '../utils/similitud';
 import { cantidadConUnidad } from '../utils/unidades';
 import { useAuth } from './useAuth';
+import { tAhora } from '../utils/idioma';
 
 /*
  * useStore — estado de la tienda (catálogo real + carrito) con PROMOCIONES.
@@ -475,14 +476,16 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
 
     const partes = [];
     if (fuera > 0) {
-      partes.push(fuera === 1 ? 'un producto ya no está disponible' : `${fuera} productos ya no están disponibles`);
+      partes.push(fuera === 1
+        ? tAhora('un producto ya no está disponible')
+        : tAhora('{n} productos ya no están disponibles', { n: fuera }));
     }
     if (recortados > 0) {
       partes.push(recortados === 1
-        ? 'de otro quedaban menos unidades de las que llevaba'
-        : `de ${recortados} quedaban menos unidades de las que llevaba`);
+        ? tAhora('de otro quedaban menos unidades de las que llevaba')
+        : tAhora('de {n} quedaban menos unidades de las que llevaba', { n: recortados }));
     }
-    toast(`De su carrito guardado, ${partes.join(' y ')}. Ya está corregido.`, { duration: 6000 });
+    toast(tAhora('De su carrito guardado, {partes}. Ya está corregido.', { partes: partes.join(tAhora(' y ')) }), { duration: 6000 });
   }, [cargando, productos, lineas, carrito, guardarCarrito]);
 
   /*
@@ -524,7 +527,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
     if (!producto?.id) return 0;
     const stock = Number(producto.stock) || 0;
     if (stock <= 0) {
-      toast.error(`${producto.nombre} se quedó sin existencias`);
+      toast.error(tAhora('{nombre} se quedó sin existencias', { nombre: producto.nombre }));
       return 0;
     }
 
@@ -537,7 +540,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
       if (!hastaDondeAlcance || cabe <= 0) {
         // "Solo hay 3 unidades" de un queso que se vende por peso confunde:
         // se dice en la unidad en que se vende. Ver utils/unidades.js.
-        toast.error(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`);
+        toast.error(tAhora('Solo hay {cantidad} disponibles', { cantidad: cantidadConUnidad(producto, stock) }));
         return 0;
       }
       entra = cabe;
@@ -560,8 +563,8 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
      */
     avisarAgregado(
       nuevaCantidad > 1
-        ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
-        : `${producto.nombre} agregado al carrito`
+        ? tAhora('{nombre} · {cantidad} en el carrito', { nombre: producto.nombre, cantidad: cantidadConUnidad(producto, nuevaCantidad) })
+        : tAhora('{nombre} agregado al carrito', { nombre: producto.nombre })
     );
     return entra;
   };
@@ -571,7 +574,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
     const id = String(productoId);
     const fuera = carrito.find((i) => String(i.id) === id);
     guardarCarrito(lineasAhora().filter((l) => l.id !== id));
-    avisarQuitado(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado');
+    avisarQuitado(fuera ? tAhora('{nombre} salió del carrito', { nombre: fuera.nombre }) : tAhora('Producto eliminado'));
   };
 
   // Devuelve la cantidad con la que quedó: si pidieron más de lo que hay, el tope.
@@ -605,7 +608,9 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
   const limpiarCarrito = ({ avisar = true } = {}) => {
     const cuantos = carrito.length;
     guardarCarrito([]);
-    if (cuantos && avisar) avisarQuitado(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`);
+    if (cuantos && avisar) {
+      avisarQuitado(tAhora(cuantos > 1 ? 'Se vació el carrito ({n} productos)' : 'Se vació el carrito ({n} producto)', { n: cuantos }));
+    }
   };
 
   // Total del carrito, aplicando el NxM (cada N unidades, se pagan M).

@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import { ICONOS } from '../utils/iconosAviso';
 import { orderService } from '../api/orderService';
 import { distanciaMetros, minutosDeViaje, textoDeEspera, formatoDistancia } from '../utils/geo';
+import { useIdioma } from './useIdioma';
+import { tAhora } from '../utils/idioma';
 
 /*
  * ============================================================
@@ -54,6 +56,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
 
   // Para no repetir el aviso de "ya casi llega" en cada vuelta del reloj.
   const avisadoRef = useRef(false);
+  const { t } = useIdioma();
 
   useEffect(() => {
     if (!pedidoId || !activo) return;
@@ -108,7 +111,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
           const faltan = distanciaMetros(courier, data.destino);
           if (faltan != null && faltan <= YA_CASI_M) {
             avisadoRef.current = true;
-            toast('Su pedido ya casi toca su puerta', {
+            toast(tAhora('Su pedido ya casi toca su puerta'), {
               id: `ya-casi-${pedidoId}`,
               duration: 8000,
               icon: ICONOS.reparto,
@@ -180,7 +183,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
     senalFria,
     minutosDesdeUltimoDato: desdeUltimoDato != null ? Math.floor(desdeUltimoDato / 60000) : null,
     distancia: formatoDistancia(metrosFaltantes),
-    espera: textoDeEspera(minutos),
+    espera: textoDeEspera(minutos, t),
     minutos,
     // Últimas dos cuadras: la UI lo usa para ponerse en modo "levántese ya".
     yaCasi: metrosFaltantes != null && metrosFaltantes <= YA_CASI_M,

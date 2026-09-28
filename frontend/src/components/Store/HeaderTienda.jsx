@@ -6,6 +6,7 @@ import MenuTienda from './MenuTienda';
 import SelectorDireccion from './SelectorDireccion';
 import CintaTemporada from './CintaTemporada';
 import { useAuth } from '../../hooks/useAuth';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -238,6 +239,7 @@ const HeaderTienda = ({
 }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { t } = useIdioma();
 
   /*
    * Cuando la pantalla no maneja la búsqueda (Impresiones), el buscador guarda
@@ -278,8 +280,8 @@ const HeaderTienda = ({
         <SearchIcon><Search size={17} strokeWidth={2.4} /></SearchIcon>
         <input
           type="text"
-          placeholder="Buscar productos..."
-          aria-label="Buscar productos"
+          placeholder={t('Buscar productos...')}
+          aria-label={t('Buscar productos')}
           value={texto || ''}
           onChange={(e) => escribir(e.target.value)}
         />
@@ -287,7 +289,7 @@ const HeaderTienda = ({
           <button
             type="button"
             onClick={() => escribir('')}
-            aria-label="Borrar la búsqueda"
+            aria-label={t('Borrar la búsqueda')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--tinta-tenue)', fontSize: 16, width: 32, height: 32 }}
           >✕</button>
         )}
@@ -297,14 +299,14 @@ const HeaderTienda = ({
         <Pill
           $solida
           onClick={() => (onAbrirAsistente ? onAbrirAsistente() : navigate('/'))}
-          title="Asistente por voz"
+          title={t('Asistente por voz')}
         >
-          <Mic size={18} strokeWidth={2.2} /> <Etiqueta>Asistente</Etiqueta>
+          <Mic size={18} strokeWidth={2.2} /> <Etiqueta>{t('Asistente')}</Etiqueta>
         </Pill>
 
         {/* data-destino-carrito: a dónde vuela la foto al agregar (utils/volarAlCarrito.js). */}
-        <Pill data-destino-carrito onClick={() => (onAbrirCarrito ? onAbrirCarrito() : navigate('/'))} title="Carrito">
-          <ShoppingBag size={18} strokeWidth={2.2} /> <Etiqueta>Carrito</Etiqueta>
+        <Pill data-destino-carrito onClick={() => (onAbrirCarrito ? onAbrirCarrito() : navigate('/'))} title={t('Carrito')}>
+          <ShoppingBag size={18} strokeWidth={2.2} /> <Etiqueta>{t('Carrito')}</Etiqueta>
           {/*
             El `key` con la cantidad es lo que hace que esto se vea.
 
@@ -324,12 +326,12 @@ const HeaderTienda = ({
           no tiene ninguna sería una puerta a un cuarto que no existe.
         */}
         {isAuthenticated ? (
-          <Pill onClick={() => navigate('/mi-cuenta')} title="Mi Cuenta">
-            <User size={18} strokeWidth={2.2} /> <Etiqueta>Mi Cuenta</Etiqueta>
+          <Pill onClick={() => navigate('/mi-cuenta')} title={t('Mi Cuenta')}>
+            <User size={18} strokeWidth={2.2} /> <Etiqueta>{t('Mi Cuenta')}</Etiqueta>
           </Pill>
         ) : (
-          <Pill onClick={() => navigate('/iniciar-sesion?volver=/')} title="Iniciar sesión">
-            <User size={18} strokeWidth={2.2} /> <Etiqueta>Ingresar</Etiqueta>
+          <Pill onClick={() => navigate('/iniciar-sesion?volver=/')} title={t('Iniciar sesión')}>
+            <User size={18} strokeWidth={2.2} /> <Etiqueta>{t('Ingresar')}</Etiqueta>
           </Pill>
         )}
       </Derecha>

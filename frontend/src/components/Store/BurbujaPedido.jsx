@@ -9,6 +9,7 @@ import MapaSeguimiento from './MapaSeguimiento';
 import CodigoEntrega from './CodigoEntrega';
 import Mascota from '../UI/Mascota';
 import { useTiempoPorZona } from '../../hooks/useTiempoPorZona';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -84,6 +85,7 @@ const BurbujaPedido = () => {
    * quiere saber si le da tiempo de bañarse.
    */
   const zona = useTiempoPorZona(enCurso?.deliveryLat, enCurso?.deliveryLng);
+  const { t } = useIdioma();
 
   // Solo los clientes tienen pedidos que seguir.
   if (user?.type !== 'client') return null;
@@ -139,7 +141,7 @@ const BurbujaPedido = () => {
       <button
         type="button"
         onClick={agrandar}
-        aria-label={`Ver su pedido: ${enCamino ? seguimiento.espera : paso.label}`}
+        aria-label={t('Ver su pedido: {estado}', { estado: enCamino ? seguimiento.espera : t(paso.label) })}
         style={{
           position: 'fixed',
           left: 'max(20px, env(safe-area-inset-left))',
@@ -183,12 +185,12 @@ const BurbujaPedido = () => {
         >
           <div style={{ background: BROWN, color: '#fff', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 13, fontWeight: 800 }}>
-              Pedido #{String(enCurso._id).slice(-6).toUpperCase()}
+              {t('Pedido #{numero}', { numero: String(enCurso._id).slice(-6).toUpperCase() })}
             </span>
             <button
               type="button"
               onClick={encoger}
-              aria-label="Encoger el seguimiento"
+              aria-label={t('Encoger el seguimiento')}
               style={{ background: 'none', border: 'none', color: '#fff', display: 'flex', padding: 0 }}
             >
               <X size={16} />
@@ -228,15 +230,15 @@ const BurbujaPedido = () => {
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
                   <Bike size={15} strokeWidth={2.4} />
-                  {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
+                  {seguimiento.yaCasi ? t('Ya casi toca su puerta') : seguimiento.espera}
                 </div>
                 <div style={{ fontSize: 11.5, color: seguimiento.yaCasi ? 'var(--exito-suave)' : 'var(--info-suave)', marginTop: 2 }}>
                   {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
                   {/* La distancia solo sale si el pedido guardó su punto en el
                       mapa; los viejos traen nada más la dirección escrita */}
                   {seguimiento.distancia
-                    ? `a ${seguimiento.distancia} de su dirección`
-                    : 'Le llevan su pedido'}
+                    ? t('a {distancia} de su dirección', { distancia: seguimiento.distancia })
+                    : t('Le llevan su pedido')}
                 </div>
               </div>
             </div>
@@ -299,9 +301,9 @@ const BurbujaPedido = () => {
                   </div>
                   <div style={{ paddingBottom: i < PASOS.length - 1 ? 12 : 0 }}>
                     <div style={{ fontSize: 13, fontWeight: actual ? 800 : 600, color: actual ? 'var(--tinta)' : 'var(--tinta-suave)' }}>
-                      {p.label}
+                      {t(p.label)}
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--tinta-tenue)' }}>{p.detalle}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--tinta-tenue)' }}>{t(p.detalle)}</div>
                   </div>
                 </div>
               );
@@ -314,14 +316,13 @@ const BurbujaPedido = () => {
             */}
             {esDomicilio && seguimiento.senalFria && (
               <p style={{ fontSize: 11.5, color: 'var(--tinta-tenue)', margin: '10px 0 0', lineHeight: 1.45 }}>
-                Su pedido va en camino. La última novedad del repartidor fue hace{' '}
-                {seguimiento.minutosDesdeUltimoDato || 1} min.
+                {t('Su pedido va en camino. La última novedad del repartidor fue hace {n} min.', { n: seguimiento.minutosDesdeUltimoDato || 1 })}
               </p>
             )}
 
             {esDomicilio && enCurso.deliveryAddress && (
               <p style={{ fontSize: 11.5, color: 'var(--tinta-tenue)', margin: '10px 0 0', lineHeight: 1.45 }}>
-                Se lo llevamos a: {enCurso.deliveryAddress}
+                {t('Se lo llevamos a: {direccion}', { direccion: enCurso.deliveryAddress })}
               </p>
             )}
 
@@ -335,7 +336,7 @@ const BurbujaPedido = () => {
                 alignItems: 'center', justifyContent: 'center', gap: 4,
               }}
             >
-              Ver el pedido <ChevronRight size={14} />
+              {t('Ver el pedido')} <ChevronRight size={14} />
             </button>
           </div>
         </div>
@@ -346,7 +347,7 @@ const BurbujaPedido = () => {
         type="button"
         onClick={() => setAbierta((v) => !v)}
         aria-expanded={abierta}
-        aria-label={enCamino ? `Su pedido va en camino. ${seguimiento.espera}` : `Su pedido: ${paso.label}`}
+        aria-label={enCamino ? t('Su pedido va en camino. {espera}', { espera: seguimiento.espera }) : t('Su pedido: {estado}', { estado: t(paso.label) })}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -380,7 +381,7 @@ const BurbujaPedido = () => {
             lo dice sin que haya que abrirla: es la información que el cliente
             está esperando, y hacerlo tocar para verla sería mezquino.
           */}
-          {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
+          {enCamino ? (seguimiento.yaCasi ? t('Ya casi llega') : seguimiento.espera) : t(paso.label)}
           {/* El puntito que respira: dice "esto sigue en curso" sin decir nada */}
           <span style={{
             width: 7, height: 7, borderRadius: '50%', background: '#8ee6a8',
