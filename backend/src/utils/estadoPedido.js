@@ -22,8 +22,18 @@ import { devolverLoDelPedido } from "./devolverPedido.js";
 
 export const ESTADOS_PEDIDO = ["pagado", "preparando", "en_camino", "listo", "entregado", "cancelado"];
 
+/*
+ * `soloDesde`: el cambio solo vale si el pedido está en ESE estado. Lo usa la
+ * cancelación del cliente, que solo puede cancelar lo que está por preparar;
+ * junto con la condición de la actualización (abajo), si la tienda lo empieza
+ * a preparar en ese mismo segundo, la cancelación no entra.
+ *
+ * `porCliente`: lo canceló el propio cliente. Queda anotado y no se le avisa
+ * (acaba de hacerlo él, la pantalla ya se lo dijo).
+ */
 export const cambiarEstadoDePedido = async ({
   id, status, quien = "", codigoEntrega, omitirCodigo, motivoOmision, motivoCancelacion,
+  soloDesde, porCliente = false,
 }) => {
   if (!ESTADOS_PEDIDO.includes(status)) {
     return { ok: false, codigo: 400, message: "Estado inválido" };
@@ -33,6 +43,9 @@ export const cambiarEstadoDePedido = async ({
   // respuesta se arma con el documento ya actualizado, que no lo trae.
   const actual = await orderModel.findById(id).select("+deliveryCode");
   if (!actual) return { ok: false, codigo: 404, message: "Pedido no encontrado" };
+  if (soloDesde && actual.status !== soloDesde) {
+    return { ok: false, codigo: 409, message: "El pedido ya cambió de estado." };
+  }
 
   /*
    * ── CANCELAR ES UNA SALIDA, NO UN ESTADO MÁS ──
@@ -71,6 +84,7 @@ export const cambiarEstadoDePedido = async ({
     cambios.cancelReason = motivo.slice(0, 300);
     cambios.cancelledAt = new Date();
     cambios.cancelledBy = quien;
+    if (porCliente) cambios.cancelledByClient = true;
   }
 
   /*
@@ -179,7 +193,7 @@ export const cambiarEstadoDePedido = async ({
    * Sin await: el pedido ya se guardó y quien está en el mostrador no tiene
    * por qué esperar a que salga un aviso.
    */
-  if (status !== actual.status) {
+  if (status !== actual.status && !porCliente) {
     avisarCambioDePedidoEnSegundoPlano(order, status);
   }
 

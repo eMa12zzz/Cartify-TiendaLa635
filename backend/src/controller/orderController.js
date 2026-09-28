@@ -513,6 +513,60 @@ orderController.updateOrderStatus = async (req, res) => {
   }
 };
 
+/*
+ * UPDATE — El CLIENTE cancela su pedido.
+ *
+ * Solo mientras está "por preparar": en cuanto la tienda empieza a juntar los
+ * productos, ya hay alguien trabajando en él y cancelarlo desde la app dejaría
+ * la bolsa armada a medias. Ahí se le pide que escriba por WhatsApp.
+ *
+ * Todo lo demás es la cancelación de siempre (utils/estadoPedido.js): vuelve
+ * el stock, se le devuelve el saldo y los puntos canjeados. El motivo lo elige
+ * el cliente y lo lee el personal en Pedidos.
+ */
+const YA_EN_PREPARACION =
+  "Ya empezamos a preparar su pedido y no se puede cancelar desde aquí. Escríbanos por WhatsApp y lo vemos.";
+
+orderController.cancelarPorCliente = async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+    const pedido = await orderModel.findById(req.params.id).select("clientId status");
+    if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+    if (String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+    if (pedido.status === "cancelado") {
+      return res.status(400).json({ message: "Este pedido ya está cancelado." });
+    }
+    if (pedido.status !== "pagado") {
+      return res.status(400).json({ message: YA_EN_PREPARACION });
+    }
+
+    const motivo = String(req.body.motivo || "").trim();
+    if (motivo.length < 4) {
+      return res.status(400).json({ message: "Cuéntenos por qué lo cancela: elija una opción." });
+    }
+
+    const r = await cambiarEstadoDePedido({
+      id: req.params.id,
+      status: "cancelado",
+      quien: "el cliente",
+      motivoCancelacion: motivo,
+      soloDesde: "pagado",
+      porCliente: true,
+    });
+    // 409: la tienda lo empezó a preparar entre que se abrió la pantalla y ahora.
+    if (!r.ok) return res.status(r.codigo).json({ message: r.codigo === 409 ? YA_EN_PREPARACION : r.message });
+
+    return res.status(200).json({ message: "Pedido cancelado", order: r.order });
+  } catch (error) {
+    console.log("error cancelarPorCliente: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 // INSERT — Crear un pedido de IMPRESIÓN (sube archivo + opciones).
 orderController.createPrintOrder = async (req, res) => {
   try {

@@ -96,10 +96,24 @@ export const estadosPedido = (oscuro) => (oscuro ? ESTADOS_PEDIDO_OSCURO : ESTAD
  * backend/src/utils/devolverPedido.js). La web tiene la misma función en
  * frontend/src/utils/pasosPedido.js: si cambia una, cambia la otra.
  */
-export const textoDevuelto = (pedido) => {
+/*
+ * De un pedido que devolvió el servidor al cancelarlo, solo el id, el estado
+ * y los sellos de la cancelación. El de la respuesta viene sin los productos
+ * poblados: mezclarlo entero dejaría el detalle sin fotos. Igual que en la web.
+ */
+export const sellosDeCancelacion = (pedido) => {
+  const sellos = {};
+  ['_id', 'status', 'cancelReason', 'cancelledAt', 'cancelledBy', 'cancelledByClient', 'reembolso'].forEach((k) => {
+    if (pedido?.[k] !== undefined) sellos[k] = pedido[k];
+  });
+  return sellos;
+};
+
+// `antes`: dicho antes de cancelar ("Le devolvemos…"), para avisar qué pasará.
+export const textoDevuelto = (pedido, { antes = false } = {}) => {
   const saldo = Number(pedido?.reembolso?.saldo) || 0;
   const puntos = Number(pedido?.reembolso?.puntos) || 0;
   const partes = [saldo > 0 ? `$${saldo.toFixed(2)} a su saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
     .filter(Boolean);
-  return partes.length ? `Le devolvimos ${partes.join(' y ')}.` : '';
+  return partes.length ? `${antes ? 'Le devolvemos' : 'Le devolvimos'} ${partes.join(' y ')}.` : '';
 };

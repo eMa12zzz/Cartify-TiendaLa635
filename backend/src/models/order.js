@@ -297,6 +297,12 @@ const orderSchema = new Schema({
     cancelledAt: { type: Date },
     cancelledBy: { type: String },
     cancelReason: { type: String, maxlength: 300 },
+    /*
+     * Lo canceló el propio cliente (mientras estaba por preparar). Cambia
+     * cómo se le cuenta: no es "tuvimos que cancelarlo" sino "usted lo
+     * canceló", y no se le manda aviso de algo que acaba de hacer él.
+     */
+    cancelledByClient: { type: Boolean },
     reembolso: {
         saldo: { type: Number },
         puntos: { type: Number },

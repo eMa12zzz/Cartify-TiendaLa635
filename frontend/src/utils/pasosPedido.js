@@ -75,6 +75,20 @@ export const indiceDePaso = (pasos, estado) => {
  * devolver (pagó en efectivo sin canjear puntos). Lo anota el servidor en
  * `reembolso` al cancelar; ver backend/src/utils/devolverPedido.js.
  */
+/*
+ * De un pedido que devolvió el servidor al cancelarlo, solo el estado y los
+ * sellos de la cancelación. Se mezclan sobre el pedido que ya está en
+ * pantalla en vez de reemplazarlo: el de la respuesta viene sin el cliente ni
+ * los productos poblados, y la tarjeta se quedaría sin nombres.
+ */
+export const sellosDeCancelacion = (pedido) => {
+  const sellos = {};
+  ['status', 'cancelReason', 'cancelledAt', 'cancelledBy', 'cancelledByClient', 'reembolso'].forEach((k) => {
+    if (pedido?.[k] !== undefined) sellos[k] = pedido[k];
+  });
+  return sellos;
+};
+
 export const textoDevuelto = (pedido) => {
   const saldo = Number(pedido?.reembolso?.saldo) || 0;
   const puntos = Number(pedido?.reembolso?.puntos) || 0;

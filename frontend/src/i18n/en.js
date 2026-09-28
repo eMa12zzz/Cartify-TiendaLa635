@@ -578,6 +578,27 @@ const EN = {
   // ── Menú de Mi Cuenta ──
   'Ver las secciones anteriores': 'See previous sections',
   'Ver más secciones': 'See more sections',
+
+  // ── El cliente cancela su pedido ──
+  'Me equivoqué en el pedido.': 'I made a mistake in my order.',
+  'Ya no lo necesito.': 'I don\'t need it anymore.',
+  'Quiero cambiar la dirección o la forma de pago.': 'I want to change the address or payment method.',
+  'Encontré lo que buscaba en otro lugar.': 'I found what I needed somewhere else.',
+  'Prefiero no decirlo.': 'I\'d rather not say.',
+  '{monto} a su saldo': '{monto} to your balance',
+  '{n} puntos': '{n} points',
+  'Le devolvemos {que}.': 'We\'ll return {que}.',
+  'y': 'and',
+  'Su pedido quedó cancelado.': 'Your order has been canceled.',
+  '¿Cancelar el pedido #{numero}?': 'Cancel order #{numero}?',
+  'Todavía no lo empezamos a preparar, así que se puede cancelar.': 'We haven\'t started preparing it yet, so it can still be canceled.',
+  '¿Por qué lo cancela?': 'Why are you canceling?',
+  'No, mantenerlo': 'No, keep it',
+  'Cancelando…': 'Canceling…',
+  'Sí, cancelar': 'Yes, cancel',
+  'Ya empezamos a preparar su pedido y no se puede cancelar desde aquí. Escríbanos por WhatsApp y lo vemos.': 'We\'ve already started preparing your order, so it can\'t be canceled here. Message us on WhatsApp and we\'ll sort it out.',
+  'Cuéntenos por qué lo cancela: elija una opción.': 'Tell us why you are canceling: choose an option.',
+  'Este pedido ya está cancelado.': 'This order is already canceled.',
 };
 
 export default EN;

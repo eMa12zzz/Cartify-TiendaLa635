@@ -139,7 +139,7 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
       {/* Cancelado: el motivo, en una o dos líneas; el detalle completo está al tocarlo. */}
       {esCancelado && !!pedido.cancelReason && (
         <Text style={estilos.motivo} numberOfLines={2}>
-          <Text style={estilos.motivoTitulo}>Motivo: </Text>
+          <Text style={estilos.motivoTitulo}>{pedido.cancelledByClient ? 'Lo canceló usted: ' : 'Motivo: '}</Text>
           {pedido.cancelReason}
         </Text>
       )}
@@ -171,7 +171,7 @@ const Pedidos = () => {
   // El detalle (ModalPedido) se pinta en un solo lugar para toda la app —
   // ver el comentario grande de `pedidoAbierto` en PedidoActivoContext.js —
   // así que aquí solo se pide abrirlo, no se dibuja.
-  const { abrirPedido } = usePedidoActivoCtx();
+  const { abrirPedido, ultimoCambio } = usePedidoActivoCtx();
 
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -222,6 +222,17 @@ const Pedidos = () => {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  /*
+   * Un pedido cambió desde el detalle (el cliente lo canceló): se pinta aquí
+   * también, sin volver a pedir la lista. Ver actualizarPedido en
+   * PedidoActivoContext. Se ajusta en el mismo render, sin un efecto de más.
+   */
+  const [cambioVisto, setCambioVisto] = useState(null);
+  if (ultimoCambio && ultimoCambio !== cambioVisto) {
+    setCambioVisto(ultimoCambio);
+    setPedidos((lista) => lista.map((p) => (String(p._id) === String(ultimoCambio._id) ? { ...p, ...ultimoCambio } : p)));
+  }
 
   return (
     <View style={estilos.pantalla}>
