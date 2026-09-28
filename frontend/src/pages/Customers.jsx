@@ -43,7 +43,7 @@ const Cifra = ({ icono: Icono, valor, etiqueta, ayuda }) => (
     style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)' }}
   >
     <div className="flex items-center gap-2 mb-1">
-      <Icono className="w-4 h-4" style={{ color: 'var(--theme-accent)' }} />
+      <Icono className="w-4 h-4" style={{ color: 'var(--theme-accent-text)' }} />
       <span className="text-[11px] font-bold uppercase tracking-wide"
             style={{ color: 'var(--theme-text-muted)' }}>
         {etiqueta}
@@ -157,7 +157,7 @@ const TarjetaCliente = ({ cliente, indice }) => {
           className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
           style={{
             backgroundColor: 'var(--theme-primary-light)',
-            color: cliente.puntos > 0 ? 'var(--theme-primary)' : 'var(--theme-text-muted)',
+            color: cliente.puntos > 0 ? 'var(--theme-primary)' : 'var(--theme-text-secondary)',
           }}
         >
           <Star className="w-3.5 h-3.5" />
@@ -224,8 +224,8 @@ const Customers = () => {
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
       <div className="flex items-center gap-3">
-        <UserSquare2 className="w-8 h-8" style={{ color: 'var(--theme-accent)' }} />
-        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>
+        <UserSquare2 className="w-8 h-8" style={{ color: 'var(--theme-accent-text)' }} />
+        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent-text)' }}>
           Clientes
         </h1>
       </div>

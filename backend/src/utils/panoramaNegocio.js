@@ -10,6 +10,7 @@ import promotionModel from "../models/promotion.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 import { estadoCuenta } from "./cuentaProveedor.js";
 import { DIAS_CADUCA, filtroStockBajo, inicioDelDia, numero } from "../controller/dashboardController.js";
+import { analizarVentas, olvidarConsejos } from "./consejosVentas.js";
 
 /*
  * ============================================================
@@ -24,7 +25,8 @@ import { DIAS_CADUCA, filtroStockBajo, inicioDelDia, numero } from "../controlle
  *   - las ventas de hoy, ayer, la semana y el mes, con su ganancia;
  *   - qué reponer, qué se agotó y qué caduca;
  *   - lo más vendido y lo que nadie compra;
- *   - y, solo para el administrador, clientes, proveedores y promociones.
+ *   - y, solo para el administrador, clientes, proveedores y promociones,
+ *     con cuánto deja cada promo y los consejos de ventas (consejosVentas.js).
  *
  * Los umbrales ("stock bajo", "caduca esta semana") y el "hoy" son los MISMOS
  * del dashboard (se importan de ahí): si Tiqui dijera un número y el
@@ -203,13 +205,15 @@ const armarPanorama = async ({ esAdmin }) => {
   if (!esAdmin) return lineas.join("\n");
 
   // ── Solo para el administrador ──
-  const [clientesTotal, clientesNuevos, proveedores, movimientos, promos, vendidosIds] = await Promise.all([
+  const [clientesTotal, clientesNuevos, proveedores, movimientos, promos, vendidosIds, ventas] = await Promise.all([
     clientModel.countDocuments({ isActive: { $ne: false } }),
     clientModel.countDocuments({ createdAt: { $gte: hace7 } }),
     supplierModel.find({}, "name").lean(),
     supplierMovementModel.find().lean(),
     promotionModel.find({}, "title etiqueta endsAt isActive").lean(),
     orderModel.distinct("items.productId", noCancelado),
+    // Cómo va cada promo y qué conviene hacer (ver utils/consejosVentas.js).
+    analizarVentas(),
   ]);
 
   // Lo que se puede prender, apagar o cambiar (ver tiquiPanelController).
@@ -259,6 +263,15 @@ const armarPanorama = async ({ esAdmin }) => {
     ...(promosApagadas.length
       ? [`PROMOCIONES APAGADAS O VENCIDAS: ${promosApagadas.map((p) => `${p.title || p.etiqueta || "Promoción"}${p.endsAt && new Date(p.endsAt) <= ahora ? ` (venció el ${fechaCorta(p.endsAt)})` : ""}`).join("; ")}.`]
       : []),
+    ...(ventas.resumenPromos.length
+      ? ["", "CÓMO VAN LAS PROMOCIONES QUE TOCAN EL PRECIO (precio al que sale cada unidad contra lo que cuesta):", ...ventas.resumenPromos]
+      : []),
+    "",
+    "CONSEJOS DE VENTAS (de lo más urgente a lo menos; las cuentas ya están hechas, úsalas tal cual):",
+    ...(ventas.consejos.length
+      ? ventas.consejos.map((c) => `- ${c.prioridad === 3 ? "[URGENTE] " : ""}${c.texto}`)
+      : ["- Nada que corregir: las promociones dejan ganancia y ningún producto se vende por debajo del costo."]),
+    `Margen típico de la tienda: ${Math.round(ventas.margenTipico * 100)}% (lo que deja un producto normal sobre su precio).`,
     "",
     ocultos.length ? `PRODUCTOS OCULTOS (no salen en la tienda): ${ocultos.map((p) => p.name).join(", ")}.` : "PRODUCTOS OCULTOS: ninguno.",
     "",
@@ -297,6 +310,7 @@ const describirTemporada = (temporada, lista) => {
 export const olvidarPanorama = () => {
   enMemoria.clear();
   catalogo = { en: 0, lista: null };
+  olvidarConsejos();
 };
 
 export const panoramaDelNegocio = async ({ esAdmin }) => {

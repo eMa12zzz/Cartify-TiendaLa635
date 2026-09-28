@@ -130,8 +130,8 @@ const Personalizacion = () => {
   return (
     <div className="flex flex-col gap-6 w-full pb-8 max-w-6xl">
       <div className="flex items-center gap-3">
-        <Palette className="w-8 h-8" style={{ color: 'var(--theme-accent)' }} />
-        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent)' }}>
+        <Palette className="w-8 h-8" style={{ color: 'var(--theme-accent-text)' }} />
+        <h1 className="text-4xl font-extrabold" style={{ color: 'var(--theme-accent-text)' }}>
           Personalización
         </h1>
       </div>

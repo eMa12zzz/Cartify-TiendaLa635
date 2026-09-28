@@ -290,9 +290,20 @@ export const useTiquiPanel = () => {
   const prepararServidor = () => {
     if (despiertaRef.current) return;
     despiertaRef.current = true;
-    tiquiPanelService.despertar().then(({ voz }) => {
+    tiquiPanelService.despertar().then(({ voz, consejo }) => {
       vozTiquiRef.current = voz;
       setVozTiqui(voz);
+      /*
+       * El consejo de ventas (solo al administrador, y solo si hay algo que lo
+       * amerite: una promo que deja pérdida, algo que caduca). Va como lo
+       * primero que dice Tiqui, en lugar del saludo, y queda en la charla para
+       * que un "sí, ajústala" sepa de qué se habla. Sin voz: al abrirla ya
+       * está escuchando, y hablar encima cortaría a quien empezó a decir algo.
+       */
+      if (consejo && !memoriaRef.current.length) {
+        memoriaRef.current = [{ quien: 'tiqui', texto: consejo }];
+        setMensajes([{ id: idRef.current++, quien: 'tiqui', texto: consejo }]);
+      }
     });
   };
 
