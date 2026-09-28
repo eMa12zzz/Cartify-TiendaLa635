@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect, useSyncExternalStore } from '
 import { aiService } from '../api/aiService';
 import { decirConTiqui, callarTiqui, paraDecir } from '../utils/vozTiqui';
 import { cantidadParaDecir } from '../utils/unidades';
+import { conNombreAVeces } from '../utils/nombreTiqui';
 
 /*
  * useVoiceAssistant — el "cerebro" de Tiqui, el asistente por voz (Modo Kiosco).
@@ -327,6 +328,9 @@ export const useVoiceAssistant = ({
   // Qué hacer cuando la persona confirma la compra. Lo pone quien monta el
   // asistente, porque de eso dependen el pedido y los puntos.
   alConfirmarCompra,
+  // El primer nombre del cliente con sesión, para que Tiqui lo use de vez en
+  // cuando en lo que se ve. Nunca viaja a la IA ni a la voz: ver nombreTiqui.js.
+  nombreCliente = '',
 }) => {
   const [activo, setActivo] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
@@ -398,10 +402,20 @@ export const useVoiceAssistant = ({
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   // Agrega un mensaje al historial (limita a los últimos 8).
-  const registrar = (tipo, texto) => {
+  /*
+   * `visible` es lo que se pinta en la burbuja cuando no es igual a lo dicho
+   * (Tiqui con el nombre del cliente). La memoria, que viaja a la IA, guarda
+   * siempre `texto`: el nombre no sale del navegador. Ver nombreTiqui.js.
+   */
+  const registrar = (tipo, texto, visible = texto) => {
     memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
-    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto }]);
+    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto: visible }]);
   };
+
+  // Cuántas veces ha contestado Tiqui en esta charla y cuándo usó el nombre.
+  const nombreRef = useRef(nombreCliente);
+  useEffect(() => { nombreRef.current = nombreCliente; }, [nombreCliente]);
+  const usoDelNombreRef = useRef({});
 
   /*
    * Al abrir: despierta el servidor (Render lo duerme) y pregunta si tiene la
@@ -517,7 +531,8 @@ export const useVoiceAssistant = ({
 
   const hablar = useCallback((texto) => {
     ultimaRespuestaRef.current = texto;
-    registrar('bot', texto);
+    // Con el nombre, a veces, solo en la burbuja; la voz dice `texto` tal cual.
+    registrar('bot', texto, conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current));
 
     const continuar = () => {
       hablandoRef.current = false;

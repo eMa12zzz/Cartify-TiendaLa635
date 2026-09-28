@@ -20,6 +20,8 @@ import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
 import { useAsistenteVoz } from '../hooks/useAsistenteVoz';
+import { useAuth } from '../hooks/useAuth';
+import { primerNombre } from '../utils/nombreTiqui';
 import { navegarA } from '../navigation/navigationRef';
 import ModalProducto from '../components/Tienda/ModalProducto';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../components/UI/BarraInferior';
@@ -32,6 +34,15 @@ const Asistente = () => {
   const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
   // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
   const [productoAbierto, setProductoAbierto] = useState(null);
+
+  /*
+   * La bienvenida escrita saluda por el nombre más o menos la mitad de las
+   * veces que se entra: siempre igual se vuelve fórmula. Solo en lo que se
+   * ve (ver nombreTiqui.js).
+   */
+  const { user } = useAuth();
+  const nombre = user?.type === 'client' ? primerNombre(user?.fullName) : '';
+  const [saludaConNombre] = useState(() => Math.random() < 0.5);
 
   const {
     activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
@@ -140,6 +151,7 @@ const Asistente = () => {
 
         {historial.length === 0 ? (
           <Text style={estilos.bajada}>
+            {saludaConNombre && nombre ? `¡Hola, ${nombre}! ` : ''}
             Tócala y dile, por ejemplo: "quiero dos manzanas y una leche" o "¿qué ofertas hay?".
           </Text>
         ) : (
