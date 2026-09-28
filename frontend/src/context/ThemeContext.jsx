@@ -13,6 +13,7 @@ import { createContext, useContext, useState, useEffect, useMemo } from 'react';
  * 5. Calma — colores apagados y fondo marfil, sin blanco puro ni tonos
  *    intensos: para quien se cansa o se abruma con la pantalla (la pidió la
  *    tienda para un administrador en recuperación neurológica). Ver abajo.
+ * 6. Calma noche — su contraparte oscura, carbón tibio y letras blanco hueso.
  *
  * ── Lo que se lee tiene que leerse (medido, 2026-09-27) ──
  * Se recorrió el panel con cada paleta midiendo el contraste de cada texto
@@ -191,6 +192,44 @@ export const palettes = [
       exito: '#4A7553',
     },
     swatches: ['#4E7282', '#7FA08F', '#F4F1EA', '#FBF9F4', '#3E444D'],
+  },
+  /*
+   * CALMA NOCHE — la contraparte oscura de Calma, como Modo oscuro lo es de
+   * las claras: para quien necesita la misma tranquilidad con poca luz o a
+   * quien el fondo claro le molesta.
+   *   - Nada de negro puro: un carbón tibio. El blanco sobre negro puro hace
+   *     un halo alrededor de las letras que cansa la vista.
+   *   - Letras blanco hueso, no blanco brillante: 10 a 12 a 1 de contraste,
+   *     de sobra para leer sin el 21 a 1 que encandila.
+   *   - Los mismos azul verdoso y salvia de Calma, aclarados y apagados, con
+   *     el texto de los botones oscuro (7 a 1).
+   */
+  {
+    id: 'calma-noche',
+    name: 'Calma noche',
+    description: 'Colores suaves · Poca luz',
+    colors: {
+      primary: '#8FB3C0',
+      primaryHover: '#A5C3CE',
+      primaryLight: 'rgba(143, 179, 192, 0.14)',
+      accent: '#9DBBA9',
+      accentText: '#9DBBA9',
+      buttonText: '#1F2226',
+      sidebarBg: '#1B1E21',
+      sidebarText: '#D5D1C8',
+      sidebarBorder: '#30353B',
+      topbarBg: '#23272B',
+      mainBg: '#1F2226',
+      cardBg: '#282C31',
+      cardBorder: '#363B42',
+      textPrimary: '#E4E0D8',
+      textSecondary: '#C2BDB3',
+      textMuted: '#A7A298',
+      peligro: '#E3A69C',
+      aviso: '#D9BF86',
+      exito: '#A9CBA6',
+    },
+    swatches: ['#8FB3C0', '#9DBBA9', '#1F2226', '#282C31', '#E4E0D8'],
   },
 ];
 

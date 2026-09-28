@@ -67,6 +67,7 @@ import GiftCards from './pages/GiftCards';
 import ServiciosImpresion from './pages/ServiciosImpresion';
 import Personalizacion from './pages/Personalizacion';
 import AccountSettings from './pages/AccountSettings';
+import AyudaPanel from './pages/AyudaPanel';     // Cómo funciona cada apartado del panel
 
 // --- Área "Mi Cuenta" del cliente ---
 import ClienteLayout from './components/Layout/ClienteLayout';
@@ -290,6 +291,8 @@ function App() {
               <Route path="/dashboard"   element={<AdminDashboard />} />
               <Route path="/pedidos"     element={<Orders />} />
               <Route path="/cuenta"      element={<AccountSettings />} />
+              {/* La ayuda: cada quien ve la de lo que puede usar. Ver AyudaPanel. */}
+              <Route path="/ayuda"       element={<AyudaPanel />} />
 
               {/*
                 soloAdmin: un empleado con sesión de personal válida no pasa de

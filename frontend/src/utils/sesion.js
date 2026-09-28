@@ -57,6 +57,7 @@ export const RUTAS_DEL_PANEL = [
   '/tarjetas',
   '/personalizacion',
   '/cuenta',
+  '/ayuda',
 ];
 
 export const areaDeRuta = (pathname = '') =>
