@@ -4,6 +4,7 @@ import employeeModel from "../models/employee.js";
 import { getIA, generarConCobertura } from "../utils/iaClient.js";
 import { comprobarVoz } from "../utils/vozTiqui.js";
 import { panoramaDelNegocio, productosDeLaCharla } from "../utils/panoramaNegocio.js";
+import { consejoPrincipal } from "../utils/consejosVentas.js";
 import {
   CAMBIOS_ADMIN, CAMBIOS_EMPLEADO, ESTADOS_DESTINO, aplicarCambio, firmarPropuesta, leerPropuesta, proponerCambio,
 } from "../utils/cambiosTiqui.js";
@@ -123,15 +124,21 @@ const herramientasDe = (esAdmin) => [
             codigo_entrega: { type: Type.STRING, description: "Para entregar: los 4 dígitos que dijo el cliente. Vacío si no lo dijeron." },
             ...(esAdmin
               ? {
-                  producto: { type: Type.STRING, description: "Para existencias, precio, mostrar u ocultar: el nombre EXACTO del producto." },
+                  producto: {
+                    type: Type.STRING,
+                    description: "Para existencias, precio, mostrar u ocultar: el nombre EXACTO del producto. En precio_promocion, solo si el cambio es para UN producto de la promo; vacío = toda la promo.",
+                  },
                   cantidad: { type: Type.NUMBER, description: "Para existencias: cuántas unidades (o libras)." },
                   modo: {
                     type: Type.STRING,
                     enum: ["fijar", "sumar", "restar"],
                     description: "Para existencias: fijar ('déjalo en 40'), sumar ('llegaron 20') o restar ('se dañaron 3').",
                   },
-                  precio: { type: Type.NUMBER, description: "Para precio: el precio nuevo en dólares." },
-                  promocion: { type: Type.STRING, description: "Para activar o desactivar: el nombre EXACTO de la promoción." },
+                  precio: { type: Type.NUMBER, description: "Para precio (del producto) o para precio_promocion de una promo de precio fijo: el precio nuevo en dólares." },
+                  promocion: { type: Type.STRING, description: "Para activar, desactivar o precio_promocion: el nombre EXACTO de la promoción." },
+                  descuento: { type: Type.NUMBER, description: "Para precio_promocion de una promo de descuento: el porcentaje nuevo (20 = 20%)." },
+                  lleva: { type: Type.NUMBER, description: "Para precio_promocion de una promo NxM: cuántos lleva (el 3 de un 3x2)." },
+                  paga: { type: Type.NUMBER, description: "Para precio_promocion de una promo NxM: cuántos paga (el 2 de un 3x2)." },
                   temporada: { type: Type.STRING, description: "Para temporada: la clave de la lista (navidad, halloween…), automatica o ninguna." },
                 }
               : {}),
@@ -182,8 +189,29 @@ const instrucciones = ({ esAdmin, nombre }) => [
   "  pedidos por su número: #A1B2C3.",
   "- Si piden un resumen ('¿cómo vamos?', 'buenos días', 'resumen del día'): ventas de hoy",
   "  contra ayer, pedidos que esperan y lo más urgente (un pedido viejo sin preparar, algo",
-  "  agotado, una deuda vencida, algo que caduca).",
+  esAdmin
+    ? "  agotado, una deuda vencida, algo que caduca, una promoción que deja pérdida)."
+    : "  agotado, algo que caduca).",
   "",
+  ...(esAdmin
+    ? [
+        "AYUDANTE DE VENTAS:",
+        "- Además de contar los números, ayudas a vender mejor. En 'CONSEJOS DE VENTAS' te paso lo",
+        "  que conviene revisar, ya calculado: promociones que dejan pérdida o no venden, productos",
+        "  vendidos por debajo del costo, lo que caduca y lo que no se mueve. En 'CÓMO VAN LAS",
+        "  PROMOCIONES' está a cuánto sale cada producto con la promo y lo que cuesta.",
+        "- Si te preguntan qué recomiendas, cómo van las promociones, cómo vender más o si algo",
+        "  conviene: da el consejo más importante con sus números y lo que harías, como una buena",
+        "  gerente de ventas: 'El 2x1 de Coca deja pérdida: cada una sale a $0.50 y cuesta $0.70.",
+        "  Un 3x2 todavía deja 10%. ¿Lo cambio?'.",
+        "- Los consejos marcados [URGENTE] (algo que deja pérdida) los mencionas también en un",
+        "  resumen del día, aunque no te pregunten por promociones.",
+        "- Usa SOLO las cuentas que te paso; no calcules porcentajes ni precios por tu cuenta.",
+        "- Si te dice que sí a un ajuste que sugeriste, propón el cambio con 'precio_promocion' (o",
+        "  'precio' si es el precio de un producto) con los números que sugeriste.",
+        "",
+      ]
+    : []),
   "DE DÓNDE SACAS LOS DATOS:",
   "- SOLO del panorama del negocio y de los productos que te paso. Nunca inventes cifras,",
   "  pedidos, productos ni nombres. Si te preguntan algo que no está ahí, dilo y ofrece abrir",
@@ -207,7 +235,7 @@ const instrucciones = ({ esAdmin, nombre }) => [
   "",
   "CAMBIAR COSAS (en 'cambio', solo si te lo PIDEN):",
   esAdmin
-    ? "- Puedes mover pedidos de estado, cambiar existencias o precios, mostrar u ocultar productos, encender o apagar promociones y cambiar la temporada de la tienda."
+    ? "- Puedes mover pedidos de estado, cambiar existencias o precios, mostrar u ocultar productos, encender o apagar promociones, ajustar el precio de una promoción ('precio_promocion': el % de un descuento, el precio de un precio fijo o el NxM de un 2x1, sin cambiarle el tipo) y cambiar la temporada de la tienda."
     : "- Puedes mover pedidos de estado. Lo demás (precios, existencias, promociones) es del administrador.",
   "- Tú solo PROPONES: la tienda le pregunta a la persona si lo confirma y lo hace ella. Nunca",
   "  digas que ya lo hiciste. Usa los nombres y números EXACTOS de las listas.",
@@ -416,14 +444,25 @@ tiquiPanelController.confirmar = async (req, res) => {
  * GET /api/tiqui-panel/listo
  * Se toca al despertarla: despierta el servidor (Render lo duerme), deja el
  * panorama armado para la primera pregunta y dice si hay voz de Tiqui.
+ *
+ * Al administrador, además, `consejo`: lo más importante que Tiqui ve para
+ * vender mejor (una promo que deja pérdida, algo que caduca). Lo muestra en
+ * vez del saludo: una ayudante de ventas no espera a que le pregunten si se
+ * está perdiendo plata. Vacío si no hay nada que lo amerite.
  */
 tiquiPanelController.listo = async (req, res) => {
+  const esAdmin = req.usuario.tipo === "Admin";
+  let consejo = "";
   try {
-    await panoramaDelNegocio({ esAdmin: req.usuario.tipo === "Admin" });
+    const [, principal] = await Promise.all([
+      panoramaDelNegocio({ esAdmin }),
+      esAdmin ? consejoPrincipal() : Promise.resolve(""),
+    ]);
+    consejo = principal;
   } catch {
     // Si la base tarda, igual se contesta: el objetivo era despertar el servidor.
   }
-  return res.status(200).json({ listo: true, voz: await comprobarVoz() });
+  return res.status(200).json({ listo: true, voz: await comprobarVoz(), consejo });
 };
 
 export default tiquiPanelController;

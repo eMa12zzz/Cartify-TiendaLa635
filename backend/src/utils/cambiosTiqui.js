@@ -8,6 +8,7 @@ import { cambiarEstadoDePedido } from "./estadoPedido.js";
 import { codigoCoincide } from "./codigoEntrega.js";
 import { avisarPromoNuevaEnSegundoPlano } from "./avisoPromo.js";
 import { codigoDePedido, olvidarPanorama, temporadasDisponibles } from "./panoramaNegocio.js";
+import { describirOferta, nombreDePromo, precioEnPromo } from "./consejosVentas.js";
 
 /*
  * ============================================================
@@ -36,7 +37,7 @@ import { codigoDePedido, olvidarPanorama, temporadasDisponibles } from "./panora
 
 export const CAMBIOS_ADMIN = [
   "estado_pedido", "existencias", "precio", "mostrar_producto", "ocultar_producto",
-  "activar_promocion", "desactivar_promocion", "temporada",
+  "activar_promocion", "desactivar_promocion", "precio_promocion", "temporada",
 ];
 export const CAMBIOS_EMPLEADO = ["estado_pedido"];
 
@@ -88,6 +89,54 @@ const buscarPromo = async (titulo) => {
 };
 
 const nombreCliente = (pedido) => String(pedido.clientId?.fullName || "").trim().split(/\s+/)[0] || "";
+
+/*
+ * ── Ajustar el precio de una promoción ──
+ * Lo que Tiqui sugiere como ayudante de ventas ("con 20% todavía deja 10%")
+ * se puede hacer aquí, dentro del MISMO tipo de promo: el descuento de un
+ * descuento, el precio de un precio fijo o el NxM de un NxM. Cambiar un 2x1
+ * por un descuento es otra promoción (otro sello, otro banner): eso se hace
+ * en la pantalla de Promociones.
+ *
+ * `producto` es opcional: sin él, el cambio va para todos los productos de la
+ * promo; con él, solo para ese.
+ */
+const promoParaAjustar = async (titulo) => {
+  const { promo, error } = await buscarPromo(titulo);
+  if (error) return { error };
+  const completa = await promotionModel.findById(promo._id)
+    .populate("items.productId", "name salePrice priceCost unidadVenta");
+  return { promo: completa };
+};
+
+const itemsElegidos = (promo, nombreProducto) => {
+  const items = (promo.items || []).filter((i) => i.productId?._id);
+  if (!nombreProducto) return { items };
+  const buscado = aPlano(nombreProducto);
+  const elegidos = items.filter((i) => aPlano(i.productId.name) === buscado);
+  if (!elegidos.length) return { error: `${nombreProducto} no está en la promoción ${nombreDePromo(promo)}.` };
+  return { items: elegidos };
+};
+
+// Cómo queda cada producto con el valor nuevo: a cuánto sale y cuánto deja.
+const comoQueda = (promo, items, nuevo) => {
+  const simulada = { ...promo.toObject(), ...(nuevo.lleva ? { buyQty: nuevo.lleva, payQty: nuevo.paga } : {}) };
+  const filas = items.map((i) => {
+    const item = { ...i.toObject(), ...(nuevo.descuento != null ? { discount: nuevo.descuento } : {}), ...(nuevo.precio != null ? { fixedPrice: nuevo.precio } : {}) };
+    const efectivo = precioEnPromo(simulada, item, i.productId);
+    const costo = Number(i.productId.priceCost) || 0;
+    return { nombre: i.productId.name, efectivo, costo, ganancia: efectivo - costo };
+  });
+  if (filas.length === 1) {
+    const f = filas[0];
+    return ` ${f.nombre} quedaría a ${plata(f.efectivo)}` +
+      (f.costo ? (f.ganancia >= 0 ? ` y deja ${plata(f.ganancia)} por unidad.` : `, todavía ${plata(-f.ganancia)} por debajo de lo que cuesta.`) : ".");
+  }
+  const cortos = filas.filter((f) => f.costo && f.ganancia < 0);
+  return cortos.length
+    ? ` Ojo: ${cortos.map((f) => f.nombre).slice(0, 2).join(" y ")} seguiría${cortos.length === 1 ? "" : "n"} por debajo del costo.`
+    : " Con eso ninguno queda por debajo de lo que cuesta.";
+};
 
 /*
  * Revisa que el cambio tenga sentido con lo que hay AHORA y lo describe.
@@ -214,6 +263,59 @@ export const proponerCambio = async (args, { esAdmin }) => {
       };
     }
 
+    case "precio_promocion": {
+      const { promo, error } = await promoParaAjustar(args.promocion);
+      if (error) return { ok: false, mensaje: error };
+      const nombre = nombreDePromo(promo);
+      if (!["descuento", "precio_fijo", "nxm"].includes(promo.type)) {
+        return { ok: false, mensaje: `${nombre} es un anuncio: no tiene precio que cambiar.` };
+      }
+      const elegidos = itemsElegidos(promo, args.producto);
+      if (elegidos.error) return { ok: false, mensaje: elegidos.error };
+      const { items } = elegidos;
+      if (!items.length) return { ok: false, mensaje: `${nombre} no tiene productos. Agrégaselos en Promociones.` };
+      const productoIds = args.producto ? items.map((i) => String(i.productId._id)) : null;
+      const para = args.producto ? ` para ${items[0].productId.name}` : "";
+
+      if (promo.type === "descuento") {
+        const descuento = Math.round(Number(args.descuento));
+        if (!(descuento >= 1 && descuento <= 95)) {
+          return { ok: false, mensaje: `${nombre} es un descuento: dime de cuánto por ciento lo dejo.` };
+        }
+        const antes = describirOferta(promo, items[0]).replace(" de descuento", "");
+        return {
+          ok: true,
+          cambio: { tipo, promoId: String(promo._id), productoIds, descuento },
+          resumen: `Cambio el descuento de ${nombre}${para} de ${antes} a ${descuento}%.` + comoQueda(promo, items, { descuento }),
+        };
+      }
+      if (promo.type === "precio_fijo") {
+        const precio = Math.round(Number(args.precio) * 100) / 100;
+        if (!(precio > 0) || precio > 100000) {
+          return { ok: false, mensaje: `${nombre} es de precio fijo: dime a cuánto la dejo.` };
+        }
+        return {
+          ok: true,
+          cambio: { tipo, promoId: String(promo._id), productoIds, precio },
+          resumen: `Cambio el precio de ${nombre}${para} de ${plata(items[0].fixedPrice)} a ${plata(precio)}.` + comoQueda(promo, items, { precio }),
+        };
+      }
+      // NxM: lleva N, paga M. Se cambia para toda la promo (es un solo sello).
+      const lleva = Math.round(Number(args.lleva));
+      const paga = Math.round(Number(args.paga));
+      if (!(lleva >= 2 && lleva <= 10 && paga >= 1 && paga < lleva)) {
+        return { ok: false, mensaje: `${nombre} es un ${describirOferta(promo)}: dime cuántos lleva y cuántos paga, por ejemplo 3x2.` };
+      }
+      if (lleva === Number(promo.buyQty) && paga === Number(promo.payQty)) {
+        return { ok: false, mensaje: `${nombre} ya es un ${lleva}x${paga}.` };
+      }
+      return {
+        ok: true,
+        cambio: { tipo, promoId: String(promo._id), productoIds: null, lleva, paga },
+        resumen: `Cambio ${nombre} de ${describirOferta(promo)} a ${lleva}x${paga}.` + comoQueda(promo, items, { lleva, paga }),
+      };
+    }
+
     case "temporada": {
       const ajustes = await storeSettingsModel.findOne({ clave: CLAVE_UNICA }, "temporada").lean();
       const lista = temporadasDisponibles(ajustes?.temporada);
@@ -337,6 +439,51 @@ export const aplicarCambio = async (cambio, { esAdmin, nombre }) => {
        */
       if (cambio.activa && !promo.avisoEnviadoEn) avisarPromoNuevaEnSegundoPlano(String(promo._id));
       mensaje = `Listo, la promoción ${promo.title || promo.etiqueta} quedó ${cambio.activa ? "encendida" : "apagada"}.`;
+      break;
+    }
+
+    case "precio_promocion": {
+      const promo = await promotionModel.findById(cambio.promoId);
+      if (!promo) return { ok: false, mensaje: "Esa promoción ya no existe." };
+      const nombre = nombreDePromo(promo);
+      const toca = (item) => !cambio.productoIds || cambio.productoIds.includes(String(item.productId));
+      const textos = ["title", "promoDescription"];
+      /*
+       * El título y la descripción los escribió el dueño y a veces traen el
+       * número ("2x1 en Coca", "-40% en lácteos"). Si quedaran con el viejo,
+       * la tarjeta diría una cosa y cobraría otra: se cambia el número ahí
+       * también, solo cuando el cambio es para toda la promo.
+       */
+      const reemplazar = (de, a) => {
+        if (cambio.productoIds) return;
+        for (const campo of textos) {
+          if (typeof promo[campo] === "string" && promo[campo].includes(de)) promo[campo] = promo[campo].split(de).join(a);
+        }
+      };
+
+      if (cambio.descuento != null) {
+        if (promo.type !== "descuento") return { ok: false, mensaje: `${nombre} ya no es un descuento. Revísala en Promociones.` };
+        const anteriores = new Set(promo.items.filter(toca).map((i) => Number(i.discount) || 0));
+        promo.items.forEach((i) => { if (toca(i)) i.discount = cambio.descuento; });
+        if (anteriores.size === 1) reemplazar(`${[...anteriores][0]}%`, `${cambio.descuento}%`);
+        mensaje = `Listo, ${nombre} quedó con ${cambio.descuento}% de descuento.`;
+      } else if (cambio.precio != null) {
+        if (promo.type !== "precio_fijo") return { ok: false, mensaje: `${nombre} ya no es de precio fijo. Revísala en Promociones.` };
+        const anteriores = new Set(promo.items.filter(toca).map((i) => Number(i.fixedPrice) || 0));
+        promo.items.forEach((i) => { if (toca(i)) i.fixedPrice = cambio.precio; });
+        if (anteriores.size === 1) reemplazar(plata([...anteriores][0]), plata(cambio.precio));
+        mensaje = `Listo, ${nombre} quedó a ${plata(cambio.precio)}.`;
+      } else {
+        if (promo.type !== "nxm") return { ok: false, mensaje: `${nombre} ya no es un NxM. Revísala en Promociones.` };
+        const antes = `${Number(promo.buyQty) || 2}x${Number(promo.payQty) || 1}`;
+        promo.buyQty = cambio.lleva;
+        promo.payQty = cambio.paga;
+        reemplazar(antes, `${cambio.lleva}x${cambio.paga}`);
+        reemplazar(antes.replace("x", "X"), `${cambio.lleva}X${cambio.paga}`);
+        mensaje = `Listo, ${nombre} ahora es un ${cambio.lleva}x${cambio.paga}.`;
+      }
+      promo.markModified("items");
+      await promo.save();
       break;
     }
 

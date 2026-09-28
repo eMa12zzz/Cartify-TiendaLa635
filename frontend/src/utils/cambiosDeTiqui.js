@@ -17,7 +17,7 @@ const EVENTO = 'tiqui-panel:cambio';
 
 export const TIPOS_PEDIDOS = ['estado_pedido'];
 export const TIPOS_INVENTARIO = ['existencias', 'precio', 'mostrar_producto', 'ocultar_producto'];
-export const TIPOS_PROMOCIONES = ['activar_promocion', 'desactivar_promocion'];
+export const TIPOS_PROMOCIONES = ['activar_promocion', 'desactivar_promocion', 'precio_promocion'];
 export const TIPOS_AJUSTES = ['temporada'];
 
 export const avisarCambioDeTiqui = (tipo) => {
