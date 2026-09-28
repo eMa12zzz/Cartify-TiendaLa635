@@ -53,6 +53,7 @@ const SECCIONES = {
   dashboard: { ruta: "/dashboard", nombre: "el dashboard" },
   pedidos: { ruta: "/pedidos", nombre: "los pedidos" },
   cuenta: { ruta: "/cuenta", nombre: "tu cuenta" },
+  ayuda: { ruta: "/ayuda", nombre: "la ayuda" },
   inventario: { ruta: "/inventario", nombre: "el inventario", soloAdmin: true },
   categorias: { ruta: "/categorias", nombre: "las categorías", soloAdmin: true },
   marcas: { ruta: "/marcas", nombre: "las marcas", soloAdmin: true },
@@ -66,6 +67,22 @@ const SECCIONES = {
   empleados: { ruta: "/empleados", nombre: "los empleados", soloAdmin: true },
   proveedores: { ruta: "/proveedores", nombre: "los proveedores", soloAdmin: true },
 };
+
+/*
+ * Los temas de la ayuda del panel (frontend/src/utils/ayudaPanel.js, mismas
+ * claves): "¿cómo se usa el inventario?" abre /ayuda?tema=inventario. Si allá
+ * se agrega un tema, se agrega aquí.
+ */
+const TEMAS_AYUDA = [
+  "primeros-pasos", "tiqui", "dashboard", "pedidos", "inventario", "categorias", "marcas", "modulos",
+  "impresiones", "promociones", "fidelidad", "tarjetas", "personalizacion", "clientes", "empleados",
+  "proveedores", "cuenta",
+];
+// Los que el empleado no ve (sus pantallas son del administrador).
+const TEMAS_AYUDA_ADMIN = [
+  "inventario", "categorias", "marcas", "modulos", "impresiones", "promociones", "fidelidad", "tarjetas",
+  "personalizacion", "clientes", "empleados", "proveedores",
+];
 
 const seccionesDe = (esAdmin) =>
   Object.keys(SECCIONES).filter((k) => esAdmin || !SECCIONES[k].soloAdmin);
@@ -105,9 +122,10 @@ const herramientasDe = (esAdmin) => [
             },
             buscar: {
               type: Type.STRING,
-              description: esAdmin
+              description: (esAdmin
                 ? "Solo si abrir = pedidos (nombre del cliente o número sin #) o inventario (el producto, como en un buscador: 'leche')."
-                : "Solo si abrir = pedidos: nombre del cliente o número del pedido sin #.",
+                : "Solo si abrir = pedidos: nombre del cliente o número del pedido sin #.") +
+                ` Si abrir = ayuda: el tema, uno de ${TEMAS_AYUDA.filter((t) => esAdmin || !TEMAS_AYUDA_ADMIN.includes(t)).join(", ")}.`,
             },
             // ── Lo que pide cambiar (se propone; la tienda pide confirmación) ──
             cambio: {
@@ -163,6 +181,11 @@ const accionDe = ({ abrir, estado_pedidos: estadoPedidos, buscar }, esAdmin) => 
   }
   if (abrir === "inventario" && texto) {
     return { tipo: "ir", ruta: `/inventario?${new URLSearchParams({ buscar: texto })}`, que: `${texto} en el inventario` };
+  }
+  // La ayuda, abierta en el tema de la pantalla por la que preguntaron.
+  if (abrir === "ayuda") {
+    const tema = TEMAS_AYUDA.includes(texto) && (esAdmin || !TEMAS_AYUDA_ADMIN.includes(texto)) ? texto : "primeros-pasos";
+    return { tipo: "ir", ruta: `/ayuda?${new URLSearchParams({ tema })}`, que: "la ayuda" };
   }
   return { tipo: "ir", ruta: s.ruta, que: s.nombre };
 };
@@ -232,6 +255,9 @@ const instrucciones = ({ esAdmin, nombre }) => [
   "  ('¿cómo vamos?', '¿cuánto vendimos?', '¿cuánta leche queda?') se contesta hablando,",
   "  sin abrir nada.",
   "- Si abres algo, dilo en el texto ('te abro los pedidos por preparar').",
+  "- Si preguntan cómo se usa una pantalla o dónde se hace algo ('¿cómo creo una promoción?',",
+  "  '¿dónde cambio el envío?'): explícalo en una o dos frases y abre la ayuda en ese tema",
+  "  (abrir = ayuda, buscar = el tema) diciendo 'te abro la ayuda con los pasos'.",
   "",
   "CAMBIAR COSAS (en 'cambio', solo si te lo PIDEN):",
   esAdmin
@@ -285,6 +311,7 @@ const PANTALLAS = {
   "/categorias": "Categorías", "/marcas": "Marcas", "/modulos": "Módulos", "/servicios-impresion": "Impresiones",
   "/promociones": "Promociones", "/fidelidad": "Fidelidad", "/tarjetas": "Tarjetas de regalo",
   "/personalizacion": "Personalización", "/clientes": "Clientes", "/empleados": "Empleados", "/proveedores": "Proveedores",
+  "/ayuda": "Ayuda",
 };
 
 const armarPregunta = ({ frase, charla, panorama, productos, pantalla }) => {

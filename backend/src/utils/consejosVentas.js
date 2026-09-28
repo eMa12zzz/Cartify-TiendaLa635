@@ -154,6 +154,25 @@ export const analizarVentas = async () => {
   const consejos = [];
   const resumenPromos = [];
 
+  /*
+   * ── Promociones huérfanas ──
+   * Encendidas, pero su producto ya no existe (se borró y se volvió a crear
+   * con otro id, por ejemplo). En la tienda siguen anunciando "a $4.50" y no
+   * le rebajan nada a nadie, y el aviso a los clientes ni sale. Nadie lo nota
+   * hasta que un cliente reclama el precio del banner.
+   */
+  for (const promo of promos.filter((p) => vigente(p, ahora) && (p.items || []).length)) {
+    if ((promo.items || []).some((i) => i.productId?._id)) continue;
+    consejos.push({
+      prioridad: 2,
+      impacto: 1,
+      texto:
+        `La promoción ${nombreDePromo(promo)} está encendida, pero sus productos ya no existen en el inventario: ` +
+        "en la tienda se anuncia y no rebaja nada. Vuelve a agregarle los productos en Promociones, o apágala.",
+      accion: "",
+    });
+  }
+
   // ── Las promociones vigentes que tocan el precio ──
   for (const promo of promosPrecio) {
     const items = (promo.items || []).filter((i) => i.productId?._id);
