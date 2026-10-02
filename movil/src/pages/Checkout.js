@@ -8,7 +8,8 @@
  *
  * Trae las mismas cuatro decisiones que la web, en el mismo orden:
  *
- *   1. Retiro en el local o envío a domicilio (+$4.78, y solo si es a domicilio)
+ *   1. Retiro en el local o envío a domicilio (cobrado por distancia, y solo
+ *      si es a domicilio; más allá de la zona de entrega no se acepta)
  *   2. A qué dirección — elegida de las guardadas, o escrita aquí mismo
  *   3. Efectivo, tarjeta o saldo
  *   4. Si usa sus puntos, que no son un método de pago sino un descuento
@@ -31,7 +32,10 @@
  * puntos quiere canjear, y él vuelve a sumar. Es a propósito: un total que sale
  * del teléfono es un total que se puede editar por el camino. Si las dos cuentas
  * discreparan, manda la del servidor — y esta pantalla usa las MISMAS funciones
- * (`totalDeLinea`) que el carrito, para que no discrepen.
+ * (`totalDeLinea`) que el carrito, para que no discrepen. Por eso mismo el
+ * envío y la tarifa de servicio salen de copias de las cuentas del servidor
+ * (utils/envio.js y utils/servicio.js) con los ajustes de la tienda, y no de
+ * un número escrito aquí.
  * ============================================================
  */
 
@@ -47,7 +51,7 @@ import {
 import { CargandoMascota } from '../components/Tiqui/Mascota';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, Clock, CreditCard, Gift, MapPin, Package, Store as Tienda, Wallet } from 'lucide-react-native';
+import { Check, Clock, CreditCard, Gift, MapPin, Package, Store as Tienda, TriangleAlert, Wallet } from 'lucide-react-native';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { ALTURA_ESTADO } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
@@ -59,14 +63,13 @@ import { getCliente, actualizarDirecciones } from '../api/clienteApi';
 import { getSaldo, canjearTarjeta } from '../api/giftCardApi';
 import { getResumenPuntos, getConfigFidelidad } from '../api/fidelidadApi';
 import { crearPedido, getTiempoPorZona } from '../api/pedidosApi';
+import { getAjustes } from '../api/ajustesApi';
 import Boton from '../components/UI/Boton';
 import { ChevronIzquierda, Paquete } from '../components/UI/Iconos';
 import ModalMapaDireccion from '../components/UI/ModalMapaDireccion';
 import { totalDeLinea } from '../utils/catalogo';
-
-// El mismo de la web. Solo se cobra si se lo llevan a la casa: antes se cobraba
-// siempre, y entonces pasar a traerlo al local costaba igual que el delivery.
-const COSTO_ENVIO = 4.78;
+import { calcularEnvio } from '../utils/envio';
+import { calcularServicio } from '../utils/servicio';
 
 // Cuántas fotos de producto caben en la tira del resumen antes del "+3".
 const MINIATURAS = 6;
@@ -170,13 +173,21 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const [configPuntos, setConfigPuntos] = useState(null);
   const [usarPuntos, setUsarPuntos] = useState(false);
 
+  // ── Tarifas de la tienda (envío y servicio) ──
+  // null = no se pudieron consultar. Ver "Las cuentas", más abajo.
+  const [ajustes, setAjustes] = useState(null);
+
   const direccionElegida = direcciones[indiceDireccion] || null;
 
   /*
-   * Las cuatro cosas que hay que saber para pagar, en paralelo: sus direcciones,
-   * su saldo, sus puntos y la configuración del programa. En serie serían cuatro
-   * viajes seguidos y la pantalla se iría acomodando sola a pedazos mientras el
-   * cliente ya está decidiendo.
+   * Las cinco cosas que hay que saber para pagar, en paralelo: sus direcciones,
+   * su saldo, sus puntos, la configuración del programa y las tarifas de la
+   * tienda. En serie serían cinco viajes seguidos y la pantalla se iría
+   * acomodando sola a pedazos mientras el cliente ya está decidiendo.
+   *
+   * Las tarifas se piden aquí y no se reusan las que trajo la app al abrir:
+   * si el dueño cambió el precio por km hace un rato, el número de esta
+   * pantalla tiene que ser el que va a cobrar el servidor ahora.
    */
   useEffect(() => {
     if (!esCliente) {
@@ -192,11 +203,12 @@ const Checkout = ({ alVolver, alConfirmar }) => {
        * Promise.all, que fallara la consulta del saldo —la más prescindible de
        * las cuatro— dejaba la pantalla sin direcciones y sin poder pedir nada.
        */
-      const [cliente, saldoRes, resumen, config] = await Promise.all([
+      const [cliente, saldoRes, resumen, config, tarifas] = await Promise.all([
         getCliente(user.id).catch(() => null),
         getSaldo(user.id).catch(() => null),
         getResumenPuntos(user.id).catch(() => null),
         getConfigFidelidad().catch(() => null),
+        getAjustes().catch(() => null),
       ]);
 
       if (!vivo) return;
@@ -206,6 +218,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       setSaldo(Number(saldoRes?.balance) || 0);
       setPuntos(Number(resumen?.available) || 0);
       setConfigPuntos(config);
+      setAjustes(tarifas);
       setCargando(false);
     })();
 
@@ -239,9 +252,32 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   }, [entrega, direccionElegida?.lat, direccionElegida?.lng]);
 
   // ── Las cuentas ──
-  const envio = carrito.length > 0 && entrega === 'delivery' ? COSTO_ENVIO : 0;
+  /*
+   * El envío se cobra por DISTANCIA desde la tienda hasta el punto de la
+   * dirección elegida (zona → por km → solo la base), con la misma cuenta que
+   * hace el servidor. Antes aquí había $4.78 fijos: a quien vive a la vuelta se
+   * le enseñaba de más y a quien vive lejos de menos, y el total del pedido
+   * confirmado no era el de esta pantalla.
+   *
+   * Sin ajustes (la consulta falló) no se sabe cuánto es, y un número de relleno
+   * sería justo el problema que se está quitando: se dice que se calcula al
+   * confirmar, que es cuando lo pone el servidor.
+   */
+  const envioCalc = ajustes
+    ? calcularEnvio(ajustes, { lat: direccionElegida?.lat, lng: direccionElegida?.lng })
+    : null;
+  // Muy lejos de la tienda no se entrega: el servidor rechaza el pedido a
+  // domicilio (ver RADIO_MAXIMO_KM en utils/envio.js), así que ni se intenta.
+  const fueraDeCobertura = entrega === 'delivery' && !!envioCalc?.fueraDeCobertura;
+  // Fuera de cobertura no se suma: sería el precio de un envío que no va a
+  // existir (desde el GPS de fábrica del emulador, miles de dólares).
+  const envio = carrito.length > 0 && entrega === 'delivery' && envioCalc && !fueraDeCobertura
+    ? envioCalc.costo
+    : 0;
   const subtotal = totalCarrito;
-  const totalConEnvio = subtotal + envio;
+  // La fija el panel (apagada, fija o % del subtotal) y va a domicilio y a retiro.
+  const servicio = carrito.length > 0 && ajustes ? calcularServicio(ajustes, subtotal) : 0;
+  const totalConCargos = subtotal + envio + servicio;
 
   const tasaCanje = configPuntos?.pointsPerDollarRedeem ?? 100;
   const minimoCanje = configPuntos?.minRedeemPoints ?? 100;
@@ -250,7 +286,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const topeUtil = Math.floor(subtotal * tasaCanje);
   const puntosAUsar = usarPuntos && puedeCanjear ? Math.min(puntos, topeUtil) : 0;
   const descuento = Number((puntosAUsar / tasaCanje).toFixed(2));
-  const totalAPagar = Math.max(0, Number((totalConEnvio - descuento).toFixed(2)));
+  const totalAPagar = Math.max(0, Number((totalConCargos - descuento).toFixed(2)));
 
   const saldoAlcanza = saldo >= totalAPagar;
 
@@ -309,6 +345,11 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const realizarPedido = async () => {
     if (entrega === 'delivery' && !direccionElegida) {
       avisar('Elija una dirección de entrega', 'error');
+      return;
+    }
+    // El botón ya está apagado en este caso; esto es por si se cuela un toque.
+    if (fueraDeCobertura) {
+      avisar('Esa dirección queda fuera de la zona de entrega. Elija otra o el retiro en el local.', 'error');
       return;
     }
     if (metodoPago === 'saldo' && !saldoAlcanza) {
@@ -410,7 +451,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
           <Opcion
             icono={MapPin}
             titulo="Envío a domicilio"
-            detalle={`+$${COSTO_ENVIO.toFixed(2)} de envío`}
+            detalle={detalleEnvio(envioCalc)}
             activa={entrega === 'delivery'}
             alTocar={() => setEntrega('delivery')}
             colores={colores}
@@ -418,9 +459,22 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
           {entrega === 'delivery' && (
             <>
+              {/* Lo mismo que contestaría el servidor al confirmar, pero dicho
+                  antes, cuando todavía puede cambiar de dirección o de modo. */}
+              {fueraDeCobertura && (
+                <View style={estilos.fueraDeZona} accessibilityRole="alert">
+                  <TriangleAlert size={15} color={COLORES.peligro} strokeWidth={2.2} />
+                  <Text style={estilos.fueraDeZonaTexto}>
+                    Esa dirección queda a {envioCalc.distanciaKm} km de la tienda, fuera de la zona de
+                    entrega. Elija otra dirección o el retiro en el local.
+                  </Text>
+                </View>
+              )}
+
               {/* El tiempo REAL a su zona. Va aquí porque este es el momento en
-                  que la persona se pregunta "¿y en cuánto me llega?". */}
-              {zona?.hayDatos && (
+                  que la persona se pregunta "¿y en cuánto me llega?". Fuera de
+                  la zona se calla: no hay entrega de la que dar un tiempo. */}
+              {zona?.hayDatos && !fueraDeCobertura && (
                 <View style={estilos.tiempo}>
                   <Clock size={15} color={COLORES.exitoTexto} strokeWidth={2} />
                   <View style={estilos.tiempoTextos}>
@@ -614,7 +668,11 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       */}
       <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 18) }]}>
         <Fila etiqueta="Total de artículos" valor={`$${subtotal.toFixed(2)}`} />
-        <Fila etiqueta="Costo de envío" valor={`$${envio.toFixed(2)}`} />
+        <Fila etiqueta="Costo de envío" valor={valorEnvio(entrega, envioCalc, envio)} />
+        {/* La tarifa de servicio solo se muestra si la tienda la cobra. */}
+        {servicio > 0 && (
+          <Fila etiqueta="Tarifa de servicio" valor={`$${servicio.toFixed(2)}`} />
+        )}
         {descuento > 0 && (
           <Fila etiqueta="Descuento por puntos" valor={`−$${descuento.toFixed(2)}`} verde />
         )}
@@ -628,7 +686,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
           texto={`Realizar pedido · $${totalAPagar.toFixed(2)}`}
           alPresionar={realizarPedido}
           cargando={procesando}
-          deshabilitado={carrito.length === 0}
+          deshabilitado={carrito.length === 0 || fueraDeCobertura}
           color={colores.marca}
           colorPresionado={colores.marcaOscuro}
           estilo={estilos.botonPedido}
@@ -674,6 +732,27 @@ const Fila = ({ etiqueta, valor, verde }) => {
       <Text style={[estilos.filaValor, verde && estilos.filaValorVerde]}>{valor}</Text>
     </View>
   );
+};
+
+/*
+ * El renglón de debajo de "Envío a domicilio": cuánto sale a la dirección
+ * elegida y de dónde sale ("a 3.2 km", o el nombre de la zona), para que el
+ * número no parezca puesto al azar ahora que cambia de una dirección a otra.
+ */
+const detalleEnvio = (calc) => {
+  if (!calc) return 'El costo se calcula al confirmar';
+  if (calc.fueraDeCobertura) return 'La dirección elegida queda fuera de la zona';
+  const costo = `+$${calc.costo.toFixed(2)} de envío`;
+  if (calc.metodo === 'km') return `${costo} · a ${calc.distanciaKm} km`;
+  if (calc.metodo === 'zona' && calc.zona) return `${costo} · ${calc.zona}`;
+  return costo;
+};
+
+// El "Costo de envío" del resumen: un número solo cuando se sabe y se cobra.
+const valorEnvio = (entrega, calc, envio) => {
+  if (entrega === 'delivery' && !calc) return 'Al confirmar';
+  if (entrega === 'delivery' && calc.fueraDeCobertura) return 'Fuera de zona';
+  return `$${envio.toFixed(2)}`;
 };
 
 /*
@@ -794,6 +873,20 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Sin recuadro: el icono y el rojo ya lo separan del resto.
+  fueraDeZona: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  fueraDeZonaTexto: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: COLORES.peligro,
   },
   tiempo: {
     flexDirection: 'row',
