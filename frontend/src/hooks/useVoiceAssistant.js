@@ -328,8 +328,8 @@ export const useVoiceAssistant = ({
   // Qué hacer cuando la persona confirma la compra. Lo pone quien monta el
   // asistente, porque de eso dependen el pedido y los puntos.
   alConfirmarCompra,
-  // El primer nombre del cliente con sesión, para que Tiqui lo use de vez en
-  // cuando en lo que se ve. Nunca viaja a la IA ni a la voz: ver nombreTiqui.js.
+  // El primer nombre del cliente con sesión, para que Tiqui lo diga de vez en
+  // cuando. Nunca viaja a la IA: ver nombreTiqui.js.
   nombreCliente = '',
 }) => {
   const [activo, setActivo] = useState(false);
@@ -403,9 +403,9 @@ export const useVoiceAssistant = ({
 
   // Agrega un mensaje al historial (limita a los últimos 8).
   /*
-   * `visible` es lo que se pinta en la burbuja cuando no es igual a lo dicho
+   * `visible` es lo que se pinta en la burbuja cuando no es igual a `texto`
    * (Tiqui con el nombre del cliente). La memoria, que viaja a la IA, guarda
-   * siempre `texto`: el nombre no sale del navegador. Ver nombreTiqui.js.
+   * siempre `texto`: el nombre no le llega a la IA. Ver nombreTiqui.js.
    */
   const registrar = (tipo, texto, visible = texto) => {
     memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
@@ -531,8 +531,13 @@ export const useVoiceAssistant = ({
 
   const hablar = useCallback((texto) => {
     ultimaRespuestaRef.current = texto;
-    // Con el nombre, a veces, solo en la burbuja; la voz dice `texto` tal cual.
-    registrar('bot', texto, conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current));
+    /*
+     * A veces, con el nombre del cliente: se ve y se escucha así. La memoria
+     * que viaja a la IA se queda con `texto`, sin el nombre (ver registrar y
+     * nombreTiqui.js).
+     */
+    const dicho = conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current);
+    registrar('bot', texto, dicho);
 
     const continuar = () => {
       hablandoRef.current = false;
@@ -551,7 +556,7 @@ export const useVoiceAssistant = ({
 
     // Con la voz de Tiqui, si el servidor la tiene. Si no arranca, la del sistema.
     if (vozTiquiRef.current) {
-      decirConTiqui(aiService.urlVoz(texto), {
+      decirConTiqui(aiService.urlVoz(dicho), {
         // 0,95 es la velocidad "Normal" de la voz del sistema; el audio va a 1.
         velocidad: rateRef.current / 0.95,
         alEmpezar: () => setSonandoTiqui(true),
@@ -567,13 +572,13 @@ export const useVoiceAssistant = ({
             vozTiquiRef.current = false;
             setVozTiqui(false);
           }
-          decirConElSistema(texto, continuar);
+          decirConElSistema(dicho, continuar);
         },
       });
       return;
     }
 
-    decirConElSistema(texto, continuar);
+    decirConElSistema(dicho, continuar);
   }, [arrancarReconocimiento]);
 
   /*

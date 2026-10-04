@@ -6,13 +6,12 @@
  * "¡Listo, María! Te agregué dos manzanas." A veces, no siempre: el nombre en
  * cada frase suena a vendedor por teléfono, y se gasta.
  *
- * SOLO EN LO QUE SE VE. NUNCA EN LO QUE SE ESCUCHA NI EN LA MEMORIA.
- * La política de privacidad promete que la IA (Gemini) y la voz (ElevenLabs)
- * reciben lo que se habla "sin su nombre, correo ni dirección". Por eso el
- * nombre se pone aquí, en el teléfono, sobre la burbuja del chat: la voz
- * dice la frase sin él, y la memoria que viaja a la IA con la siguiente
- * pregunta la guarda sin él. Si algún día se quiere que Tiqui lo DIGA en voz
- * alta, primero hay que cambiar la política y subir su versión.
+ * SE VE Y SE ESCUCHA, PERO LA IA NO LO RECIBE.
+ * El nombre se pone aquí, en el teléfono, sobre la respuesta ya armada: la
+ * burbuja y la voz de Tiqui (ElevenLabs) llevan el nombre, y la memoria que
+ * viaja a la IA (Gemini) con la siguiente pregunta guarda la frase sin él.
+ * Así lo dice la política de privacidad desde la versión 3.1: si esto cambia,
+ * cambia también la política (utils/legales/privacidad.js) y su versión.
  *
  * La web tiene la misma pieza en frontend/src/utils/nombreTiqui.js: si cambia
  * una, cambia la otra.

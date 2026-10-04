@@ -274,7 +274,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   /*
    * `visible` es lo que se pinta en la burbuja cuando no es igual a lo dicho
    * (Tiqui con el nombre del cliente). La memoria, que viaja a la IA, guarda
-   * siempre `texto`: el nombre no sale del teléfono. Ver nombreTiqui.js.
+   * siempre `texto`: el nombre no le llega a la IA. Ver nombreTiqui.js.
    */
   const registrar = (tipo, texto, visible = texto) => {
     memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
@@ -316,8 +316,13 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
   const hablar = useCallback((texto) => {
     ultimaRespuestaRef.current = texto;
-    // Con el nombre, a veces, solo en la burbuja; la voz dice `texto` tal cual.
-    registrar('bot', texto, conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current));
+    /*
+     * A veces, con el nombre del cliente: se ve y se escucha así. La memoria
+     * que viaja a la IA se queda con `texto`, sin el nombre (ver registrar y
+     * nombreTiqui.js).
+     */
+    const dicho = conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current);
+    registrar('bot', texto, dicho);
 
     const continuar = () => {
       hablandoRef.current = false;
@@ -337,7 +342,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
     // La voz del teléfono: el respaldo de la de Tiqui, y la única sin ella.
     // "$12.50" se dice "12 dólares con 50 centavos", no "doce pesos". Ver paraDecir.
-    const conElTelefono = () => Speech.speak(paraDecir(texto), {
+    const conElTelefono = () => Speech.speak(paraDecir(dicho), {
       // "es-419" (español latinoamericano neutro) en vez de es-SV: no todos
       // los teléfonos traen una voz de El Salvador instalada, y esta es la
       // que con más frecuencia sí encuentra una voz decente del sistema.
@@ -352,7 +357,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       conElTelefono();
       return;
     }
-    decirConTiqui(asistenteApi.urlVoz(texto), {
+    decirConTiqui(asistenteApi.urlVoz(dicho), {
       // 0,95 es la velocidad "Normal" de la voz del teléfono; el audio va a 1.
       velocidad: rateRef.current / 0.95,
       alTerminar: () => {

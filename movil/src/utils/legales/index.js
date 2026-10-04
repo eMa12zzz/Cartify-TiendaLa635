@@ -11,8 +11,9 @@ import { DEVOLUCIONES } from './devoluciones';
  * Si cambia lo que se promete, suba la versión aquí, en la web y en
  * backend/src/utils/terminos.js.
  */
-export const VERSION_LEGAL = '3.0';
-export const FECHA_LEGAL = '24 de septiembre de 2026';
+// 3.1: Tiqui dice el primer nombre de quien inició sesión (ver la web).
+export const VERSION_LEGAL = '3.1';
+export const FECHA_LEGAL = '28 de septiembre de 2026';
 
 export const DOCUMENTOS_LEGALES = [TERMINOS, PRIVACIDAD, DEVOLUCIONES];
 

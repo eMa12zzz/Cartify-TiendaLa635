@@ -37,8 +37,7 @@ const Asistente = () => {
 
   /*
    * La bienvenida escrita saluda por el nombre más o menos la mitad de las
-   * veces que se entra: siempre igual se vuelve fórmula. Solo en lo que se
-   * ve (ver nombreTiqui.js).
+   * veces que se entra: siempre igual se vuelve fórmula. Ver nombreTiqui.js.
    */
   const { user } = useAuth();
   const nombre = user?.type === 'client' ? primerNombre(user?.fullName) : '';
