@@ -32,13 +32,32 @@ export const idsDePromo = (promo) =>
     .filter(Boolean);
 
 /*
- * Mapa productId -> info de promo (la primera promo vigente que lo incluya).
- * "Vigente" incluye la fecha: una promo que venció anoche no puede seguir
- * bajando precios hoy solo porque nadie recargó la lista.
+ * Mapa productId -> info de promo. "Vigente" incluye la fecha: una promo que
+ * venció anoche no puede seguir bajando precios hoy solo porque nadie recargó
+ * la lista.
+ *
+ * Un producto puede estar en VARIAS promos vigentes a la vez —un anuncio que
+ * solo lo destaca y un descuento que sí le baja el precio—. Gana la que toca
+ * el precio por encima del anuncio y, entre dos que lo tocan, la más nueva.
+ *
+ * Aquí ganaba la primera de la lista, y la web ya no hacía eso. Mientras el
+ * servidor cobraba el precio que mandaba cada uno daba igual; ahora el precio
+ * lo decide él, con la regla de la web (ver backend/src/utils/precioPedido.js),
+ * y si la app eligiera otra promo, el cliente vería un precio en el teléfono
+ * y pagaría otro.
  */
+const prioridadPromo = (tipo) => (tipo === 'anuncio' ? 0 : 1);
+
 export const construirMapaPromo = (promos) => {
   const mapa = {};
-  (promos || []).filter(promoVigente).forEach((pr) => {
+  const ordenadas = (promos || [])
+    .filter(promoVigente)
+    .sort((a, b) =>
+      prioridadPromo(b.type) - prioridadPromo(a.type) ||
+      new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+
+  ordenadas.forEach((pr) => {
     (pr.items || []).forEach((it) => {
       const pid = typeof it.productId === 'object' ? it.productId?._id : it.productId;
       if (!pid || mapa[pid]) return;
