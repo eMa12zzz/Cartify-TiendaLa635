@@ -7,10 +7,12 @@ import printServiceModel from "../models/printService.js";
 import productModel from "../models/product.js";
 import adminModel from "../models/admin.js";
 import employeeModel from "../models/employee.js";
+import promotionModel from "../models/promotion.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
 import { calcularPrecioImpresion } from "../utils/precioImpresion.js";
 import { calcularEnvio } from "../utils/envio.js";
+import { construirMapaPromo, precioDeRenglon } from "../utils/precioPedido.js";
 import { generarCodigoEntrega } from "../utils/codigoEntrega.js";
 import { cambiarEstadoDePedido } from "../utils/estadoPedido.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
@@ -72,8 +74,10 @@ orderController.createOrder = async (req, res) => {
      */
     const clientId = req.compradorId;
 
-    // Validación básica: sin cliente o sin productos no hay pedido.
-    if (!clientId || !items || items.length === 0) {
+    // Validación básica: sin cliente o sin productos no hay pedido. Que sea
+    // una lista de verdad: con un texto cualquiera, el items.map de más abajo
+    // reventaba y salía como un 500.
+    if (!clientId || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         message: "clientId e items son requeridos"
       });
@@ -103,40 +107,108 @@ orderController.createOrder = async (req, res) => {
     }
 
     /*
-     * ── STOCK: validar ANTES de cobrar ──
-     * Sin esto se podían pedir 100 unidades de algo que tiene 5. El carrito ya
-     * lo revisa, pero el navegador no es de fiar: la comprobación que vale es
-     * esta. Los renglones sin productId (las impresiones) se saltan.
+     * ── CADA RENGLÓN ES UN PRODUCTO DEL CATÁLOGO ──
+     *
+     * Antes los renglones sin productId se saltaban todas las revisiones —eran
+     * de cuando las impresiones pasaban por aquí; hoy tienen su propia ruta,
+     * createPrintOrder— y entraban a la cuenta con el precio que trajeran. Un
+     * renglón inventado, "Descuento" a −9.99, dejaba cualquier compra en un
+     * centavo. La tienda, el kiosco y la app mandan siempre el productId, así
+     * que lo que llegue sin él no salió de ninguno de los tres.
+     *
+     * isValidObjectId por lo mismo que con el cliente: un id con mala forma
+     * hacía reventar el find de abajo y salía como un 500.
      */
-    const idsProductos = items.map((it) => it.productId).filter(Boolean);
-    const productos = idsProductos.length
-      ? await productModel.find({ _id: { $in: idsProductos } })
-      : [];
+    for (const it of items) {
+      if (!it?.productId || !isValidObjectId(it.productId)) {
+        return res.status(400).json({
+          message: `"${it?.name || "Un producto"}" no está en el catálogo de la tienda`,
+        });
+      }
+    }
+
+    const idsProductos = items.map((it) => it.productId);
+    const productos = await productModel.find({ _id: { $in: idsProductos } });
     const porId = new Map(productos.map((p) => [String(p._id), p]));
 
+    /*
+     * Las promociones que tocan a estos productos, para cobrar lo mismo que
+     * el cliente vio en pantalla. Se traen también las vencidas que sigan
+     * encendidas en la base: construirMapaPromo las descarta por fecha, que
+     * es la regla que usa la tienda. Ver utils/precioPedido.js.
+     */
+    const promociones = await promotionModel
+      .find({ isActive: { $ne: false }, "items.productId": { $in: idsProductos } })
+      .select("type items buyQty payQty isActive endsAt createdAt")
+      .lean();
+    const mapaPromo = construirMapaPromo(promociones);
+
+    /*
+     * ── PRECIO Y STOCK, renglón por renglón ──
+     *
+     * Del renglón que manda el navegador se usan DOS datos: qué producto y
+     * cuántos. Todo lo demás sale de la base.
+     *
+     * El precio, sobre todo. Antes se sumaba el `price` del cuerpo de la
+     * petición: el comentario decía que nunca confiábamos en el total del
+     * front, y era cierto, pero se confiaba en el precio por unidad, que da
+     * lo mismo. Bastaba mandar `price: 0.01`. El stock ya se revisaba contra
+     * la base; el precio, que es lo que se cobra, no.
+     *
+     * El nombre también sale del producto: es lo que lee quien arma el
+     * pedido, y un renglón de chicles no puede llegarle a la bodega diciendo
+     * "Whisky".
+     *
+     * Y el stock, ANTES de cobrar: sin esto se podían pedir 100 unidades de
+     * algo que tiene 5. El carrito ya lo revisa, pero el navegador no es de
+     * fiar — la comprobación que vale es esta.
+     */
+    const renglones = [];
     for (const it of items) {
-      if (!it.productId) continue;
       const producto = porId.get(String(it.productId));
       if (!producto) {
         return res.status(400).json({ message: `El producto "${it.name}" ya no existe` });
       }
+
+      /*
+       * La cantidad tiene que ser un número mayor que cero. Una negativa
+       * restaba del subtotal —y de paso SUBÍA el stock al descontarla— y un
+       * cero dejaba un renglón fantasma en el pedido.
+       *
+       * Por libra se aceptan decimales (media libra de queso es lo normal);
+       * por unidad, no: media Coca-Cola no se vende, y aceptarla sería
+       * cobrar la mitad por la botella entera. Ver frontend/src/utils/unidades.js.
+       */
+      const cantidad = Number(it.amount);
+      const porLibra = producto.unidadVenta === "libra";
+      if (!Number.isFinite(cantidad) || cantidad <= 0 || (!porLibra && !Number.isInteger(cantidad))) {
+        return res.status(400).json({ message: `La cantidad de "${producto.name}" no es válida` });
+      }
+
       // Ojo: hay productos con el stock guardado como texto (vienen de
       // FormData), por eso el Number() en vez de compararlo directo.
       const disponible = Number(producto.stock) || 0;
-      const pedido = Number(it.amount) || 0;
-      if (pedido > disponible) {
+      if (cantidad > disponible) {
         return res.status(400).json({
           message: disponible === 0
             ? `"${producto.name}" se acaba de agotar`
             : `Solo quedan ${disponible} de "${producto.name}"`,
         });
       }
+
+      renglones.push({
+        productId: producto._id,
+        name: producto.name,
+        price: precioDeRenglon(producto, mapaPromo.get(String(producto._id)), cantidad),
+        amount: cantidad,
+      });
     }
 
-    // El subtotal lo calculamos aquí, en el backend. Nunca confiamos en el
-    // total que mande el front (podría venir manipulado).
+    // El subtotal sale de los renglones que acabamos de armar, no del cuerpo
+    // de la petición. El total que mande el front (el kiosco lo manda) se
+    // ignora.
     const subtotal = Number(
-      items.reduce((acc, it) => acc + (it.price * it.amount), 0).toFixed(2)
+      renglones.reduce((acc, r) => acc + (r.price * r.amount), 0).toFixed(2)
     );
 
     const config = await getLoyaltyConfig();
@@ -244,7 +316,8 @@ orderController.createOrder = async (req, res) => {
 
     const newOrder = new orderModel({
       clientId,
-      items,
+      // Los renglones con el precio del servidor, no los que llegaron.
+      items: renglones,
       subtotal,
       discount,
       pointsRedeemed,
@@ -281,15 +354,14 @@ orderController.createOrder = async (req, res) => {
      * tienen el stock guardado como texto y $inc revienta con esos. De paso,
      * cada venta va dejando el campo convertido a número.
      */
-    for (const it of items) {
-      if (!it.productId) continue;
-      const producto = porId.get(String(it.productId));
+    for (const r of renglones) {
+      const producto = porId.get(String(r.productId));
       if (!producto) continue;
-      const restante = Math.max(0, (Number(producto.stock) || 0) - (Number(it.amount) || 0));
+      const restante = Math.max(0, (Number(producto.stock) || 0) - r.amount);
       try {
-        await productModel.findByIdAndUpdate(it.productId, { $set: { stock: restante } });
+        await productModel.findByIdAndUpdate(r.productId, { $set: { stock: restante } });
       } catch (e) {
-        console.log("error descontando stock de " + it.productId + ": " + e.message);
+        console.log("error descontando stock de " + r.productId + ": " + e.message);
       }
     }
 

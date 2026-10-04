@@ -135,6 +135,10 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
   const items = Array.isArray(pedido.items) ? pedido.items : [];
   const puntosGanados = Number(respuesta?.pointsEarned) || 0;
   const descuento = Number(respuesta?.discount) || 0;
+  // Sin estas dos filas, Subtotal − Descuento no daba el Total de abajo: el
+  // envío y la tarifa de servicio estaban dentro del total pero en ningún renglón.
+  const envio = Number(pedido.shippingCost) || 0;
+  const servicio = Number(pedido.serviceFee) || 0;
 
   /*
    * El pedido en sí (productos, subtotal, total, puntos) se queda como llegó
@@ -280,6 +284,8 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           <View style={estilos.separador} />
 
           <Fila etiqueta="Subtotal" valor={`$${Number(pedido.subtotal || 0).toFixed(2)}`} />
+          {envio > 0 && <Fila etiqueta="Costo de envío" valor={`$${envio.toFixed(2)}`} />}
+          {servicio > 0 && <Fila etiqueta="Tarifa de servicio" valor={`$${servicio.toFixed(2)}`} />}
           {descuento > 0 && (
             <Fila etiqueta="Descuento por puntos" valor={`−$${descuento.toFixed(2)}`} verde />
           )}
