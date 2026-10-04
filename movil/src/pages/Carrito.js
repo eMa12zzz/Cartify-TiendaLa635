@@ -12,11 +12,13 @@
  *
  * ── Por qué el resumen no menciona el envío ──
  *
- * Porque todavía no se sabe si lo hay. El renglón de "Costo de envío" sale de
- * haber elegido domicilio, y eso se elige en la pantalla siguiente; aquí un
- * "$0.00" fijo diría que el envío es gratis y un "+$4.78" cobraría de más a
- * quien piensa pasar a traerlo. Por eso el total de aquí se llama Subtotal —es
- * lo que valen los productos— y el de verdad se arma en el checkout.
+ * Porque todavía no se sabe si lo hay, ni cuánto. El renglón de "Costo de
+ * envío" sale de haber elegido domicilio y una dirección (se cobra por
+ * distancia), y las dos cosas se eligen en la pantalla siguiente; aquí un
+ * "$0.00" fijo diría que el envío es gratis, y cualquier otro número cobraría
+ * de más a quien piensa pasar a traerlo. Por eso el total de aquí se llama
+ * Subtotal —es lo que valen los productos— y el de verdad se arma en el
+ * checkout.
  *
  * ── Una corrección respecto de la web ──
  *
