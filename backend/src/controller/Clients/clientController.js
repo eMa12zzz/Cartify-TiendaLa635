@@ -1,4 +1,6 @@
+import { isValidObjectId } from "mongoose";
 import clientModel from "../../models/client.js";
+import { eliminarCliente } from "../../utils/eliminarCliente.js";
 import { leerTokenBaja } from "../../utils/tokenBaja.js";
 import { esTokenExpo } from "../../utils/pushExpo.js";
 import { v2 as cloudinary } from "cloudinary";
@@ -148,26 +150,23 @@ clientController.updateClient = async (req, res) => {
 };
 
 // DELETE CLIENT
+/*
+ * Borra la cuenta y sus datos personales, y deja sus pedidos en la
+ * contabilidad sin nada que lo identifique. Todo lo que eso implica vive en
+ * utils/eliminarCliente.js. Con un pedido en curso, no se puede (409).
+ */
 clientController.deleteClient = async (req, res) => {
   try {
-
-    const clientFound = await clientModel.findById(req.params.id);
-
-    if (!clientFound) {
-      return res.status(404).json({
-        message: "No se encontró el cliente",
-      });
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "No se encontró el cliente" });
     }
 
-    // Eliminar imagen de Cloudinary
-    if (clientFound.public_id) {
-      await cloudinary.uploader.destroy(clientFound.public_id);
-    }
-
-    await clientModel.findByIdAndDelete(req.params.id);
+    const r = await eliminarCliente(req.params.id);
+    if (!r.ok) return res.status(r.codigo).json({ message: r.message });
 
     return res.status(200).json({
       message: "Cliente eliminado",
+      resumen: r.resumen,
     });
 
   } catch (error) {

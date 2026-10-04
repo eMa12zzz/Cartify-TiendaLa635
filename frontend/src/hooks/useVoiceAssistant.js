@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect, useSyncExternalStore } from '
 import { aiService } from '../api/aiService';
 import { decirConTiqui, callarTiqui, paraDecir } from '../utils/vozTiqui';
 import { cantidadParaDecir } from '../utils/unidades';
+import { conNombreAVeces } from '../utils/nombreTiqui';
 
 /*
  * useVoiceAssistant — el "cerebro" de Tiqui, el asistente por voz (Modo Kiosco).
@@ -327,6 +328,9 @@ export const useVoiceAssistant = ({
   // Qué hacer cuando la persona confirma la compra. Lo pone quien monta el
   // asistente, porque de eso dependen el pedido y los puntos.
   alConfirmarCompra,
+  // El primer nombre del cliente con sesión, para que Tiqui lo diga de vez en
+  // cuando. Nunca viaja a la IA: ver nombreTiqui.js.
+  nombreCliente = '',
 }) => {
   const [activo, setActivo] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
@@ -398,10 +402,20 @@ export const useVoiceAssistant = ({
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   // Agrega un mensaje al historial (limita a los últimos 8).
-  const registrar = (tipo, texto) => {
+  /*
+   * `visible` es lo que se pinta en la burbuja cuando no es igual a `texto`
+   * (Tiqui con el nombre del cliente). La memoria, que viaja a la IA, guarda
+   * siempre `texto`: el nombre no le llega a la IA. Ver nombreTiqui.js.
+   */
+  const registrar = (tipo, texto, visible = texto) => {
     memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
-    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto }]);
+    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto: visible }]);
   };
+
+  // Cuántas veces ha contestado Tiqui en esta charla y cuándo usó el nombre.
+  const nombreRef = useRef(nombreCliente);
+  useEffect(() => { nombreRef.current = nombreCliente; }, [nombreCliente]);
+  const usoDelNombreRef = useRef({});
 
   /*
    * Al abrir: despierta el servidor (Render lo duerme) y pregunta si tiene la
@@ -517,7 +531,13 @@ export const useVoiceAssistant = ({
 
   const hablar = useCallback((texto) => {
     ultimaRespuestaRef.current = texto;
-    registrar('bot', texto);
+    /*
+     * A veces, con el nombre del cliente: se ve y se escucha así. La memoria
+     * que viaja a la IA se queda con `texto`, sin el nombre (ver registrar y
+     * nombreTiqui.js).
+     */
+    const dicho = conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current);
+    registrar('bot', texto, dicho);
 
     const continuar = () => {
       hablandoRef.current = false;
@@ -536,7 +556,7 @@ export const useVoiceAssistant = ({
 
     // Con la voz de Tiqui, si el servidor la tiene. Si no arranca, la del sistema.
     if (vozTiquiRef.current) {
-      decirConTiqui(aiService.urlVoz(texto), {
+      decirConTiqui(aiService.urlVoz(dicho), {
         // 0,95 es la velocidad "Normal" de la voz del sistema; el audio va a 1.
         velocidad: rateRef.current / 0.95,
         alEmpezar: () => setSonandoTiqui(true),
@@ -552,13 +572,13 @@ export const useVoiceAssistant = ({
             vozTiquiRef.current = false;
             setVozTiqui(false);
           }
-          decirConElSistema(texto, continuar);
+          decirConElSistema(dicho, continuar);
         },
       });
       return;
     }
 
-    decirConElSistema(texto, continuar);
+    decirConElSistema(dicho, continuar);
   }, [arrancarReconocimiento]);
 
   /*

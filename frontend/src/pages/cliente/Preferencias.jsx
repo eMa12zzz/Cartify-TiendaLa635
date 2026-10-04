@@ -1,6 +1,8 @@
 import { Check } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useModo } from '../../hooks/useModo';
+import { useIdioma } from '../../hooks/useIdioma';
+import { IDIOMAS } from '../../utils/idioma';
 
 /*
  * Preferencias — cómo se ve la tienda para esta persona (área "Mi Cuenta").
@@ -59,20 +61,21 @@ const Preferencias = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { modo, setModo } = useModo();
+  const { idioma, setIdioma, t } = useIdioma();
 
   return (
     <div>
-      <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>Preferencias</h1>
+      <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>{t('Preferencias')}</h1>
 
       <section className="mt-8">
-        <h2 className="text-lg font-bold" style={{ color: c.textPrimary }}>Apariencia</h2>
+        <h2 className="text-lg font-bold" style={{ color: c.textPrimary }}>{t('Apariencia')}</h2>
         <p className="text-sm mt-1" style={{ color: c.textSecondary }}>
-          Cómo se ve la tienda en este dispositivo.
+          {t('Cómo se ve la tienda en este dispositivo.')}
         </p>
 
         {/* En el teléfono va una debajo de otra con el dibujito chico a la izquierda:
             a lo ancho de la pantalla cada miniatura ocupaba media pantalla. */}
-        <div role="radiogroup" aria-label="Apariencia" className="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-4 sm:gap-y-6 mt-5 max-w-2xl">
+        <div role="radiogroup" aria-label={t('Apariencia')} className="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-4 sm:gap-y-6 mt-5 max-w-2xl">
           {OPCIONES.map((op) => {
             const activa = modo === op.clave;
             return (
@@ -108,12 +111,47 @@ const Preferencias = () => {
                 </span>
                 <span className="block min-w-0">
                   <span className="block text-sm sm:mt-2.5" style={{ color: activa ? c.primary : c.textPrimary, fontWeight: activa ? 700 : 600 }}>
-                    {op.titulo}
+                    {t(op.titulo)}
                   </span>
                   <span className="block text-xs mt-0.5" style={{ color: c.textSecondary }}>
-                    {op.detalle}
+                    {t(op.detalle)}
                   </span>
                 </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/*
+        El idioma. Cada opción se escribe en SU idioma ("English", no "Inglés"):
+        quien no lee español tiene que poder encontrar la suya.
+      */}
+      <section className="mt-10">
+        <h2 className="text-lg font-bold" style={{ color: c.textPrimary }}>{t('Idioma')}</h2>
+        <p className="text-sm mt-1" style={{ color: c.textSecondary }}>
+          {t('En qué idioma se ve la tienda. Los nombres de los productos quedan como la tienda los escribió.')}
+        </p>
+        <div role="radiogroup" aria-label={t('Idioma')} className="flex flex-wrap gap-3 mt-5">
+          {IDIOMAS.map((op) => {
+            const activo = idioma === op.clave;
+            return (
+              <button
+                key={op.clave}
+                type="button"
+                role="radio"
+                aria-checked={activo}
+                lang={op.clave}
+                onClick={() => setIdioma(op.clave)}
+                className="press flex items-center gap-2 px-5 h-11 rounded-full border-2 text-sm transition-colors"
+                style={{
+                  borderColor: activo ? c.primary : c.cardBorder,
+                  color: activo ? c.primary : c.textPrimary,
+                  fontWeight: activo ? 700 : 600,
+                }}
+              >
+                {activo && <Check className="w-4 h-4" strokeWidth={3} />}
+                {op.nombre}
               </button>
             );
           })}

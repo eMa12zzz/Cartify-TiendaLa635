@@ -23,6 +23,7 @@ import { useModulos } from '../hooks/useModulos';
 import { useAjustesCtx } from '../context/AjustesContext';
 import { useAuth } from '../hooks/useAuth';
 import { bloqueDeSeccion } from '../utils/portada';
+import { useIdioma } from '../hooks/useIdioma';
 // El <Toaster> global vive en App.jsx (uno solo, para que los avisos se cierren bien).
 
 const BROWN = 'var(--marca-600)';
@@ -478,6 +479,7 @@ const Store = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { pathname } = useLocation();
   const { esCliente } = useAuth();
+  const { t } = useIdioma();
   const { pasillos } = useModulos();
   // La tienda se ve con o sin cuenta; la sesión solo cambia qué botones salen.
 
@@ -638,9 +640,9 @@ const Store = () => {
 
   const precioFiltros = [
     { key: 'todos', label: 'Todos' },
-    { key: '0-4', label: '$4 - 12$' },
-    { key: '4-12', label: '$4 - 12$' },
-    { key: '12+', label: 'Arriba de $4' },
+    { key: '0-4', label: 'Menos de $4' },
+    { key: '4-12', label: 'De $4 a $12' },
+    { key: '12+', label: 'Más de $12' },
   ];
 
   // Display labels matching design
@@ -725,7 +727,7 @@ const Store = () => {
       {/* ── Category Bar ── */}
       <CategoryBar>
         <CatBtn $active={!categoriaSeleccionada} onClick={() => setCategoriaSeleccionada(null)}>
-          Todos
+          {t('Todos')}
         </CatBtn>
         {categorias.map(cat => (
           <CatBtn
@@ -742,13 +744,13 @@ const Store = () => {
       {promoSeleccionada && (
         <div style={{ padding: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 14, color: 'var(--marca-texto)', fontWeight: 600 }}>
-            Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
+            {t('Promo:')} {promoSeleccionada.title || promoSeleccionada.promoDescription}
           </span>
           <button
             onClick={() => setPromoSeleccionada(null)}
             style={{ border: '1px solid var(--linea-fuerte)', background: 'var(--papel)', borderRadius: 20, padding: '4px 12px', fontSize: 13, cursor: 'pointer', color: 'var(--tinta-suave)' }}
           >
-            ✕ Ver todos
+            ✕ {t('Ver todos')}
           </button>
         </div>
       )}
@@ -783,15 +785,15 @@ const Store = () => {
                     <TrendingHeader>
                       <TrendingBadge>
                         <LiveDot />
-                        <SectionTitle>Más vendidos</SectionTitle>
+                        <SectionTitle>{t('Más vendidos')}</SectionTitle>
                       </TrendingBadge>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <SectionCount>{productosDestacados.length} productos</SectionCount>
+                        <SectionCount>{t('{n} productos', { n: productosDestacados.length })}</SectionCount>
                         <SectionNav>
-                          <NavCircle onClick={destacados.izquierda} disabled={!destacados.puedeIzq} aria-label="Ver anteriores">
+                          <NavCircle onClick={destacados.izquierda} disabled={!destacados.puedeIzq} aria-label={t('Ver anteriores')}>
                             <ChevronLeft size={19} strokeWidth={2.2} />
                           </NavCircle>
-                          <NavCircle onClick={destacados.derecha} disabled={!destacados.puedeDer} aria-label="Ver siguientes">
+                          <NavCircle onClick={destacados.derecha} disabled={!destacados.puedeDer} aria-label={t('Ver siguientes')}>
                             <ChevronRight size={19} strokeWidth={2.2} />
                           </NavCircle>
                         </SectionNav>
@@ -829,6 +831,7 @@ const Store = () => {
                     key={seccion.clave}
                     titulo={seccion.titulo}
                     subtitulo={seccion.subtitulo}
+                    subtituloVars={seccion.subtituloVars}
                     productos={seccion.productos}
                     total={seccion.todos?.length}
                     // El nombre de la sección y "Ver todos" abren la misma
@@ -858,18 +861,18 @@ const Store = () => {
             <SectionTitle>
               {categoriaSeleccionada || terminoBusqueda
                 ? (categoriaSeleccionada || `"${terminoBusqueda}"`)
-                : (nombrePasillo ? `Todo en ${nombrePasillo}` : 'Todos los productos')}
-              <SectionCount>{productosFiltrados.length} productos</SectionCount>
+                : (nombrePasillo ? t('Todo en {pasillo}', { pasillo: nombrePasillo }) : t('Todos los productos'))}
+              <SectionCount>{t('{n} productos', { n: productosFiltrados.length })}</SectionCount>
             </SectionTitle>
 
             <FilterBar ref={filterRef}>
               <FilterBtn $open={filterOpen} onClick={() => setFilterOpen(o => !o)}>
-                <SlidersHorizontal size={15} strokeWidth={2.2} /> Filtros
+                <SlidersHorizontal size={15} strokeWidth={2.2} /> {t('Filtros')}
               </FilterBtn>
 
               {filterOpen && (
                 <FilterDropdown>
-                  <FilterDropTitle>Precio</FilterDropTitle>
+                  <FilterDropTitle>{t('Precio')}</FilterDropTitle>
                   {precioFiltros.map(f => (
                     <FilterOption
                       key={f.key}
@@ -877,7 +880,7 @@ const Store = () => {
                       onClick={() => { setFiltroPrecio(f.key); setFilterOpen(false); }}
                     >
                       <FilterToggle $active={filtroPrecio === f.key} />
-                      {f.label}
+                      {t(f.label)}
                     </FilterOption>
                   ))}
                 </FilterDropdown>
@@ -907,9 +910,9 @@ const Store = () => {
             */
             <EmptyState role="alert">
               <Mascota pose="error" alto={170} />
-              <strong>Ups, algo salió mal</strong>
-              <span>No pudimos cargar los productos. Revisa tu conexión e inténtalo otra vez.</span>
-              <BotonReintentar type="button" onClick={reintentarCarga}>Reintentar</BotonReintentar>
+              <strong>{t('Ups, algo salió mal')}</strong>
+              <span>{t('No pudimos cargar los productos. Revisa tu conexión e inténtalo otra vez.')}</span>
+              <BotonReintentar type="button" onClick={reintentarCarga}>{t('Reintentar')}</BotonReintentar>
             </EmptyState>
           ) : productosFiltrados.length === 0 ? (
             <EmptyState>
@@ -925,19 +928,19 @@ const Store = () => {
               <Mascota pose={terminoBusqueda || categoriaSeleccionada ? 'buscando' : 'perdida'} alto={150} />
               <strong>
                 {terminoBusqueda
-                  ? `No encontramos “${terminoBusqueda}”`
+                  ? t('No encontramos “{busqueda}”', { busqueda: terminoBusqueda })
                   : categoriaSeleccionada
-                    ? `No hay productos en “${categoriaSeleccionada}”`
+                    ? t('No hay productos en “{categoria}”', { categoria: categoriaSeleccionada })
                     : nombrePasillo
-                      ? `${nombrePasillo} todavía no tiene productos`
-                      : 'Todavía no hay productos en la tienda'}
+                      ? t('{pasillo} todavía no tiene productos', { pasillo: nombrePasillo })
+                      : t('Todavía no hay productos en la tienda')}
               </strong>
               <span>
                 {terminoBusqueda
-                  ? 'Revisa cómo lo escribiste o prueba con otra palabra.'
+                  ? t('Revisa cómo lo escribiste o prueba con otra palabra.')
                   : categoriaSeleccionada
-                    ? 'Prueba con otra categoría.'
-                    : 'Pronto van a ir llegando.'}
+                    ? t('Prueba con otra categoría.')
+                    : t('Pronto van a ir llegando.')}
               </span>
             </EmptyState>
           ) : (

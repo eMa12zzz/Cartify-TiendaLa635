@@ -8,7 +8,8 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { orderService } from '../../api/orderService';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import MapaSeguimiento from '../../components/Store/MapaSeguimiento';
-import { pasosDe, indiceDePaso, poseDeEstado } from '../../utils/pasosPedido';
+import { pasosDe, indiceDePaso, poseDeEstado, textoDevuelto, sellosDeCancelacion } from '../../utils/pasosPedido';
+import ModalCancelarMiPedido from '../../components/Cuenta/ModalCancelarMiPedido';
 import ValoracionPedido from '../../components/Store/ValoracionPedido';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
@@ -62,6 +63,7 @@ const EstadoPedido = () => {
   const [pedido, setPedido] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
     let vivo = true;
@@ -104,8 +106,9 @@ const EstadoPedido = () => {
   }
 
   // El estado que manda es el más fresco: el del seguimiento si llegó, si no el
-  // guardado del pedido.
-  const estado = seguimiento.estado || pedido.status;
+  // guardado del pedido. Salvo cancelado: si lo acaba de cancelar aquí mismo,
+  // el seguimiento todavía no se enteró y diría "por preparar" unos segundos.
+  const estado = pedido.status === 'cancelado' ? 'cancelado' : (seguimiento.estado || pedido.status);
   const cancelado = estado === 'cancelado';
   const esDomicilio = pedido.deliveryType === 'delivery';
   const PASOS = pasosDe(pedido.deliveryType);
@@ -173,11 +176,29 @@ const EstadoPedido = () => {
               </div>
               <div className="text-base font-bold text-center" style={{ color: c.textPrimary }}>
                 {cancelado
-                  ? 'Este pedido se canceló'
+                  ? (pedido.cancelledByClient ? 'Usted canceló este pedido' : 'Este pedido se canceló')
                   : enCamino
                     ? (seguimiento.yaCasi ? 'Ya casi llega a su puerta' : seguimiento.espera)
                     : (PASOS[pasoActual] || PASOS[0]).detalle}
               </div>
+
+              {/*
+                El porqué, que es lo primero que uno se pregunta, y lo que se
+                le devolvió. Los pedidos cancelados antes de que se pidiera un
+                motivo no traen ninguno: ahí solo queda la invitación a escribir.
+              */}
+              {cancelado && (
+                <div className="mt-3 max-w-md text-center text-sm" style={{ color: c.textSecondary }}>
+                  {pedido.cancelReason && (
+                    <p>
+                      <span className="font-semibold" style={{ color: c.textPrimary }}>Motivo: </span>
+                      {pedido.cancelReason}
+                    </p>
+                  )}
+                  {textoDevuelto(pedido) && <p className="mt-1">{textoDevuelto(pedido)}</p>}
+                  <p className="mt-1" style={{ color: c.textMuted }}>Si tiene dudas, escríbanos y lo revisamos.</p>
+                </div>
+              )}
             </div>
 
             {!cancelado && (
@@ -348,8 +369,30 @@ const EstadoPedido = () => {
           >
             Volver a la tienda
           </button>
+
+          {/*
+            Cancelar, solo mientras está por preparar: después ya hay alguien
+            juntando la bolsa (el servidor lo revisa igual). Va debajo y sin
+            relleno: es la salida, no lo que se espera que haga.
+          */}
+          {estado === 'pagado' && (
+            <button
+              type="button"
+              onClick={() => setCancelando(true)}
+              className="w-full mt-2 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ color: 'var(--peligro)', background: 'transparent', border: `1px solid ${c.cardBorder}` }}
+            >
+              Cancelar pedido
+            </button>
+          )}
         </div>
       </div>
+
+      <ModalCancelarMiPedido
+        pedido={cancelando ? pedido : null}
+        onClose={() => setCancelando(false)}
+        alCancelar={(cancelado) => cancelado && setPedido((p) => ({ ...p, ...sellosDeCancelacion(cancelado) }))}
+      />
 
       {/* En pantalla chica la rejilla de dos columnas se apila */}
       <style>{`

@@ -89,6 +89,22 @@ export const PedidoActivoProvider = ({ children }) => {
   const cerrarPedidoAbierto = useCallback(() => setPedidoAbierto(null), []);
 
   /*
+   * Un pedido cambió desde la app (hoy: el cliente lo canceló). Se mezcla lo
+   * nuevo sobre lo que ya había —la respuesta del servidor viene sin los
+   * productos poblados— en la lista de aquí y en el detalle abierto, y queda
+   * anotado en `ultimoCambio` para que Mis pedidos, que tiene su propia
+   * lista, se ponga al día sin volver a cargar.
+   */
+  const [ultimoCambio, setUltimoCambio] = useState(null);
+  const actualizarPedido = useCallback((cambio) => {
+    if (!cambio?._id) return;
+    const mezclar = (p) => (p && String(p._id) === String(cambio._id) ? { ...p, ...cambio } : p);
+    setOrders((lista) => lista.map(mezclar));
+    setPedidoAbierto(mezclar);
+    setUltimoCambio(cambio);
+  }, []);
+
+  /*
    * El pedido cuya burbuja hay que desplegar (con el mapa). Lo pide el aviso
    * de "va en camino" al tocarlo: ahí lo que se quiere ver es al repartidor,
    * no la lista. BurbujaPedido lo lee y lo suelta en cuanto se abre.
@@ -106,6 +122,8 @@ export const PedidoActivoProvider = ({ children }) => {
         pedidoAbierto,
         abrirPedido: setPedidoAbierto,
         cerrarPedidoAbierto,
+        actualizarPedido,
+        ultimoCambio,
         pedidoASeguir,
         seguirPedido,
         dejarDeSeguir,
@@ -125,6 +143,8 @@ const SIN_PROVEEDOR = {
   pedidoAbierto: null,
   abrirPedido: () => {},
   cerrarPedidoAbierto: () => {},
+  actualizarPedido: () => {},
+  ultimoCambio: null,
   pedidoASeguir: null,
   seguirPedido: () => {},
   dejarDeSeguir: () => {},

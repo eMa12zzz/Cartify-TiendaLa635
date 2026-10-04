@@ -3,6 +3,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import MapaSeguimiento from './MapaSeguimiento';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -34,6 +35,7 @@ import MapaSeguimiento from './MapaSeguimiento';
 const SeguimientoCompacto = ({ pedido }) => {
   const { palette } = useTheme();
   const c = palette.colors;
+  const { t } = useIdioma();
 
   const enCurso = ['pagado', 'preparando', 'en_camino', 'listo'].includes(pedido?.status);
 
@@ -83,7 +85,7 @@ const SeguimientoCompacto = ({ pedido }) => {
                   fontWeight: activo ? 600 : 400,
                 }}
               >
-                {p.label}
+                {t(p.label)}
               </div>
             </div>
           );
@@ -106,10 +108,10 @@ const SeguimientoCompacto = ({ pedido }) => {
         >
           <Bike className="w-3.5 h-3.5 flex-none" style={{ color: 'var(--marca-texto)' }} />
           <span style={{ fontWeight: 600, color: c.textPrimary }}>
-            {seguimiento.yaCasi ? 'Ya casi llega a su puerta' : seguimiento.espera}
+            {seguimiento.yaCasi ? t('Ya casi llega a su puerta') : seguimiento.espera}
           </span>
           {seguimiento.distancia && (
-            <span style={{ color: c.textMuted }}>· a {seguimiento.distancia}</span>
+            <span style={{ color: c.textMuted }}>· {t('a {distancia}', { distancia: seguimiento.distancia })}</span>
           )}
           <Radio className="w-3 h-3 ml-auto flex-none" style={{ color: 'var(--marca-texto)' }} />
         </div>

@@ -68,15 +68,19 @@ export const minutosDeViaje = (metros, velocidadMs) => {
  * minuto exacto es prometer algo que no controlamos, y el cliente lo cobra
  * como una promesa rota cuando el repartidor se topa con un tumulto.
  */
-export const textoDeEspera = (minutos) => {
+/*
+ * `t` es opcional: el seguimiento de la tienda lo pasa para decirlo en el
+ * idioma elegido; sin él sale en español.
+ */
+export const textoDeEspera = (minutos, t = (s, v) => (v ? s.replace('{n}', v.n) : s)) => {
   /*
    * Sin minutos no se inventa un tiempo: pasa con los pedidos viejos, que
    * guardaron la dirección escrita pero no el punto en el mapa, así que no
    * hay contra qué medir. "Va en camino" es poco, pero es cierto.
    */
-  if (minutos == null) return 'Va en camino';
-  if (minutos <= 2) return 'Está llegando';
-  if (minutos <= 5) return 'Llega en unos 5 min';
-  if (minutos <= 60) return `Llega en ${Math.round(minutos / 5) * 5} min aprox.`;
-  return 'Va en camino';
+  if (minutos == null) return t('Va en camino');
+  if (minutos <= 2) return t('Está llegando');
+  if (minutos <= 5) return t('Llega en unos {n} min', { n: 5 });
+  if (minutos <= 60) return t('Llega en {n} min aprox.', { n: Math.round(minutos / 5) * 5 });
+  return t('Va en camino');
 };

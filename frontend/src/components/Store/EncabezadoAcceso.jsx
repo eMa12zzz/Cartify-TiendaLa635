@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Store as StoreIcon } from 'lucide-react';
 import MarcaTienda from './MarcaTienda';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -67,12 +68,13 @@ const VolverTienda = styled.button`
 
 const EncabezadoAcceso = () => {
   const navigate = useNavigate();
+  const { t } = useIdioma();
 
   return (
     <Barra>
-      <MarcaTienda tamano={19} alto={38} onClick={() => navigate('/')} titulo="Ir a la tienda" />
+      <MarcaTienda tamano={19} alto={38} onClick={() => navigate('/')} titulo={t('Ir a la tienda')} />
       <VolverTienda type="button" onClick={() => navigate('/')}>
-        <StoreIcon size={16} strokeWidth={2.2} /> Seguir viendo la tienda
+        <StoreIcon size={16} strokeWidth={2.2} /> {t('Seguir viendo la tienda')}
       </VolverTienda>
     </Barra>
   );

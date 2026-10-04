@@ -2,13 +2,15 @@ import { Palette, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import { useDropdown } from '../../hooks/useDropdown';
+import OpcionesLectura from './OpcionesLectura';
 
 /*
- * ThemeSwitcher — acceso rápido a las paletas de accesibilidad desde el TopBar.
+ * ThemeSwitcher — acceso rápido a la accesibilidad desde el TopBar: las
+ * paletas y, debajo, las opciones de lectura (texto más grande y demás).
  *
  * Antes, cambiar de paleta obligaba a entrar hasta Ajustes de Cuenta; ahora
- * está a un clic desde cualquier pantalla del panel. Pensado para el público
- * de la tienda: baja visión, daltonismo, migrañas (alto contraste, modo oscuro...).
+ * está a un clic desde cualquier pantalla del panel. Pensado para cuidar la
+ * vista: baja visión, lectura larga, migrañas, cansancio.
  *
  * Toda la lógica de abrir/cerrar vive en useDropdown; aquí solo pintamos.
  */
@@ -44,15 +46,15 @@ const ThemeSwitcher = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-72 rounded-2xl border shadow-xl overflow-hidden z-50"
+            className="absolute right-0 mt-2 w-80 rounded-2xl border shadow-xl overflow-y-auto max-h-[75vh] z-50"
             style={{ backgroundColor: 'var(--theme-card-bg)', borderColor: 'var(--theme-card-border)' }}
           >
             <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--theme-card-border)' }}>
               <p className="text-sm font-bold" style={{ color: 'var(--theme-text-primary)' }}>Accesibilidad</p>
-              <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>Elige una paleta cómoda para tu vista</p>
+              <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>Colores y lectura cómodos para su vista</p>
             </div>
 
-            <div className="p-2 max-h-80 overflow-y-auto">
+            <div className="p-2">
               {palettes.map((p) => {
                 const isActive = paletteId === p.id;
                 return (
@@ -83,6 +85,11 @@ const ThemeSwitcher = () => {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Texto más grande y demás: se combinan con cualquier paleta. */}
+            <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--theme-card-border)' }}>
+              <OpcionesLectura compacto />
             </div>
           </motion.div>
         )}

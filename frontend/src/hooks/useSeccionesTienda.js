@@ -110,7 +110,8 @@ const armarSecciones = (productos, pedidos, familiasIA) => {
         // repetirse al traducirlos, la clave de la taxonomía nunca.
         clave: `familia-${familia.clave}`,
         titulo: familia.titulo,
-        subtitulo: `${familia.productos.length} productos`,
+        subtitulo: '{n} productos',
+        subtituloVars: { n: familia.productos.length },
         productos: familia.productos.slice(0, 12),
         /*
          * La fila muestra 12; la lista completa va aparte para la pantalla de

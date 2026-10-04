@@ -5,6 +5,7 @@ import { useDropdown } from '../../hooks/useDropdown';
 import { useModulos } from '../../hooks/useModulos';
 import MarcaTienda from './MarcaTienda';
 import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -140,6 +141,7 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
   const { pathname } = useLocation();
   const { isOpen, toggle, close, ref } = useDropdown();
   const { modulos } = useModulos();
+  const { t } = useIdioma();
   // El nombre y el logo salen de la base, no del código. Ver AjustesContext.
 
   /*
@@ -189,7 +191,7 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
 
   return (
     <Zona ref={ref}>
-      <Boton onClick={toggle} aria-expanded={isOpen} aria-haspopup="menu" aria-label="Pasillos de la tienda">
+      <Boton onClick={toggle} aria-expanded={isOpen} aria-haspopup="menu" aria-label={t('Pasillos de la tienda')}>
         <Hamburguesa><Menu size={20} strokeWidth={2.2} /></Hamburguesa>
         {/*
           La marca salió de aquí a MarcaTienda.jsx. Este bloque era el único
@@ -201,11 +203,11 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
 
       {isOpen && (
         <Panel role="menu">
-          <Titulo>Pasillos de la tienda</Titulo>
+          <Titulo>{t('Pasillos de la tienda')}</Titulo>
 
           <Opcion role="menuitem" $activa={todaLaTienda} onClick={verTodo}>
             <StoreIcon size={17} strokeWidth={2.1} color={todaLaTienda ? BROWN : 'var(--tinta-tenue)'} />
-            Toda la tienda
+            {t('Toda la tienda')}
             {todaLaTienda && <Check size={15} strokeWidth={2.6} color={BROWN} style={{ marginLeft: 'auto' }} />}
           </Opcion>
 

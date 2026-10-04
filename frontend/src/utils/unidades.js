@@ -102,13 +102,18 @@ export const pasoDe = (producto) => unidadDe(producto).paso;
  * Devuelve null cuando no se declaró — es opcional a propósito, y "0 piezas"
  * diría algo falso.
  */
-export const piezasEnTexto = (producto) => {
+/*
+ * `t` es opcional: la tienda lo pasa para decirlo en el idioma elegido; el
+ * panel no, y sale en español.
+ */
+export const piezasEnTexto = (producto, t) => {
   const n = Number(producto?.piezas);
   if (!Number.isFinite(n) || n <= 0) return null;
 
-  return esPorLibra(producto)
-    ? `${n} ${n === 1 ? 'pieza' : 'piezas'}`
-    : `Trae ${n} ${n === 1 ? 'unidad' : 'unidades'}`;
+  const clave = esPorLibra(producto)
+    ? (n === 1 ? '{n} pieza' : '{n} piezas')
+    : (n === 1 ? 'Trae {n} unidad' : 'Trae {n} unidades');
+  return t ? t(clave, { n }) : clave.replace('{n}', n);
 };
 
 /* La etiqueta del campo en el formulario, que también cambia de sentido. */

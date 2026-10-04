@@ -7,6 +7,8 @@ import EncabezadoAcceso from '../components/Store/EncabezadoAcceso';
 import toast from 'react-hot-toast';
 import api from '../api/api';
 import { marcarRecienRegistrado } from '../utils/primerIngreso';
+import { useIdioma } from '../hooks/useIdioma';
+import { traducir } from '../utils/idioma';
 
 const BROWN = 'var(--marca-600)';
 
@@ -156,8 +158,11 @@ const Verification = () => {
   const [code, setCode] = useState(Array(codeLength).fill(''));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // El código de dos pasos del personal sigue en español, como todo el panel.
+  const { t: tTienda } = useIdioma();
+  const t = flow === '2fa' ? (s, v) => traducir('es', s, v) : tTienda;
 
-  const identifier = localStorage.getItem('tempIdentifier') || 'tu correo';
+  const identifier = localStorage.getItem('tempIdentifier') || t('tu correo');
   const pendingToken = localStorage.getItem('pendingToken');
 
   const handleChange = (index, value) => {
@@ -179,7 +184,7 @@ const Verification = () => {
   const handleVerify = async () => {
     const fullCode = code.join('');
     if (fullCode.length !== codeLength) {
-      setError(`Ingresa el código de ${codeLength} caracteres`);
+      setError(t('Ingresa el código de {n} caracteres', { n: codeLength }));
       return;
     }
 
@@ -192,7 +197,7 @@ const Verification = () => {
         await api.post('/registerClient/verifyCodeEmail', {
           verificationCodeRequest: fullCode
         });
-        toast.success('¡Registro exitoso! Ya puedes iniciar sesión.');
+        toast.success(t('¡Registro exitoso! Ya puedes iniciar sesión.'));
         localStorage.removeItem('verificationFlow');
         /*
          * Este es EL punto donde consta que la persona es nueva: acaba de
@@ -209,13 +214,13 @@ const Verification = () => {
         await api.post('/recoveryPasswordClient/verifyCode', {
           code: fullCode
         });
-        toast.success('Código verificado correctamente.');
+        toast.success(t('Código verificado correctamente.'));
         navigate('/create-password');
       } 
       else {
         // 3- Flujo 2FA de Empleado (Por defecto)
         if (!pendingToken) {
-          setError('Sesión inválida, vuelve a iniciar sesión');
+          setError(t('Sesión inválida, vuelve a iniciar sesión'));
           setTimeout(() => navigate('/iniciar-sesion'), 2000);
           return;
         }
@@ -232,12 +237,12 @@ const Verification = () => {
         localStorage.removeItem('tempMethod');
         localStorage.removeItem('pendingToken');
         
-        toast.success('¡Autenticación completada con éxito!');
+        toast.success(t('¡Autenticación completada con éxito!'));
         navigate('/dashboard');
       }
 
     } catch (err) {
-      setError('Código incorrecto o expirado.');
+      setError(t('Código incorrecto o expirado.'));
     } finally {
       setLoading(false);
     }
@@ -250,12 +255,12 @@ const Verification = () => {
 
       <Body>
         <Card>
-          <BackButton type="button" aria-label="Volver" onClick={() => navigate(-1)}>←</BackButton>
+          <BackButton type="button" aria-label={t('Volver')} onClick={() => navigate(-1)}>←</BackButton>
 
-          <SectionTitle>Ingresa el código de verificación</SectionTitle>
+          <SectionTitle>{t('Ingresa el código de verificación')}</SectionTitle>
 
           <InfoBox>
-            <InfoText>Se ha enviado un código a {identifier}</InfoText>
+            <InfoText>{t('Se ha enviado un código a {correo}', { correo: identifier })}</InfoText>
 
             {/*
               Cada casilla dice cuál es ("Dígito 2 de 6"): sin eso el lector
@@ -263,12 +268,12 @@ const Verification = () => {
               teclado numérico en el teléfono, con el código que llegó por
               mensaje ofrecido para pegar en la primera.
             */}
-            <CodeContainer role="group" aria-label="Código de verificación">
+            <CodeContainer role="group" aria-label={t('Código de verificación')}>
               {code.map((digit, idx) => (
                 <CodeInput
                   key={idx}
                   id={`code-${idx}`}
-                  aria-label={`Dígito ${idx + 1} de ${code.length}`}
+                  aria-label={t('Dígito {n} de {total}', { n: idx + 1, total: code.length })}
                   inputMode="numeric"
                   autoComplete={idx === 0 ? 'one-time-code' : 'off'}
                   type="text"
@@ -284,13 +289,13 @@ const Verification = () => {
           {error && <ErrorMsg>{error}</ErrorMsg>}
 
           <Button onClick={handleVerify} disabled={loading}>
-            {loading ? 'Verificando...' : 'Verificar'}
+            {loading ? t('Verificando...') : t('Verificar')}
           </Button>
 
           <ResendRow>
-            ¿No has recibido el código aún?{' '}
-            <ResendLink type="button" onClick={() => alert('Solicita un nuevo código.')}>
-              Solicitar código nuevo
+            {t('¿No has recibido el código aún?')}{' '}
+            <ResendLink type="button" onClick={() => alert(t('Solicita un nuevo código.'))}>
+              {t('Solicitar código nuevo')}
             </ResendLink>
           </ResendRow>
         </Card>

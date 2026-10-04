@@ -1,39 +1,41 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 /**
- * 4 accessibility-oriented palettes designed for neurological conditions,
- * más "Mi marca" (ver armarPaletaDeMarca más abajo), que es la que arranca
- * por defecto:
+ * LAS PALETAS DEL PANEL — todas pensadas para la vista de quien lo usa.
+ * "Mi marca" (ver armarPaletaDeMarca más abajo) es la que arranca por defecto.
  *
- * 1. High Contrast  — black/yellow for low-vision & ADHD focus
- * 2. Deuteranopia   — blue/orange safe for red-green color blindness
- * 3. Tritanopia     — red/cyan safe for blue-yellow color blindness
- * 4. Dark Mode      — low-light, reduced stimulation for migraines & photosensitivity
+ * 1. Lectura         — sepia: fondo color papel y letras café oscuro, sin la luz
+ *                      azul ni el reflejo del blanco. El modo de lectura de los
+ *                      libros electrónicos, para leer mucho rato.
+ * 2. Contraste reforzado — para baja visión o cataratas: letras negras sobre
+ *                      blanco, bordes marcados y acciones en azul fuerte (10 a 1).
+ * 3. Modo oscuro     — poca luz, para migrañas y fotosensibilidad.
+ * 4. Calma           — colores apagados y fondo marfil, sin blanco puro ni tonos
+ *                      intensos: para quien se cansa o se abruma con la pantalla
+ *                      (la pidió la tienda para un administrador en recuperación
+ *                      neurológica). Ver abajo.
+ * 5. Calma noche     — su contraparte oscura, carbón tibio y letras blanco hueso.
  *
- * 5. Calma — colores apagados y fondo marfil, sin blanco puro ni tonos
- *    intensos: para quien se cansa o se abruma con la pantalla (la pidió la
- *    tienda para un administrador en recuperación neurológica). Ver abajo.
- * 6. Calma noche — su contraparte oscura, carbón tibio y letras blanco hueso.
+ * Antes estaban Alto contraste (negro y amarillo), Deuteranopía y Tritanopía:
+ * la tienda pidió cambiarlas (2026-09-28) por paletas que cuiden la vista. Quien
+ * tenía una guardada pasa a la más parecida (ver PALETAS_QUE_SE_FUERON).
+ *
+ * Con las paletas van las opciones de lectura (texto más grande, más espacio
+ * entre líneas, menos animaciones, resaltar enlaces y foco): ver LECTURA.
  *
  * ── Lo que se lee tiene que leerse (medido, 2026-09-27) ──
  * Se recorrió el panel con cada paleta midiendo el contraste de cada texto
  * contra su fondo real, y fallaban cosas en todas:
  *   - El ACENTO se usaba para texto (títulos, fechas, "2x1"), pero es un color
- *     de adorno: el celeste de Mi marca daba 2.9, el naranja de Deuteranopía
- *     2.7. Ahora cada paleta trae `accentText`, su acento oscurecido (o
- *     aclarado en las oscuras) hasta 4.5 o más.
+ *     de adorno: el celeste de Mi marca daba 2.9. Ahora cada paleta trae
+ *     `accentText`, su acento oscurecido (o aclarado en las oscuras) hasta 4.5
+ *     o más.
  *   - El gris APAGADO (encabezados de columna, "hace 5 h", el rol) daba 2.3 a
  *     2.8 en las claras: se oscureció a 4.5 o más.
  *   - En Modo oscuro los botones eran texto blanco sobre lila claro (2.7):
  *     ahora el texto del botón es oscuro (6.6).
  * La regla: todo texto de 4.5 para arriba sobre su fondo. Una paleta nueva se
  * mide igual.
- *
- * Antes había una 5ta, "Predeterminado" (café fijo, #003049): se quitó
- * porque duplicaba lo que ya hace "Mi marca" — un café que nadie podía
- * cambiar, cuando el color de marca YA es configurable. Un admin que
- * tenía 'default' guardado en su localStorage simplemente no encuentra ese
- * id en la lista y cae al respaldo (ver el `|| paletaDeMarca` de abajo).
  */
 
 /*
@@ -49,80 +51,71 @@ const ESTADOS_CLAROS = { peligro: '#B91C1C', aviso: '#92400E', exito: '#15803D' 
 const ESTADOS_OSCUROS = { peligro: '#FCA5A5', aviso: '#FCD34D', exito: '#86EFAC' };
 
 export const palettes = [
+  /*
+   * LECTURA — sepia. El fondo color papel y las letras café oscuro cansan menos
+   * en sesiones largas: no hay blanco que encandile ni tanta luz azul. Texto a
+   * 11 a 1; todo lo demás, de 5 para arriba.
+   */
   {
-    id: 'high-contrast',
-    name: 'Alto Contraste',
-    description: 'Baja visión · TDAH · Enfoque',
+    id: 'lectura',
+    name: 'Lectura',
+    description: 'Sepia · Descansa la vista al leer',
     colors: {
-      primary: '#FFD600',
-      primaryHover: '#FFC107',
-      primaryLight: 'rgba(255, 214, 0, 0.15)',
-      accent: '#FFD600',
-      buttonText: '#000000',
-      sidebarBg: '#000000',
-      sidebarText: '#FFFFFF',
-      sidebarBorder: '#333333',
-      topbarBg: '#000000',
-      mainBg: '#1A1A1A',
-      cardBg: '#000000',
-      cardBorder: '#444444',
-      textPrimary: '#FFFFFF',
-      textSecondary: '#E0E0E0',
-      textMuted: '#BDBDBD',
-      accentText: '#FFD600',
-      ...ESTADOS_OSCUROS,
-    },
-    swatches: ['#FFD600', '#000000', '#1A1A1A', '#FFFFFF', '#444444'],
-  },
-  {
-    id: 'deuteranopia',
-    name: 'Deuteranopía',
-    description: 'Daltonismo rojo-verde',
-    colors: {
-      primary: '#0077BB',
-      primaryHover: '#005588',
-      primaryLight: 'rgba(0, 119, 187, 0.1)',
-      accent: '#EE7733',
+      primary: '#7A4E2D',
+      primaryHover: '#663F22',
+      primaryLight: '#EFE0C8',
+      accent: '#B07A3C',
+      accentText: '#7A4E2D',
       buttonText: '#FFFFFF',
-      sidebarBg: '#FAFBFC',
-      sidebarText: '#2D3748',
-      sidebarBorder: '#E2E8F0',
-      topbarBg: '#FFFFFF',
-      mainBg: '#F7FAFC',
-      cardBg: '#FFFFFF',
-      cardBorder: '#E2E8F0',
-      textPrimary: '#1A202C',
-      textSecondary: '#4A5568',
-      textMuted: '#5A6477',
-      accentText: '#B4521A',
-      ...ESTADOS_CLAROS,
+      sidebarBg: '#EFE5CD',
+      sidebarText: '#3B2F22',
+      sidebarBorder: '#E3D6B8',
+      topbarBg: '#FBF6EA',
+      mainBg: '#F4ECD8',
+      cardBg: '#FBF6EA',
+      cardBorder: '#E3D6B8',
+      textPrimary: '#3B2F22',
+      textSecondary: '#54442F',
+      textMuted: '#6A5842',
+      peligro: '#9E2A1E',
+      aviso: '#74500E',
+      exito: '#3F6B2A',
     },
-    swatches: ['#0077BB', '#EE7733', '#F7FAFC', '#FFFFFF', '#1A202C'],
+    swatches: ['#7A4E2D', '#B07A3C', '#F4ECD8', '#FBF6EA', '#3B2F22'],
   },
+  /*
+   * CONTRASTE REFORZADO — para baja visión o cataratas. Letras negras sobre
+   * blanco (21 a 1), acciones en azul fuerte (10 a 1) y bordes que SE VEN
+   * (5 a 1: en las demás paletas un borde casi blanco no se distingue con poca
+   * vista). Sin el amarillo chillón del Alto contraste de antes. Va mejor con
+   * el texto grande (ver LECTURA).
+   */
   {
-    id: 'tritanopia',
-    name: 'Tritanopía',
-    description: 'Daltonismo azul-amarillo',
+    id: 'contraste',
+    name: 'Contraste reforzado',
+    description: 'Baja visión · Letras y bordes marcados',
     colors: {
-      primary: '#CC3311',
-      primaryHover: '#AA2200',
-      primaryLight: 'rgba(204, 51, 17, 0.1)',
-      accent: '#009988',
+      primary: '#0033A0',
+      primaryHover: '#00247A',
+      primaryLight: '#DCE6FA',
+      accent: '#0033A0',
+      accentText: '#0033A0',
       buttonText: '#FFFFFF',
-      sidebarBg: '#FAF9F7',
-      sidebarText: '#3D3D3D',
-      sidebarBorder: '#E0DFDD',
+      sidebarBg: '#F2F2F2',
+      sidebarText: '#000000',
+      sidebarBorder: '#6B6B6B',
       topbarBg: '#FFFFFF',
-      mainBg: '#F5F4F2',
+      mainBg: '#FFFFFF',
       cardBg: '#FFFFFF',
-      cardBorder: '#E0DFDD',
-      textPrimary: '#1C1C1C',
-      textSecondary: '#555555',
-      textMuted: '#666666',
-      accentText: '#00786B',
-      ...ESTADOS_CLAROS,
+      cardBorder: '#6B6B6B',
+      textPrimary: '#000000',
+      textSecondary: '#1F1F1F',
+      textMuted: '#3D3D3D',
+      peligro: '#A50000',
+      aviso: '#6B4200',
+      exito: '#006B21',
     },
-    swatches: ['#CC3311', '#009988', '#F5F4F2', '#FFFFFF', '#1C1C1C'],
+    swatches: ['#0033A0', '#DCE6FA', '#FFFFFF', '#6B6B6B', '#000000'],
   },
   {
     id: 'dark',
@@ -286,10 +279,56 @@ const armarPaletaDeMarca = () => {
   };
 };
 
+/*
+ * Quien tenía guardada una de las paletas que se quitaron pasa a la más
+ * parecida, en vez de caer sin aviso a Mi marca: el que usaba Alto contraste
+ * porque ve poco sigue necesitando contraste.
+ */
+const PALETAS_QUE_SE_FUERON = { 'high-contrast': 'contraste', deuteranopia: 'marca', tritanopia: 'marca' };
+
+/*
+ * ── LECTURA: las opciones para leer mejor el panel ──
+ * Aparte de los colores, porque se combinan con cualquier paleta:
+ *   texto      Normal, Grande (115%) o Muy grande (130%). Agranda todo el
+ *              panel en proporción —letras, botones y espacios—, como el zoom
+ *              del navegador pero solo aquí y sin romper el acomodo.
+ *   espaciado  Más aire entre líneas y letras: ayuda a no perder el renglón.
+ *   movimiento Menos animaciones (lo mismo que "reducir movimiento" del
+ *              sistema, pero para quien no sabe dónde se activa eso).
+ *   foco       Subraya los enlaces y marca con un borde grueso lo que tiene
+ *              el foco del teclado.
+ * Se guardan en este navegador, como la paleta, y se pintan como atributos
+ * del <html> (data-panel-*) que index.css aplica solo dentro del panel.
+ */
+// Los tamaños (normal, grande, muy-grande) están en utils/lecturaPanel.js.
+const LECTURA_INICIAL = { texto: 'normal', espaciado: false, movimiento: false, foco: false };
+const LLAVE_LECTURA = 'panel-lectura';
+
+const leerLectura = () => {
+  try {
+    return { ...LECTURA_INICIAL, ...JSON.parse(localStorage.getItem(LLAVE_LECTURA) || '{}') };
+  } catch {
+    return LECTURA_INICIAL;
+  }
+};
+
 export const ThemeProvider = ({ children }) => {
   const [paletteId, setPaletteId] = useState(() => {
-    return localStorage.getItem('theme-palette') || 'marca';
+    const guardada = localStorage.getItem('theme-palette') || 'marca';
+    return PALETAS_QUE_SE_FUERON[guardada] || guardada;
   });
+
+  const [lectura, setLectura] = useState(leerLectura);
+  const cambiarLectura = (cambios) => setLectura((antes) => ({ ...antes, ...cambios }));
+
+  useEffect(() => {
+    try { localStorage.setItem(LLAVE_LECTURA, JSON.stringify(lectura)); } catch { /* sin memoria, igual se aplica */ }
+    const root = document.documentElement;
+    root.setAttribute('data-panel-texto', lectura.texto);
+    root.toggleAttribute('data-panel-espaciado', !!lectura.espaciado);
+    root.toggleAttribute('data-panel-movimiento', !!lectura.movimiento);
+    root.toggleAttribute('data-panel-foco', !!lectura.foco);
+  }, [lectura]);
 
   const paletaDeMarca = useMemo(() => armarPaletaDeMarca(), []);
   // "Mi marca" primero: es la que arranca por defecto, no una opción más al fondo.
@@ -310,7 +349,7 @@ export const ThemeProvider = ({ children }) => {
   }, [paletteId, palette]);
 
   return (
-    <ThemeContext.Provider value={{ palette, paletteId, setPaletteId, palettes: todasLasPaletas }}>
+    <ThemeContext.Provider value={{ palette, paletteId, setPaletteId, palettes: todasLasPaletas, lectura, cambiarLectura }}>
       {children}
     </ThemeContext.Provider>
   );

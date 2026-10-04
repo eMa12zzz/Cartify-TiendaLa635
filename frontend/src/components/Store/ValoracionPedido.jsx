@@ -3,6 +3,7 @@ import { Star, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { reviewService } from '../../api/reviewService';
 import { useAuth } from '../../hooks/useAuth';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -29,6 +30,7 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
   const [comentario, setComentario] = useState('');
   const [enviado, setEnviado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const { t } = useIdioma();
   // Se recuerda entre visitas: si ya dijo "ahora no", no se le vuelve a
   // preguntar cada vez que entra a ver su pedido entregado.
   const [omitido, setOmitido] = useState(
@@ -54,7 +56,7 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
 
   const enviar = async () => {
     if (rating < 1) {
-      toast.error('Elija cuántas estrellas antes de enviar');
+      toast.error(t('Elija cuántas estrellas antes de enviar'));
       return;
     }
     setGuardando(true);
@@ -66,9 +68,9 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
         )
       );
       setEnviado(true);
-      toast.success('¡Gracias por calificar su pedido!');
+      toast.success(t('¡Gracias por calificar su pedido!'));
     } catch {
-      toast.error('No se pudo guardar su valoración. Intente de nuevo.');
+      toast.error(t('No se pudo guardar su valoración. Intente de nuevo.'));
     } finally {
       setGuardando(false);
     }
@@ -81,16 +83,16 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
       className="p-6 rounded-2xl border"
       style={{ backgroundColor: 'var(--papel)', borderColor: 'var(--linea)' }}
     >
-      <h2 className="text-lg font-bold" style={{ color: 'var(--tinta)' }}>¿Qué le pareció su pedido?</h2>
+      <h2 className="text-lg font-bold" style={{ color: 'var(--tinta)' }}>{t('¿Qué le pareció su pedido?')}</h2>
 
       {enviado ? (
         <div className="flex items-center gap-2 mt-3 text-sm font-semibold" style={{ color: 'var(--exito)' }}>
-          <Check className="w-5 h-5" /> ¡Gracias por calificar su pedido!
+          <Check className="w-5 h-5" /> {t('¡Gracias por calificar su pedido!')}
         </div>
       ) : (
         <>
           <p className="text-sm mt-0.5 mb-4" style={{ color: 'var(--tinta-suave)' }}>
-            Su pedido ya llegó. Déjenos saber qué tal estuvo, para que otros vecinos se animen.
+            {t('Su pedido ya llegó. Déjenos saber qué tal estuvo, para que otros vecinos se animen.')}
           </p>
 
           {/* Una sola fila de estrellas para todo el pedido */}
@@ -104,7 +106,7 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
                   disabled={guardando}
                   onMouseEnter={() => setHover(n)}
                   onClick={() => setRating(n)}
-                  aria-label={`${n} estrella${n > 1 ? 's' : ''}`}
+                  aria-label={t(n > 1 ? '{n} estrellas' : '{n} estrella', { n })}
                   className="press disabled:opacity-60"
                 >
                   <Star
@@ -121,7 +123,7 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
             rows={2}
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
-            placeholder="¿Algo que quiera contar? (opcional)"
+            placeholder={t('¿Algo que quiera contar? (opcional)')}
             className="w-full px-3 py-2.5 rounded-xl border outline-none resize-none text-sm mb-3"
             style={{ backgroundColor: 'var(--papel)', borderColor: 'var(--linea)', color: 'var(--tinta)' }}
           />
@@ -134,7 +136,7 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
               className="press px-6 py-2.5 rounded-full text-sm font-bold text-white disabled:opacity-60"
               style={{ backgroundColor: 'var(--marca-600)' }}
             >
-              {guardando ? 'Enviando…' : 'Enviar valoración'}
+              {guardando ? t('Enviando…') : t('Enviar valoración')}
             </button>
             <button
               type="button"
@@ -143,7 +145,7 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
               className="press text-sm font-semibold disabled:opacity-60"
               style={{ color: 'var(--tinta-suave)' }}
             >
-              Ahora no
+              {t('Ahora no')}
             </button>
           </div>
         </>

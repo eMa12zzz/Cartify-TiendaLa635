@@ -2,6 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { mensajeEnEspanol } from '../utils/mensajesBackend';
 import { CAJON, areaDeRuta } from '../utils/sesion';
+import { tAhora } from '../utils/idioma';
 
 /*
  * ============================================================
@@ -82,7 +83,7 @@ const cerrarSesionVencida = () => {
    * visitante anónimo terminaría en el login por curiosear.
    */
   if (!localStorage.getItem(CAJON[area])) {
-    toast.error('Inicie sesión para ver esto.');
+    toast.error(tAhora('Inicie sesión para ver esto.'));
     return;
   }
 
@@ -92,7 +93,7 @@ const cerrarSesionVencida = () => {
   echandoSesion = true;
   try { localStorage.removeItem(CAJON[area]); } catch { /* si falla, igual salimos */ }
 
-  toast.error('Su sesión venció. Vuelva a iniciar sesión.');
+  toast.error(tAhora('Su sesión venció. Vuelva a iniciar sesión.'));
 
   // Se lleva a dónde estaba para devolverlo ahí después de entrar.
   const volver = encodeURIComponent(window.location.pathname + window.location.search);
@@ -136,7 +137,7 @@ api.interceptors.response.use(
 
         // 4- Si no hay respuesta del servidor, es un error de red o conexión
         if (!error.response) {
-            toast.error('Error de conexión. Verifica que el servidor backend esté encendido.', { id: 'sin-conexion' });
+            toast.error(tAhora('Error de conexión. Verifica que el servidor backend esté encendido.'), { id: 'sin-conexion' });
             return Promise.reject(error);
         }
 
@@ -155,7 +156,8 @@ api.interceptors.response.use(
          * Si el mensaje ya viene en español (que es lo normal hoy), el
          * traductor lo devuelve intacto y no estorba.
          */
-        const mensaje = mensajeEnEspanol(data?.message, status);
+        // Y después al idioma que eligió el cliente (en el panel, tAhora lo deja en español).
+        const mensaje = tAhora(mensajeEnEspanol(data?.message, status));
 
         /*
          * 5.2- Un mismo error, una sola píldora. Una pantalla que pide cuatro
@@ -178,11 +180,11 @@ api.interceptors.response.use(
                 break;
             case 403:
                 // Prohibido: el usuario existe pero no tiene permiso para esa acción
-                toast.error('Acceso denegado. No tienes permisos para esta acción.', { id: 'sin-permiso' });
+                toast.error(tAhora('Acceso denegado. No tienes permisos para esta acción.'), { id: 'sin-permiso' });
                 break;
             case 500:
                 // Error del servidor: algo falló en el backend (base de datos, etc.)
-                toast.error('Error interno del servidor.', { id: 'error-servidor' });
+                toast.error(tAhora('Error interno del servidor.'), { id: 'error-servidor' });
                 break;
             default:
                 // Cualquier otro error no contemplado arriba (404, 409, 422...).

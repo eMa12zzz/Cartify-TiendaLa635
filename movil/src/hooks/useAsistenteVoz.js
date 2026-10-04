@@ -45,6 +45,7 @@ import { useEdad } from '../context/EdadContext';
 import { cantidadParaDecir, esSoloAdultos } from '../utils/unidades';
 import { navegarA } from '../navigation/navigationRef';
 import { decirConTiqui, callarTiqui, vozTiquiPosible, paraDecir } from '../utils/vozTiqui';
+import { primerNombre, conNombreAVeces } from '../utils/nombreTiqui';
 
 const NUMEROS = {
   un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
@@ -226,7 +227,7 @@ const puntuarCoincidencia = (nombreProducto, t) => {
 };
 
 export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   // El mismo candado +18 que la tarjeta y la ficha: sin esto, pedirlo por
   // voz era una puerta trasera que ni tocaba la foto tapada ni el DUI.
   const { mayorConfirmado } = useEdad();
@@ -270,10 +271,21 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
    */
   const memoriaRef = useRef([]);
 
-  const registrar = (tipo, texto) => {
+  /*
+   * `visible` es lo que se pinta en la burbuja cuando no es igual a lo dicho
+   * (Tiqui con el nombre del cliente). La memoria, que viaja a la IA, guarda
+   * siempre `texto`: el nombre no le llega a la IA. Ver nombreTiqui.js.
+   */
+  const registrar = (tipo, texto, visible = texto) => {
     memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
-    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto }]);
+    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto: visible }]);
   };
+
+  // El primer nombre, si hay sesión de cliente; y cuándo lo usó Tiqui en esta charla.
+  const nombreCliente = user?.type === 'client' ? primerNombre(user?.fullName) : '';
+  const nombreRef = useRef(nombreCliente);
+  useEffect(() => { nombreRef.current = nombreCliente; }, [nombreCliente]);
+  const usoDelNombreRef = useRef({});
 
   // Despierta el servidor apenas se abre el asistente (Render lo duerme si no
   // hay tráfico). Así la primera pregunta no tarda medio minuto.
@@ -304,7 +316,13 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
   const hablar = useCallback((texto) => {
     ultimaRespuestaRef.current = texto;
-    registrar('bot', texto);
+    /*
+     * A veces, con el nombre del cliente: se ve y se escucha así. La memoria
+     * que viaja a la IA se queda con `texto`, sin el nombre (ver registrar y
+     * nombreTiqui.js).
+     */
+    const dicho = conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current);
+    registrar('bot', texto, dicho);
 
     const continuar = () => {
       hablandoRef.current = false;
@@ -324,7 +342,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
     // La voz del teléfono: el respaldo de la de Tiqui, y la única sin ella.
     // "$12.50" se dice "12 dólares con 50 centavos", no "doce pesos". Ver paraDecir.
-    const conElTelefono = () => Speech.speak(paraDecir(texto), {
+    const conElTelefono = () => Speech.speak(paraDecir(dicho), {
       // "es-419" (español latinoamericano neutro) en vez de es-SV: no todos
       // los teléfonos traen una voz de El Salvador instalada, y esta es la
       // que con más frecuencia sí encuentra una voz decente del sistema.
@@ -339,7 +357,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       conElTelefono();
       return;
     }
-    decirConTiqui(asistenteApi.urlVoz(texto), {
+    decirConTiqui(asistenteApi.urlVoz(dicho), {
       // 0,95 es la velocidad "Normal" de la voz del teléfono; el audio va a 1.
       velocidad: rateRef.current / 0.95,
       alTerminar: () => {

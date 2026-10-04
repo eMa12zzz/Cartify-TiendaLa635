@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { areaDeRuta } from '../../utils/sesion';
+import { useIdioma } from '../../hooks/useIdioma';
 import {
   leerConsentimiento,
   guardarConsentimiento,
@@ -113,6 +114,7 @@ const AvisoCookies = () => {
   const consentimiento = useSyncExternalStore(suscribirConsentimiento, leerConsentimiento, () => null);
   const [reabierto, setReabierto] = useState(false);
   const primerBoton = useRef(null);
+  const { t } = useIdioma();
 
   // "Configurar cookies" del pie lo vuelve a abrir, con el foco en el primer
   // botón para que con teclado se pueda decidir de una vez.
@@ -133,22 +135,21 @@ const AvisoCookies = () => {
     <Franja aria-labelledby="aviso-cookies-titulo">
       <Interior>
         <Texto>
-          <h2 id="aviso-cookies-titulo">Sus datos, sus reglas</h2>
+          <h2 id="aviso-cookies-titulo">{t('Sus datos, sus reglas')}</h2>
           <p>
-            Usamos lo necesario para que la tienda funcione: su sesión y su carrito. Si nos deja,
-            también medimos las visitas de forma anónima, sin cookies, para mejorar la tienda.{' '}
-            <Link to="/cookies">Ver la política de cookies</Link>
+            {t('Usamos lo necesario para que la tienda funcione: su sesión y su carrito. Si nos deja, también medimos las visitas de forma anónima, sin cookies, para mejorar la tienda.')}{' '}
+            <Link to="/cookies">{t('Ver la política de cookies')}</Link>
             {consentimiento && (
-              <> · Ahora tiene las analíticas {consentimiento.analiticas ? 'activadas' : 'apagadas'}.</>
+              <> · {consentimiento.analiticas ? t('Ahora tiene las analíticas activadas.') : t('Ahora tiene las analíticas apagadas.')}</>
             )}
           </p>
         </Texto>
         <Botones>
           <Boton ref={primerBoton} type="button" onClick={() => elegir(false)}>
-            Solo lo necesario
+            {t('Solo lo necesario')}
           </Boton>
           <Boton type="button" $solido onClick={() => elegir(true)}>
-            Aceptar analíticas
+            {t('Aceptar analíticas')}
           </Boton>
         </Botones>
       </Interior>

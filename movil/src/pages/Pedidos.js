@@ -95,6 +95,7 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
   const estilos = useEstilos(crearEstilos);
   const ESTADOS = estadosPedido(COLORES.oscuro);
   const estado = ESTADOS[pedido.status] || ESTADOS.pagado;
+  const esCancelado = pedido.status === 'cancelado';
 
   return (
     <Pressable
@@ -135,8 +136,17 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
         ))}
       </View>
 
+      {/* Cancelado: el motivo, en una o dos líneas; el detalle completo está al tocarlo. */}
+      {esCancelado && !!pedido.cancelReason && (
+        <Text style={estilos.motivo} numberOfLines={2}>
+          <Text style={estilos.motivoTitulo}>{pedido.cancelledByClient ? 'Lo canceló usted: ' : 'Motivo: '}</Text>
+          {pedido.cancelReason}
+        </Text>
+      )}
+
       <View style={estilos.pie}>
-        {pedido.pointsEarned > 0 ? (
+        {/* Un cancelado ya no da puntos: se retiraron al cancelarlo. */}
+        {pedido.pointsEarned > 0 && !esCancelado ? (
           <View style={estilos.puntos}>
             <Estrella size={13} color={COLORES.marca} />
             <Text style={estilos.puntosTexto}>+{pedido.pointsEarned} puntos</Text>
@@ -161,7 +171,7 @@ const Pedidos = () => {
   // El detalle (ModalPedido) se pinta en un solo lugar para toda la app —
   // ver el comentario grande de `pedidoAbierto` en PedidoActivoContext.js —
   // así que aquí solo se pide abrirlo, no se dibuja.
-  const { abrirPedido } = usePedidoActivoCtx();
+  const { abrirPedido, ultimoCambio } = usePedidoActivoCtx();
 
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -212,6 +222,17 @@ const Pedidos = () => {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  /*
+   * Un pedido cambió desde el detalle (el cliente lo canceló): se pinta aquí
+   * también, sin volver a pedir la lista. Ver actualizarPedido en
+   * PedidoActivoContext. Se ajusta en el mismo render, sin un efecto de más.
+   */
+  const [cambioVisto, setCambioVisto] = useState(null);
+  if (ultimoCambio && ultimoCambio !== cambioVisto) {
+    setCambioVisto(ultimoCambio);
+    setPedidos((lista) => lista.map((p) => (String(p._id) === String(ultimoCambio._id) ? { ...p, ...ultimoCambio } : p)));
+  }
 
   return (
     <View style={estilos.pantalla}>
@@ -403,6 +424,19 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   lineaPrecio: {
     fontSize: 13.5,
     color: COLORES.textoVentaja,
+  },
+  motivo: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORES.textoSuave,
+    backgroundColor: COLORES.peligroFondo,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  motivoTitulo: {
+    fontWeight: '700',
+    color: COLORES.peligro,
   },
   pie: {
     flexDirection: 'row',

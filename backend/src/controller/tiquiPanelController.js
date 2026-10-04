@@ -140,6 +140,10 @@ const herramientasDe = (esAdmin) => [
               description: "Para estado_pedido: preparando, en_camino (a domicilio), listo (para recoger), entregado o cancelado.",
             },
             codigo_entrega: { type: Type.STRING, description: "Para entregar: los 4 dígitos que dijo el cliente. Vacío si no lo dijeron." },
+            motivo: {
+              type: Type.STRING,
+              description: "Para cancelar: por qué se cancela, en una frase para el cliente ('nos quedamos sin leche'). Vacío si no lo dijeron: no lo inventes.",
+            },
             ...(esAdmin
               ? {
                   producto: {

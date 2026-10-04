@@ -9,6 +9,8 @@ import { PedidoActivoProvider } from './context/PedidoActivoContext';
 import { AjustesProvider } from './context/AjustesContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ModoProvider } from './context/ModoContext';
+import { IdiomaProvider } from './context/IdiomaContext';
+import { leerIdiomaGuardado } from './utils/idioma';
 import { useTemporada } from './hooks/useTemporada';
 import { useEstiloAvisos } from './hooks/useEstiloAvisos';
 import PildoraAviso from './components/UI/PildoraAviso';
@@ -142,10 +144,13 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
  * proveedor. Con el locale solo en el botón, el script salía sin `hl=` y
  * Google caía en el idioma de la cuenta de quien mirara: el botón decía
  * "Continue with Google" en medio de una tienda entera en español.
+ *
+ * Por eso mismo sigue el idioma elegido en la tienda. El script se pide una
+ * vez: si alguien cambia el idioma, el botón se pone al día al recargar.
  */
 function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} locale="es">
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} locale={leerIdiomaGuardado()}>
     <BrowserRouter>
       <AuthProvider>
         {/*
@@ -161,6 +166,11 @@ function App() {
           Ver ModoContext.
         */}
         <ModoProvider>
+        {/*
+          Español o inglés, para la tienda y Mi Cuenta (el panel queda en
+          español). Ver utils/idioma.js.
+        */}
+        <IdiomaProvider>
         {/*
           ThemeProvider (paletas del PANEL, no de la tienda) va aquí adentro
           porque las pantallas de adentro leen los ajustes de la tienda. Ver
@@ -361,6 +371,7 @@ function App() {
         </FavoritosProvider>
         </EdadProvider>
         </ThemeProvider>
+        </IdiomaProvider>
         </ModoProvider>
         </AjustesProvider>
       </AuthProvider>

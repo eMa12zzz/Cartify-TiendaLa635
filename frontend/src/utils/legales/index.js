@@ -19,10 +19,14 @@ import { DEVOLUCIONES } from './devoluciones';
  * ============================================================
  */
 
-export const VERSION_LEGAL = '3.0';
+/*
+ * 3.1: Tiqui llama por su primer nombre a quien inició sesión, y ese nombre
+ * viaja al servicio de la voz (ElevenLabs). A la IA sigue sin llegarle.
+ */
+export const VERSION_LEGAL = '3.1';
 
 // La fecha en que se redactó esta versión, no la de hoy.
-export const FECHA_LEGAL = '24 de septiembre de 2026';
+export const FECHA_LEGAL = '28 de septiembre de 2026';
 
 // En el orden en que se enlazan al pie de cada documento y de la tienda.
 export const DOCUMENTOS_LEGALES = [TERMINOS, PRIVACIDAD, DEVOLUCIONES, COOKIES_DOC];

@@ -1,0 +1,66 @@
+/*
+ * ============================================================
+ * TIQUI Y EL NOMBRE DEL CLIENTE — nombreTiqui.js
+ * ============================================================
+ * Con la sesión iniciada, Tiqui a veces llama a la persona por su nombre:
+ * "¡Listo, María! Te agregué dos manzanas." A veces, no siempre: el nombre en
+ * cada frase suena a vendedor por teléfono, y se gasta.
+ *
+ * SE VE Y SE ESCUCHA, PERO LA IA NO LO RECIBE.
+ * El nombre se pone aquí, en el teléfono, sobre la respuesta ya armada: la
+ * burbuja y la voz de Tiqui (ElevenLabs) llevan el nombre, y la memoria que
+ * viaja a la IA (Gemini) con la siguiente pregunta guarda la frase sin él.
+ * Así lo dice la política de privacidad desde la versión 3.1: si esto cambia,
+ * cambia también la política (utils/legales/privacidad.js) y su versión.
+ *
+ * La web tiene la misma pieza en frontend/src/utils/nombreTiqui.js: si cambia
+ * una, cambia la otra.
+ * ============================================================
+ */
+
+// "MARÍA José Pérez" → "María". Vacío si no parece un nombre (un correo, un número).
+export const primerNombre = (completo) => {
+  const primero = String(completo || '').trim().split(/\s+/)[0] || '';
+  // Letras latinas con tilde y ñ a mano, en vez de \p{L}: así no depende de
+  // qué tan nuevo sea el motor de JavaScript del teléfono.
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ'-]{2,20}$/.test(primero)) return '';
+  return primero.charAt(0).toUpperCase() + primero.slice(1).toLowerCase();
+};
+
+/*
+ * Dónde cabe el nombre sin forzar la frase. Si no hay un lugar natural, no se
+ * pone: mejor sin nombre que "María, 2 Coca-Cola agregadas".
+ *   "¡Listo! Te agregué…"   → "¡Listo, María! Te agregué…"
+ *   "…¿Te lo agrego?"       → "…¿Te lo agrego, María?"
+ * No se usan palabras que dependan de si es hombre o mujer ("bienvenida"): el
+ * nombre no dice eso.
+ */
+export const ponerNombre = (texto, nombre) => {
+  const t = String(texto || '');
+  if (!nombre || !t || t.includes(nombre)) return null;
+  const exclamacion = t.match(/^¡([^!¡?,]{1,24})!/);
+  if (exclamacion) return t.replace(exclamacion[0], `¡${exclamacion[1]}, ${nombre}!`);
+  if (/[A-Za-zÀ-ÖØ-öø-ÿ\d)]\?$/.test(t)) return t.replace(/\?$/, `, ${nombre}?`);
+  return null;
+};
+
+/*
+ * Cuándo. La primera respuesta de la charla, algo más de la mitad de las
+ * veces (hace de saludo); después, más o menos una de cada tres, y nunca en
+ * dos respuestas seguidas ni en dos de tres.
+ *
+ * `estado` es un objeto que el asistente guarda en una ref durante la charla:
+ * { respuestas, ultimaConNombre }. `azar` se puede cambiar para probar.
+ */
+export const conNombreAVeces = (texto, nombre, estado, azar = Math.random) => {
+  estado.respuestas = (estado.respuestas || 0) + 1;
+  if (!nombre) return texto;
+  const n = estado.respuestas;
+  const desdeLaUltima = n - (estado.ultimaConNombre ?? -Infinity);
+  const toca = n === 1 ? azar() < 0.6 : desdeLaUltima >= 3 && azar() < 0.35;
+  if (!toca) return texto;
+  const conNombre = ponerNombre(texto, nombre);
+  if (!conNombre) return texto;
+  estado.ultimaConNombre = n;
+  return conNombre;
+};

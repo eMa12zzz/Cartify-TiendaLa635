@@ -184,11 +184,26 @@ export const proponerCambio = async (args, { esAdmin }) => {
           resumen: `Marco el pedido ${numero}${de} como entregado, con el código correcto.`,
         };
       }
+      /*
+       * Cancelar pide el porqué, igual que el botón de Pedidos: al cliente le
+       * llega en la notificación y en el correo. Si no lo dijeron, se pregunta;
+       * inventarlo sería peor que no decir nada.
+       */
+      if (estado === "cancelado") {
+        const motivo = String(args.motivo || "").trim().replace(/\s+/g, " ");
+        if (motivo.length < 4) {
+          return { ok: false, mensaje: `¿Por qué cancelo el pedido ${numero}? Al cliente le llega el motivo.` };
+        }
+        return {
+          ok: true,
+          cambio: { tipo, pedidoId: String(pedido._id), estado, motivo: motivo.slice(0, 300) },
+          resumen: `Cancelo el pedido ${numero}${de}. Le aviso el motivo, «${motivo.slice(0, 120)}», y se le devuelve lo que pagó.`,
+        };
+      }
       return {
         ok: true,
         cambio: { tipo, pedidoId: String(pedido._id), estado },
-        resumen: `Paso el pedido ${numero}${de} de ${NOMBRE_ESTADO[pedido.status]} a ${NOMBRE_ESTADO[estado]}.` +
-          (estado === "cancelado" ? " Al cliente le llega el aviso de que se canceló." : ""),
+        resumen: `Paso el pedido ${numero}${de} de ${NOMBRE_ESTADO[pedido.status]} a ${NOMBRE_ESTADO[estado]}.`,
       };
     }
 
@@ -376,7 +391,10 @@ export const aplicarCambio = async (cambio, { esAdmin, nombre }) => {
       if (!pedido) return { ok: false, mensaje: "Ese pedido ya no existe." };
       // Revalidar con lo de ahora: en estos segundos otro pudo moverlo.
       const revision = await proponerCambio(
-        { cambio: "estado_pedido", pedido: codigoDePedido(pedido._id), estado_nuevo: cambio.estado, codigo_entrega: cambio.codigo },
+        {
+          cambio: "estado_pedido", pedido: codigoDePedido(pedido._id), estado_nuevo: cambio.estado,
+          codigo_entrega: cambio.codigo, motivo: cambio.motivo,
+        },
         { esAdmin }
       );
       if (!revision.ok) return { ok: false, mensaje: revision.mensaje };
@@ -386,6 +404,7 @@ export const aplicarCambio = async (cambio, { esAdmin, nombre }) => {
         // Queda escrito quién lo movió, y que fue por Tiqui.
         quien: `${nombre || "Personal"} (con Tiqui)`,
         codigoEntrega: cambio.codigo,
+        motivoCancelacion: cambio.motivo,
       });
       if (!r.ok) return { ok: false, mensaje: r.message };
       mensaje = `Listo, el pedido #${codigoDePedido(pedido._id)} quedó ${NOMBRE_ESTADO[cambio.estado]}.`;

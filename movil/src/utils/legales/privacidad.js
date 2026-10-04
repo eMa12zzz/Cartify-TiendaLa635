@@ -23,7 +23,7 @@
 const COLUMNAS_DATOS = ['Dato', 'Para qué', 'Quién más lo ve', 'Cuánto se guarda'];
 
 const FILAS_DATOS = [
-  ['Nombre y nombre de usuario', 'Saber quién hizo el pedido y saludarle por su nombre.', 'Solo la tienda.', 'Mientras tenga su cuenta.'],
+  ['Nombre y nombre de usuario', 'Saber quién hizo el pedido y saludarle por su nombre.', 'La tienda y el servicio que envía los correos. Su primer nombre, además, el servicio que pone la voz de Tiqui cuando ella se lo dice.', 'Mientras tenga su cuenta.'],
   ['Correo electrónico', 'Confirmar que la cuenta es suya, recuperar la contraseña y avisarle de su pedido. Promociones solo si usted las acepta.', 'La tienda y el servicio que envía los correos.', 'Mientras tenga su cuenta.'],
   ['Teléfono', 'Llamarle si quien lleva el pedido no encuentra la casa.', 'La tienda y quien le lleva ese pedido.', 'Mientras tenga su cuenta.'],
   ['Fecha de nacimiento (opcional)', 'Habilitar la compra de productos para mayores de 18. Sin ella, esos productos quedan tapados y el resto funciona igual.', 'Solo la tienda.', 'Mientras tenga su cuenta, o hasta que la borre.'],
@@ -31,7 +31,7 @@ const FILAS_DATOS = [
   ['Direcciones y su punto en el mapa', 'Llegar a su puerta y calcular el envío y el tiempo de entrega.', 'La tienda y quien le lleva ese pedido.', 'Hasta que borre la dirección.'],
   ['Foto de perfil (opcional)', 'Que su cuenta se reconozca de un vistazo.', 'La tienda y el servicio donde se guardan las imágenes.', 'Hasta que la cambie o la quite.'],
   ['Tarjetas guardadas (opcional)', 'Reconocer su tarjeta: marca, últimos cuatro números, titular y vencimiento. Nunca el número completo ni el código de seguridad.', 'Solo la tienda.', 'Hasta que la quite.'],
-  ['Lo que le dice a Tiqui', 'Entender su pedido y contestarle. La tienda recibe el texto de lo que dijo, no una grabación.', 'Los servicios de inteligencia artificial y de voz de la lista de abajo, sin su nombre, correo ni dirección.', 'No se guarda: se usa para contestar y se descarta.'],
+  ['Lo que le dice a Tiqui', 'Entender su pedido y contestarle. La tienda recibe el texto de lo que dijo, no una grabación.', 'Los servicios de inteligencia artificial y de voz de la lista de abajo, sin su correo ni su dirección. La inteligencia artificial tampoco recibe su nombre.', 'No se guarda: se usa para contestar y se descarta.'],
   ['Sus pedidos y sus puntos', 'Sus recibos, sus puntos y la contabilidad de la tienda.', 'Solo la tienda.', 'Los pedidos quedan en la contabilidad aunque cierre su cuenta, pero sin su nombre.'],
   ['Visitas al sitio (solo si las acepta)', 'Saber qué páginas se usan más, sin saber quién es usted.', 'El servicio de analíticas, sin cookies y sin datos que le identifiquen.', 'Datos agregados, sin su nombre.'],
   ['Su contraseña', 'Entrar a su cuenta.', 'Nadie. No la guardamos: guardamos una huella cifrada de la que no se puede volver atrás.', 'Mientras tenga su cuenta.'],
@@ -47,10 +47,10 @@ const TERCEROS = [
   'Cloudinary: guarda las imágenes, incluida su foto de perfil si subió una.',
   'Mailjet: envía los correos de verificación, recuperación de contraseña, avisos de pedido y, si los aceptó, promociones. Recibe su correo y su nombre.',
   'Google: cuando usted elige "Continuar con Google", Google nos confirma su nombre, correo y foto. Además, Google Gemini ayuda a Tiqui a entender lo que usted dijo: recibe el texto de su frase y la lista de productos, sin su nombre, correo ni dirección.',
-  'ElevenLabs: pone la voz de Tiqui. Recibe el texto de lo que Tiqui le va a decir.',
+  'ElevenLabs: pone la voz de Tiqui. Recibe el texto de lo que Tiqui le va a decir, que a veces lleva su primer nombre si inició sesión ("¡Listo, María!").',
   'OpenStreetMap y CARTO: el mapa. OpenStreetMap recibe la dirección que usted escribe o, si toca "usar mi ubicación", las coordenadas de ese punto, para convertirlas en una dirección; CARTO entrega las calles del mapa. Nunca su nombre ni su teléfono.',
   'Expo: envía las notificaciones de la aplicación, si usted las permite en su teléfono.',
-  'Su navegador o su teléfono: el reconocimiento de voz del micrófono lo hace el propio aparato (en Chrome y Android, con servicios de Google; en iPhone, de Apple). La tienda solo recibe el texto.',
+  'Su navegador o su teléfono: el reconocimiento de voz del micrófono lo hace el propio aparato (en Chrome y Android, con servicios de Google; en iPhone, de Apple). La tienda solo recibe el texto. Si la voz de Tiqui no está disponible, contesta con la voz del propio aparato, que en algunos navegadores también es un servicio de Google.',
 ];
 
 export const PRIVACIDAD = {
@@ -122,6 +122,7 @@ export const PRIVACIDAD = {
             'Tiqui solo escucha después de que usted toca el micrófono, y deja de escuchar cuando la detiene o cierra el asistente.',
             'El paso de voz a texto lo hace su navegador o su teléfono. La tienda recibe el texto, nunca una grabación, y no guarda lo que usted dijo.',
             'Para entender frases más difíciles, el texto viaja a Google Gemini junto con la lista de productos, sin sus datos personales.',
+            'Si inició sesión, Tiqui a veces le llama por su primer nombre. Ese nombre lo agrega la tienda a la respuesta ya armada: no viaja a Google Gemini, pero sí al servicio que pone la voz, junto con la frase que Tiqui le va a decir.',
             'Si en la frase dice algo personal (su dirección, por ejemplo), ese texto viaja igual: mejor no le dicte datos sensibles a Tiqui.',
           ],
         },

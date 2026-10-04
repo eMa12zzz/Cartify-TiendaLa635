@@ -1,7 +1,7 @@
 import express from "express";
 import orderController from "../controller/orderController.js";
 import uploadPrint from "../utils/printUpload.js";
-import { soloPersonal, conSesion } from "../middlewares/validarSesion.js";
+import { soloPersonal, soloCliente, conSesion } from "../middlewares/validarSesion.js";
 import { identificarComprador } from "../middlewares/identificarComprador.js";
 
 /*
@@ -246,6 +246,42 @@ router
  * quien tenga sesión; el controlador comprueba además que el pedido sea suyo y
  * que ya esté entregado.
  */
+/**
+ * @swagger
+ * /order/{id}/cancelar:
+ *   patch:
+ *     summary: El cliente cancela su propio pedido mientras está por preparar
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               motivo:
+ *                 type: string
+ *                 description: Por qué lo cancela (mínimo 4 caracteres).
+ *     responses:
+ *       200:
+ *         description: Pedido cancelado; stock, saldo y puntos devueltos.
+ *       400:
+ *         description: Falta el motivo, o el pedido ya no está por preparar.
+ *       403:
+ *         description: El pedido es de otro cliente.
+ *       409:
+ *         description: La tienda lo empezó a preparar en ese momento.
+ */
+router
+  .route("/:id/cancelar")
+  .patch(soloCliente, orderController.cancelarPorCliente);
+
 router
   .route("/:id/rating")
   .patch(conSesion, orderController.rateService);

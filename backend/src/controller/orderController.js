@@ -5,6 +5,8 @@ import loyaltyConfigModel from "../models/loyaltyConfig.js";
 import loyaltyLedgerModel from "../models/loyaltyLedger.js";
 import printServiceModel from "../models/printService.js";
 import productModel from "../models/product.js";
+import adminModel from "../models/admin.js";
+import employeeModel from "../models/employee.js";
 import promotionModel from "../models/promotion.js";
 import { sendPrintToPrinter } from "../utils/sendPrintToPrinter.js";
 import { getLoyaltyConfig, puntosDisponibles, consumirPuntos } from "../utils/loyaltyPoints.js";
@@ -214,19 +216,25 @@ orderController.createOrder = async (req, res) => {
     // ── CANJE DE PUNTOS ──
     // Nos protegemos de tres cosas: que no canjee más de lo que tiene, que no
     // canjee más de lo que cuesta la compra, y que respete el mínimo.
-    let pointsRedeemed = 0;
+    /*
+     * Aquí solo se CALCULA cuántos se canjean. Se consumen al final, cuando ya
+     * no queda nada que pueda rechazar el pedido: antes se consumían aquí, y si
+     * después faltaba la dirección o no alcanzaba el saldo, el pedido no se
+     * hacía y los puntos se perdían igual.
+     */
+    let aCanjear = 0;
     let discount = 0;
     const pedidos = Number(pointsToRedeem) || 0;
+    const tasa = config.pointsPerDollarRedeem || 100;
 
     if (pedidos > 0 && config.isActive) {
       const disponibles = await puntosDisponibles(clientId);
-      const tasa = config.pointsPerDollarRedeem || 100;
       const topePorCompra = Math.floor(subtotal * tasa); // no regalar más que el total
       const posibles = Math.min(pedidos, disponibles, topePorCompra);
 
       if (posibles >= (config.minRedeemPoints || 0)) {
-        pointsRedeemed = await consumirPuntos(clientId, posibles);
-        discount = Number((pointsRedeemed / tasa).toFixed(2));
+        aCanjear = posibles;
+        discount = Number((aCanjear / tasa).toFixed(2));
       }
     }
 
@@ -246,10 +254,17 @@ orderController.createOrder = async (req, res) => {
      */
     const ajustesTienda = await storeSettingsModel
       .findOne({ clave: CLAVE_UNICA })
-      .select("ubicacionTienda envioBase envioPorKm zonasEnvio servicioActivo servicioTipo servicioValor");
-    const shippingCost = entrega === "delivery"
-      ? calcularEnvio(ajustesTienda || {}, { lat: deliveryLat, lng: deliveryLng }).costo
-      : 0;
+      .select("ubicacionTienda envioBase envioPorKm zonasEnvio radioMaximoKm servicioActivo servicioTipo servicioValor");
+    const envio = entrega === "delivery"
+      ? calcularEnvio(ajustesTienda || {}, { lat: deliveryLat, lng: deliveryLng })
+      : null;
+    // Muy lejos de la tienda no se entrega. Ver RADIO_MAXIMO_KM en utils/envio.js.
+    if (envio?.fueraDeCobertura) {
+      return res.status(400).json({
+        message: `Esa dirección queda a ${envio.distanciaKm} km de la tienda, fuera de la zona de entrega. Puede elegir recogerlo en la tienda.`,
+      });
+    }
+    const shippingCost = envio ? envio.costo : 0;
 
     /*
      * Tarifa de servicio: solo si la tienda la tiene activa. Fija (dólares) o un
@@ -290,6 +305,14 @@ orderController.createOrder = async (req, res) => {
         });
       }
     }
+
+    /*
+     * Ahora sí se consumen los puntos: ya pasó todo lo que podía rechazar el
+     * pedido. Si justo en este instante otra compra gastó parte de ellos, se
+     * canjean los que quedan; el descuento ya está en el total, y es un caso
+     * tan raro que no vale la pena rehacer el cobro por él.
+     */
+    const pointsRedeemed = aCanjear > 0 ? await consumirPuntos(clientId, aCanjear) : 0;
 
     const newOrder = new orderModel({
       clientId,
@@ -545,11 +568,34 @@ orderController.getOrders = async (req, res) => {
  * cliente) vive en utils/estadoPedido.js: lo comparte con Tiqui del panel,
  * que también mueve pedidos cuando se lo piden. Aquí solo se traduce a HTTP.
  */
+/*
+ * El nombre de quien mueve el pedido, sacado de su sesión. La pantalla de
+ * Pedidos no lo manda, así que los sellos (preparedBy, deliveredBy…) quedaban
+ * vacíos: el pedido decía a qué hora se entregó pero no quién lo entregó.
+ */
+const nombreDelPersonal = async (usuario) => {
+  if (!usuario?.id || usuario.tipo === "Client") return "";
+  try {
+    const doc = usuario.tipo === "Admin"
+      ? await adminModel.findById(usuario.id, "userName").lean()
+      : await employeeModel.findById(usuario.id, "fullnName userName").lean();
+    return String(doc?.fullnName || doc?.userName || "").trim();
+  } catch {
+    return "";
+  }
+};
+
 orderController.updateOrderStatus = async (req, res) => {
   try {
-    const { status, quien, codigoEntrega, omitirCodigo, motivoOmision } = req.body;
+    const { status, quien, codigoEntrega, omitirCodigo, motivoOmision, motivoCancelacion } = req.body;
     const r = await cambiarEstadoDePedido({
-      id: req.params.id, status, quien: quien || "", codigoEntrega, omitirCodigo, motivoOmision,
+      id: req.params.id,
+      status,
+      quien: quien || await nombreDelPersonal(req.usuario),
+      codigoEntrega,
+      omitirCodigo,
+      motivoOmision,
+      motivoCancelacion,
     });
     if (!r.ok) return res.status(r.codigo).json({ message: r.message });
     return res.status(200).json({ message: "Estado actualizado", order: r.order });
@@ -559,6 +605,64 @@ orderController.updateOrderStatus = async (req, res) => {
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
+/*
+ * UPDATE — El CLIENTE cancela su pedido.
+ *
+ * Solo mientras está "por preparar": en cuanto la tienda empieza a juntar los
+ * productos, ya hay alguien trabajando en él y cancelarlo desde la app dejaría
+ * la bolsa armada a medias. Ahí se le pide que escriba por WhatsApp.
+ *
+ * Todo lo demás es la cancelación de siempre (utils/estadoPedido.js): vuelve
+ * el stock, se le devuelve el saldo y los puntos canjeados. El motivo lo elige
+ * el cliente y lo lee el personal en Pedidos.
+ */
+const YA_EN_PREPARACION =
+  "Ya empezamos a preparar su pedido y no se puede cancelar desde aquí. Escríbanos por WhatsApp y lo vemos.";
+
+orderController.cancelarPorCliente = async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+    const pedido = await orderModel.findById(req.params.id).select("clientId status");
+    if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+    if (String(pedido.clientId) !== req.usuario.id) {
+      return res.status(403).json({ message: "No tiene permiso para esta acción" });
+    }
+    if (pedido.status === "cancelado") {
+      return res.status(400).json({ message: "Este pedido ya está cancelado." });
+    }
+    if (pedido.status !== "pagado") {
+      return res.status(400).json({ message: YA_EN_PREPARACION });
+    }
+
+    const motivo = String(req.body.motivo || "").trim();
+    if (motivo.length < 4) {
+      return res.status(400).json({ message: "Cuéntenos por qué lo cancela: elija una opción." });
+    }
+
+    const r = await cambiarEstadoDePedido({
+      id: req.params.id,
+      status: "cancelado",
+      quien: "el cliente",
+      motivoCancelacion: motivo,
+      soloDesde: "pagado",
+      porCliente: true,
+    });
+    // 409: la tienda lo empezó a preparar entre que se abrió la pantalla y ahora.
+    if (!r.ok) return res.status(r.codigo).json({ message: r.codigo === 409 ? YA_EN_PREPARACION : r.message });
+
+    return res.status(200).json({ message: "Pedido cancelado", order: r.order });
+  } catch (error) {
+    console.log("error cancelarPorCliente: " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+// Topes de un trabajo de impresión (la web y la app usan los mismos).
+export const MAX_COPIAS = 200;
+export const MAX_PAGINAS = 500;
 
 // INSERT — Crear un pedido de IMPRESIÓN (sube archivo + opciones).
 orderController.createPrintOrder = async (req, res) => {
@@ -582,8 +686,20 @@ orderController.createPrintOrder = async (req, res) => {
     }
 
     const esColor = color === "true" || color === true;
-    const nCopias = Number(copies) || 1;
-    const nPaginas = Number(pages) || 1;
+    /*
+     * Copias y páginas, enteras y con tope. Antes pasaba cualquier número: el
+     * campo de copias de la web acepta "1e258" (un <input type="number"> deja
+     * escribir exponentes) y llegaron pedidos de 10^258 copias, con un total y
+     * unos puntos de 5×10^256 que dejaron el dashboard ilegible.
+     */
+    const nCopias = copies === undefined || copies === "" ? 1 : Number(copies);
+    const nPaginas = pages === undefined || pages === "" ? 1 : Number(pages);
+    if (!Number.isInteger(nCopias) || nCopias < 1 || nCopias > MAX_COPIAS) {
+      return res.status(400).json({ message: `Las copias van de 1 a ${MAX_COPIAS}.` });
+    }
+    if (!Number.isInteger(nPaginas) || nPaginas < 1 || nPaginas > MAX_PAGINAS) {
+      return res.status(400).json({ message: `El documento puede tener de 1 a ${MAX_PAGINAS} páginas.` });
+    }
     const doble = doubleSided === "true" || doubleSided === true;
 
     /*

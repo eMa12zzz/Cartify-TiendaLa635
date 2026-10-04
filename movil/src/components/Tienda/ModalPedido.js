@@ -6,7 +6,9 @@ import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { Equis, Estrella, Paquete } from '../UI/Iconos';
-import { estadosPedido, poseDeEstado } from '../../utils/pasosPedido';
+import { estadosPedido, poseDeEstado, textoDevuelto, sellosDeCancelacion } from '../../utils/pasosPedido';
+import { usePedidoActivoCtx } from '../../context/PedidoActivoContext';
+import { cancelarPedido } from '../../api/pedidosApi';
 import Mascota from '../Tiqui/Mascota';
 import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
@@ -68,6 +70,15 @@ const FilaProducto = ({ item }) => {
  * no a vigilarlo mientras se abre.
  * ============================================================
  */
+
+// Los mismos motivos que en la web (ModalCancelarMiPedido): los lee el personal.
+const MOTIVOS_CANCELAR = [
+  'Me equivoqué en el pedido.',
+  'Ya no lo necesito.',
+  'Quiero cambiar la dirección o la forma de pago.',
+  'Encontré lo que buscaba en otro lugar.',
+  'Prefiero no decirlo.',
+];
 
 const fechaLarga = (iso) => {
   if (!iso) return '';
@@ -150,6 +161,40 @@ const ModalPedido = ({ pedido, alCerrar }) => {
     })
   ).current;
 
+  /*
+   * Cancelar, mientras está por preparar. Se abre aquí mismo, debajo del
+   * estado: elegir el motivo con un toque y confirmar, sin otra pantalla.
+   */
+  const { actualizarPedido, refrescar } = usePedidoActivoCtx();
+  const [cancelando, setCancelando] = useState(false);
+  const [motivo, setMotivo] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [errorCancelar, setErrorCancelar] = useState('');
+
+  const soltarCancelacion = () => {
+    setCancelando(false);
+    setMotivo('');
+    setErrorCancelar('');
+  };
+
+  const confirmarCancelacion = async () => {
+    if (!motivo || enviando) return;
+    setEnviando(true);
+    setErrorCancelar('');
+    try {
+      const r = await cancelarPedido(pedido._id, motivo);
+      // El detalle, la lista y la burbuja se enteran juntos. Ver actualizarPedido.
+      actualizarPedido(sellosDeCancelacion(r?.order));
+      refrescar();
+      soltarCancelacion();
+    } catch (e) {
+      // Casi siempre: que la tienda ya lo empezó a preparar (lo dice el servidor).
+      setErrorCancelar(e?.message || 'No se pudo cancelar. Intente de nuevo.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   if (!pedido) return null;
 
   const estados = estadosPedido(COLORES.oscuro);
@@ -167,6 +212,14 @@ const ModalPedido = ({ pedido, alCerrar }) => {
   const envio = Number(pedido.shippingCost || 0);
   const servicio = Number(pedido.serviceFee || 0);
   const descuento = Number(pedido.discount || 0);
+
+  // Lo que se le devolvería al cancelar, dicho antes (la misma cuenta del servidor).
+  const devolveria = textoDevuelto({
+    reembolso: {
+      saldo: pedido.paymentMethod === 'saldo' ? Number(pedido.total) || 0 : 0,
+      puntos: Number(pedido.pointsRedeemed) || 0,
+    },
+  }, { antes: true });
 
   return (
     <View style={estilos.capa}>
@@ -211,12 +264,86 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               <Mascota pose={poseDeEstado(pedido.status)} alto={120} />
             </View>
 
+            {/*
+              Cancelado: por qué y lo que se le devolvió, igual que en la web.
+              Los pedidos cancelados antes de que se pidiera un motivo no
+              traen ninguno y se quedan con la frase de siempre.
+            */}
             {esCancelado ? (
-              <Text style={estilos.notaCancelado}>Este pedido fue cancelado.</Text>
+              <View style={estilos.notaCancelado}>
+                {pedido.cancelledByClient && (
+                  <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoUsted]}>Usted canceló este pedido.</Text>
+                )}
+                <Text style={estilos.notaCanceladoTexto}>
+                  {pedido.cancelReason ? (
+                    <>
+                      <Text style={estilos.notaCanceladoTitulo}>Motivo: </Text>
+                      {pedido.cancelReason}
+                    </>
+                  ) : 'Este pedido fue cancelado.'}
+                </Text>
+                {!!textoDevuelto(pedido) && (
+                  <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoDevuelto]}>{textoDevuelto(pedido)}</Text>
+                )}
+              </View>
             ) : (
               <View style={estilos.bloquePasos}>
                 <PasosPedido deliveryType={pedido.deliveryType} estado={pedido.status} />
               </View>
+            )}
+
+            {/*
+              Cancelar: solo mientras está por preparar (el servidor también
+              lo revisa), y nunca el pedido de prueba del simulador.
+            */}
+            {pedido.status === 'pagado' && !pedido.simulado && (
+              !cancelando ? (
+                <Pressable
+                  onPress={() => setCancelando(true)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [estilos.botonCancelar, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={estilos.botonCancelarTexto}>Cancelar pedido</Text>
+                </Pressable>
+              ) : (
+                <View style={estilos.cancelar}>
+                  <Text style={estilos.cancelarTitulo}>¿Por qué lo cancela?</Text>
+                  <Text style={estilos.cancelarBajada}>
+                    Todavía no lo empezamos a preparar, así que se puede cancelar.{devolveria ? ` ${devolveria}` : ''}
+                  </Text>
+                  <View accessibilityRole="radiogroup" style={estilos.opciones}>
+                    {MOTIVOS_CANCELAR.map((m) => {
+                      const elegido = motivo === m;
+                      return (
+                        <Pressable
+                          key={m}
+                          onPress={() => setMotivo(m)}
+                          accessibilityRole="radio"
+                          accessibilityState={{ checked: elegido }}
+                          style={[estilos.opcion, elegido && { borderColor: colores.marca, backgroundColor: colores.marcaTenue }]}
+                        >
+                          <Text style={[estilos.opcionTexto, elegido && { fontWeight: '700', color: colores.marcaTexto }]}>{m}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {!!errorCancelar && <Text style={estilos.errorCancelar}>{errorCancelar}</Text>}
+                  <View style={estilos.filaBotones}>
+                    <Pressable onPress={soltarCancelacion} accessibilityRole="button" style={estilos.botonMantener}>
+                      <Text style={estilos.botonMantenerTexto}>No, mantenerlo</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={confirmarCancelacion}
+                      disabled={!motivo || enviando}
+                      accessibilityRole="button"
+                      accessibilityState={{ disabled: !motivo || enviando }}
+                      style={[estilos.botonConfirmar, (!motivo || enviando) && { opacity: 0.5 }]}
+                    >
+                      <Text style={estilos.botonConfirmarTexto}>{enviando ? 'Cancelando…' : 'Sí, cancelar'}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )
             )}
 
             <CodigoEntrega codigo={pedido.deliveryCode} estado={pedido.status} compacto />
@@ -305,7 +432,8 @@ const ModalPedido = ({ pedido, alCerrar }) => {
             {!pedido.simulado && <ValoracionServicio pedido={pedido} />}
             {!pedido.simulado && <ValoracionPedido pedido={pedido} />}
 
-            {pedido.pointsEarned > 0 && (
+            {/* Un cancelado ya no da puntos: se retiraron al cancelarlo. */}
+            {pedido.pointsEarned > 0 && !esCancelado && (
               <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
                 <Estrella size={14} color={colores.marca} />
                 <Text style={[estilos.puntosTexto, { color: colores.marcaTexto }]}>
@@ -418,12 +546,106 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     marginBottom: 14,
   },
   notaCancelado: {
-    fontSize: 13.5,
-    color: COLORES.textoSuave,
     backgroundColor: COLORES.peligroFondo,
     borderRadius: 12,
     padding: 12,
     marginBottom: 14,
+    gap: 4,
+  },
+  notaCanceladoTexto: {
+    fontSize: 13.5,
+    lineHeight: 19,
+    color: COLORES.textoSuave,
+  },
+  notaCanceladoTitulo: {
+    fontWeight: '700',
+    color: COLORES.peligro,
+  },
+  notaCanceladoDevuelto: {
+    fontSize: 12.5,
+  },
+  notaCanceladoUsted: {
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+  },
+  botonCancelar: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingVertical: 11,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORES.lineaCard,
+    marginBottom: 14,
+  },
+  botonCancelarTexto: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORES.peligro,
+  },
+  cancelar: {
+    borderWidth: 1,
+    borderColor: COLORES.lineaCard,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    gap: 10,
+  },
+  cancelarTitulo: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORES.tituloFuerte,
+  },
+  cancelarBajada: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORES.textoSuave,
+  },
+  opciones: {
+    gap: 8,
+  },
+  opcion: {
+    borderWidth: 1.5,
+    borderColor: COLORES.lineaCard,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  opcionTexto: {
+    fontSize: 13.5,
+    color: COLORES.texto,
+  },
+  errorCancelar: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORES.peligro,
+  },
+  filaBotones: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  botonMantener: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 11,
+    borderRadius: 999,
+    backgroundColor: COLORES.papelSuave,
+  },
+  botonMantenerTexto: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORES.texto,
+  },
+  botonConfirmar: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 11,
+    borderRadius: 999,
+    backgroundColor: COLORES.peligro,
+  },
+  botonConfirmarTexto: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
   tarjeta: {
     borderWidth: 1,

@@ -6,6 +6,7 @@ import PieTienda from './PieTienda';
 import ProductCard from './ProductCard';
 import { useDetalleProducto } from '../../hooks/useDetalleProducto';
 import { unidadDe, piezasEnTexto } from '../../utils/unidades';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -531,6 +532,7 @@ const ProductDetailModal = ({
     esFavorito,
     alternarFavorito,
   } = useDetalleProducto({ producto, onClose, onAgregarAlCarrito, todosLosProductos });
+  const { t } = useIdioma();
 
   /*
    * A dónde cae al cerrar: el último sitio por el que pasó. Si el rastro es
@@ -563,7 +565,7 @@ const ProductDetailModal = ({
             */}
             <Volver onClick={cerrar}>
               <ChevronLeft size={17} strokeWidth={2.4} />
-              {ultimoEscalon ? `Volver a ${ultimoEscalon}` : 'Volver'}
+              {ultimoEscalon ? t('Volver a {lugar}', { lugar: ultimoEscalon }) : t('Volver')}
             </Volver>
 
             {/*
@@ -576,7 +578,7 @@ const ProductDetailModal = ({
               del rastro que arma la pantalla —pasillo, categoría, búsqueda,
               promo— y cada escalón devuelve a su sitio. Ver useRastroTienda.
             */}
-            <Migas aria-label="Ruta">
+            <Migas aria-label={t('Ruta')}>
               {rastro.map((escalon) => (
                 <Fragment key={escalon.etiqueta}>
                   <MigaEnlace onClick={() => { escalon.alTocar(); cerrar(); }}>{escalon.etiqueta}</MigaEnlace>
@@ -595,14 +597,14 @@ const ProductDetailModal = ({
             <Galeria>
               <Sellos>
                 {ahorro > 0 && <Sello $oferta>-{ahorro}%</Sello>}
-                {producto.esMasVendido && <Sello>Los más vendidos</Sello>}
+                {producto.esMasVendido && <Sello>{t('Los más vendidos')}</Sello>}
               </Sellos>
 
               <Corazon
                 $activo={esFavorito}
                 onClick={alternarFavorito}
-                title={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-                aria-label={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+                title={esFavorito ? t('Quitar de favoritos') : t('Guardar en favoritos')}
+                aria-label={esFavorito ? t('Quitar de favoritos') : t('Guardar en favoritos')}
                 aria-pressed={esFavorito}
               >
                 <Heart size={19} strokeWidth={2.1} />
@@ -640,7 +642,7 @@ const ProductDetailModal = ({
                   <PrecioAntes>${Number(producto.precioAnterior).toFixed(2)}</PrecioAntes>
                 )}
                 <Existencia $agotado={agotado}>
-                  {agotado ? 'Agotado' : '✓ En existencia'}
+                  {agotado ? t('Agotado') : t('✓ En existencia')}
                 </Existencia>
               </Precios>
 
@@ -653,8 +655,7 @@ const ProductDetailModal = ({
               */}
               {soloAdultos && (
                 <AvisoAdultos>
-                  <strong>Solo para mayores de 18 años.</strong> Se le pedirá su documento de
-                  identidad al entregar el pedido. Sin él, este producto no se puede entregar.
+                  <strong>{t('Solo para mayores de 18 años.')}</strong> {t('Se le pedirá su documento de identidad al entregar el pedido. Sin él, este producto no se puede entregar.')}
                 </AvisoAdultos>
               )}
 
@@ -668,7 +669,7 @@ const ProductDetailModal = ({
               */}
               <Agregar onClick={agregar} disabled={agotado}>
                 <ShoppingBag size={18} strokeWidth={2.2} />
-                {agotado ? 'Agotado por ahora' : 'Añadir al carrito'}
+                {agotado ? t('Agotado por ahora') : t('Añadir al carrito')}
               </Agregar>
 
               {/*
@@ -678,14 +679,14 @@ const ProductDetailModal = ({
                 El renglón de las piezas solo sale si el producto las declara.
               */}
               <Datos>
-                <dt>Categoría</dt>
+                <dt>{t('Categoría')}</dt>
                 <dd>{producto.categoria}</dd>
-                <dt>Se vende</dt>
-                <dd>{unidadDe(producto).nombre}</dd>
+                <dt>{t('Se vende')}</dt>
+                <dd>{t(unidadDe(producto).nombre)}</dd>
                 {piezasEnTexto(producto) && (
                   <>
-                    <dt>Presentación</dt>
-                    <dd>{piezasEnTexto(producto)}</dd>
+                    <dt>{t('Presentación')}</dt>
+                    <dd>{piezasEnTexto(producto, t)}</dd>
                   </>
                 )}
               </Datos>
@@ -698,7 +699,7 @@ const ProductDetailModal = ({
               */}
               {producto.descripcion && (
                 <Descripcion>
-                  <h2>Sobre el producto</h2>
+                  <h2>{t('Sobre el producto')}</h2>
                   <p>{producto.descripcion}</p>
                 </Descripcion>
               )}
@@ -707,8 +708,8 @@ const ProductDetailModal = ({
 
           {recomendados.length > 0 && (
             <Recomendados>
-              <TituloRecs>Del mismo pasillo</TituloRecs>
-              <PieRecs>Más de {(producto.categoria || 'la tienda').toLowerCase()}, por si andaba viendo.</PieRecs>
+              <TituloRecs>{t('Del mismo pasillo')}</TituloRecs>
+              <PieRecs>{t('Más de {categoria}, por si andaba viendo.', { categoria: producto.categoria ? producto.categoria.toLowerCase() : t('la tienda') })}</PieRecs>
               {/*
                 La MISMA tarjeta que la tienda. Antes esto tenía su propio
                 diseño —más chico, con el stock en inglés ("5 Left") y el click

@@ -1,5 +1,6 @@
 import { ShieldCheck, Store as StoreFront, Bike } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -29,6 +30,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbuja = false }) => {
   const { palette } = useTheme();
   const c = palette.colors;
+  const { t } = useIdioma();
 
   /*
    * Sin código no se pinta nada. Pasa en los pedidos anteriores a esta función,
@@ -44,8 +46,8 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
   const Icono = esDomicilio ? Bike : StoreFront;
 
   const explicacion = esDomicilio
-    ? 'Dígaselos a quien le entregue el pedido en la puerta.'
-    : 'Dígaselos en el mostrador al recoger su pedido.';
+    ? t('Dígaselos a quien le entregue el pedido en la puerta.')
+    : t('Dígaselos en el mostrador al recoger su pedido.');
 
   // Los dígitos, separados. Un "0451" de corrido se lee mal en un teléfono a
   // contraluz; separados se dictan de un vistazo.
@@ -55,7 +57,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
     return (
       <div className="flex items-center gap-2">
         <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'var(--marca-texto)' }} />
-        <span className="text-xs" style={{ color: c.textMuted }}>Código de entrega</span>
+        <span className="text-xs" style={{ color: c.textMuted }}>{t('Código de entrega')}</span>
         <span
           className="text-sm font-bold tracking-[0.2em]"
           style={{ color: c.textPrimary }}
@@ -85,7 +87,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
       <div className="flex items-center gap-2 mb-3">
         <ShieldCheck className="w-4 h-4" style={{ color: 'var(--marca-texto)' }} />
         <span className="text-sm font-bold" style={{ color: c.textPrimary }}>
-          Su código de entrega
+          {t('Su código de entrega')}
         </span>
       </div>
 
@@ -112,7 +114,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
         <p className="text-xs leading-relaxed" style={{ color: c.textSecondary }}>
           {explicacion}{' '}
           <span style={{ color: c.textMuted }}>
-            Nadie de la tienda lo ve en su pantalla: se lo tienen que pedir a usted.
+            {t('Nadie de la tienda lo ve en su pantalla: se lo tienen que pedir a usted.')}
           </span>
         </p>
       </div>
