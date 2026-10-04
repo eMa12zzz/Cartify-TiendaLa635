@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
@@ -59,13 +59,30 @@ const Cuerpo = styled.div`
 `;
 
 /* ─── Category Bar ─── */
-/* En el diseño las categorías van CENTRADAS, no pegadas a la izquierda. */
+/* Lo que tapa cada flecha: al traer la categoría elegida a la vista se deja ese margen. */
+const ANCHO_FLECHA_CAT = 56;
+
+/*
+ * Fundido solo en la orilla que tiene algo escondido. Es lo que avisa que hay
+ * más categorías: sin él, la última cortada a filo se lee como el final de la
+ * lista. En la orilla a la que ya se llegó no hay nada que avisar.
+ */
+const fundidoCategorias = ({ $izq, $der }) => {
+  const izq = $izq ? 'transparent 0, #000 var(--fundido)' : '#000 0';
+  const der = $der ? '#000 calc(100% - var(--fundido)), transparent 100%' : '#000 100%';
+  return `linear-gradient(to right, ${izq}, ${der})`;
+};
+
+/* La barra y sus flechas: las flechas van fuera de la barra para que el fundido no las borre. */
+const CategoryZona = styled.div`
+  position: relative;
+`;
+
 const CategoryBar = styled.nav`
+  /* relative: así offsetLeft de cada pastilla se mide desde la barra. */
+  position: relative;
   background: transparent;
-  padding: 0 28px;
   display: flex;
-  justify-content: center;
-  gap: 8px;
   overflow-x: auto;
   /*
    * Sin raya abajo. La única línea de la pantalla es la del encabezado, que
@@ -77,22 +94,42 @@ const CategoryBar = styled.nav`
   &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
 
-  /* Con muchas categorías deja de centrar y se vuelve deslizable. */
-  @media (max-width: 900px) { justify-content: flex-start; }
+  --fundido: 72px;
+  mask-image: ${fundidoCategorias};
+  -webkit-mask-image: ${fundidoCategorias};
 
   /*
    * Deslizable con el dedo, sin arrastrar la página con él: el que se corre es
-   * ESTE renglón, no el cuerpo. El fundido de la orilla derecha es lo que
-   * avisa que hay más categorías — sin él, "Snacks" cortado a filo se lee como
-   * el final de la lista.
+   * ESTE renglón, no el cuerpo.
    */
   @media (max-width: 700px) {
-    padding: 0 16px;
     height: 54px;
     scroll-padding-inline: 16px;
-    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
+    --fundido: 26px;
   }
+`;
+
+/*
+ * En el diseño las categorías van CENTRADAS, pero sin perder la orilla.
+ *
+ * Antes la barra misma llevaba justify-content: center, y cuando las
+ * categorías ya no cabían el centrado empujaba la lista hacia los DOS lados:
+ * lo que sobraba a la derecha se alcanzaba deslizando, pero lo de la izquierda
+ * quedaba fuera del área de scroll y no había forma de llegar ("Todos" se veía
+ * como una "s" cortada). Esta pista se centra con margen automático, que
+ * centra igual cuando sobra espacio y se vuelve cero cuando no: la lista
+ * arranca siempre en "Todos".
+ */
+const CategoryPista = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin: 0 auto;
+  /* El aire de las orillas va aquí: al final de un scroll el relleno de la barra se pierde. */
+  padding: 0 28px;
+
+  @media (max-width: 700px) { padding: 0 16px; }
 `;
 
 /*
@@ -231,6 +268,24 @@ const NavCircle = styled.button`
               color var(--dur-press) var(--ease-out);
   &:hover:not(:disabled) { border-color: ${BROWN}; color: var(--marca-texto); background: var(--marca-50); }
   &:disabled { opacity: 0.35; cursor: default; }
+`;
+
+/*
+ * Las flechas de la barra de categorías. Con la barra de desplazamiento
+ * escondida, con el mouse no había cómo llegar a las que no caben; en
+ * pantalla táctil no hacen falta, ahí se desliza con el dedo.
+ */
+const CatFlecha = styled(NavCircle)`
+  position: absolute;
+  top: 50%;
+  ${props => (props.$lado === 'izquierda' ? 'left: 12px;' : 'right: 12px;')}
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  z-index: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  @media (hover: none), (pointer: coarse) { display: none; }
 `;
 
 /* ─── Filter bar with dropdown ─── */
@@ -535,6 +590,39 @@ const Store = () => {
   // Flechas de la fila de "Más vendidos" (se apagan solas en los extremos).
   const destacados = useFilaDeslizable();
 
+  /*
+   * La barra de categorías: flechas en las orillas y la rueda del mouse la
+   * corre de lado, como el menú de Mi Cuenta. Ya no caben todas en una
+   * pantalla de laptop.
+   */
+  const filaCategorias = useFilaDeslizable({ rueda: true });
+  const barraCategorias = useRef(null);
+  const { fila: engancharFilaCategorias } = filaCategorias;
+  const engancharCategorias = useCallback((el) => {
+    barraCategorias.current = el;
+    engancharFilaCategorias(el);
+  }, [engancharFilaCategorias]);
+  const reducirMovimiento = useReducedMotion();
+
+  /*
+   * La categoría elegida se trae a la vista: si la eligió el asistente de voz
+   * o se volvió atrás, puede estar escondida al fondo de la barra. Se corre
+   * solo la barra, a mano: scrollIntoView movería también la página.
+   */
+  useEffect(() => {
+    const el = barraCategorias.current;
+    const activa = el?.querySelector('[aria-pressed="true"]');
+    if (!el || !activa) return;
+    const desde = activa.offsetLeft;
+    const hasta = desde + activa.offsetWidth;
+    const comportamiento = reducirMovimiento ? 'auto' : 'smooth';
+    if (desde - ANCHO_FLECHA_CAT < el.scrollLeft) {
+      el.scrollTo({ left: Math.max(0, desde - ANCHO_FLECHA_CAT), behavior: comportamiento });
+    } else if (hasta + ANCHO_FLECHA_CAT > el.scrollLeft + el.clientWidth) {
+      el.scrollTo({ left: hasta + ANCHO_FLECHA_CAT - el.clientWidth, behavior: comportamiento });
+    }
+  }, [categoriaSeleccionada, reducirMovimiento]);
+
   // Sus pedidos alimentan la fila "Volver a comprar"; si es cliente nuevo,
   // esa fila simplemente no se arma.
   const { orders } = useMyOrders();
@@ -744,20 +832,55 @@ const Store = () => {
       <Cuerpo>
 
       {/* ── Category Bar ── */}
-      <CategoryBar>
-        <CatBtn $active={!categoriaSeleccionada} onClick={() => setCategoriaSeleccionada(null)}>
-          {t('Todos')}
-        </CatBtn>
-        {categorias.map(cat => (
-          <CatBtn
-            key={cat}
-            $active={categoriaSeleccionada === cat}
-            onClick={() => setCategoriaSeleccionada(cat)}
+      <CategoryZona>
+        <CategoryBar
+          ref={engancharCategorias}
+          $izq={filaCategorias.puedeIzq}
+          $der={filaCategorias.puedeDer}
+        >
+          <CategoryPista>
+            <CatBtn
+              $active={!categoriaSeleccionada}
+              aria-pressed={!categoriaSeleccionada}
+              onClick={() => setCategoriaSeleccionada(null)}
+            >
+              {t('Todos')}
+            </CatBtn>
+            {categorias.map(cat => (
+              <CatBtn
+                key={cat}
+                $active={categoriaSeleccionada === cat}
+                aria-pressed={categoriaSeleccionada === cat}
+                onClick={() => setCategoriaSeleccionada(cat)}
+              >
+                {cat}
+              </CatBtn>
+            ))}
+          </CategoryPista>
+        </CategoryBar>
+        {filaCategorias.puedeIzq && (
+          <CatFlecha
+            type="button"
+            $lado="izquierda"
+            onClick={filaCategorias.izquierda}
+            aria-label={t('Ver las categorías anteriores')}
+            title={t('Ver las categorías anteriores')}
           >
-            {cat}
-          </CatBtn>
-        ))}
-      </CategoryBar>
+            <ChevronLeft size={17} strokeWidth={2.2} />
+          </CatFlecha>
+        )}
+        {filaCategorias.puedeDer && (
+          <CatFlecha
+            type="button"
+            $lado="derecha"
+            onClick={filaCategorias.derecha}
+            aria-label={t('Ver más categorías')}
+            title={t('Ver más categorías')}
+          >
+            <ChevronRight size={17} strokeWidth={2.2} />
+          </CatFlecha>
+        )}
+      </CategoryZona>
 
       {/* Chip para limpiar el filtro de promo */}
       {promoSeleccionada && (

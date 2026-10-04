@@ -74,6 +74,13 @@ export const useFilaDeslizable = ({ rueda = false } = {}) => {
     // Si cambia el ancho (o llegan más productos) hay que recalcular.
     const observador = new ResizeObserver(revisar);
     observador.observe(el);
+    /*
+     * Y si crece lo de ADENTRO sin que la fila cambie de tamaño: la barra de
+     * categorías mide siempre lo mismo, pero sus pastillas llegan del
+     * servidor después de montarse. Mirando solo la fila, la flecha derecha
+     * nacía apagada con media lista escondida.
+     */
+    for (const hijo of el.children) observador.observe(hijo);
 
     /*
      * La rueda vertical se vuelve horizontal mientras haya para dónde correr.
