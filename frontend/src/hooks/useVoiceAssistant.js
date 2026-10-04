@@ -284,6 +284,13 @@ const DESTINOS_CUENTA = [
   { seccion: 'cuenta',      ruta: '/mi-cuenta',                palabras: /\b(mi cuenta|mis datos|mi perfil)\b/,                 nombre: 'tu cuenta' },
 ];
 
+/*
+ * Ver las promociones: "promociones", "qué ofertas hay", "muéstrame los
+ * descuentos". Tiqui las cuenta Y las pone a la vista; antes solo hablaba
+ * y lo que estaba abierto (la ficha de un producto) se quedaba encima.
+ */
+const PIDE_PROMOS = /\b(promo|promos|promocion|promociones|oferta|ofertas|descuento|descuentos|rebaja|rebajas)\b/;
+
 // Cómo pide la gente que la lleven a algún lado.
 const PIDE_IR = /\b(ver|vamos|llevame|llévame|muestrame|muéstrame|enseñame|enséñame|abrir|abre|quiero ver|busca|buscar|donde esta|dónde está|ir a)\b/;
 
@@ -325,6 +332,8 @@ export const useVoiceAssistant = ({
   // A dónde puede llevar a la persona. Los pone la tienda, que es la que
   // sabe abrir un producto o cambiar de categoría sin recargar la página.
   irAProducto, irACategoria, irARuta, categorias = [],
+  // Poner las promociones a la vista (cerrando lo que esté abierto encima).
+  irAPromociones,
   // Qué hacer cuando la persona confirma la compra. Lo pone quien monta el
   // asistente, porque de eso dependen el pedido y los puntos.
   alConfirmarCompra,
@@ -367,7 +376,7 @@ export const useVoiceAssistant = ({
   const fnRef = useRef({});
   fnRef.current = {
     agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
-    irAProducto, irACategoria, irARuta, alConfirmarCompra,
+    irAProducto, irACategoria, irARuta, irAPromociones, alConfirmarCompra,
   };
 
   const recognitionRef = useRef(null);
@@ -873,6 +882,18 @@ export const useVoiceAssistant = ({
         fns.actualizarCantidad?.(prod.id, enCarrito.cantidad - c);
         hablar(`Quité ${c} ${prod.nombre}. Te quedan ${enCarrito.cantidad - c}.`);
       }
+      return;
+    }
+
+    /*
+     * ── Las promociones ──
+     * Si no nombra un producto ("¿la leche está en oferta?" es una pregunta
+     * sobre la leche), se ponen a la vista y Tiqui las cuenta: la que habla
+     * es la IA, que sabe cuáles hay hoy y a cuánto.
+     */
+    if (PIDE_PROMOS.test(t) && !buscarProducto(t) && fns.irAPromociones) {
+      fns.irAPromociones();
+      preguntarALaIA(texto);
       return;
     }
 

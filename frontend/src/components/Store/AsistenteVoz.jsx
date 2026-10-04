@@ -69,7 +69,7 @@ const VIDRIO = {
 const AsistenteVoz = ({
   onClose, productos, carrito, totalCarrito,
   agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
-  categorias, irAProducto, irACategoria, irARuta,
+  categorias, irAProducto, irACategoria, irARuta, irAPromociones,
   /*
    * Abrir el pago cuando la persona confirma la compra. Lo pone la tienda en
    * línea; sin él (o con una cuenta vinculada por QR en el kiosco) se sigue
@@ -131,6 +131,7 @@ const AsistenteVoz = ({
     irAProducto: (p) => { setMinimizado(true); irAProducto?.(p); },
     irACategoria: (c) => { setMinimizado(true); irACategoria?.(c); },
     irARuta: (r) => { setMinimizado(true); irARuta?.(r); },
+    irAPromociones: irAPromociones ? () => { setMinimizado(true); irAPromociones(); } : undefined,
     alConfirmarCompra: () => cerrarCompra(),
   });
 

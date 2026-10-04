@@ -686,8 +686,15 @@ const Store = () => {
               el asistente pide y ella mueve.
             */
             categorias={categorias}
-            irAProducto={handleAbrirDetalle}
+            /*
+              Lo que abre Tiqui reemplaza a lo que había abierto: antes "quiero
+              ver fresas" y después "las promociones" dejaba la ficha de las
+              fresas encima de lo nuevo.
+            */
+            irAProducto={(producto) => { cerrarPromo(); handleAbrirDetalle(producto); }}
             irACategoria={(cat) => {
+              handleCerrarDetalle();
+              cerrarPromo();
               setCategoriaSeleccionada(cat);
               // Que el pasillo elegido quede a la vista: si la persona está
               // abajo mirando otra fila, cambiar el filtro sin subir no se
@@ -695,6 +702,18 @@ const Store = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             irARuta={(ruta) => navigate(ruta)}
+            // "Las promociones": la portada sin filtros, que es donde están, y a la vista.
+            irAPromociones={() => {
+              handleCerrarDetalle();
+              cerrarPromo();
+              setPromoSeleccionada(null);
+              setCategoriaSeleccionada(null);
+              setTerminoBusqueda('');
+              // Después de pintar: sin filtros la portada recién aparece.
+              setTimeout(() => {
+                document.getElementById('promociones-tienda')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 120);
+            }}
             irAPagar={irAPagar}
           />
         )}
