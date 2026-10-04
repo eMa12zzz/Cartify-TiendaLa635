@@ -77,6 +77,7 @@ import { DOCUMENTOS_LEGALES } from '../utils/legales';
 import { navegarA } from '../navigation/navigationRef';
 import { registrarTokenPush } from '../api/clienteApi';
 import { tokenActual } from '../utils/notificaciones';
+import { useIdioma } from '../context/IdiomaContext';
 
 /*
  * Los iconos son los mismos con los que la web pinta este menú (ver
@@ -93,7 +94,7 @@ const SECCIONES = [
   { clave: 'avisos', titulo: 'Notificaciones', sub: 'Qué avisos quiere recibir', icono: Bell },
   { clave: 'puntos', titulo: 'Puntos de fidelidad', sub: 'Su saldo y cuánto valen', icono: Star },
   { clave: 'recibos', titulo: 'Recibos', sub: 'Sus pedidos ya entregados', icono: Receipt },
-  { clave: 'preferencias', titulo: 'Preferencias', sub: 'Modo claro u oscuro', icono: SlidersHorizontal },
+  { clave: 'preferencias', titulo: 'Preferencias', sub: 'Apariencia e idioma', icono: SlidersHorizontal },
   { clave: 'ayuda', titulo: 'Ayuda y contacto', sub: 'Preguntas frecuentes y cómo escribirnos', icono: HelpCircle },
 ];
 
@@ -118,6 +119,7 @@ const Perfil = () => {
   const estilos = useEstilos(crearEstilos);
 
   const [seccion, setSeccion] = useState(null);
+  const { t } = useIdioma();
   const [confirmarSalida, setConfirmarSalida] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
   const [cliente, setCliente] = useState(null);
@@ -170,20 +172,20 @@ const Perfil = () => {
   }
 
   // ── La lista ──
-  const nombre = cliente?.fullName || user?.fullName || user?.userName || 'Cliente';
+  const nombre = cliente?.fullName || user?.fullName || user?.userName || t('Cliente');
   const correo = cliente?.email || user?.email || '';
   const inicial = nombre.substring(0, 1).toUpperCase();
 
   return (
     <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-        <Text style={estilos.tituloBarra}>Mi cuenta</Text>
+        <Text style={estilos.tituloBarra}>{t('Mi cuenta')}</Text>
 
         <Pressable
           onPress={salir}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar sesión"
+          accessibilityLabel={t('Cerrar sesión')}
           style={({ pressed }) => [
             estilos.botonSalir,
             pressed && { backgroundColor: colores.marcaSuave },
@@ -222,7 +224,7 @@ const Perfil = () => {
                 key={clave}
                 onPress={() => setSeccion(clave)}
                 accessibilityRole="button"
-                accessibilityLabel={titulo}
+                accessibilityLabel={t(titulo)}
                 style={({ pressed }) => [
                   estilos.item,
                   pressed && { backgroundColor: colores.marcaTenue },
@@ -233,8 +235,8 @@ const Perfil = () => {
                 </View>
 
                 <View style={estilos.itemTextos}>
-                  <Text style={estilos.itemTitulo}>{titulo}</Text>
-                  <Text style={estilos.itemSub}>{sub}</Text>
+                  <Text style={estilos.itemTitulo}>{t(titulo)}</Text>
+                  <Text style={estilos.itemSub}>{t(sub)}</Text>
                 </View>
 
                 <ChevronRight size={18} color={COLORES.marcador} strokeWidth={2} />
@@ -249,8 +251,7 @@ const Perfil = () => {
            */
           <View style={estilos.aviso}>
             <Text style={estilos.avisoTexto}>
-              Entró con una cuenta del personal. Esta aplicación es la de los clientes: el área de
-              reparto y el panel de la tienda están en la versión de computadora.
+              {t('Entró con una cuenta del personal. Esta aplicación es la de los clientes: el área de reparto y el panel de la tienda están en la versión de computadora.')}
             </Text>
           </View>
         )}
@@ -266,7 +267,7 @@ const Perfil = () => {
             accessibilityRole="button"
             style={({ pressed }) => [estilos.extraFila, pressed && { opacity: 0.7 }]}
           >
-            <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>Conoce a Tiqui, tu asistente</Text>
+            <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>{t('Conoce a Tiqui, tu asistente')}</Text>
             <ChevronRight size={16} color={colores.marca} strokeWidth={2.2} />
           </Pressable>
           {/*
@@ -279,7 +280,7 @@ const Perfil = () => {
             accessibilityRole="button"
             style={({ pressed }) => [estilos.extraFila, pressed && { opacity: 0.7 }]}
           >
-            <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>¿Trabajas en la tienda? Entra aquí</Text>
+            <Text style={[estilos.extraTexto, { color: colores.marcaTexto }]}>{t('¿Trabajas en la tienda? Entra aquí')}</Text>
             <ChevronRight size={16} color={colores.marca} strokeWidth={2.2} />
           </Pressable>
           <View style={estilos.legales}>
@@ -290,7 +291,7 @@ const Perfil = () => {
                 accessibilityRole="link"
                 style={estilos.legal}
               >
-                {d.titulo}
+                {t(d.titulo)}
               </Text>
             ))}
           </View>
@@ -304,10 +305,10 @@ const Perfil = () => {
 
       {confirmarSalida && (
         <ModalConfirmar
-          titulo="¿Cerrar sesión?"
-          mensaje="Tendrá que volver a escribir su correo y su contraseña para entrar de nuevo."
-          textoConfirmar="Cerrar sesión"
-          textoCancelar="Quedarme"
+          titulo={t('¿Cerrar sesión?')}
+          mensaje={t('Tendrá que volver a escribir su correo y su contraseña para entrar de nuevo.')}
+          textoConfirmar={t('Cerrar sesión')}
+          textoCancelar={t('Quedarme')}
           destructivo
           trabajando={saliendo}
           alConfirmar={async () => {

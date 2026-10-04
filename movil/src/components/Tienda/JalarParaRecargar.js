@@ -29,6 +29,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import TiquiColgada from '../Tiqui/TiquiColgada';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Cuánto hay que jalar (ya con la resistencia) para que recargue.
 const PUNTO = 88;
@@ -40,6 +41,7 @@ const ALTO_TIQUI = 112;
 const LARGO_CORDON = 40;
 
 const JalarParaRecargar = ({ alRecargar, children }) => {
+  const { t } = useIdioma();
   // Cuánto se jaló (lo que baja la lista) y dónde va Tiqui.
   const jalon = useRef(new Animated.Value(0)).current;
   const tiquiY = useRef(new Animated.Value(-ALTO_TIQUI)).current;
@@ -131,7 +133,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
       <View
         style={{ flex: 1, overflow: 'hidden' }}
         // Quien usa lector de pantalla no puede jalar: tiene la acción a mano.
-        accessibilityActions={[{ name: 'recargar', label: 'Recargar la tienda' }]}
+        accessibilityActions={[{ name: 'recargar', label: t('Recargar la tienda') }]}
         onAccessibilityAction={(e) => e.nativeEvent.actionName === 'recargar' && recargar()}
       >
         {visible && (

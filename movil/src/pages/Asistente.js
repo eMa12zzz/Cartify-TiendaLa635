@@ -25,8 +25,10 @@ import { primerNombre } from '../utils/nombreTiqui';
 import { navegarA } from '../navigation/navigationRef';
 import ModalProducto from '../components/Tienda/ModalProducto';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../components/UI/BarraInferior';
+import { useIdioma } from '../context/IdiomaContext';
 
 const Asistente = () => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -80,14 +82,14 @@ const Asistente = () => {
    */
   const dormida = !activo && !pensando && !hablando;
   const estadoTexto = pensando
-    ? 'Pensando…'
-    : hablando ? 'Tócala para interrumpirla'
-    : dormida ? 'Despierta a Tiqui para empezar a hablar con ella'
-    : escuchando ? 'Te escucho…' : 'Un momento…';
+    ? t('Pensando…')
+    : hablando ? t('Tócala para interrumpirla')
+    : dormida ? t('Despierta a Tiqui para empezar a hablar con ella')
+    : escuchando ? t('Te escucho…') : t('Un momento…');
   const etiquetaToque = hablando
-    ? 'Interrumpir a Tiqui y hablar'
-    : dormida ? 'Despertar a Tiqui para hablar con ella'
-    : 'Dormir a Tiqui y dejar de escuchar';
+    ? t('Interrumpir a Tiqui y hablar')
+    : dormida ? t('Despertar a Tiqui para hablar con ella')
+    : t('Dormir a Tiqui y dejar de escuchar');
 
   const alTocarTiqui = hablando ? interrumpir : activo ? detener : iniciar;
 
@@ -97,12 +99,12 @@ const Asistente = () => {
   return (
     <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-        <Text style={estilos.titulo} accessibilityRole="header">Tiqui, tu asistente</Text>
+        <Text style={estilos.titulo} accessibilityRole="header">{t('Tiqui, tu asistente')}</Text>
         <View style={estilos.acciones}>
           <TouchableOpacity
             onPress={() => navegarA('ConoceATiqui')}
             accessibilityRole="button"
-            accessibilityLabel="¿Quién es Tiqui? Ver la presentación"
+            accessibilityLabel={t('¿Quién es Tiqui? Ver la presentación')}
             hitSlop={8}
             style={estilos.accion}
           >
@@ -111,7 +113,7 @@ const Asistente = () => {
           <TouchableOpacity
             onPress={toggleMute}
             accessibilityRole="button"
-            accessibilityLabel={muteado ? 'Activar voz' : 'Silenciar voz'}
+            accessibilityLabel={muteado ? t('Activar voz') : t('Silenciar voz')}
             hitSlop={8}
             style={estilos.accion}
           >
@@ -150,8 +152,8 @@ const Asistente = () => {
 
         {historial.length === 0 ? (
           <Text style={estilos.bajada}>
-            {saludaConNombre && nombre ? `¡Hola, ${nombre}! ` : ''}
-            Tócala y dile, por ejemplo: "quiero dos manzanas y una leche" o "¿qué ofertas hay?".
+            {saludaConNombre && nombre ? t('¡Hola, {nombre}! ', { nombre }) : ''}
+            {t('Tócala y dile, por ejemplo: "quiero dos manzanas y una leche" o "¿qué ofertas hay?".')}
           </Text>
         ) : (
           <ScrollView ref={chatRef} style={estilos.chat} contentContainerStyle={estilos.chatContenido}>
@@ -189,11 +191,11 @@ const Asistente = () => {
         ]}
       >
         <View style={estilos.carritoFila}>
-          <Text style={estilos.carritoTitulo}>Tu carrito ({items})</Text>
+          <Text style={estilos.carritoTitulo}>{t('Tu carrito ({n})', { n: items })}</Text>
           <Text style={[estilos.carritoTotal, { color: colores.marcaTexto }]}>${totalCarrito.toFixed(2)}</Text>
         </View>
         {carrito.length === 0 ? (
-          <Text style={estilos.carritoVacio}>Aún no has agregado nada.</Text>
+          <Text style={estilos.carritoVacio}>{t('Aún no has agregado nada.')}</Text>
         ) : (
           <Text style={estilos.carritoDetalle} numberOfLines={2}>
             {carrito.map((i) => `${i.cantidad}× ${i.nombre}`).join(' · ')}

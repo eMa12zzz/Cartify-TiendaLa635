@@ -13,6 +13,8 @@
  * ============================================================
  */
 
+import { tAhora } from './idioma';
+
 const RADIO_TIERRA_M = 6371000;
 const aRadianes = (g) => (g * Math.PI) / 180;
 
@@ -63,9 +65,9 @@ export const minutosDeViaje = (metros, velocidadMs) => {
  * minuto exacto es prometer algo que no controlamos.
  */
 export const textoDeEspera = (minutos) => {
-  if (minutos == null) return 'Va en camino';
-  if (minutos <= 2) return 'Está llegando';
-  if (minutos <= 5) return 'Llega en unos 5 min';
-  if (minutos <= 60) return `Llega en ${Math.round(minutos / 5) * 5} min aprox.`;
-  return 'Va en camino';
+  if (minutos == null) return tAhora('Va en camino');
+  if (minutos <= 2) return tAhora('Está llegando');
+  if (minutos <= 5) return tAhora('Llega en unos {n} min', { n: 5 });
+  if (minutos <= 60) return tAhora('Llega en {n} min aprox.', { n: Math.round(minutos / 5) * 5 });
+  return tAhora('Va en camino');
 };

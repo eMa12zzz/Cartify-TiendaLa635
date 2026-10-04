@@ -36,6 +36,7 @@ import { guardar, leer, borrar, llave } from '../utils/almacen';
 import { volarAlCarrito } from '../utils/volarAlCarrito';
 import { useAviso } from './AvisoContext';
 import { useAuth } from '../hooks/useAuth';
+import { tAhora } from '../utils/idioma';
 
 const TiendaContext = createContext(null);
 
@@ -140,7 +141,7 @@ export const TiendaProvider = ({ children }) => {
        * guarda el mensaje: en un teléfono, "no hay productos" y "no hay
        * internet" se ven igual, y el segundo tiene arreglo.
        */
-      setErrorCarga(error?.message || 'No se pudo cargar la tienda');
+      setErrorCarga(error?.message || tAhora('No se pudo cargar la tienda'));
     } finally {
       setCargando(false);
     }
@@ -382,7 +383,7 @@ export const TiendaProvider = ({ children }) => {
          * seguiría bien en pantalla y aparecería vacío al volver mañana, sin
          * que nadie entienda por qué.
          */
-        if (!ok) avisar('Su carrito funciona, pero no se pudo guardar para la próxima vez', 'error');
+        if (!ok) avisar(tAhora('Su carrito funciona, pero no se pudo guardar para la próxima vez'), 'error');
       });
     },
     [llaveActual, avisar, setLineas]
@@ -418,16 +419,16 @@ export const TiendaProvider = ({ children }) => {
 
     const partes = [];
     if (fuera > 0) {
-      partes.push(fuera === 1 ? 'un producto ya no está disponible' : `${fuera} productos ya no están disponibles`);
+      partes.push(fuera === 1 ? tAhora('un producto ya no está disponible') : tAhora('{n} productos ya no están disponibles', { n: fuera }));
     }
     if (recortados > 0) {
       partes.push(
         recortados === 1
-          ? 'de otro quedaban menos unidades de las que llevaba'
-          : `de ${recortados} quedaban menos unidades de las que llevaba`
+          ? tAhora('de otro quedaban menos unidades de las que llevaba')
+          : tAhora('de {n} quedaban menos unidades de las que llevaba', { n: recortados })
       );
     }
-    avisar(`De su carrito guardado, ${partes.join(' y ')}. Ya está corregido.`);
+    avisar(tAhora('De su carrito guardado, {partes}. Ya está corregido.', { partes: partes.join(tAhora(' y ')) }));
   }, [cargando, carritoLeido, productos, lineas, carrito, guardarCarrito, avisar]);
 
   /*
@@ -446,7 +447,7 @@ export const TiendaProvider = ({ children }) => {
       if (!producto?.id) return 0;
       const stock = Number(producto.stock) || 0;
       if (stock <= 0) {
-        avisar(`${producto.nombre} se quedó sin existencias`, 'error');
+        avisar(tAhora('{nombre} se quedó sin existencias', { nombre: producto.nombre }), 'error');
         return 0;
       }
 
@@ -459,7 +460,7 @@ export const TiendaProvider = ({ children }) => {
         if (!hastaDondeAlcance || cabe <= 0) {
           // "Solo hay 3 unidades" de un queso que se vende por peso confunde: se
           // dice en la unidad en que se vende. Ver utils/unidades.js.
-          avisar(`Solo hay ${cantidadConUnidad(producto, stock)} disponibles`, 'error');
+          avisar(tAhora('Solo hay {cantidad} disponibles', { cantidad: cantidadConUnidad(producto, stock) }), 'error');
           return 0;
         }
         entra = cabe;
@@ -480,8 +481,8 @@ export const TiendaProvider = ({ children }) => {
        */
       avisar(
         nuevaCantidad > 1
-          ? `${producto.nombre} · ${cantidadConUnidad(producto, nuevaCantidad)} en el carrito`
-          : `${producto.nombre} agregado al carrito`,
+          ? tAhora('{nombre} · {cantidad} en el carrito', { nombre: producto.nombre, cantidad: cantidadConUnidad(producto, nuevaCantidad) })
+          : tAhora('{nombre} agregado al carrito', { nombre: producto.nombre }),
         'exito'
       );
       return entra;
@@ -495,7 +496,7 @@ export const TiendaProvider = ({ children }) => {
       const id = String(productoId);
       const fuera = carrito.find((i) => String(i.id) === id);
       guardarCarrito(lineasRef.current.filter((l) => l.id !== id));
-      avisar(fuera ? `${fuera.nombre} salió del carrito` : 'Producto eliminado', 'quitar');
+      avisar(fuera ? tAhora('{nombre} salió del carrito', { nombre: fuera.nombre }) : tAhora('Producto eliminado'), 'quitar');
     },
     [carrito, guardarCarrito, avisar]
   );
@@ -527,7 +528,7 @@ export const TiendaProvider = ({ children }) => {
   const limpiarCarrito = useCallback(() => {
     const cuantos = carrito.length;
     guardarCarrito([]);
-    if (cuantos) avisar(`Se vació el carrito (${cuantos} producto${cuantos > 1 ? 's' : ''})`, 'quitar');
+    if (cuantos) avisar(tAhora(cuantos > 1 ? 'Se vació el carrito ({n} productos)' : 'Se vació el carrito ({n} producto)', { n: cuantos }), 'quitar');
   }, [carrito, guardarCarrito, avisar]);
 
   /*

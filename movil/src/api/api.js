@@ -23,6 +23,8 @@
  * ============================================================
  */
 
+import { tAhora } from '../utils/idioma';
+
 const HOST_MANUAL = null;
 
 const HOST_RENDER = 'https://cartify-tiendala635.onrender.com/api';
@@ -107,8 +109,8 @@ export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras, tiempo
   } catch {
     throw new ErrorApi(
       corte?.signal.aborted
-        ? 'El servidor tardó demasiado en contestar.'
-        : `No se pudo conectar con el servidor (${URL_API}). Revise que el backend esté encendido.`,
+        ? tAhora('El servidor tardó demasiado en contestar.')
+        : tAhora('No se pudo conectar con el servidor ({url}). Revise que el backend esté encendido.', { url: URL_API }),
       0
     );
   } finally {
@@ -124,14 +126,20 @@ export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras, tiempo
   }
 
   if (!respuesta.ok) {
-    const mensaje =
-      datos?.message || RESPALDO_POR_ESTADO[respuesta.status] || 'Ocurrió un error inesperado';
+    /*
+     * El servidor escribe en español. En inglés se traduce con el mismo
+     * diccionario de la web (que ya trae sus mensajes); lo que no esté ahí
+     * sale tal cual. En el modo del personal tAhora es siempre español.
+     */
+    const mensaje = tAhora(
+      datos?.message || RESPALDO_POR_ESTADO[respuesta.status] || 'Ocurrió un error inesperado'
+    );
     const error = new ErrorApi(mensaje, respuesta.status);
     // El resto del cuerpo viaja pegado al error (p.ej. `requiereConsentimiento`
     // y `sugerido` de /loginClient/google): así quien llama puede leerlo sin
     // que este helper tenga que conocer de antemano los campos de cada ruta,
     // igual que hace la web con su propio fetch a mano en authApi.js.
-    if (datos && typeof datos === 'object') Object.assign(error, datos);
+    if (datos && typeof datos === 'object') Object.assign(error, datos, { message: mensaje });
     throw error;
   }
 

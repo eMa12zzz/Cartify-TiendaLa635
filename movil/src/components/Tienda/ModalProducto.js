@@ -36,6 +36,7 @@ import { Equis, Mas, Menos, Paquete } from '../UI/Iconos';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { cantidadConUnidad, esPorLibra, esSoloAdultos, pasoDe, piezasEnTexto, ajustarCantidad } from '../../utils/unidades';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
+import { useIdioma } from '../../context/IdiomaContext';
 
 /*
  * `conBarraFlotante`: true solo cuando quien abre este detalle vive DENTRO
@@ -46,6 +47,7 @@ import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
  * dejaría un espacio muerto bajo el botón.
  */
 const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false }) => {
+  const { t } = useIdioma();
   const [fallóImagen, setFallóImagen] = useState(false);
   const { colores } = useTema();
   const COLORES = useColores();
@@ -168,7 +170,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
   if (!producto) return null;
 
   const agotado = producto.stock === 0;
-  const contenido = piezasEnTexto(producto);
+  const contenido = piezasEnTexto(producto, t);
   const topeAlcanzado = cantidad >= producto.stock;
 
   const mover = (delta) => {
@@ -190,7 +192,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
           panel, no un envoltorio: envolviéndolo, cada toque dentro del panel
           burbujearía hasta aquí y cerraría el detalle al intentar tocar "+".
         */}
-        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel={t('Cerrar')} />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -210,7 +212,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
               onPress={cerrarConAnimacion}
               hitSlop={12}
               accessibilityRole="button"
-              accessibilityLabel="Cerrar el detalle"
+              accessibilityLabel={t('Cerrar el detalle')}
               style={estilos.cerrar}
             >
               <Equis size={16} color={COLORES.textoSuave} />
@@ -270,28 +272,28 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
                 ]}
               >
                 {agotado
-                  ? 'Agotado'
-                  : `En existencia · ${cantidadConUnidad(producto, producto.stock)}`}
+                  ? t('Agotado')
+                  : t('En existencia · {cantidad}', { cantidad: cantidadConUnidad(producto, producto.stock) })}
               </Text>
             </View>
 
             {!!producto.descripcion && (
               <>
-                <Text style={estilos.tituloSeccion}>Descripción</Text>
+                <Text style={estilos.tituloSeccion}>{t('Descripción')}</Text>
                 <Text style={estilos.descripcion}>{producto.descripcion}</Text>
               </>
             )}
 
             {!agotado && (
               <>
-                <Text style={estilos.tituloSeccion}>Cantidad</Text>
+                <Text style={estilos.tituloSeccion}>{t('Cantidad')}</Text>
                 <View style={estilos.selector}>
                   <Pressable
                     onPress={() => mover(-paso)}
                     disabled={cantidad <= paso}
                     hitSlop={8}
                     accessibilityRole="button"
-                    accessibilityLabel="Quitar uno"
+                    accessibilityLabel={t('Quitar uno')}
                     style={({ pressed }) => [
                       estilos.botonPaso,
                       pressed && { backgroundColor: colores.marcaSuave },
@@ -308,7 +310,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
                     disabled={topeAlcanzado}
                     hitSlop={8}
                     accessibilityRole="button"
-                    accessibilityLabel="Agregar uno"
+                    accessibilityLabel={t('Agregar uno')}
                     style={({ pressed }) => [
                       estilos.botonPaso,
                       pressed && { backgroundColor: colores.marcaSuave },
@@ -336,7 +338,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
             ]}
           >
             <Boton
-              texto={agotado ? 'Agotado' : `Agregar · $${(producto.precio * cantidad).toFixed(2)}`}
+              texto={agotado ? t('Agotado') : t('Agregar · ${precio}', { precio: (producto.precio * cantidad).toFixed(2) })}
               deshabilitado={agotado}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}

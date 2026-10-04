@@ -70,6 +70,7 @@ import ModalMapaDireccion from '../components/UI/ModalMapaDireccion';
 import { totalDeLinea } from '../utils/catalogo';
 import { calcularEnvio } from '../utils/envio';
 import { calcularServicio } from '../utils/servicio';
+import { useIdioma } from '../context/IdiomaContext';
 
 // Cuántas fotos de producto caben en la tira del resumen antes del "+3".
 const MINIATURAS = 6;
@@ -129,6 +130,7 @@ const Seccion = ({ icono: Icono, titulo, colores, children }) => {
 };
 
 const Checkout = ({ alVolver, alConfirmar }) => {
+  const { t } = useIdioma();
   const { user } = useAuth();
   const { colores } = useTema();
   const { avisar } = useAviso();
@@ -310,9 +312,9 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       // siguiera saliendo a la anterior es justo el error que se quiere evitar.
       setIndiceDireccion(lista.length - 1);
       setMostrarMapa(false);
-      avisar('Dirección guardada', 'exito');
+      avisar(t('Dirección guardada'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo guardar la dirección', 'error');
+      avisar(e?.message || t('No se pudo guardar la dirección'), 'error');
     } finally {
       setGuardandoDireccion(false);
     }
@@ -334,9 +336,9 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       setSaldo(nuevoSaldo);
       setCodigoTarjeta('');
       if (nuevoSaldo >= totalAPagar) setMetodoPago('saldo');
-      avisar(r?.message || 'Tarjeta canjeada', 'exito');
+      avisar(r?.message || t('Tarjeta canjeada'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo canjear la tarjeta', 'error');
+      avisar(e?.message || t('No se pudo canjear la tarjeta'), 'error');
     } finally {
       setCanjeando(false);
     }
@@ -344,16 +346,16 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
   const realizarPedido = async () => {
     if (entrega === 'delivery' && !direccionElegida) {
-      avisar('Elija una dirección de entrega', 'error');
+      avisar(t('Elija una dirección de entrega'), 'error');
       return;
     }
     // El botón ya está apagado en este caso; esto es por si se cuela un toque.
     if (fueraDeCobertura) {
-      avisar('Esa dirección queda fuera de la zona de entrega. Elija otra o el retiro en el local.', 'error');
+      avisar(t('Esa dirección queda fuera de la zona de entrega. Elija otra o el retiro en el local.'), 'error');
       return;
     }
     if (metodoPago === 'saldo' && !saldoAlcanza) {
-      avisar(`Su saldo es de $${saldo.toFixed(2)} y el pedido cuesta $${totalAPagar.toFixed(2)}`, 'error');
+      avisar(t('Su saldo es de ${saldo} y el pedido cuesta ${total}', { saldo: saldo.toFixed(2), total: totalAPagar.toFixed(2) }), 'error');
       return;
     }
 
@@ -400,7 +402,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
        * insuficiente", "se acaba de agotar". El backend los escribe en español
        * y con el nombre del producto, así que se muestran tal cual.
        */
-      avisar(e?.message || 'No se pudo crear el pedido', 'error');
+      avisar(e?.message || t('No se pudo crear el pedido'), 'error');
     } finally {
       setProcesando(false);
     }
@@ -412,10 +414,9 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       <View style={estilos.pantalla}>
         <Barra alVolver={alVolver} colores={colores} />
         <View style={estilos.centro}>
-          <Text style={estilos.avisoTitulo}>Necesita una cuenta de cliente</Text>
+          <Text style={estilos.avisoTitulo}>{t('Necesita una cuenta de cliente')}</Text>
           <Text style={estilos.avisoTexto}>
-            El pedido tiene que ir a nombre de alguien y a una dirección. Entre con su cuenta de
-            cliente para terminarlo.
+            {t('El pedido tiene que ir a nombre de alguien y a una dirección. Entre con su cuenta de cliente para terminarlo.')}
           </Text>
         </View>
       </View>
@@ -427,7 +428,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       <View style={estilos.pantalla}>
         <Barra alVolver={alVolver} colores={colores} />
         <View style={estilos.centro}>
-          <CargandoMascota texto="Preparando el pago…" />
+          <CargandoMascota texto={t('Preparando el pago…')} />
         </View>
       </View>
     );
@@ -439,19 +440,19 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
       <ScrollView contentContainerStyle={estilos.cuerpo} keyboardShouldPersistTaps="handled">
         {/* ── 1. Cómo lo recibe ── */}
-        <Seccion icono={MapPin} titulo="¿Cómo lo recibe?" colores={colores}>
+        <Seccion icono={MapPin} titulo={t('¿Cómo lo recibe?')} colores={colores}>
           <Opcion
             icono={Tienda}
-            titulo="Retiro en el local"
-            detalle="Sin costo de envío"
+            titulo={t('Retiro en el local')}
+            detalle={t('Sin costo de envío')}
             activa={entrega === 'retiro'}
             alTocar={() => setEntrega('retiro')}
             colores={colores}
           />
           <Opcion
             icono={MapPin}
-            titulo="Envío a domicilio"
-            detalle={detalleEnvio(envioCalc)}
+            titulo={t('Envío a domicilio')}
+            detalle={detalleEnvio(envioCalc, t)}
             activa={entrega === 'delivery'}
             alTocar={() => setEntrega('delivery')}
             colores={colores}
@@ -465,8 +466,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                 <View style={estilos.fueraDeZona} accessibilityRole="alert">
                   <TriangleAlert size={15} color={COLORES.peligro} strokeWidth={2.2} />
                   <Text style={estilos.fueraDeZonaTexto}>
-                    Esa dirección queda a {envioCalc.distanciaKm} km de la tienda, fuera de la zona de
-                    entrega. Elija otra dirección o el retiro en el local.
+                    {t('Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Elija otra dirección o el retiro en el local.', { km: envioCalc.distanciaKm })}
                   </Text>
                 </View>
               )}
@@ -480,12 +480,11 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                   <View style={estilos.tiempoTextos}>
                     <Text style={estilos.tiempoTitulo}>
                       {zona.tipico === zona.holgado
-                        ? `Llega en unos ${zona.tipico} min`
-                        : `Llega entre ${zona.tipico} y ${zona.holgado} min`}
+                        ? t('Llega en unos {min} min', { min: zona.tipico })
+                        : t('Llega entre {desde} y {hasta} min', { desde: zona.tipico, hasta: zona.holgado })}
                     </Text>
                     <Text style={estilos.tiempoSub}>
-                      Según {zona.entregas} {zona.entregas === 1 ? 'entrega' : 'entregas'} a su zona.
-                      No es una promesa: es lo que hemos tardado.
+                      {t(zona.entregas === 1 ? 'Según {n} entrega a su zona. No es una promesa: es lo que hemos tardado.' : 'Según {n} entregas a su zona. No es una promesa: es lo que hemos tardado.', { n: zona.entregas })}
                     </Text>
                   </View>
                 </View>
@@ -524,8 +523,8 @@ const Checkout = ({ alVolver, alConfirmar }) => {
               <Pressable accessibilityRole="button" onPress={() => setMostrarMapa(true)} hitSlop={8}>
                 <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>
                   {direcciones.length === 0
-                    ? '+ Marcar mi dirección en el mapa'
-                    : '+ Agregar otra dirección'}
+                    ? t('+ Marcar mi dirección en el mapa')
+                    : t('+ Agregar otra dirección')}
                 </Text>
               </Pressable>
             </>
@@ -533,27 +532,27 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         </Seccion>
 
         {/* ── 2. Con qué paga ── */}
-        <Seccion icono={CreditCard} titulo="¿Con qué paga?" colores={colores}>
+        <Seccion icono={CreditCard} titulo={t('¿Con qué paga?')} colores={colores}>
           <Opcion
             icono={Wallet}
-            titulo="Efectivo"
-            detalle={entrega === 'delivery' ? 'Al recibirlo' : 'En el local'}
+            titulo={t('Efectivo')}
+            detalle={t(entrega === 'delivery' ? 'Al recibirlo' : 'En el local')}
             activa={metodoPago === 'efectivo'}
             alTocar={() => setMetodoPago('efectivo')}
             colores={colores}
           />
           <Opcion
             icono={CreditCard}
-            titulo="Tarjeta"
-            detalle={entrega === 'delivery' ? 'Al recibirlo' : 'En el local'}
+            titulo={t('Tarjeta')}
+            detalle={t(entrega === 'delivery' ? 'Al recibirlo' : 'En el local')}
             activa={metodoPago === 'tarjeta'}
             alTocar={() => setMetodoPago('tarjeta')}
             colores={colores}
           />
           <Opcion
             icono={Gift}
-            titulo="Mi saldo"
-            detalle={`$${saldo.toFixed(2)} ${saldoAlcanza ? 'disponible' : '· no alcanza'}`}
+            titulo={t('Mi saldo')}
+            detalle={`$${saldo.toFixed(2)} ${t(saldoAlcanza ? 'disponible' : '· no alcanza')}`}
             activa={metodoPago === 'saldo'}
             apagada={!saldoAlcanza}
             alTocar={() => setMetodoPago('saldo')}
@@ -562,7 +561,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
           {metodoPago === 'saldo' && (
             <Text style={[estilos.nota, { color: colores.marcaTexto }]}>
-              Le quedarán ${(saldo - totalAPagar).toFixed(2)} después de este pedido.
+              {t('Le quedarán ${monto} después de este pedido.', { monto: (saldo - totalAPagar).toFixed(2) })}
             </Text>
           )}
 
@@ -573,7 +572,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
               onPress={() => setUsarPuntos((v) => !v)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: usarPuntos }}
-              accessibilityLabel={`Usar mis ${puntos} puntos`}
+              accessibilityLabel={t('Usar mis {n} puntos', { n: puntos })}
               style={({ pressed }) => [
                 estilos.puntos,
                 usarPuntos && { borderColor: colores.marca, backgroundColor: colores.marcaTenue },
@@ -590,12 +589,12 @@ const Checkout = ({ alVolver, alConfirmar }) => {
               </View>
               <View style={estilos.opcionTextos}>
                 <Text style={[estilos.opcionTitulo, usarPuntos && { color: colores.marcaTexto }]}>
-                  Usar mis {puntos} puntos
+                  {t('Usar mis {n} puntos', { n: puntos })}
                 </Text>
                 <Text style={estilos.opcionDetalle}>
                   {usarPuntos
-                    ? `Descuenta $${descuento.toFixed(2)} de este pedido`
-                    : `Equivalen a $${(Math.min(puntos, topeUtil) / tasaCanje).toFixed(2)} en esta compra`}
+                    ? t('Descuenta ${monto} de este pedido', { monto: descuento.toFixed(2) })
+                    : t('Equivalen a ${monto} en esta compra', { monto: (Math.min(puntos, topeUtil) / tasaCanje).toFixed(2) })}
                 </Text>
               </View>
             </Pressable>
@@ -606,13 +605,13 @@ const Checkout = ({ alVolver, alConfirmar }) => {
             <TextInput
               value={codigoTarjeta}
               onChangeText={(v) => setCodigoTarjeta(v.toUpperCase())}
-              placeholder="¿Tiene una tarjeta? 635-XXXX-XXXX"
+              placeholder={t('¿Tiene una tarjeta? 635-XXXX-XXXX')}
               placeholderTextColor={COLORES.marcador}
               keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
               style={[estilos.campo, estilos.campoCanje]}
               autoCapitalize="characters"
               autoCorrect={false}
-              accessibilityLabel="Código de tarjeta de regalo"
+              accessibilityLabel={t('Código de tarjeta de regalo')}
             />
             <Pressable accessibilityRole="button"
               onPress={canjear}
@@ -625,7 +624,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
               ]}
             >
               <Text style={[estilos.botonCanjeTexto, { color: colores.marcaTexto }]}>
-                {canjeando ? 'Canjeando…' : 'Canjear'}
+                {canjeando ? t('Canjeando…') : t('Canjear')}
               </Text>
             </Pressable>
           </View>
@@ -635,7 +634,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         {/* El mismo Package de lucide que la píldora usa para "Pedidos": es
             la orden que se está por hacer, así que lleva el mismo icono que
             la sección donde va a vivir después de confirmada. */}
-        <Seccion icono={Package} titulo="Su orden" colores={colores}>
+        <Seccion icono={Package} titulo={t('Su orden')} colores={colores}>
           <View style={estilos.miniaturas}>
             {carrito.slice(0, MINIATURAS).map((item) => (
               <View key={item.id} style={estilos.miniatura}>
@@ -667,23 +666,23 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         una opción para ver cuánto quedó.
       */}
       <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 18) }]}>
-        <Fila etiqueta="Total de artículos" valor={`$${subtotal.toFixed(2)}`} />
-        <Fila etiqueta="Costo de envío" valor={valorEnvio(entrega, envioCalc, envio)} />
+        <Fila etiqueta={t('Total de artículos')} valor={`$${subtotal.toFixed(2)}`} />
+        <Fila etiqueta={t('Costo de envío')} valor={valorEnvio(entrega, envioCalc, envio, t)} />
         {/* La tarifa de servicio solo se muestra si la tienda la cobra. */}
         {servicio > 0 && (
-          <Fila etiqueta="Tarifa de servicio" valor={`$${servicio.toFixed(2)}`} />
+          <Fila etiqueta={t('Tarifa de servicio')} valor={`$${servicio.toFixed(2)}`} />
         )}
         {descuento > 0 && (
-          <Fila etiqueta="Descuento por puntos" valor={`−$${descuento.toFixed(2)}`} verde />
+          <Fila etiqueta={t('Descuento por puntos')} valor={`−$${descuento.toFixed(2)}`} verde />
         )}
         <View style={estilos.separador} />
         <View style={estilos.filaTotal}>
-          <Text style={estilos.totalEtiqueta}>Total</Text>
+          <Text style={estilos.totalEtiqueta}>{t('Total')}</Text>
           <Text style={estilos.totalValor}>${totalAPagar.toFixed(2)}</Text>
         </View>
 
         <Boton
-          texto={`Realizar pedido · $${totalAPagar.toFixed(2)}`}
+          texto={t('Realizar pedido · ${total}', { total: totalAPagar.toFixed(2) })}
           alPresionar={realizarPedido}
           cargando={procesando}
           deshabilitado={carrito.length === 0 || fueraDeCobertura}
@@ -705,6 +704,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 };
 
 const Barra = ({ alVolver, colores }) => {
+  const { t } = useIdioma();
   const estilos = useEstilos(crearEstilos);
 
   return (
@@ -713,12 +713,12 @@ const Barra = ({ alVolver, colores }) => {
         onPress={alVolver}
         hitSlop={10}
         accessibilityRole="button"
-        accessibilityLabel="Volver al carrito"
+        accessibilityLabel={t('Volver al carrito')}
         style={({ pressed }) => [estilos.botonVolver, pressed && { backgroundColor: colores.marcaSuave }]}
       >
         <ChevronIzquierda size={18} />
       </Pressable>
-      <Text style={estilos.tituloBarra}>Confirmar pedido</Text>
+      <Text style={estilos.tituloBarra}>{t('Confirmar pedido')}</Text>
     </View>
   );
 };
@@ -739,19 +739,19 @@ const Fila = ({ etiqueta, valor, verde }) => {
  * elegida y de dónde sale ("a 3.2 km", o el nombre de la zona), para que el
  * número no parezca puesto al azar ahora que cambia de una dirección a otra.
  */
-const detalleEnvio = (calc) => {
-  if (!calc) return 'El costo se calcula al confirmar';
-  if (calc.fueraDeCobertura) return 'La dirección elegida queda fuera de la zona';
-  const costo = `+$${calc.costo.toFixed(2)} de envío`;
-  if (calc.metodo === 'km') return `${costo} · a ${calc.distanciaKm} km`;
+const detalleEnvio = (calc, t) => {
+  if (!calc) return t('El costo se calcula al confirmar');
+  if (calc.fueraDeCobertura) return t('La dirección elegida queda fuera de la zona');
+  const costo = t('+${costo} de envío', { costo: calc.costo.toFixed(2) });
+  if (calc.metodo === 'km') return t('{costo} · a {km} km', { costo, km: calc.distanciaKm });
   if (calc.metodo === 'zona' && calc.zona) return `${costo} · ${calc.zona}`;
   return costo;
 };
 
 // El "Costo de envío" del resumen: un número solo cuando se sabe y se cobra.
-const valorEnvio = (entrega, calc, envio) => {
-  if (entrega === 'delivery' && !calc) return 'Al confirmar';
-  if (entrega === 'delivery' && calc.fueraDeCobertura) return 'Fuera de zona';
+const valorEnvio = (entrega, calc, envio, t) => {
+  if (entrega === 'delivery' && !calc) return t('Al confirmar');
+  if (entrega === 'delivery' && calc.fueraDeCobertura) return t('Fuera de zona');
   return `$${envio.toFixed(2)}`;
 };
 

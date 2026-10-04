@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview';
 import { Maximize2 } from 'lucide-react-native';
 import { useModo } from '../../context/ModoContext';
 import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
+import { useIdioma } from '../../context/IdiomaContext';
 
 /*
  * ============================================================
@@ -57,20 +58,25 @@ import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
  *                     qué hacer (abrir ModalMapaSeguimiento.js).
  */
 const MapaSeguimiento = ({ punto, destino, alto = 132, colorMarca = '#8C5628', alAgrandar }) => {
+  const { t } = useIdioma();
   // Calles oscuras de CARTO en modo oscuro, igual que la web.
   const { oscuro } = useModo();
 
-  // Sin ningún punto no hay mapa que valga la pena: ver el porqué en
-  // BurbujaPedido.js, donde tampoco se monta sin esto.
-  if (!punto && !destino) return null;
+  const sinPuntos = !punto && !destino;
 
   const html = useMemo(
-    () => crearHtmlSeguimiento({ punto, destino, colorMarca, interactivo: false, oscuro }),
+    () => (sinPuntos ? '' : crearHtmlSeguimiento({ punto, destino, colorMarca, interactivo: false, oscuro })),
     // Cambia de HTML solo cuando el punto se movió de verdad, no en cada
     // segundo que pasa: recrear el WebView entero por cada "tic" del reloj
     // haría parpadear el mapa en vez de solo mover el pin.
-    [punto?.lat, punto?.lng, destino?.lat, destino?.lng, colorMarca, oscuro]
+    [sinPuntos, punto?.lat, punto?.lng, destino?.lat, destino?.lng, colorMarca, oscuro]
   );
+
+  // Sin ningún punto no hay mapa que valga la pena: ver el porqué en
+  // BurbujaPedido.js, donde tampoco se monta sin esto. Va DESPUÉS del
+  // useMemo: un hook detrás de un return se salta en un dibujo y no en el
+  // siguiente, y React truena ("Rendered more hooks…").
+  if (sinPuntos) return null;
 
   return (
     <View style={[estilos.marco, { height: alto }]}>
@@ -93,7 +99,7 @@ const MapaSeguimiento = ({ punto, destino, alto = 132, colorMarca = '#8C5628', a
         style={estilos.capaToque}
         onPress={alAgrandar}
         accessibilityRole="button"
-        accessibilityLabel="Ver el mapa en grande"
+        accessibilityLabel={t('Ver el mapa en grande')}
       >
         <View style={estilos.insignia}>
           <Maximize2 size={12} color="#FFFFFF" strokeWidth={2.6} />

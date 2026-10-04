@@ -20,6 +20,8 @@
  * ============================================================
  */
 
+import { tAhora } from './idioma';
+
 export const UNIDADES = [
   {
     clave: 'unidad',
@@ -94,13 +96,13 @@ export const ajustarCantidad = (producto, cantidad) => {
  * Devuelve null cuando no se declaró — es opcional a propósito, y "0 piezas"
  * diría algo falso.
  */
-export const piezasEnTexto = (producto) => {
+export const piezasEnTexto = (producto, t = tAhora) => {
   const n = Number(producto?.piezas);
   if (!Number.isFinite(n) || n <= 0) return null;
 
   return esPorLibra(producto)
-    ? `${n} ${n === 1 ? 'pieza' : 'piezas'}`
-    : `Trae ${n} ${n === 1 ? 'unidad' : 'unidades'}`;
+    ? t(n === 1 ? '{n} pieza' : '{n} piezas', { n })
+    : t(n === 1 ? 'Trae {n} unidad' : 'Trae {n} unidades', { n });
 };
 
 /*

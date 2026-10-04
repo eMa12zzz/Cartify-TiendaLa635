@@ -19,6 +19,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEstilos } from '../../context/ModoContext';
 import { EsperaMascota } from '../Tiqui/Mascota';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const Boton = ({
   texto,
@@ -32,6 +33,7 @@ const Boton = ({
 }) => {
   const estilos = useEstilos(crearEstilos);
   const inactivo = cargando || deshabilitado;
+  const { t } = useIdioma();
 
   return (
     <Pressable
@@ -51,7 +53,7 @@ const Boton = ({
       {cargando ? (
         <View style={estilos.contenido}>
           <EsperaMascota alto={22} sobre="color" />
-          <Text style={estilos.texto}>Un momento…</Text>
+          <Text style={estilos.texto}>{t('Un momento…')}</Text>
         </View>
       ) : (
         <View style={estilos.contenido}>

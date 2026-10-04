@@ -42,6 +42,7 @@ import { evaluarCalce } from '../utils/calceImpresion';
 import { ChevronIzquierda, Equis, Mas, Menos } from '../components/UI/Iconos';
 import Boton from '../components/UI/Boton';
 import { avisarActividad } from '../utils/actividadUsuario';
+import { useIdioma } from '../context/IdiomaContext';
 
 // El mismo tope que la web (SubidorArchivo, maxMB={10}).
 const PESO_MAXIMO = 10 * 1024 * 1024;
@@ -52,6 +53,7 @@ const PAPELES = ['Normal', 'Fotográfico', 'Cartulina', 'Reciclado'];
 const MAX_COPIAS = 200;
 
 const Impresiones = ({ alVolver }) => {
+  const { t } = useIdioma();
   const { user } = useAuth();
   const { colores } = useTema();
   const COLORES = useColores();
@@ -121,14 +123,14 @@ const Impresiones = ({ alVolver }) => {
   const elegirFoto = async () => {
     setError('');
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permiso.granted) { setError('No dio permiso para abrir la galería.'); return; }
+    if (!permiso.granted) { setError(t('No dio permiso para abrir la galería.')); return; }
 
     const resultado = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
     if (resultado.canceled) return;
 
     const elegida = resultado.assets[0];
     if (elegida.fileSize && elegida.fileSize > PESO_MAXIMO) {
-      setError(`Esa imagen pesa ${(elegida.fileSize / 1024 / 1024).toFixed(1)} MB y el máximo son 10 MB.`);
+      setError(t('Esa imagen pesa {peso} MB y el máximo son 10 MB.', { peso: (elegida.fileSize / 1024 / 1024).toFixed(1) }));
       return;
     }
     setArchivo({
@@ -151,7 +153,7 @@ const Impresiones = ({ alVolver }) => {
 
     const elegido = resultado.assets[0];
     if (elegido.size && elegido.size > PESO_MAXIMO) {
-      setError(`Ese PDF pesa ${(elegido.size / 1024 / 1024).toFixed(1)} MB y el máximo son 10 MB.`);
+      setError(t('Ese PDF pesa {peso} MB y el máximo son 10 MB.', { peso: (elegido.size / 1024 / 1024).toFixed(1) }));
       return;
     }
     setArchivo({
@@ -163,9 +165,9 @@ const Impresiones = ({ alVolver }) => {
   };
 
   const enviar = async () => {
-    if (!formatoId) { setError('Selecciona un formato de impresión.'); return; }
-    if (!user?.id) { setError('Inicia sesión como cliente para enviar tu impresión.'); return; }
-    if (!archivo) { setError('Sube un archivo antes de continuar.'); return; }
+    if (!formatoId) { setError(t('Selecciona un formato de impresión.')); return; }
+    if (!user?.id) { setError(t('Inicia sesión como cliente para enviar tu impresión.')); return; }
+    if (!archivo) { setError(t('Sube un archivo antes de continuar.')); return; }
     setError('');
     setEnviando(true);
 
@@ -184,14 +186,14 @@ const Impresiones = ({ alVolver }) => {
       fd.append('paper', papel);
 
       const r = await crearPedidoImpresion(fd);
-      avisar(r?.emailedToPrinter ? '¡Enviado a la impresora!' : '¡Pedido de impresión creado!', 'exito');
+      avisar(r?.emailedToPrinter ? t('¡Enviado a la impresora!') : t('¡Pedido de impresión creado!'), 'exito');
       setArchivo(null);
       setCopias(1);
       setColor(false);
       setDobleCara(false);
       setPapel('Normal');
     } catch (e) {
-      setError(e?.message || 'No se pudo enviar la impresión');
+      setError(e?.message || t('No se pudo enviar la impresión'));
     } finally {
       setEnviando(false);
     }
@@ -204,12 +206,12 @@ const Impresiones = ({ alVolver }) => {
           onPress={alVolver}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Volver a la tienda"
+          accessibilityLabel={t('Volver a la tienda')}
           style={({ pressed }) => [estilos.botonAtras, pressed && { backgroundColor: COLORES.linea }]}
         >
           <ChevronIzquierda size={18} />
         </Pressable>
-        <Text style={estilos.tituloBarra}>Impresiones</Text>
+        <Text style={estilos.tituloBarra}>{t('Impresiones')}</Text>
         <View style={estilos.botonAtras} />
       </View>
 
@@ -218,11 +220,11 @@ const Impresiones = ({ alVolver }) => {
         keyboardShouldPersistTaps="handled"
         onScrollBeginDrag={avisarActividad}
       >
-        <Text style={estilos.pasoTitulo}>1. Elige el formato</Text>
+        <Text style={estilos.pasoTitulo}>{t('1. Elige el formato')}</Text>
         {cargandoFormatos ? (
-          <Text style={estilos.textoTenue}>Cargando formatos…</Text>
+          <Text style={estilos.textoTenue}>{t('Cargando formatos…')}</Text>
         ) : formatos.length === 0 ? (
-          <Text style={estilos.textoTenue}>No hay formatos disponibles todavía.</Text>
+          <Text style={estilos.textoTenue}>{t('No hay formatos disponibles todavía.')}</Text>
         ) : (
           <View style={estilos.cuadricula}>
             {formatos.map((f) => {
@@ -246,30 +248,30 @@ const Impresiones = ({ alVolver }) => {
                   <Text style={estilos.formatoMedida}>
                     {pxDesdeCm(f.widthCm)} × {pxDesdeCm(f.heightCm)} px
                   </Text>
-                  <Text style={estilos.formatoPrecio}>${Number(f.pricePerCopy).toFixed(2)}/copia</Text>
+                  <Text style={estilos.formatoPrecio}>{t('${precio}/copia', { precio: Number(f.pricePerCopy).toFixed(2) })}</Text>
                   {!disponible && <Text style={estilos.sinMaterial}>{motivo}</Text>}
-                  {disponible && poco && <Text style={estilos.quedaPoco}>Quedan pocas</Text>}
+                  {disponible && poco && <Text style={estilos.quedaPoco}>{t('Quedan pocas')}</Text>}
                 </Pressable>
               );
             })}
           </View>
         )}
 
-        <Text style={estilos.pasoTitulo}>2. Sube tu archivo</Text>
+        <Text style={estilos.pasoTitulo}>{t('2. Sube tu archivo')}</Text>
         <View style={estilos.filaArchivo}>
           <Pressable accessibilityRole="button"
             onPress={elegirFoto}
             style={({ pressed }) => [estilos.botonArchivo, pressed && { borderColor: colores.marca }]}
           >
             <ImagenIcono size={18} color={colores.marca} />
-            <Text style={estilos.botonArchivoTexto}>Elegir foto</Text>
+            <Text style={estilos.botonArchivoTexto}>{t('Elegir foto')}</Text>
           </Pressable>
           <Pressable accessibilityRole="button"
             onPress={elegirPdf}
             style={({ pressed }) => [estilos.botonArchivo, pressed && { borderColor: colores.marca }]}
           >
             <FileText size={18} color={colores.marca} />
-            <Text style={estilos.botonArchivoTexto}>Elegir PDF</Text>
+            <Text style={estilos.botonArchivoTexto}>{t('Elegir PDF')}</Text>
           </Pressable>
         </View>
 
@@ -277,7 +279,7 @@ const Impresiones = ({ alVolver }) => {
           <View style={estilos.previewArchivo}>
             <FileUp size={16} color={COLORES.textoSuave} />
             <Text style={estilos.previewNombre} numberOfLines={1}>{archivo.name}</Text>
-            <Pressable accessibilityRole="button" onPress={() => setArchivo(null)} hitSlop={10} accessibilityLabel="Quitar archivo">
+            <Pressable accessibilityRole="button" onPress={() => setArchivo(null)} hitSlop={10} accessibilityLabel={t('Quitar archivo')}>
               <Equis size={15} color={COLORES.textoSuave} />
             </Pressable>
           </View>
@@ -290,17 +292,17 @@ const Impresiones = ({ alVolver }) => {
           </View>
         )}
 
-        <Text style={estilos.pasoTitulo}>3. Opciones</Text>
+        <Text style={estilos.pasoTitulo}>{t('3. Opciones')}</Text>
         <View style={estilos.tarjetaOpciones}>
           <View style={estilos.filaOpcion}>
             <View style={{ flex: 1 }}>
-              <Text style={estilos.etiquetaOpcion}>Color</Text>
+              <Text style={estilos.etiquetaOpcion}>{t('Color')}</Text>
               {formato && !formato.allowsColor && (
-                <Text style={estilos.notaOpcion}>Este formato es solo en blanco y negro</Text>
+                <Text style={estilos.notaOpcion}>{t('Este formato es solo en blanco y negro')}</Text>
               )}
               {formato?.allowsColor && !hayTintaDeColor && (
                 <Text style={[estilos.notaOpcion, { color: COLORES.peligro, fontWeight: '600' }]}>
-                  Hoy no hay tinta de color
+                  {t('Hoy no hay tinta de color')}
                 </Text>
               )}
             </View>
@@ -308,26 +310,26 @@ const Impresiones = ({ alVolver }) => {
               value={color}
               onValueChange={(v) => puedeColor && setColor(v)}
               disabled={!puedeColor}
-              accessibilityLabel="Imprimir a color"
+              accessibilityLabel={t('Imprimir a color')}
               trackColor={{ true: colores.marca }}
             />
           </View>
 
           <View style={estilos.filaOpcion}>
-            <Text style={estilos.etiquetaOpcion}>Copias</Text>
+            <Text style={estilos.etiquetaOpcion}>{t('Copias')}</Text>
             <View style={estilos.contador}>
               <Pressable accessibilityRole="button"
                 onPress={() => setCopias((n) => Math.max(1, n - 1))}
                 hitSlop={8}
                 style={estilos.botonContador}
-                accessibilityLabel="Quitar una copia"
+                accessibilityLabel={t('Quitar una copia')}
               >
                 <Menos size={14} color={COLORES.tituloVentaja} />
               </Pressable>
               <TextInput
-                accessibilityLabel="Número de copias"
+                accessibilityLabel={t('Número de copias')}
                 value={String(copias)}
-                onChangeText={(t) => setCopias(Math.min(MAX_COPIAS, Math.max(1, Number(t.replace(/[^0-9]/g, '')) || 1)))}
+                onChangeText={(texto) => setCopias(Math.min(MAX_COPIAS, Math.max(1, Number(texto.replace(/[^0-9]/g, '')) || 1)))}
                 keyboardType="number-pad"
                 keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                 style={estilos.inputCopias}
@@ -336,7 +338,7 @@ const Impresiones = ({ alVolver }) => {
                 onPress={() => setCopias((n) => Math.min(MAX_COPIAS, n + 1))}
                 hitSlop={8}
                 style={estilos.botonContador}
-                accessibilityLabel="Agregar una copia"
+                accessibilityLabel={t('Agregar una copia')}
               >
                 <Mas size={14} color={COLORES.tituloVentaja} />
               </Pressable>
@@ -344,13 +346,13 @@ const Impresiones = ({ alVolver }) => {
           </View>
 
           <View style={estilos.filaOpcion}>
-            <Text style={estilos.etiquetaOpcion}>Doble cara</Text>
-            <Switch value={dobleCara} onValueChange={setDobleCara} trackColor={{ true: colores.marca }} accessibilityLabel="Imprimir a doble cara" />
+            <Text style={estilos.etiquetaOpcion}>{t('Doble cara')}</Text>
+            <Switch value={dobleCara} onValueChange={setDobleCara} trackColor={{ true: colores.marca }} accessibilityLabel={t('Imprimir a doble cara')} />
           </View>
 
           <View>
-            <Text style={[estilos.etiquetaOpcion, { marginBottom: 8 }]}>Tipo de papel</Text>
-            <View style={estilos.filaPapeles} accessibilityRole="radiogroup" accessibilityLabel="Tipo de papel">
+            <Text style={[estilos.etiquetaOpcion, { marginBottom: 8 }]}>{t('Tipo de papel')}</Text>
+            <View style={estilos.filaPapeles} accessibilityRole="radiogroup" accessibilityLabel={t('Tipo de papel')}>
               {PAPELES.map((p) => {
                 const activo = papel === p;
                 return (
@@ -364,7 +366,7 @@ const Impresiones = ({ alVolver }) => {
                       activo && { backgroundColor: colores.marca, borderColor: colores.marca },
                     ]}
                   >
-                    <Text style={[estilos.pastillaPapelTexto, activo && { color: '#FFFFFF' }]}>{p}</Text>
+                    <Text style={[estilos.pastillaPapelTexto, activo && { color: '#FFFFFF' }]}>{t(p)}</Text>
                   </Pressable>
                 );
               })}
@@ -374,11 +376,11 @@ const Impresiones = ({ alVolver }) => {
 
         <View style={estilos.cajaPrecio}>
           <View style={{ flex: 1 }}>
-            <Text style={estilos.precioEtiqueta}>Total</Text>
+            <Text style={estilos.precioEtiqueta}>{t('Total')}</Text>
             {!!formato && (
               <Text style={estilos.precioDetalle}>
-                {copias} × {hojas} hoja{hojas > 1 ? 's' : ''} × ${precioPorHoja.toFixed(2)}
-                {color && formato.allowsColor ? ` · color +$${Number(formato.colorSurcharge || 0).toFixed(2)}/hoja` : ''}
+                {copias} × {t(hojas > 1 ? '{n} hojas' : '{n} hoja', { n: hojas })} × ${precioPorHoja.toFixed(2)}
+                {color && formato.allowsColor ? t(' · color +${monto}/hoja', { monto: Number(formato.colorSurcharge || 0).toFixed(2) }) : ''}
               </Text>
             )}
           </View>
@@ -388,7 +390,7 @@ const Impresiones = ({ alVolver }) => {
         {!!error && <Text style={estilos.error}>{error}</Text>}
 
         <Boton
-          texto="Enviar a imprimir"
+          texto={t('Enviar a imprimir')}
           alPresionar={enviar}
           cargando={enviando}
           color={colores.marca}

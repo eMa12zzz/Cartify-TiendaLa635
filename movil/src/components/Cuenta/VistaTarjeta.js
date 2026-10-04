@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Nfc } from 'lucide-react-native';
 import MarcaTarjeta from './MarcaTarjeta';
 import { detectarMarca, largoDe, soloDigitos } from '../../utils/tarjetas';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Los mismos degradados de la web, con sus tres paradas.
 const FONDOS = {
@@ -51,6 +52,7 @@ const numeroParaMostrar = (numero) => {
 };
 
 const VistaTarjeta = ({ numero = '', titular = '', vencimiento = '', tipo = '' }) => {
+  const { t } = useIdioma();
   const marca = detectarMarca(numero);
 
   return (
@@ -86,7 +88,7 @@ const VistaTarjeta = ({ numero = '', titular = '', vencimiento = '', tipo = '' }
             <Nfc size={20} color="#FFFFFF" style={estilos.nfc} />
           </View>
           <Text style={estilos.tipo}>
-            {tipo === 'debito' ? 'DÉBITO' : tipo === 'credito' ? 'CRÉDITO' : ''}
+            {tipo === 'debito' ? t('DÉBITO') : tipo === 'credito' ? t('CRÉDITO') : ''}
           </Text>
         </View>
 
@@ -98,7 +100,7 @@ const VistaTarjeta = ({ numero = '', titular = '', vencimiento = '', tipo = '' }
           <View style={estilos.titularCaja}>
             <Text style={estilos.etiqueta}>TITULAR</Text>
             <Text style={estilos.titular} numberOfLines={1}>
-              {titular.trim() || 'Nombre en la tarjeta'}
+              {titular.trim() || t('Nombre en la tarjeta')}
             </Text>
           </View>
           <View>

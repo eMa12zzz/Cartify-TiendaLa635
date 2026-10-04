@@ -43,6 +43,7 @@ import { getCliente, actualizarNotificaciones, registrarTokenPush } from '../../
 import { HAY_PUSH, registrarParaAvisos, tokenActual } from '../../utils/notificaciones';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Los mismos valores por defecto que la web, para que un cliente nuevo vea lo
 // mismo en los dos lados antes de tocar nada.
@@ -117,6 +118,7 @@ const Interruptor = ({ encendido, alTocar, color, etiqueta }) => {
 };
 
 const Notificaciones = ({ alVolver }) => {
+  const { t } = useIdioma();
   const { user } = useAuth();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
@@ -133,7 +135,7 @@ const Notificaciones = ({ alVolver }) => {
       const cliente = await getCliente(user.id);
       setPrefs({ ...POR_DEFECTO, ...(cliente?.notificationPrefs || {}) });
     } catch (e) {
-      setError(e?.message || 'No se pudieron cargar sus preferencias');
+      setError(e?.message || t('No se pudieron cargar sus preferencias'));
     } finally {
       setCargando(false);
     }
@@ -197,7 +199,7 @@ const Notificaciones = ({ alVolver }) => {
       await actualizarNotificaciones(user.id, { [clave]: despues[clave] });
     } catch (e) {
       setPrefs(antes);
-      avisar(e?.message || 'No se pudo guardar la preferencia', 'error');
+      avisar(e?.message || t('No se pudo guardar la preferencia'), 'error');
       return;
     }
 
@@ -224,27 +226,27 @@ const Notificaciones = ({ alVolver }) => {
     'sin-token': 'No se pudo preparar este teléfono para los avisos.',
     error: 'No se pudo preparar este teléfono para los avisos.',
   };
-  const pie = avisos
+  const pie = t(avisos
     ? PIES[avisos]
     : HAY_PUSH
       ? 'Encienda lo que quiera y le avisamos en este teléfono.'
-      : PIES['sin-proyecto'];
+      : PIES['sin-proyecto']);
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Notificaciones" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Notificaciones')} alVolver={alVolver} />
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tus preferencias…" />
+          <CargandoMascota texto={t('Cargando tus preferencias…')} />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>No se pudieron cargar sus preferencias</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus preferencias')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
-              texto="Reintentar"
+              texto={t('Reintentar')}
               alPresionar={cargar}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
@@ -256,15 +258,15 @@ const Notificaciones = ({ alVolver }) => {
           {OPCIONES.map((op) => (
             <View key={op.clave} style={estilos.fila}>
               <View style={estilos.textos}>
-                <Text style={estilos.titulo}>{op.titulo}</Text>
-                <Text style={estilos.sub}>{op.sub}</Text>
+                <Text style={estilos.titulo}>{t(op.titulo)}</Text>
+                <Text style={estilos.sub}>{t(op.sub)}</Text>
               </View>
 
               <Interruptor
                 encendido={!!prefs[op.clave]}
                 alTocar={() => alternar(op.clave)}
                 color={colores.marca}
-                etiqueta={op.titulo}
+                etiqueta={t(op.titulo)}
               />
             </View>
           ))}
@@ -274,7 +276,7 @@ const Notificaciones = ({ alVolver }) => {
           {avisos === 'sin-permiso' && (
             <Pressable accessibilityRole="button" onPress={() => Linking.openSettings()} hitSlop={8}>
               <Text style={[estilos.pie, estilos.pieEnlace, { color: colores.marcaTexto }]}>
-                Abrir los ajustes del teléfono
+                {t('Abrir los ajustes del teléfono')}
               </Text>
             </Pressable>
           )}

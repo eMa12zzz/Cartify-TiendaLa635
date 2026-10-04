@@ -26,6 +26,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { getFavoritos, alternarFavorito } from '../api/favoritosApi';
 import { useAuth } from '../hooks/useAuth';
 import { useAviso } from './AvisoContext';
+import { tAhora } from '../utils/idioma';
 
 const FavoritosContext = createContext(null);
 
@@ -63,9 +64,9 @@ export const FavoritosProvider = ({ children, alPedirSesion }) => {
   const esFavorito = useCallback((productoId) => ids.includes(String(productoId)), [ids]);
 
   const alternar = useCallback(
-    async (productoId, nombre = 'El producto') => {
+    async (productoId, nombre = tAhora('El producto')) => {
       if (!esCliente) {
-        avisar('Inicie sesión para guardar sus favoritos');
+        avisar(tAhora('Inicie sesión para guardar sus favoritos'));
         // Se le lleva a entrar, pero no se le arrastra: estaba viendo un
         // producto, no buscando su cuenta.
         alPedirSesion?.();
@@ -81,13 +82,13 @@ export const FavoritosProvider = ({ children, alPedirSesion }) => {
       try {
         await alternarFavorito(user.id, id);
         avisar(
-          estaba ? `${nombre} salió de favoritos` : `${nombre} guardado en favoritos`,
+          estaba ? tAhora('{nombre} salió de favoritos', { nombre }) : tAhora('{nombre} guardado en favoritos', { nombre }),
           estaba ? 'sinFavorito' : 'favorito'
         );
       } catch {
         // Se deshace.
         setIds((prev) => (estaba ? [...prev, id] : prev.filter((x) => x !== id)));
-        avisar('No se pudo guardar el favorito', 'error');
+        avisar(tAhora('No se pudo guardar el favorito'), 'error');
       }
     },
     [esCliente, ids, user?.id, avisar, alPedirSesion]

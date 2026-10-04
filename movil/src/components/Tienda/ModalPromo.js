@@ -27,11 +27,13 @@ import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import TarjetaPromo from './TarjetaPromo';
 import TarjetaProducto from './TarjetaProducto';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Solo se abre desde Inicio (el carrusel de promos de la tienda), así que a
 // diferencia de ModalProducto no hace falta un prop: la píldora flotante
 // SIEMPRE está detrás.
 const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, alAgregar }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -115,7 +117,7 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
      */
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel={t('Cerrar')} />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -129,7 +131,7 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
               onPress={cerrarConAnimacion}
               hitSlop={12}
               accessibilityRole="button"
-              accessibilityLabel="Cerrar la promoción"
+              accessibilityLabel={t('Cerrar la promoción')}
               style={estilos.cerrar}
             >
               <Equis size={16} color={COLORES.textoSuave} />
@@ -151,14 +153,14 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
 
             {productos.length === 0 ? (
               <Text style={estilos.vacio}>
-                Los productos de esta promoción no están disponibles en este momento.
+                {t('Los productos de esta promoción no están disponibles en este momento.')}
               </Text>
             ) : (
               <>
                 <Text style={estilos.titulo}>
                   {productos.length === 1
-                    ? '1 producto en esta promoción'
-                    : `${productos.length} productos en esta promoción`}
+                    ? t('1 producto en esta promoción')
+                    : t('{n} productos en esta promoción', { n: productos.length })}
                 </Text>
 
                 {/*
@@ -190,7 +192,7 @@ const ModalPromo = ({ promo, productos, alCerrar, alVerEnTienda, alVerProducto, 
             ]}
           >
             <Boton
-              texto="Ver todos en la tienda"
+              texto={t('Ver todos en la tienda')}
               alPresionar={alVerEnTienda}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}

@@ -42,11 +42,13 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { coloresDePromo } from '../../utils/temasPromo';
 import { glifoDePromo, MaterialCommunityIcons } from '../../utils/iconosPromo';
 import { Flecha, Reloj } from '../UI/Iconos';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // La misma proporción que la web (2.2:1), para que el texto respire igual.
 const PROPORCION = 2.2;
 
 const TarjetaPromo = ({ promo, etiqueta, vencimiento, ancho }) => {
+  const { t } = useIdioma();
   const [fallóImagen, setFallóImagen] = useState(false);
   const colores = coloresDePromo(promo);
 
@@ -154,7 +156,7 @@ const TarjetaPromo = ({ promo, etiqueta, vencimiento, ancho }) => {
           contentFit="cover"
           style={estilos.imagenCompleta}
           onError={() => setFallóImagen(true)}
-          accessibilityLabel={promo.title || promo.promoDescription || 'Promoción'}
+          accessibilityLabel={promo.title || promo.promoDescription || t('Promoción')}
         />
       ) : (
         <View style={estilos.contenido}>
@@ -186,7 +188,7 @@ const TarjetaPromo = ({ promo, etiqueta, vencimiento, ancho }) => {
             // de la tarjeta en vez de cortarse.
             numberOfLines={2}
           >
-            {promo?.title || 'Su promoción se verá aquí'}
+            {promo?.title || t('Su promoción se verá aquí')}
           </Text>
 
           {!!promo?.promoDescription && (
