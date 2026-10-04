@@ -27,6 +27,7 @@
 
 import { useState } from 'react';
 import * as Location from 'expo-location';
+import { tAhora } from '../utils/idioma';
 
 // San Salvador: dónde abre el mapa si todavía no hay un pin puesto.
 export const CENTRO_POR_DEFECTO = { lat: 13.6929, lng: -89.2182 };
@@ -41,7 +42,7 @@ const direccionDesdeCoords = async (lat, lng) => {
   const r = await fetch(url, {
     headers: { Accept: 'application/json', 'User-Agent': 'TiendaLa635-App/1.0' },
   });
-  if (!r.ok) throw new Error('No se pudo leer la dirección');
+  if (!r.ok) throw new Error(tAhora('No se pudo leer la dirección'));
 
   const d = await r.json();
   const a = d.address || {};
@@ -75,7 +76,7 @@ export const useUbicacion = () => {
        * persona puede escribir la dirección a mano. Quedarse sin poder
        * continuar por un servicio ajeno sería peor.
        */
-      setAvisoGeocod('No se pudo leer la dirección; puede escribirla usted');
+      setAvisoGeocod(tAhora('No se pudo leer la dirección; puede escribirla usted'));
     } finally {
       setBuscando(false);
     }
@@ -92,7 +93,7 @@ export const useUbicacion = () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setAvisoGeocod('No nos dio permiso de ubicarlo. Puede marcar el pin en el mapa.');
+        setAvisoGeocod(tAhora('No nos dio permiso de ubicarlo. Puede marcar el pin en el mapa.'));
         return;
       }
       const posicionGps = await Location.getCurrentPositionAsync({
@@ -100,7 +101,7 @@ export const useUbicacion = () => {
       });
       await marcarEn({ lat: posicionGps.coords.latitude, lng: posicionGps.coords.longitude });
     } catch {
-      setAvisoGeocod('No pudimos ubicarlo. Pruebe marcando el pin en el mapa.');
+      setAvisoGeocod(tAhora('No pudimos ubicarlo. Pruebe marcando el pin en el mapa.'));
     } finally {
       setLocalizando(false);
     }

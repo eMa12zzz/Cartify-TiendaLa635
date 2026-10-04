@@ -18,19 +18,21 @@ import { useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import Mascota from '../Tiqui/Mascota';
 import Boton from './Boton';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const PantallaDeError = ({ alReintentar }) => {
+  const { t } = useIdioma();
   const estilos = useEstilos(crearEstilos);
   const { colores } = useTema();
   return (
     <View style={estilos.pantalla} accessibilityRole="alert">
       <Mascota pose="error" alto={180} />
-      <Text style={estilos.titulo}>Algo se nos cayó</Text>
+      <Text style={estilos.titulo}>{t('Algo se nos cayó')}</Text>
       <Text style={estilos.texto}>
-        Esta pantalla tuvo un problema. Tu carrito y tu cuenta están bien: vuelve a intentarlo.
+        {t('Esta pantalla tuvo un problema. Tu carrito y tu cuenta están bien: vuelve a intentarlo.')}
       </Text>
       <View style={estilos.boton}>
-        <Boton texto="Volver a intentar" alPresionar={alReintentar} color={colores.marca} colorPresionado={colores.marcaOscuro} />
+        <Boton texto={t('Volver a intentar')} alPresionar={alReintentar} color={colores.marca} colorPresionado={colores.marcaOscuro} />
       </View>
     </View>
   );

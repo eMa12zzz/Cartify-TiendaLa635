@@ -76,6 +76,7 @@ import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
 import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante';
 import VueloAlCarrito from './src/components/Tienda/VueloAlCarrito';
 import { ModoProvider, useModo } from './src/context/ModoContext';
+import { IdiomaProvider } from './src/context/IdiomaContext';
 import { View } from 'react-native';
 // Quien trabaja en la tienda: la app entera pasa a ser su herramienta de trabajo.
 import { PersonalProvider, usePersonal } from './src/context/PersonalContext';
@@ -87,8 +88,15 @@ const BarraDeEstado = () => {
   return <StatusBar style={oscuro ? 'light' : 'dark'} />;
 };
 
-// La tienda: lo que ve cualquiera que no entró como personal.
+/*
+ * La tienda: lo que ve cualquiera que no entró como personal.
+ *
+ * IdiomaProvider va por fuera de todo lo de la tienda (español o inglés, ver
+ * context/IdiomaContext.js) y SOLO aquí: el modo del personal sigue en
+ * español, como el panel en la web.
+ */
 const LaTienda = () => (
+  <IdiomaProvider>
   <AuthProvider>
     <TemaProvider>
       <EdadProvider>
@@ -110,6 +118,7 @@ const LaTienda = () => (
       </EdadProvider>
     </TemaProvider>
   </AuthProvider>
+  </IdiomaProvider>
 );
 
 /*

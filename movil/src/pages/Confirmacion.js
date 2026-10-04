@@ -44,6 +44,7 @@ import { Estrella } from '../components/UI/Iconos';
 import CodigoEntrega from '../components/Tienda/CodigoEntrega';
 import MapaSeguimiento from '../components/Tienda/MapaSeguimiento';
 import ModalMapaSeguimiento from '../components/Tienda/ModalMapaSeguimiento';
+import { useIdioma } from '../context/IdiomaContext';
 
 /*
  * Una fila por producto, con su propia foto. El pedido que devuelve
@@ -54,6 +55,7 @@ import ModalMapaSeguimiento from '../components/Tienda/ModalMapaSeguimiento';
  * nuevas y sin tocar el backend).
  */
 const FilaProducto = ({ item, imagen }) => {
+  const { t } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const [fallóImagen, setFallóImagen] = useState(false);
@@ -73,7 +75,7 @@ const FilaProducto = ({ item, imagen }) => {
         )}
       </View>
       <Text style={estilos.nombreProducto} numberOfLines={2}>
-        {item.name || 'Producto'}
+        {item.name || t('Producto')}
       </Text>
       <Text style={estilos.cantidad}>×{item.amount}</Text>
       <Text style={estilos.precio}>
@@ -83,9 +85,9 @@ const FilaProducto = ({ item, imagen }) => {
   );
 };
 
-const fechaLarga = (iso) => {
+const fechaLarga = (iso, locale) => {
   try {
-    return new Date(iso || Date.now()).toLocaleDateString('es-SV', {
+    return new Date(iso || Date.now()).toLocaleDateString(locale, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -98,6 +100,7 @@ const fechaLarga = (iso) => {
 };
 
 const Confirmacion = ({ respuesta, alCerrar }) => {
+  const { t, locale } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -183,9 +186,9 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           <Mascota pose="fiesta" alto={130} />
         </View>
 
-        <Text style={estilos.titulo}>Su pedido está hecho</Text>
-        {!!numero && <Text style={estilos.numero}>Pedido #{numero}</Text>}
-        <Text style={estilos.fecha}>Recibido el {fechaLarga(pedido.createdAt)}</Text>
+        <Text style={estilos.titulo}>{t('Su pedido está hecho')}</Text>
+        {!!numero && <Text style={estilos.numero}>{t('Pedido #{numero}', { numero })}</Text>}
+        <Text style={estilos.fecha}>{t('Recibido el {fecha}', { fecha: fechaLarga(pedido.createdAt, locale) })}</Text>
 
         {/* ── En qué va ── */}
         <View style={estilos.linea}>
@@ -245,18 +248,18 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
                       { color: seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto },
                     ]}
                   >
-                    {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
-                    {seguimiento.distancia ? ` · a ${seguimiento.distancia}` : ''}
+                    {seguimiento.yaCasi ? t('Ya casi toca su puerta') : seguimiento.espera}
+                    {seguimiento.distancia ? t(' · a {distancia}', { distancia: seguimiento.distancia }) : ''}
                   </Text>
                 </>
               ) : estado === 'entregado' ? (
                 <>
                   <Check size={15} color={COLORES.textoSuave} strokeWidth={2.4} />
-                  <Text style={estilos.infoMapaTexto}>Entregado en su dirección</Text>
+                  <Text style={estilos.infoMapaTexto}>{t('Entregado en su dirección')}</Text>
                 </>
               ) : (
                 <Text style={estilos.infoMapaTexto}>
-                  Aquí le llevaremos su pedido. En cuanto el repartidor salga, verá su punto moverse.
+                  {t('Aquí le llevaremos su pedido. En cuanto el repartidor salga, verá su punto moverse.')}
                 </Text>
               )}
             </View>
@@ -273,7 +276,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
 
         {/* ── Qué llevaba ── */}
         <View style={estilos.tarjeta}>
-          <Text style={estilos.tarjetaTitulo}>Productos</Text>
+          <Text style={estilos.tarjetaTitulo}>{t('Productos')}</Text>
 
           {items.map((item, i) => (
             // La clave es el índice porque las líneas del pedido no tienen id
@@ -283,14 +286,14 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
 
           <View style={estilos.separador} />
 
-          <Fila etiqueta="Subtotal" valor={`$${Number(pedido.subtotal || 0).toFixed(2)}`} />
-          {envio > 0 && <Fila etiqueta="Costo de envío" valor={`$${envio.toFixed(2)}`} />}
-          {servicio > 0 && <Fila etiqueta="Tarifa de servicio" valor={`$${servicio.toFixed(2)}`} />}
+          <Fila etiqueta={t('Subtotal')} valor={`$${Number(pedido.subtotal || 0).toFixed(2)}`} />
+          {envio > 0 && <Fila etiqueta={t('Costo de envío')} valor={`$${envio.toFixed(2)}`} />}
+          {servicio > 0 && <Fila etiqueta={t('Tarifa de servicio')} valor={`$${servicio.toFixed(2)}`} />}
           {descuento > 0 && (
-            <Fila etiqueta="Descuento por puntos" valor={`−$${descuento.toFixed(2)}`} verde />
+            <Fila etiqueta={t('Descuento por puntos')} valor={`−$${descuento.toFixed(2)}`} verde />
           )}
           <View style={estilos.filaTotal}>
-            <Text style={estilos.totalEtiqueta}>Total</Text>
+            <Text style={estilos.totalEtiqueta}>{t('Total')}</Text>
             <Text style={estilos.totalValor}>${Number(pedido.total || 0).toFixed(2)}</Text>
           </View>
         </View>
@@ -298,14 +301,14 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
         {/* ── Cómo y dónde ── */}
         <View style={estilos.tarjeta}>
           <Fila
-            etiqueta={pedido.deliveryType === 'delivery' ? 'Envío a domicilio' : 'Retiro en el local'}
-            valor={
+            etiqueta={t(pedido.deliveryType === 'delivery' ? 'Envío a domicilio' : 'Retiro en el local')}
+            valor={t(
               pedido.paymentMethod === 'saldo'
                 ? 'Pagado con saldo'
                 : pedido.paymentMethod === 'tarjeta'
                   ? 'Paga con tarjeta'
                   : 'Paga en efectivo'
-            }
+            )}
           />
           {!!pedido.deliveryAddress && (
             <Text style={estilos.direccion}>{pedido.deliveryAddress}</Text>
@@ -321,8 +324,8 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           {pedido.paymentMethod !== 'saldo' && (
             <Text style={estilos.aclaracion}>
               {pedido.deliveryType === 'delivery'
-                ? 'Se paga al recibir el pedido.'
-                : 'Se paga al pasar a traerlo.'}
+                ? t('Se paga al recibir el pedido.')
+                : t('Se paga al pasar a traerlo.')}
             </Text>
           )}
         </View>
@@ -331,7 +334,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
             <Estrella size={15} color={colores.marca} />
             <Text style={[estilos.puntosTexto, { color: colores.marcaTexto }]}>
-              Ganó {puntosGanados} {puntosGanados === 1 ? 'punto' : 'puntos'} con esta compra
+              {t(puntosGanados === 1 ? 'Ganó {n} punto con esta compra' : 'Ganó {n} puntos con esta compra', { n: puntosGanados })}
             </Text>
           </View>
         )}
@@ -339,7 +342,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
 
       <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 18) }]}>
         <Boton
-          texto="Volver a la tienda"
+          texto={t('Volver a la tienda')}
           alPresionar={cerrar}
           color={colores.marca}
           colorPresionado={colores.marcaOscuro}

@@ -20,11 +20,13 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Star } from 'lucide-react-native';
 import { useColores } from '../../context/ModoContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const AMARILLO = '#F5A623';
 const VALORES = [1, 2, 3, 4, 5];
 
 const Estrellas = ({ valor = 0, alElegir, tamano = 30, soloLectura = false }) => {
+  const { t } = useIdioma();
   const COLORES = useColores();
 
   return (
@@ -49,7 +51,7 @@ const Estrellas = ({ valor = 0, alElegir, tamano = 30, soloLectura = false }) =>
             hitSlop={7}
             accessibilityRole="radio"
             accessibilityState={{ checked: valor === n }}
-            accessibilityLabel={`${n} de 5`}
+            accessibilityLabel={t('{n} de 5', { n })}
             style={({ pressed }) => pressed && estilos.presionada}
           >
             {estrella}

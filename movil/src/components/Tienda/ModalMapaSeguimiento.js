@@ -6,6 +6,7 @@ import { X } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
+import { useIdioma } from '../../context/IdiomaContext';
 
 /*
  * ============================================================
@@ -21,6 +22,7 @@ import { crearHtmlSeguimiento } from './mapaSeguimientoHtml';
  */
 
 const ModalMapaSeguimiento = ({ punto, destino, colorMarca, alCerrar }) => {
+  const { t } = useIdioma();
   const { top, bottom } = useSafeAreaInsets();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -56,12 +58,12 @@ const ModalMapaSeguimiento = ({ punto, destino, colorMarca, alCerrar }) => {
     <View style={estilos.capa}>
       <Animated.View style={[estilos.pagina, { opacity: opacidad }]}>
         <View style={[estilos.encabezado, { paddingTop: top + 10 }]}>
-          <Text style={estilos.titulo}>Seguimiento en vivo</Text>
+          <Text style={estilos.titulo}>{t('Seguimiento en vivo')}</Text>
           <Pressable
             onPress={cerrarConAnimacion}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel="Cerrar el mapa"
+            accessibilityLabel={t('Cerrar el mapa')}
             style={estilos.cerrar}
           >
             <X size={20} color={COLORES.tituloFuerte} />

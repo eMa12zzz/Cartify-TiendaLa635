@@ -17,17 +17,19 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { EsperaMascota } from '../Tiqui/Mascota';
 import { LogoGoogle } from './Iconos';
 import { useEstilos } from '../../context/ModoContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const BotonGoogle = ({
   texto,
   alPresionar,
   cargando = false,
-  textoCargando = 'Un momento…',
+  textoCargando,
   // Otra cosa de la pantalla está trabajando (el botón principal): este
   // espera, para no mandar dos pedidos al servidor a la vez.
   deshabilitado = false,
 }) => {
   const estilos = useEstilos(crearEstilos);
+  const { t } = useIdioma();
   const inactivo = cargando || deshabilitado;
 
   return (
@@ -46,7 +48,7 @@ const BotonGoogle = ({
       {cargando ? (
         <>
           <EsperaMascota alto={22} />
-          <Text style={estilos.texto}>{textoCargando}</Text>
+          <Text style={estilos.texto}>{textoCargando ?? t('Un momento…')}</Text>
         </>
       ) : (
         <>

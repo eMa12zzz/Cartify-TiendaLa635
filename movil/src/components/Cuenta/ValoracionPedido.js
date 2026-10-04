@@ -30,6 +30,7 @@ import { guardarResena } from '../../api/valoracionesApi';
 import { guardar, leer, llave } from '../../utils/almacen';
 import Boton from '../UI/Boton';
 import Estrellas from './Estrellas';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Una clave por pedido: omitir uno no debe ocultar el aviso de los demás.
 const llaveOmitida = (pedidoId) => llave('valoracion', 'omitida', pedidoId);
@@ -48,6 +49,7 @@ const productosDelPedido = (items = []) => {
 };
 
 const ValoracionPedido = ({ pedido }) => {
+  const { t } = useIdioma();
   const { user } = useAuth();
   const { colores } = useTema();
   const COLORES = useColores();
@@ -85,7 +87,7 @@ const ValoracionPedido = ({ pedido }) => {
 
   const enviar = async () => {
     if (!estrellas) {
-      avisar('Elija cuántas estrellas antes de enviar', 'error');
+      avisar(t('Elija cuántas estrellas antes de enviar'), 'error');
       return;
     }
     setGuardando(true);
@@ -97,9 +99,9 @@ const ValoracionPedido = ({ pedido }) => {
         )
       );
       setEnviado(true);
-      avisar('¡Gracias por calificar su pedido!', 'exito');
+      avisar(t('¡Gracias por calificar su pedido!'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo guardar su valoración', 'error');
+      avisar(e?.message || t('No se pudo guardar su valoración'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -107,17 +109,17 @@ const ValoracionPedido = ({ pedido }) => {
 
   return (
     <View style={estilos.tarjeta}>
-      <Text style={estilos.titulo}>¿Qué le pareció su pedido?</Text>
+      <Text style={estilos.titulo}>{t('¿Qué le pareció su pedido?')}</Text>
 
       {enviado ? (
         <View style={estilos.filaGracias}>
           <Check size={17} color={COLORES.exito} strokeWidth={2.4} />
-          <Text style={estilos.gracias}>¡Gracias por calificar su pedido!</Text>
+          <Text style={estilos.gracias}>{t('¡Gracias por calificar su pedido!')}</Text>
         </View>
       ) : (
         <>
           <Text style={estilos.texto}>
-            Su pedido ya llegó. Déjenos saber qué tal estuvo, para que otros vecinos se animen.
+            {t('Su pedido ya llegó. Déjenos saber qué tal estuvo, para que otros vecinos se animen.')}
           </Text>
 
           <Estrellas valor={estrellas} alElegir={setEstrellas} tamano={32} soloLectura={guardando} />
@@ -125,17 +127,17 @@ const ValoracionPedido = ({ pedido }) => {
           <TextInput
             value={comentario}
             onChangeText={setComentario}
-            placeholder="¿Algo que quiera contar? (opcional)"
+            placeholder={t('¿Algo que quiera contar? (opcional)')}
             placeholderTextColor={COLORES.marcador}
             keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
             multiline
             maxLength={500}
             style={estilos.campo}
-            accessibilityLabel="Comentario sobre el pedido"
+            accessibilityLabel={t('Comentario sobre el pedido')}
           />
 
           <Boton
-            texto={guardando ? 'Enviando…' : 'Enviar valoración'}
+            texto={guardando ? t('Enviando…') : t('Enviar valoración')}
             alPresionar={enviar}
             cargando={guardando}
             color={colores.marca}
@@ -143,7 +145,7 @@ const ValoracionPedido = ({ pedido }) => {
             estilo={estilos.boton}
           />
           <Pressable accessibilityRole="button" onPress={omitir} disabled={guardando} hitSlop={8}>
-            <Text style={estilos.ahoraNo}>Ahora no</Text>
+            <Text style={estilos.ahoraNo}>{t('Ahora no')}</Text>
           </Pressable>
         </>
       )}

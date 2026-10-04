@@ -28,8 +28,10 @@ import { useAviso } from '../../context/AvisoContext';
 import { valorarServicio } from '../../api/valoracionesApi';
 import Boton from '../UI/Boton';
 import Estrellas from './Estrellas';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const ValoracionServicio = ({ pedido }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -46,16 +48,16 @@ const ValoracionServicio = ({ pedido }) => {
 
   const enviar = async () => {
     if (!estrellas) {
-      avisar('Elija de 1 a 5 estrellas', 'error');
+      avisar(t('Elija de 1 a 5 estrellas'), 'error');
       return;
     }
     setEnviando(true);
     try {
       await valorarServicio(pedido._id, { rating: estrellas, comment: comentario.trim() });
       setGuardado(true);
-      avisar('¡Gracias por valorar el servicio!', 'exito');
+      avisar(t('¡Gracias por valorar el servicio!'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo guardar su valoración', 'error');
+      avisar(e?.message || t('No se pudo guardar su valoración'), 'error');
     } finally {
       setEnviando(false);
     }
@@ -64,7 +66,7 @@ const ValoracionServicio = ({ pedido }) => {
   return (
     <View style={estilos.tarjeta}>
       <Text style={estilos.titulo}>
-        {guardado ? 'Valoró el servicio de entrega' : '¿Qué tal estuvo la entrega?'}
+        {guardado ? t('Valoró el servicio de entrega') : t('¿Qué tal estuvo la entrega?')}
       </Text>
 
       <Estrellas
@@ -81,16 +83,16 @@ const ValoracionServicio = ({ pedido }) => {
           <TextInput
             value={comentario}
             onChangeText={setComentario}
-            placeholder="¿Algo que contar del reparto? (opcional)"
+            placeholder={t('¿Algo que contar del reparto? (opcional)')}
             placeholderTextColor={COLORES.marcador}
             keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
             multiline
             maxLength={500}
             style={estilos.campo}
-            accessibilityLabel="Comentario sobre la entrega"
+            accessibilityLabel={t('Comentario sobre la entrega')}
           />
           <Boton
-            texto={enviando ? 'Enviando…' : 'Enviar valoración'}
+            texto={enviando ? t('Enviando…') : t('Enviar valoración')}
             alPresionar={enviar}
             cargando={enviando}
             color={colores.marca}

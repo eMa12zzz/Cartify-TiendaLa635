@@ -28,8 +28,10 @@ import CampoTexto from '../UI/CampoTexto';
 import { duiEsValido } from '../../utils/validaciones';
 import { formatearDui, LARGO_DUI } from '../../utils/mascaras';
 import { EDAD_MINIMA } from '../../utils/edad';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
   // Sin esto, "No se comparte" (la última línea) quedaba debajo de la franja
@@ -118,9 +120,9 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
 
   const enviar = async () => {
     const d = dui.replace(/\D/g, '');
-    if (!d.length) { setError('Ingrese su número de DUI.'); return; }
-    if (d.length < 9) { setError('El DUI lleva 9 dígitos (12345678-9).'); return; }
-    if (!duiEsValido(dui)) { setError('Ese DUI no parece correcto, revise los números.'); return; }
+    if (!d.length) { setError(t('Ingrese su número de DUI.')); return; }
+    if (d.length < 9) { setError(t('El DUI lleva 9 dígitos (12345678-9).')); return; }
+    if (!duiEsValido(dui)) { setError(t('Ese DUI no parece correcto, revise los números.')); return; }
 
     setEnviando(true);
     try {
@@ -135,7 +137,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel={t('Cerrar')} />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -152,10 +154,9 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
               <ShieldAlert size={26} color={colores.marcaOscuro} />
             </View>
 
-            <Text style={estilos.titulo}>Producto para mayores de {EDAD_MINIMA}</Text>
+            <Text style={estilos.titulo}>{t('Producto para mayores de {edad}', { edad: EDAD_MINIMA })}</Text>
             <Text style={estilos.texto}>
-              Ingrese su número de DUI para verlo. Al recibir el pedido se le pedirá el
-              documento físico; sin él, este producto no se puede entregar.
+              {t('Ingrese su número de DUI para verlo. Al recibir el pedido se le pedirá el documento físico; sin él, este producto no se puede entregar.')}
             </Text>
 
             <CampoTexto
@@ -170,7 +171,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
             />
 
             <Boton
-              texto={enviando ? 'Confirmando…' : 'Confirmar'}
+              texto={enviando ? t('Confirmando…') : t('Confirmar')}
               alPresionar={enviar}
               deshabilitado={enviando}
               color={colores.marca}
@@ -179,7 +180,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
             />
 
             <Text style={estilos.aviso}>
-              Solo se usa para habilitar la compra de productos restringidos. No se comparte.
+              {t('Solo se usa para habilitar la compra de productos restringidos. No se comparte.')}
             </Text>
           </View>
         </Animated.View>

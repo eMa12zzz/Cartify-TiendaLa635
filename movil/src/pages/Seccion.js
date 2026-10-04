@@ -20,8 +20,10 @@ import { useTema } from '../context/TemaContext';
 import { ChevronIzquierda } from '../components/UI/Iconos';
 import TarjetaProducto from '../components/Tienda/TarjetaProducto';
 import { avisarActividad } from '../utils/actividadUsuario';
+import { useIdioma } from '../context/IdiomaContext';
 
 const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
   const productos = seccion?.todos || seccion?.productos || [];
@@ -33,7 +35,7 @@ const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
           onPress={alVolver}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Volver a la tienda"
+          accessibilityLabel={t('Volver a la tienda')}
           style={({ pressed }) => [
             estilos.botonVolver,
             pressed && { backgroundColor: colores.marcaSuave },
@@ -43,9 +45,9 @@ const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
         </Pressable>
 
         <View style={estilos.titulos}>
-          <Text style={estilos.titulo} numberOfLines={1}>{seccion?.titulo}</Text>
+          <Text style={estilos.titulo} numberOfLines={1}>{t(seccion?.titulo || '')}</Text>
           <Text style={estilos.conteo}>
-            {productos.length} {productos.length === 1 ? 'producto' : 'productos'}
+            {productos.length} {t(productos.length === 1 ? 'producto' : 'productos')}
           </Text>
         </View>
       </View>

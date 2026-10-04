@@ -41,8 +41,10 @@ import { getResumenPuntos, getConfigFidelidad } from '../../api/fidelidadApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import { Estrella } from '../../components/UI/Iconos';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const Puntos = ({ alVolver }) => {
+  const { t, locale } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
@@ -67,7 +69,7 @@ const Puntos = ({ alVolver }) => {
       setResumen(sum || { available: 0, nextExpiry: null, expiringSoon: 0 });
       setConfig(cfg);
     } catch (e) {
-      setError(e?.message || 'No se pudieron cargar sus puntos');
+      setError(e?.message || t('No se pudieron cargar sus puntos'));
     } finally {
       setCargando(false);
     }
@@ -87,7 +89,7 @@ const Puntos = ({ alVolver }) => {
   const plural = porDolar === 1 ? '' : 's';
 
   const vence = resumen.nextExpiry
-    ? new Date(resumen.nextExpiry).toLocaleDateString('es-SV', {
+    ? new Date(resumen.nextExpiry).toLocaleDateString(locale, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -96,19 +98,19 @@ const Puntos = ({ alVolver }) => {
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Puntos de fidelidad" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Puntos de fidelidad')} alVolver={alVolver} />
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tus puntos…" />
+          <CargandoMascota texto={t('Cargando tus puntos…')} />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>No se pudieron cargar sus puntos</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus puntos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
-              texto="Reintentar"
+              texto={t('Reintentar')}
               alPresionar={cargar}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
@@ -142,22 +144,22 @@ const Puntos = ({ alVolver }) => {
 
             <View style={estilos.tarjetaCuerpo}>
               <Text style={estilos.nombre} numberOfLines={1}>
-                {user?.fullName || user?.userName || 'Cliente'}
+                {user?.fullName || user?.userName || t('Cliente')}
               </Text>
 
               <View style={estilos.filaPuntos}>
                 <Estrella size={14} color="#FFFFFF" />
-                <Text style={estilos.puntosTexto}>{resumen.available} puntos disponibles</Text>
+                <Text style={estilos.puntosTexto}>{t('{n} puntos disponibles', { n: resumen.available })}</Text>
               </View>
 
               {/* Lo que de verdad le importa al cliente: cuánto valen. */}
               <Text style={estilos.valor}>
-                Valen ${valorEnDinero.toFixed(2)} en su próxima compra
+                {t('Valen ${monto} en su próxima compra', { monto: valorEnDinero.toFixed(2) })}
               </Text>
               <Text style={estilos.detalle}>
-                Gana {porDolar} punto{plural} por cada $1 que gasta.
+                {t(plural ? 'Gana {n} puntos por cada $1 que gasta.' : 'Gana {n} punto por cada $1 que gasta.', { n: porDolar })}
               </Text>
-              <Text style={estilos.detalleTenue}>Próximo vencimiento: {vence}</Text>
+              <Text style={estilos.detalleTenue}>{t('Próximo vencimiento: {fecha}', { fecha: vence })}</Text>
             </View>
           </View>
 
@@ -167,7 +169,7 @@ const Puntos = ({ alVolver }) => {
             <View style={estilos.aviso}>
               <TriangleAlert size={16} color={COLORES.avisoVivo} strokeWidth={2} />
               <Text style={estilos.avisoTexto}>
-                Tiene {resumen.expiringSoon} puntos que vencen en los próximos 30 días.
+                {t('Tiene {n} puntos que vencen en los próximos 30 días.', { n: resumen.expiringSoon })}
               </Text>
             </View>
           )}
@@ -175,16 +177,16 @@ const Puntos = ({ alVolver }) => {
           {/* ── Las tres preguntas, con los números reales ── */}
           <View style={estilos.preguntas}>
             <Pregunta
-              titulo="¿Cómo consigo puntos?"
-              texto={`Por cada $1 que gasta en la tienda gana ${porDolar} punto${plural}. Se acumulan solos con cada compra.`}
+              titulo={t('¿Cómo consigo puntos?')}
+              texto={t(plural ? 'Por cada $1 que gasta en la tienda gana {n} puntos. Se acumulan solos con cada compra.' : 'Por cada $1 que gasta en la tienda gana {n} punto. Se acumulan solos con cada compra.', { n: porDolar })}
             />
             <Pregunta
-              titulo="¿Cómo los uso?"
-              texto={`Cada ${tasaCanje} puntos equivalen a $1 de descuento. Al pagar en la tienda puede elegir usarlos (necesita al menos ${minimoCanje}).`}
+              titulo={t('¿Cómo los uso?')}
+              texto={t('Cada {tasa} puntos equivalen a $1 de descuento. Al pagar en la tienda puede elegir usarlos (necesita al menos {minimo}).', { tasa: tasaCanje, minimo: minimoCanje })}
             />
             <Pregunta
-              titulo="¿Cuándo vencen?"
-              texto={`Los puntos de cada compra vencen a los ${meses} meses de haberlos ganado. Arriba ve la fecha del lote que vence primero.`}
+              titulo={t('¿Cuándo vencen?')}
+              texto={t('Los puntos de cada compra vencen a los {meses} meses de haberlos ganado. Arriba ve la fecha del lote que vence primero.', { meses })}
             />
           </View>
         </ScrollView>
@@ -194,6 +196,7 @@ const Puntos = ({ alVolver }) => {
 };
 
 const Pregunta = ({ titulo, texto }) => {
+  const { t } = useIdioma();
   const estilos = useEstilos(crearEstilos);
 
   return (

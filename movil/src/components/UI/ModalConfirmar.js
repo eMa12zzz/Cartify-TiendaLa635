@@ -25,12 +25,13 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const ModalConfirmar = ({
   titulo,
   mensaje,
-  textoConfirmar = 'Confirmar',
-  textoCancelar = 'Cancelar',
+  textoConfirmar,
+  textoCancelar,
   // La acción que borra o saca algo va en rojo; la normal, del color de la
   // tienda. Es lo único que cambia entre las dos.
   destructivo = false,
@@ -55,6 +56,7 @@ const ModalConfirmar = ({
   }, [entrada]);
 
   useBotonAtras(alCerrar);
+  const { t } = useIdioma();
 
   const colorAccion = destructivo ? COLORES.peligro : colores.marca;
   /*
@@ -73,7 +75,7 @@ const ModalConfirmar = ({
         <Pressable accessibilityRole="button"
           style={StyleSheet.absoluteFill}
           onPress={trabajando ? undefined : alCerrar}
-          accessibilityLabel="Cerrar"
+          accessibilityLabel={t('Cerrar')}
         />
 
         <Animated.View
@@ -99,7 +101,7 @@ const ModalConfirmar = ({
               accessibilityRole="button"
               style={({ pressed }) => [estilos.boton, pressed && estilos.botonPresionado]}
             >
-              <Text style={estilos.textoCancelar}>{textoCancelar}</Text>
+              <Text style={estilos.textoCancelar}>{textoCancelar ?? t('Cancelar')}</Text>
             </Pressable>
 
             <Pressable
@@ -114,7 +116,7 @@ const ModalConfirmar = ({
                 trabajando && estilos.botonApagado,
               ]}
             >
-              <Text style={[estilos.textoConfirmar, { color: colorTextoAccion }]}>{textoConfirmar}</Text>
+              <Text style={[estilos.textoConfirmar, { color: colorTextoAccion }]}>{textoConfirmar ?? t('Confirmar')}</Text>
             </Pressable>
           </View>
         </Animated.View>

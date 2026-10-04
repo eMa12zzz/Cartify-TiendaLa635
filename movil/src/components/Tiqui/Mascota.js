@@ -20,6 +20,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, Text } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { useColores } from '../../context/ModoContext';
+import { useIdioma } from '../../context/IdiomaContext';
 import {
   AMARILLO, CORDON, Cuerpo, Disfraz, HOJA, RUBOR, TRAZO,
   useColoresTiqui, useDisfrazTiqui, useMovimientoReducido, useParpadeo,
@@ -334,6 +335,7 @@ export const EsperaMascota = ({ alto = 22, sobre }) => <Mascota pose="cargando" 
  * los datos llegan rápido, no alcanza a verse y no queda un parpadeo.
  */
 export const CargandoMascota = ({ texto, alto = 92, style }) => {
+  const { t } = useIdioma();
   const COLORES = useColores();
   const aparece = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -343,7 +345,7 @@ export const CargandoMascota = ({ texto, alto = 92, style }) => {
     <Animated.View
       style={[{ alignItems: 'center', justifyContent: 'center', paddingVertical: 48, opacity: aparece }, style]}
       accessibilityRole="progressbar"
-      accessibilityLabel={texto || 'Cargando'}
+      accessibilityLabel={texto || t('Cargando')}
     >
       <Mascota pose="cargando" alto={alto} />
       {texto ? <Text style={{ marginTop: 14, fontSize: 14, color: COLORES.textoSuave, textAlign: 'center' }}>{texto}</Text> : null}

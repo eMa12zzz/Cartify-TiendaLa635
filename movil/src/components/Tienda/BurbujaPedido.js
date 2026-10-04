@@ -17,6 +17,7 @@ import PasosPedido from './PasosPedido';
 import MapaSeguimiento from './MapaSeguimiento';
 import ModalMapaSeguimiento from './ModalMapaSeguimiento';
 import { suscribirseAActividad } from '../../utils/actividadUsuario';
+import { useIdioma } from '../../context/IdiomaContext';
 
 /*
  * ============================================================
@@ -47,6 +48,7 @@ import { suscribirseAActividad } from '../../utils/actividadUsuario';
 const VERDE_LATIDO = '#8ee6a8';
 
 const BurbujaPedido = () => {
+  const { t } = useIdioma();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { colores } = useTema();
@@ -356,7 +358,7 @@ const BurbujaPedido = () => {
           <Pressable
             onPress={() => { setOculta(false); agrandar(); }}
             accessibilityRole="button"
-            accessibilityLabel={`Ver su pedido: ${enCamino ? seguimiento.espera : paso.label}`}
+            accessibilityLabel={t('Ver su pedido: {estado}', { estado: enCamino ? seguimiento.espera : paso.label })}
             style={estilos.botonRedondoToque}
           >
             {/* Tiqui en el paso del pedido, como en la web (en patineta si va en camino). */}
@@ -372,7 +374,7 @@ const BurbujaPedido = () => {
               style={estilos.capturaOcultaToque}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel="Mostrar el seguimiento del pedido"
+              accessibilityLabel={t('Mostrar el seguimiento del pedido')}
             />
           </View>
         )}
@@ -396,9 +398,9 @@ const BurbujaPedido = () => {
           <View style={estilos.tarjeta}>
             <View style={[estilos.cabecera, { backgroundColor: colores.marca }]}>
               <Text style={estilos.cabeceraTexto}>
-                Pedido #{String(pedido._id).slice(-6).toUpperCase()}
+                {t('Pedido #{numero}', { numero: String(pedido._id).slice(-6).toUpperCase() })}
               </Text>
-              <Pressable onPress={encoger} hitSlop={8} accessibilityRole="button" accessibilityLabel="Encoger el seguimiento">
+              <Pressable onPress={encoger} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Encoger el seguimiento')}>
                 <X size={16} color="#FFFFFF" />
               </Pressable>
             </View>
@@ -442,7 +444,7 @@ const BurbujaPedido = () => {
                         { color: seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto },
                       ]}
                     >
-                      {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
+                      {seguimiento.yaCasi ? t('Ya casi toca su puerta') : seguimiento.espera}
                     </Text>
                   </View>
                   <Text
@@ -452,7 +454,7 @@ const BurbujaPedido = () => {
                     ]}
                   >
                     {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
-                    {seguimiento.distancia ? `a ${seguimiento.distancia} de su dirección` : 'Le llevan su pedido'}
+                    {seguimiento.distancia ? t('a {distancia} de su dirección', { distancia: seguimiento.distancia }) : t('Le llevan su pedido')}
                   </Text>
                 </View>
               </>
@@ -467,9 +469,9 @@ const BurbujaPedido = () => {
               <View style={[estilos.bloqueInfo, { backgroundColor: COLORES.exitoFondo }]}>
                 <View style={estilos.filaIconoTexto}>
                   <Clock size={14} color={COLORES.exitoTexto} strokeWidth={2.4} />
-                  <Text style={[estilos.infoTitulo, { color: COLORES.exitoTexto }]}>{zona.texto}</Text>
+                  <Text style={[estilos.infoTitulo, { color: COLORES.exitoTexto }]}>{zona.tipico === zona.holgado ? t('Llega en unos {min} min', { min: zona.tipico }) : t('Llega entre {desde} y {hasta} min', { desde: zona.tipico, hasta: zona.holgado })}</Text>
                 </View>
-                <Text style={[estilos.infoDetalle, { color: COLORES.exitoSuave }]}>{zona.respaldo}</Text>
+                <Text style={[estilos.infoDetalle, { color: COLORES.exitoSuave }]}>{t(zona.entregas === 1 ? 'Según {n} entrega a su zona. No es una promesa: es lo que hemos tardado.' : 'Según {n} entregas a su zona. No es una promesa: es lo que hemos tardado.', { n: zona.entregas })}</Text>
               </View>
             )}
 
@@ -480,17 +482,16 @@ const BurbujaPedido = () => {
 
               {esDomicilio && seguimiento.senalFria && (
                 <Text style={estilos.notaPequena}>
-                  Su pedido va en camino. La última novedad del repartidor fue hace{' '}
-                  {seguimiento.minutosDesdeUltimoDato || 1} min.
+                  {t('Su pedido va en camino. La última novedad del repartidor fue hace {n} min.', { n: seguimiento.minutosDesdeUltimoDato || 1 })}
                 </Text>
               )}
 
               {esDomicilio && pedido.deliveryAddress && (
-                <Text style={estilos.notaPequena}>Se lo llevamos a: {pedido.deliveryAddress}</Text>
+                <Text style={estilos.notaPequena}>{t('Se lo llevamos a: {direccion}', { direccion: pedido.deliveryAddress })}</Text>
               )}
 
               <Pressable accessibilityRole="button" onPress={irAPedidos} style={estilos.botonVerPedido}>
-                <Text style={[estilos.botonVerPedidoTexto, { color: colores.marcaTexto }]}>Ver el pedido</Text>
+                <Text style={[estilos.botonVerPedidoTexto, { color: colores.marcaTexto }]}>{t('Ver el pedido')}</Text>
                 <ChevronRight size={14} color={colores.marca} />
               </Pressable>
             </View>
@@ -504,7 +505,7 @@ const BurbujaPedido = () => {
         onLayout={(e) => setAnchoPildora(e.nativeEvent.layout.width)}
         accessibilityRole="button"
         accessibilityState={{ expanded: abierta }}
-        accessibilityLabel={enCamino ? `Su pedido va en camino. ${seguimiento.espera}` : `Su pedido: ${paso.label}`}
+        accessibilityLabel={enCamino ? t('Su pedido va en camino. {espera}', { espera: seguimiento.espera }) : t('Su pedido: {estado}', { estado: paso.label })}
         style={[estilos.botonBurbuja, { backgroundColor: seguimiento.yaCasi ? '#14663A' : colores.marca }]}
         /*
          * Generoso arriba y abajo a propósito: la píldora tiene las puntas
@@ -517,7 +518,7 @@ const BurbujaPedido = () => {
       >
         <Mascota pose={estaEnCamino ? 'en-camino' : paso.pose} alto={40} sobre="color" />
         <Text style={estilos.botonBurbujaTexto}>
-          {enCamino ? (seguimiento.yaCasi ? 'Ya casi llega' : seguimiento.espera) : paso.label}
+          {enCamino ? (seguimiento.yaCasi ? t('Ya casi llega') : seguimiento.espera) : paso.label}
         </Text>
         {/* El puntito que respira: dice "esto sigue en curso" sin decir nada */}
         <View style={estilos.pulsoContenedor}>
@@ -553,7 +554,7 @@ const BurbujaPedido = () => {
           style={estilos.capturaOcultaToque}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Mostrar el seguimiento del pedido"
+          accessibilityLabel={t('Mostrar el seguimiento del pedido')}
         />
       </View>
     )}

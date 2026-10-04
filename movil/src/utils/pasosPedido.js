@@ -1,5 +1,6 @@
 import { Package, ChefHat, Bike, Check, Store } from 'lucide-react-native';
 import { COLORES_OSCURO } from '../theme/colores';
+import { tAhora } from './idioma';
 
 /*
  * ============================================================
@@ -41,10 +42,12 @@ export const poseDeEstado = (estado) =>
  * Los pasos que le tocan a ESTE pedido. "En camino" solo existe para
  * domicilio: un retiro en el local no tiene a quién seguirle el mapa.
  */
+// Ya en el idioma de la tienda (ver utils/idioma.js): quien los pinta solo pone p.label.
 export const pasosDe = (deliveryType) =>
-  deliveryType === 'delivery'
+  (deliveryType === 'delivery'
     ? PASOS_TODOS.filter((p) => p.id !== 'listo')
-    : PASOS_TODOS.filter((p) => p.id !== 'en_camino');
+    : PASOS_TODOS.filter((p) => p.id !== 'en_camino')
+  ).map((p) => ({ ...p, label: tAhora(p.label), detalle: tAhora(p.detalle) }));
 
 /*
  * En qué paso está, como índice dentro de la lista que le toca. Devuelve 0
@@ -87,7 +90,11 @@ const ESTADOS_PEDIDO_OSCURO = {
   cancelado: { texto: 'Cancelado', color: COLORES_OSCURO.peligro, fondo: COLORES_OSCURO.peligroFondo },
 };
 
-export const estadosPedido = (oscuro) => (oscuro ? ESTADOS_PEDIDO_OSCURO : ESTADOS_PEDIDO);
+// También ya traducidos: en el modo del personal tAhora es siempre español.
+export const estadosPedido = (oscuro) => {
+  const base = oscuro ? ESTADOS_PEDIDO_OSCURO : ESTADOS_PEDIDO;
+  return Object.fromEntries(Object.entries(base).map(([k, e]) => [k, { ...e, texto: tAhora(e.texto) }]));
+};
 
 /*
  * Lo que se le devolvió al cliente al cancelar su pedido, en una frase:
@@ -113,7 +120,12 @@ export const sellosDeCancelacion = (pedido) => {
 export const textoDevuelto = (pedido, { antes = false } = {}) => {
   const saldo = Number(pedido?.reembolso?.saldo) || 0;
   const puntos = Number(pedido?.reembolso?.puntos) || 0;
-  const partes = [saldo > 0 ? `$${saldo.toFixed(2)} a su saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
+  const partes = [
+    saldo > 0 ? tAhora('${monto} a su saldo', { monto: saldo.toFixed(2) }) : '',
+    puntos > 0 ? tAhora('{n} puntos', { n: puntos }) : '',
+  ]
     .filter(Boolean);
-  return partes.length ? `${antes ? 'Le devolvemos' : 'Le devolvimos'} ${partes.join(' y ')}.` : '';
+  if (!partes.length) return '';
+  const lista = partes.join(tAhora(' y '));
+  return antes ? tAhora('Le devolvemos {lista}.', { lista }) : tAhora('Le devolvimos {lista}.', { lista });
 };

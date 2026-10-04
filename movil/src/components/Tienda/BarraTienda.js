@@ -46,6 +46,7 @@ import { useTema } from '../../context/TemaContext';
 import { Equis } from '../UI/Iconos';
 import MarcaTienda from '../UI/MarcaTienda';
 import { registrarDestinoCarrito, useAterrizajeCarrito } from '../../utils/volarAlCarrito';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Misma curva "back-out" que usa la web para el "globo-pop" del contador
 // (cubic-bezier(0.23, 1, 0.32, 1)): entra grande y se asienta, sin rebotar
@@ -53,6 +54,7 @@ import { registrarDestinoCarrito, useAterrizajeCarrito } from '../../utils/volar
 const CURVA_POP = Easing.bezier(0.23, 1, 0.32, 1);
 
 const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, alAbrirPasillos }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -113,7 +115,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
       <Pressable
         onPress={alAbrirPasillos}
         accessibilityRole="button"
-        accessibilityLabel="Pasillos de la tienda"
+        accessibilityLabel={t('Pasillos de la tienda')}
         hitSlop={6}
         style={({ pressed }) => [estilos.marca, pressed && { backgroundColor: colores.marcaTenue }]}
       >
@@ -128,8 +130,8 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
           accessibilityRole="button"
           accessibilityLabel={
             cantidadItems > 0
-              ? `Abrir el carrito, ${cantidadItems} en el carrito`
-              : 'Abrir el carrito, está vacío'
+              ? t('Abrir el carrito, {n} en el carrito', { n: cantidadItems })
+              : t('Abrir el carrito, está vacío')
           }
           hitSlop={8}
           style={({ pressed }) => [
@@ -167,8 +169,8 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
       <TextInput
         value={busqueda}
         onChangeText={alBuscar}
-        placeholder="Buscar en la tienda"
-        accessibilityLabel="Buscar en la tienda"
+        placeholder={t('Buscar en la tienda')}
+        accessibilityLabel={t('Buscar en la tienda')}
         placeholderTextColor={COLORES.marcador}
         style={estilos.campo}
         // El teclado muestra "buscar" en vez de un salto de línea, y filtrar
@@ -190,7 +192,7 @@ const BarraTienda = ({ busqueda, alBuscar, cantidadItems = 0, alAbrirCarrito, al
           onPress={() => alBuscar('')}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Borrar la búsqueda"
+          accessibilityLabel={t('Borrar la búsqueda')}
         >
           <Equis size={15} color={COLORES.textoSuave} />
         </Pressable>

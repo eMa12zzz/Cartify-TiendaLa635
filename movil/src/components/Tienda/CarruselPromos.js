@@ -29,6 +29,7 @@ import { useTema } from '../../context/TemaContext';
 import { useEstilos } from '../../context/ModoContext';
 import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import TarjetaPromo from './TarjetaPromo';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const MARGEN = 16;   // el mismo que el resto de la portada
 const SEPARACION = 12;
@@ -40,6 +41,7 @@ const ANCHO_PUNTO = 8;
 const ANCHO_PILDORA = 22;
 
 const CarruselPromos = ({ promos, alElegirPromo }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
   const [activa, setActiva] = useState(0);
@@ -137,13 +139,13 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
             key={promo._id}
             onPress={() => alElegirPromo(promo)}
             accessibilityRole="button"
-            accessibilityLabel={`Ver los productos de ${promo.title || 'esta promoción'}`}
+            accessibilityLabel={promo.title ? t('Ver los productos de {promo}', { promo: promo.title }) : t('Ver los productos de esta promoción')}
             style={({ pressed }) => pressed && estilos.presionada}
           >
             <TarjetaPromo
               promo={promo}
-              etiqueta={etiquetaPromo(promo)}
-              vencimiento={textoVencimiento(promo)}
+              etiqueta={etiquetaPromo(promo, t)}
+              vencimiento={textoVencimiento(promo, t)}
               ancho={anchoTarjeta}
             />
           </Pressable>
@@ -165,7 +167,7 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
               onPress={() => irA(i)}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel={`Ir a la promoción ${i + 1}`}
+              accessibilityLabel={t('Ir a la promoción {n}', { n: i + 1 })}
               accessibilityState={{ selected: i === activa }}
             >
               <Animated.View
