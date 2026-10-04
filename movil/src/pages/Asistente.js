@@ -33,7 +33,10 @@ const Asistente = () => {
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
-  const { productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito } = useTienda();
+  const {
+    productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+    setCategoriaSeleccionada, setTerminoBusqueda, setPromoSeleccionada, cerrarPromo,
+  } = useTienda();
   // Lo que pidió VER por voz ("muéstrame las manzanas"), no lo que agregó.
   const [productoAbierto, setProductoAbierto] = useState(null);
 
@@ -51,6 +54,19 @@ const Asistente = () => {
   } = useAsistenteVoz({
     productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
     mostrarProducto: setProductoAbierto,
+    /*
+     * "Las promociones": se cierra la ficha que estaba abierta (antes se
+     * quedaba encima) y se va a la tienda sin filtros, donde está el
+     * carrusel de promociones.
+     */
+    irAPromociones: () => {
+      setProductoAbierto(null);
+      cerrarPromo?.();
+      setPromoSeleccionada?.(null);
+      setCategoriaSeleccionada?.(null);
+      setTerminoBusqueda?.('');
+      navegarA('Tabs', { screen: 'inicio' });
+    },
   });
 
   const chatRef = useRef(null);

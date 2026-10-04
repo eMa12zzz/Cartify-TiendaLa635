@@ -145,8 +145,9 @@ const TiquiPanel = () => {
                 border: '1px solid var(--theme-card-border)',
               }}
               initial={{ opacity: 0, scale: reduce ? 1 : 0.97 }}
-              // Mientras la persona habla, el globo se apaga: ahora le toca a ella.
-              animate={{ opacity: t.escuchando ? 0.55 : 1, scale: 1 }}
+              // Siempre opaco: con 0.55 mientras escuchaba, las tablas del
+              // panel se veían a través del globo y no se podía leer.
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.18, ease: EASE_OUT }}
               aria-live="polite"
             >
@@ -157,9 +158,10 @@ const TiquiPanel = () => {
 
             {/* Lo que dice la persona, en vivo mientras habla. */}
             {textoPersona && (
+              /* Con fondo propio: suelto, el texto caía encima de la página y no se leía. */
               <p
-                className={`max-w-[92%] text-sm leading-snug text-right px-1 ${enVivo ? 'italic' : ''}`}
-                style={{ color: 'var(--theme-text-secondary)' }}
+                className={`max-w-[92%] text-sm leading-snug text-right px-3 py-2 rounded-2xl shadow-sm ${enVivo ? 'italic' : ''}`}
+                style={{ ...BOTON_CHICO, color: 'var(--theme-text-secondary)' }}
               >
                 “{textoPersona}{enVivo ? <span className="masc-cursor" /> : '”'}
               </p>
@@ -236,7 +238,7 @@ const TiquiPanel = () => {
 
       <div className="flex items-end gap-2">
         {t.abierta && estadoTexto && (
-          <span className="pointer-events-none mb-3 text-xs font-semibold" style={{ color: 'var(--theme-text-secondary)' }}>
+          <span className="pointer-events-none mb-3 px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm" style={{ ...BOTON_CHICO, color: 'var(--theme-text-secondary)' }}>
             {estadoTexto}
           </span>
         )}

@@ -97,6 +97,8 @@ const PIDE_COMPRAR = (t) =>
   (/^(ya\s+)?listo\b/.test(t) && t.split(' ').length <= 3);
 const ES_PREGUNTA = /\b(que|cual|cuales|cuanto cuesta|cuanto vale|cuanto sale|precio|hay|tienen|tienes|esta en|estan en|recomienda|recomiendas|recomiendame|sugiere|sugieres|oferta|ofertas|promo|promocion|promociones|descuento|descuentos|donde|como|por que)\b/;
 const PIDE_AGREGAR = /\b(quiero|dame|deme|agrega|agregame|agregue|pon|ponme|echa|echame|me das|me llevo|llevo|anota|anotame)\b/;
+// Ver las promociones (ver useVoiceAssistant.js en la web: es la misma regla).
+const PIDE_PROMOS = /\b(promo|promos|promocion|promociones|oferta|ofertas|descuento|descuentos|rebaja|rebajas)\b/;
 const PIDE_IR = /\b(ver|vamos|llevame|llévame|muestrame|muéstrame|enseñame|enséñame|abrir|abre|ir a|donde esta|dónde está)\b/;
 
 const sinAcentos = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -226,7 +228,7 @@ const puntuarCoincidencia = (nombreProducto, t) => {
   return 0;
 };
 
-export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto }) => {
+export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto, irAPromociones }) => {
   const { isAuthenticated, user } = useAuth();
   // El mismo candado +18 que la tarjeta y la ficha: sin esto, pedirlo por
   // voz era una puerta trasera que ni tocaba la foto tapada ni el DUI.
@@ -244,7 +246,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const dataRef = useRef({ productos, carrito, totalCarrito });
   dataRef.current = { productos, carrito, totalCarrito };
   const fnRef = useRef({});
-  fnRef.current = { agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto };
+  fnRef.current = { agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito, mostrarProducto, irAPromociones };
 
   const activoRef = useRef(false);
   const hablandoRef = useRef(false);
@@ -506,6 +508,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
           case 'seccion': {
             const destino = DESTINO_DE_SECCION[accion.seccion];
             if (!destino || (destino.sesion && !isAuthenticated)) break;
+            fns.mostrarProducto?.(null);
             if (destino.ruta) navegarA(destino.ruta);
             else navegarA('Tabs', { screen: destino.tab });
             break;
@@ -637,6 +640,18 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       return;
     }
 
+    /*
+     * ── Las promociones ──
+     * Si no nombra un producto ("¿la leche está en oferta?" es sobre la
+     * leche), se ponen a la vista —cerrando la ficha que hubiera abierta— y
+     * Tiqui las cuenta con la IA, que sabe cuáles hay hoy.
+     */
+    if (PIDE_PROMOS.test(t) && !buscarProducto(t) && fns.irAPromociones) {
+      fns.irAPromociones();
+      preguntarALaIA(texto);
+      return;
+    }
+
     // ── Llevarlo a un apartado, o mostrarle un producto ──
     if (PIDE_IR.test(t)) {
       const destino = DESTINOS.find((d) => d.palabras.test(t));
@@ -645,6 +660,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
           hablar('Necesitas iniciar sesión para eso.');
           return;
         }
+        fns.mostrarProducto?.(null);
         if (destino.ruta) navegarA(destino.ruta);
         else navegarA('Tabs', { screen: destino.tab });
         hablar(`Te abro ${destino.nombre}.`);
