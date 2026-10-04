@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import styled from 'styled-components';
 import ProductCard from './ProductCard';
 import { useFilaDeslizable } from '../../hooks/useFilaDeslizable';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * FilaProductos — una sección de la portada: título, flechas y la fila que se
@@ -178,6 +179,7 @@ const Fila = styled.div`
 const FilaProductos = ({
   titulo,
   subtitulo,
+  subtituloVars,
   productos,
   onVerDetalle,
   onAgregarAlCarrito,
@@ -188,6 +190,7 @@ const FilaProductos = ({
   onVerTodos,
 }) => {
   const { fila, puedeIzq, puedeDer, izquierda, derecha } = useFilaDeslizable();
+  const { t } = useIdioma();
 
   if (!productos?.length) return null;
 
@@ -200,27 +203,27 @@ const FilaProductos = ({
       <Encabezado>
         <div>
           {onVerTodos ? (
-            <TituloBoton onClick={onVerTodos} aria-label={`Ver todo en ${titulo}`}>
-              <Titulo as="span">{titulo}</Titulo>
+            <TituloBoton onClick={onVerTodos} aria-label={t('Ver todo en {seccion}', { seccion: t(titulo) })}>
+              <Titulo as="span">{t(titulo)}</Titulo>
               <ArrowRight size={19} strokeWidth={2.4} />
             </TituloBoton>
           ) : (
-            <Titulo>{titulo}</Titulo>
+            <Titulo>{t(titulo)}</Titulo>
           )}
-          {subtitulo && <Subtitulo>{subtitulo}</Subtitulo>}
+          {subtitulo && <Subtitulo>{t(subtitulo, subtituloVars)}</Subtitulo>}
         </div>
 
         <Acciones>
           {onVerTodos && hayMas && (
-            <VerTodos onClick={onVerTodos}>Ver todos ({cuantos})</VerTodos>
+            <VerTodos onClick={onVerTodos}>{t('Ver todos ({n})', { n: cuantos })}</VerTodos>
           )}
           {/* Con pocos productos no hay para dónde correr: no ponemos flechas. */}
           {(puedeIzq || puedeDer) && (
             <Flechas>
-              <Circulo onClick={izquierda} disabled={!puedeIzq} aria-label={`Ver anteriores de ${titulo}`}>
+              <Circulo onClick={izquierda} disabled={!puedeIzq} aria-label={t('Ver anteriores de {seccion}', { seccion: t(titulo) })}>
                 <ChevronLeft size={19} strokeWidth={2.2} />
               </Circulo>
-              <Circulo onClick={derecha} disabled={!puedeDer} aria-label={`Ver siguientes de ${titulo}`}>
+              <Circulo onClick={derecha} disabled={!puedeDer} aria-label={t('Ver siguientes de {seccion}', { seccion: t(titulo) })}>
                 <ChevronRight size={19} strokeWidth={2.2} />
               </Circulo>
             </Flechas>

@@ -6,6 +6,7 @@ import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { useKiosco } from '../../hooks/useKiosco';
 import { useAuth } from '../../hooks/useAuth';
 import { orderService } from '../../api/orderService';
+import { primerNombre } from '../../utils/nombreTiqui';
 import MascotaAsistente from './MascotaAsistente';
 
 /*
@@ -78,7 +79,16 @@ const AsistenteVoz = ({
 }) => {
   const reduce = useReducedMotion();
   const [minimizado, setMinimizado] = useState(false); // asistente en segundo plano
-  const { esCliente } = useAuth();
+  const { esCliente, user } = useAuth();
+
+  /*
+   * El nombre, para que Tiqui lo use de vez en cuando (ver nombreTiqui.js).
+   * El saludo escrito lo lleva más o menos la mitad de las veces que se abre
+   * el asistente: siempre igual se vuelve fórmula.
+   */
+  const nombreCliente = esCliente ? primerNombre(user?.fullName) : '';
+  const [saludaConNombre] = useState(() => Math.random() < 0.5);
+  const saludo = saludaConNombre && nombreCliente ? SALUDO.replace('¡Hola!', `¡Hola, ${nombreCliente}!`) : SALUDO;
 
   /*
    * "Ya confirmó, falta abrir el pago". Se espera a que Tiqui termine la
@@ -111,6 +121,7 @@ const AsistenteVoz = ({
     productos, carrito, totalCarrito,
     agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
     categorias,
+    nombreCliente,
     /*
      * Antes de llevar a la persona a algún lado, el asistente se hace a un
      * lado: mostrar un producto y dejar la pantalla negra encima sería
@@ -395,7 +406,7 @@ const AsistenteVoz = ({
               >
                 {pensando
                   ? <span className="masc-puntos" aria-label="Tiqui está pensando"><i /><i /><i /></span>
-                  : (ultimoBot?.texto || SALUDO)}
+                  : (ultimoBot?.texto || saludo)}
               </motion.div>
             </div>
 

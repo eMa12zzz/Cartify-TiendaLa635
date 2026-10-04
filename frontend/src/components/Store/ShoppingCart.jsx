@@ -22,6 +22,7 @@ import Mascota, { EsperaMascota } from '../UI/Mascota';
 // quedado con el escrito a mano. Ver AjustesContext.
 import { useAjustesCtx } from '../../context/AjustesContext';
 import { enlaceWhatsApp } from '../../utils/tienda';
+import { useIdioma } from '../../hooks/useIdioma';
 
 // Productos por página en el resumen del pedido confirmado.
 const POR_PAGINA = 4;
@@ -1088,6 +1089,7 @@ const ShoppingCart = ({
 
   // Va aquí arriba y no con el canje de puntos: la vista inicial ya la necesita.
   const { user, esCliente } = useAuth();
+  const { t, locale } = useIdioma();
 
   /*
    * El pago exige sesión de cliente y algo que pagar (ver irAlCheckout). Si
@@ -1182,7 +1184,7 @@ const ShoppingCart = ({
   const guardarNuevaDireccion = (dir) => {
     // Las direcciones se guardan en la cuenta: sin sesión no hay dónde ponerlas.
     if (!user?.id) {
-      toast('Inicie sesión para guardar su dirección');
+      toast(t('Inicie sesión para guardar su dirección'));
       navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
       return;
     }
@@ -1280,7 +1282,7 @@ const ShoppingCart = ({
      * clientes, con su stock descontado y su lote de puntos escrito.
      */
     if (!esCliente) {
-      toast('Inicie sesión para terminar su pedido');
+      toast(t('Inicie sesión para terminar su pedido'));
       // Vuelve a la pantalla en la que estaba, no a "/" a secas: la tienda
       // también se abre desde "/store" y desde una sección.
       navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
@@ -1289,13 +1291,18 @@ const ShoppingCart = ({
     // Con envío a domicilio la dirección es obligatoria; el servidor también
     // lo revisa, pero avisar acá evita que llene todo y falle al final.
     if (entrega === 'delivery' && !direccionElegida) {
-      toast.error('Elija una dirección de entrega');
+      toast.error(t('Elija una dirección de entrega'));
+      return;
+    }
+    // Muy lejos de la tienda no se entrega (el servidor tampoco lo acepta).
+    if (entrega === 'delivery' && envioCalc.fueraDeCobertura) {
+      toast.error(t('Esa dirección queda fuera de la zona de entrega. Puede elegir recogerlo en la tienda.'));
       return;
     }
     // Se compara contra totalAPagar (ya con el descuento de puntos aplicado),
     // que es lo que de verdad se va a cobrar.
     if (metodoPago === 'saldo' && saldo < totalAPagar) {
-      toast.error(`Su saldo es de $${saldo.toFixed(2)} y el pedido cuesta $${totalAPagar.toFixed(2)}`);
+      toast.error(t('Su saldo es de {saldo} y el pedido cuesta {total}', { saldo: `$${saldo.toFixed(2)}`, total: `$${totalAPagar.toFixed(2)}` }));
       return;
     }
 
@@ -1372,10 +1379,10 @@ const ShoppingCart = ({
   });
 
   // La ayuda va al WhatsApp que la tienda puso en el panel. Sin número, no sale.
-  const enlaceAyuda = enlaceWhatsApp('Hola, necesito ayuda con mi pedido.', ajustes?.negocio?.whatsapp);
+  const enlaceAyuda = enlaceWhatsApp(t('Hola, necesito ayuda con mi pedido.'), ajustes?.negocio?.whatsapp);
   const botonAyuda = enlaceAyuda && (
     <HelpBtn href={enlaceAyuda} target="_blank" rel="noopener noreferrer">
-      <MessageCircle size={15} strokeWidth={2} aria-hidden="true" /> Ayuda
+      <MessageCircle size={15} strokeWidth={2} aria-hidden="true" /> {t('Ayuda')}
     </HelpBtn>
   );
 
@@ -1389,7 +1396,7 @@ const ShoppingCart = ({
    */
   const irAlCheckout = () => {
     if (!esCliente) {
-      toast('Inicie sesión para continuar con su pedido');
+      toast(t('Inicie sesión para continuar con su pedido'));
       navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
       return;
     }
@@ -1400,22 +1407,22 @@ const ShoppingCart = ({
   if (view === 'cart') {
     return (
       <Overlay $montado={montado} onClick={onCerrar}>
-        <CartPanel $montado={montado} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Carrito">
+        <CartPanel $montado={montado} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Carrito')}>
           <CartHeader>
             <CartTitle>
               <ShoppingBag size={18} />
-              Carrito
-              <ItemCount>({items.length} {items.length === 1 ? 'artículo' : 'artículos'})</ItemCount>
+              {t('Carrito')}
+              <ItemCount>({t(items.length === 1 ? '{n} artículo' : '{n} artículos', { n: items.length })})</ItemCount>
             </CartTitle>
-            <CloseButton type="button" onClick={onCerrar} aria-label="Cerrar el carrito" autoFocus><X size={18} aria-hidden="true" /></CloseButton>
+            <CloseButton type="button" onClick={onCerrar} aria-label={t('Cerrar el carrito')} autoFocus><X size={18} aria-hidden="true" /></CloseButton>
           </CartHeader>
 
           <CartItemsScroll>
             {items.length === 0 ? (
               <EmptyCart>
                 <Mascota pose="vacio" alto={130} />
-                <div className="title">Tu carrito está vacío</div>
-                <div className="sub">¡Agrega productos para comenzar!</div>
+                <div className="title">{t('Tu carrito está vacío')}</div>
+                <div className="sub">{t('¡Agrega productos para comenzar!')}</div>
               </EmptyCart>
             ) : (
               <>
@@ -1427,7 +1434,7 @@ const ShoppingCart = ({
                   </StoreInfo>
                 </StoreName>
 
-                <ProductsLabel>Productos</ProductsLabel>
+                <ProductsLabel>{t('Productos')}</ProductsLabel>
 
                 {items.map(item => (
                   <CartItemRow key={item.id}>
@@ -1454,15 +1461,17 @@ const ShoppingCart = ({
                         Ver utils/unidades.js.
                       */}
                       <QtyControls>
-                        <RemoveBtn onClick={() => onEliminarItem(item.id)}><Trash2 size={14} /></RemoveBtn>
+                        <RemoveBtn onClick={() => onEliminarItem(item.id)} aria-label={t('Quitar {nombre} del carrito', { nombre: item.nombre })}><Trash2 size={14} /></RemoveBtn>
                         <QtyBtn
                           onClick={() => onActualizarCantidad(item.id, ajustarCantidad(item, item.cantidad - pasoDe(item)))}
                           disabled={item.cantidad <= pasoDe(item)}
+                          aria-label={t('Menos {nombre}', { nombre: item.nombre })}
                         ><Minus size={12} /></QtyBtn>
                         <QtyNum>{cantidadConUnidad(item, item.cantidad)}</QtyNum>
                         <QtyBtn
                           onClick={() => onActualizarCantidad(item.id, ajustarCantidad(item, item.cantidad + pasoDe(item)))}
                           disabled={item.cantidad >= item.stock}
+                          aria-label={t('Más {nombre}', { nombre: item.nombre })}
                         ><Plus size={12} /></QtyBtn>
                       </QtyControls>
                     </ItemInfo>
@@ -1476,17 +1485,17 @@ const ShoppingCart = ({
           {items.length > 0 && (
             <CartFooter>
               <OrderSummaryBox>
-                <SummaryTitle>Resumen de orden</SummaryTitle>
-                <SummaryRow><span>Total de artículos</span><span>${subtotal.toFixed(2)}</span></SummaryRow>
-                <SummaryRow><span>Costo de envío</span><span>${ENVIO.toFixed(2)}</span></SummaryRow>
+                <SummaryTitle>{t('Resumen de orden')}</SummaryTitle>
+                <SummaryRow><span>{t('Total de artículos')}</span><span>${subtotal.toFixed(2)}</span></SummaryRow>
+                <SummaryRow><span>{t('Costo de envío')}</span><span>${ENVIO.toFixed(2)}</span></SummaryRow>
                 <Divider />
                 <TotalRow>
-                  <TotalLabel>Subtotal</TotalLabel>
+                  <TotalLabel>{t('Subtotal')}</TotalLabel>
                   <TotalPrice>${totalFinal.toFixed(2)}</TotalPrice>
                 </TotalRow>
               </OrderSummaryBox>
               <BtnRow>
-                <ClearBtn onClick={onLimpiarCarrito}>Vaciar</ClearBtn>
+                <ClearBtn onClick={onLimpiarCarrito}>{t('Vaciar')}</ClearBtn>
                 {/*
                   "Pagar" y no "Checkout": la tienda entera está en español y
                   esta era una de las dos últimas palabras en inglés que
@@ -1494,7 +1503,7 @@ const ShoppingCart = ({
                   monto al lado y en un teléfono compiten por el mismo renglón.
                 */}
                 <CheckoutBtn onClick={irAlCheckout}>
-                  Pagar · ${totalFinal.toFixed(2)}
+                  {t('Pagar')} · ${totalFinal.toFixed(2)}
                 </CheckoutBtn>
               </BtnRow>
             </CartFooter>
@@ -1508,9 +1517,9 @@ const ShoppingCart = ({
   if (view === 'checkout') {
     return (
       <Overlay $montado={montado} onClick={() => {}}>
-        <FullPanel $montado={montado} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Pago del pedido">
+        <FullPanel $montado={montado} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Pago del pedido')}>
           <PageTopBar>
-            <BackBtn type="button" onClick={() => setView('cart')} aria-label="Volver al carrito" autoFocus><ChevronLeft size={20} aria-hidden="true" /></BackBtn>
+            <BackBtn type="button" onClick={() => setView('cart')} aria-label={t('Volver al carrito')} autoFocus><ChevronLeft size={20} aria-hidden="true" /></BackBtn>
             {/* La misma marca que el menú. Antes aquí decía "Tienda" en gris
                 a 11px encima de "la 635" a 18px — ni parecido. */}
             <BrandTitle>
@@ -1536,7 +1545,7 @@ const ShoppingCart = ({
                     </CheckoutIconBox>
                     <div style={{ flex: '1 1 auto', minWidth: 0 }}>
                       {/* Antes decía "Checkout". Ver el botón del carrito. */}
-                      <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--tinta)' }}>Finalizar compra</div>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--tinta)' }}>{t('Finalizar compra')}</div>
                     </div>
                     {/* Se quitó el badge "Deliver Tomorrow…": era texto en inglés y una
                         franja horaria inventada. La tienda entrega el mismo día contra
@@ -1548,7 +1557,7 @@ const ShoppingCart = ({
                 <div style={{ padding: '18px 20px', borderTop: '1px solid var(--linea)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                     <CheckoutIconBox><MapPin size={18} color={BROWN} /></CheckoutIconBox>
-                    <CheckoutSectionTitle>¿Cómo lo recibe?</CheckoutSectionTitle>
+                    <CheckoutSectionTitle>{t('¿Cómo lo recibe?')}</CheckoutSectionTitle>
                   </div>
 
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1559,8 +1568,8 @@ const ShoppingCart = ({
                     >
                       <StoreFront size={16} strokeWidth={2} />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600 }}>Retiro en el local</div>
-                        <div style={{ fontSize: 11, opacity: 0.7 }}>Sin costo de envío</div>
+                        <div style={{ fontWeight: 600 }}>{t('Retiro en el local')}</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>{t('Sin costo de envío')}</div>
                       </div>
                     </OpcionBtn>
 
@@ -1571,8 +1580,8 @@ const ShoppingCart = ({
                     >
                       <MapPin size={16} strokeWidth={2} />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600 }}>Envío a domicilio</div>
-                        <div style={{ fontSize: 11, opacity: 0.7 }}>+${COSTO_ENVIO.toFixed(2)} de envío</div>
+                        <div style={{ fontWeight: 600 }}>{t('Envío a domicilio')}</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>{t('+{costo} de envío', { costo: `$${COSTO_ENVIO.toFixed(2)}` })}</div>
                       </div>
                     </OpcionBtn>
                   </div>
@@ -1584,6 +1593,18 @@ const ShoppingCart = ({
                     cuánto me llega?" — responderlo después, en el correo de
                     confirmación, ya no le sirve para decidir.
                   */}
+                  {entrega === 'delivery' && envioCalc.fueraDeCobertura && (
+                    <div
+                      role="alert"
+                      style={{
+                        marginTop: 10, padding: '10px 12px', borderRadius: 12, fontSize: 12.5,
+                        background: 'rgba(220,38,38,.08)', color: 'var(--peligro)', fontWeight: 600,
+                      }}
+                    >
+                      {t('Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Puede elegir recogerlo en la tienda.', { km: envioCalc.distanciaKm })}
+                    </div>
+                  )}
+
                   {entrega === 'delivery' && zona.hayDatos && (
                     <div style={{
                       display: 'flex', alignItems: 'flex-start', gap: 8,
@@ -1593,10 +1614,10 @@ const ShoppingCart = ({
                       <Clock size={15} color="var(--exito-texto)" style={{ flexShrink: 0, marginTop: 1 }} />
                       <div>
                         <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--exito-texto)' }}>
-                          {zona.texto} a {direccionElegida?.nombre || 'su dirección'}
+                          {t('{tiempo} a {lugar}', { tiempo: zona.texto, lugar: direccionElegida?.nombre || t('su dirección') })}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--exito-suave)', marginTop: 1 }}>
-                          {zona.respaldo}. No es una promesa: es lo que hemos tardado.
+                          {zona.respaldo}. {t('No es una promesa: es lo que hemos tardado.')}
                         </div>
                       </div>
                     </div>
@@ -1617,7 +1638,7 @@ const ShoppingCart = ({
                           background: 'var(--marca-50)', textAlign: 'center',
                         }}>
                           <p style={{ fontSize: 13, color: 'var(--tinta-suave)', margin: '0 0 10px' }}>
-                            Todavía no tiene direcciones guardadas.
+                            {t('Todavía no tiene direcciones guardadas.')}
                           </p>
                           {/*
                             UN SOLO CAMINO: el mapa. Ya no se ofrece escribirla
@@ -1635,7 +1656,7 @@ const ShoppingCart = ({
                                 fontFamily: 'inherit', cursor: 'pointer',
                               }}
                             >
-                              Marcar mi dirección en el mapa
+                              {t('Marcar mi dirección en el mapa')}
                             </button>
                           </div>
                         </div>
@@ -1708,7 +1729,7 @@ const ShoppingCart = ({
                                 fontFamily: 'inherit', cursor: 'pointer',
                               }}
                             >
-                              + Agregar otra dirección
+                              + {t('Agregar otra dirección')}
                             </button>
                           )}
                         </>
@@ -1721,16 +1742,16 @@ const ShoppingCart = ({
                 <div style={{ padding: '18px 20px', borderTop: '1px solid var(--linea)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                     <CheckoutIconBox><CreditCard size={18} color={BROWN} /></CheckoutIconBox>
-                    <CheckoutSectionTitle>¿Con qué paga?</CheckoutSectionTitle>
+                    <CheckoutSectionTitle>{t('¿Con qué paga?')}</CheckoutSectionTitle>
                   </div>
 
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <OpcionBtn type="button" $activa={metodoPago === 'efectivo'} onClick={() => setMetodoPago('efectivo')}>
                       <Wallet size={16} strokeWidth={2} />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600 }}>Efectivo</div>
+                        <div style={{ fontWeight: 600 }}>{t('Efectivo')}</div>
                         <div style={{ fontSize: 11, opacity: 0.7 }}>
-                          {entrega === 'delivery' ? 'Al recibirlo' : 'En el local'}
+                          {entrega === 'delivery' ? t('Al recibirlo') : t('En el local')}
                         </div>
                       </div>
                     </OpcionBtn>
@@ -1738,9 +1759,9 @@ const ShoppingCart = ({
                     <OpcionBtn type="button" $activa={metodoPago === 'tarjeta'} onClick={() => setMetodoPago('tarjeta')}>
                       <CreditCard size={16} strokeWidth={2} />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600 }}>Tarjeta</div>
+                        <div style={{ fontWeight: 600 }}>{t('Tarjeta')}</div>
                         <div style={{ fontSize: 11, opacity: 0.7 }}>
-                          {entrega === 'delivery' ? 'Al recibirlo' : 'En el local'}
+                          {entrega === 'delivery' ? t('Al recibirlo') : t('En el local')}
                         </div>
                       </div>
                     </OpcionBtn>
@@ -1750,14 +1771,14 @@ const ShoppingCart = ({
                       type="button"
                       $activa={metodoPago === 'saldo'}
                       disabled={saldo < totalAPagar}
-                      title={saldo < totalAPagar ? 'Su saldo no alcanza para este pedido' : 'Pagar con su saldo'}
+                      title={saldo < totalAPagar ? t('Su saldo no alcanza para este pedido') : t('Pagar con su saldo')}
                       onClick={() => setMetodoPago('saldo')}
                     >
                       <Gift size={16} strokeWidth={2} />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 600 }}>Mi saldo</div>
+                        <div style={{ fontWeight: 600 }}>{t('Mi saldo')}</div>
                         <div style={{ fontSize: 11, opacity: 0.7 }}>
-                          ${saldo.toFixed(2)} {saldo < totalAPagar ? '· no alcanza' : 'disponible'}
+                          ${saldo.toFixed(2)} {saldo < totalAPagar ? t('· no alcanza') : t('disponible')}
                         </div>
                       </div>
                     </OpcionBtn>
@@ -1765,7 +1786,7 @@ const ShoppingCart = ({
 
                   {metodoPago === 'saldo' && (
                     <p style={{ fontSize: 12, color: 'var(--marca-texto)', margin: '10px 0 0', fontWeight: 500 }}>
-                      Le quedarán ${(saldo - totalAPagar).toFixed(2)} después de este pedido.
+                      {t('Le quedarán {monto} después de este pedido.', { monto: `$${(saldo - totalAPagar).toFixed(2)}` })}
                     </p>
                   )}
 
@@ -1791,12 +1812,12 @@ const ShoppingCart = ({
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600, fontSize: 13, color: usarPuntos ? BROWN : 'var(--tinta-suave)' }}>
-                          Usar mis {puntosDisponibles} puntos
+                          {t('Usar mis {n} puntos', { n: puntosDisponibles })}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--tinta-tenue)' }}>
                           {usarPuntos
-                            ? `Descuenta $${descuento.toFixed(2)} de este pedido`
-                            : `Equivalen a $${(Math.min(puntosDisponibles, maxPuntosUtiles) / (redeemRate || 100)).toFixed(2)} en esta compra`}
+                            ? t('Descuenta {monto} de este pedido', { monto: `$${descuento.toFixed(2)}` })
+                            : t('Equivalen a {monto} en esta compra', { monto: `$${(Math.min(puntosDisponibles, maxPuntosUtiles) / (redeemRate || 100)).toFixed(2)}` })}
                         </div>
                       </div>
                     </label>
@@ -1807,8 +1828,8 @@ const ShoppingCart = ({
                     <input
                       value={codigoTarjeta}
                       onChange={(e) => setCodigoTarjeta(e.target.value.toUpperCase())}
-                      placeholder="¿Tiene una tarjeta de regalo? 635-XXXX-XXXX"
-                      aria-label="Código de tarjeta de regalo"
+                      placeholder={t('¿Tiene una tarjeta de regalo? 635-XXXX-XXXX')}
+                      aria-label={t('Código de tarjeta de regalo')}
                       style={{
                         flex: 1, padding: '11px 14px', fontSize: 13, fontFamily: 'inherit',
                         border: '1px solid var(--linea)', borderRadius: 12, outline: 'none',
@@ -1826,7 +1847,7 @@ const ShoppingCart = ({
                         opacity: canjeando || !codigoTarjeta.trim() ? 0.5 : 1,
                       }}
                     >
-                      {canjeando ? 'Canjeando…' : 'Canjear'}
+                      {canjeando ? t('Canjeando…') : t('Canjear')}
                     </button>
                   </form>
                 </div>
@@ -1834,7 +1855,7 @@ const ShoppingCart = ({
                 {/* Order thumbnails */}
                 <div style={{ borderTop: '1px solid var(--linea)' }}>
                   <div style={{ padding: '14px 24px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <CheckoutSectionTitle>Orden ⓘ</CheckoutSectionTitle>
+                    <CheckoutSectionTitle>{t('Orden')} ⓘ</CheckoutSectionTitle>
                     <ChevronRight size={16} color="var(--tinta-tenue)" />
                   </div>
                   <OrderThumbsRow>
@@ -1854,13 +1875,13 @@ const ShoppingCart = ({
 
             {/* Right summary */}
             <SummaryCard>
-              <SummaryCardTitle>Resumen de orden</SummaryCardTitle>
-              <SummaryCardRow><span>Costo de envío</span><span>${ENVIO.toFixed(2)}</span></SummaryCardRow>
+              <SummaryCardTitle>{t('Resumen de orden')}</SummaryCardTitle>
+              <SummaryCardRow><span>{t('Costo de envío')}</span><span>${ENVIO.toFixed(2)}</span></SummaryCardRow>
               {/* La tarifa de servicio solo se muestra si la tienda la cobra. */}
               {SERVICIO > 0 && (
-                <SummaryCardRow><span>Tarifa de servicio</span><span>${SERVICIO.toFixed(2)}</span></SummaryCardRow>
+                <SummaryCardRow><span>{t('Tarifa de servicio')}</span><span>${SERVICIO.toFixed(2)}</span></SummaryCardRow>
               )}
-              <SummaryCardRow><span>Total de artículos</span><span>${subtotal.toFixed(2)}</span></SummaryCardRow>
+              <SummaryCardRow><span>{t('Total de artículos')}</span><span>${subtotal.toFixed(2)}</span></SummaryCardRow>
               <Divider />
               <TotalBig>
                 <span>Total</span>
@@ -1879,12 +1900,12 @@ const ShoppingCart = ({
                       style={{ marginTop: 3 }}
                     />
                     <span style={{ fontSize: 13, color: 'var(--tinta)', lineHeight: 1.4 }}>
-                      <strong>Usar mis puntos</strong><br />
+                      <strong>{t('Usar mis puntos')}</strong><br />
                       <span style={{ color: 'var(--tinta-suave)' }}>
-                        Tienes {puntosDisponibles} puntos
+                        {t('Tienes {n} puntos', { n: puntosDisponibles })}
                         {puedeCanjear
                           ? ` = $${(puntosDisponibles / (redeemRate || 100)).toFixed(2)}`
-                          : ` (necesitas ${minRedeem} para canjear)`}
+                          : ` ${t('(necesitas {n} para canjear)', { n: minRedeem })}`}
                       </span>
                     </span>
                   </label>
@@ -1893,7 +1914,7 @@ const ShoppingCart = ({
 
               {descuento > 0 && (
                 <SummaryCardRow style={{ color: 'var(--exito-vivo)', fontWeight: 600 }}>
-                  <span>Descuento por puntos</span>
+                  <span>{t('Descuento por puntos')}</span>
                   <span>−${descuento.toFixed(2)}</span>
                 </SummaryCardRow>
               )}
@@ -1911,17 +1932,17 @@ const ShoppingCart = ({
                 casi no se leía, y es justo lo que alguien debería poder leer.
               */}
               <p style={{ fontSize: 12.5, color: 'var(--tinta-suave)', marginTop: 12, lineHeight: 1.55 }}>
-                Al realizar este pedido, usted acepta los{' '}
+                {t('Al realizar este pedido, usted acepta los')}{' '}
                 <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--marca-texto-fuerte)', fontWeight: 600, textDecoration: 'underline' }}>
-                  términos y condiciones
-                </a>{' '}y la{' '}
+                  {t('términos y condiciones')}
+                </a>{' '}{t('y la')}{' '}
                 <a href="/devoluciones" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--marca-texto-fuerte)', fontWeight: 600, textDecoration: 'underline' }}>
-                  política de cambios y devoluciones
+                  {t('política de cambios y devoluciones')}
                 </a>.
               </p>
 
               <PlaceOrderBtn onClick={handlePlaceOrder} disabled={procesando}>
-                {procesando ? <><EsperaMascota sobre="color" /> Procesando…</> : 'Realizar pedido'}
+                {procesando ? <><EsperaMascota sobre="color" /> {t('Procesando…')}</> : t('Realizar pedido')}
               </PlaceOrderBtn>
             </SummaryCard>
           </CheckoutLayout>
@@ -1935,7 +1956,7 @@ const ShoppingCart = ({
     // Todo sale del pedido que devolvió el backend; si por algo no llegó, se cae
     // a lo que se eligió en pantalla. Nada de esto es inventado.
     const fechaPedido = ordenCreada?.createdAt ? new Date(ordenCreada.createdAt) : new Date();
-    const orderDate = fechaPedido.toLocaleString('es-SV', {
+    const orderDate = fechaPedido.toLocaleString(locale, {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
     });
     const numeroPedido = ordenCreada?._id ? String(ordenCreada._id).slice(-6).toUpperCase() : '——————';
@@ -1947,16 +1968,16 @@ const ShoppingCart = ({
     const direccionReal = ordenCreada?.deliveryAddress
       || (entrega === 'delivery' ? direccionElegida?.direccion : null);
     // Nombre de la forma de pago tal como se muestra al cliente.
-    const nombrePago = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', saldo: 'Saldo / Gift card' }[metodoReal] || 'Efectivo';
+    const nombrePago = t({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', saldo: 'Saldo / Gift card' }[metodoReal] || 'Efectivo');
     // Los tres pasos reales del pedido (mismos que en la burbuja y la pantalla
     // de estado). El pedido recién creado está en el primero.
     const PASOS_CONFIRM = ['Recibido', 'Preparando', 'Entregado'];
 
     return (
       <Overlay $montado={montado} onClick={() => {}}>
-        <FullPanel $montado={montado} role="dialog" aria-modal="true" aria-label="Pedido confirmado">
+        <FullPanel $montado={montado} role="dialog" aria-modal="true" aria-label={t('Pedido confirmado')}>
           <PageTopBar>
-            <BackBtn type="button" onClick={handleConfirmClose} aria-label="Cerrar y volver a la tienda" autoFocus><ChevronLeft size={20} aria-hidden="true" /></BackBtn>
+            <BackBtn type="button" onClick={handleConfirmClose} aria-label={t('Cerrar y volver a la tienda')} autoFocus><ChevronLeft size={20} aria-hidden="true" /></BackBtn>
             <BrandTitle>
               {/* Igual que el checkout y que el menú. Ver MarcaTienda. */}
               <MarcaTienda tamano={19} alto={38} />
@@ -1967,13 +1988,13 @@ const ShoppingCart = ({
           <ConfirmLayout>
             <div>
               <ConfirmCard>
-                <StatusBadge><span style={{ width: 6, height: 6, background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} /> En proceso</StatusBadge>
-                <ConfirmTitle>Orden en curso</ConfirmTitle>
-                <ConfirmDate>Pedido recibido el {orderDate}</ConfirmDate>
+                <StatusBadge><span style={{ width: 6, height: 6, background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} /> {t('En proceso')}</StatusBadge>
+                <ConfirmTitle>{t('Orden en curso')}</ConfirmTitle>
+                <ConfirmDate>{t('Pedido recibido el {fecha}', { fecha: orderDate })}</ConfirmDate>
 
                 {/* La mascota festejando en lugar del círculo verde con el ✓. */}
                 <Festejo><Mascota pose="fiesta" alto={130} /></Festejo>
-                <AcceptedMsg>Tu orden ha sido aceptada</AcceptedMsg>
+                <AcceptedMsg>{t('Tu orden ha sido aceptada')}</AcceptedMsg>
 
                 {/* Seguimiento en vivo: el avance del pedido y, a domicilio, el
                     mapa del repartidor — aquí mismo y actualizándose solo, sin
@@ -1999,8 +2020,8 @@ const ShoppingCart = ({
               {/* Products card */}
               <ConfirmCard>
                 <PTableHeader>
-                  <span>Productos</span>
-                  <span>N.º Items</span>
+                  <span>{t('Productos')}</span>
+                  <span>{t('N.º Items')}</span>
                 </PTableHeader>
                 <ProductsTable>
                   {itemsAMostrar.slice((orderPage - 1) * POR_PAGINA, orderPage * POR_PAGINA).map(item => (
@@ -2036,7 +2057,7 @@ const ShoppingCart = ({
                     <PageBtn
                       onClick={() => setOrderPage(p => Math.max(1, p - 1))}
                       disabled={orderPage === 1}
-                      aria-label="Página anterior"
+                      aria-label={t('Página anterior')}
                     >
                       <ChevronLeft size={14} />
                     </PageBtn>
@@ -2046,7 +2067,7 @@ const ShoppingCart = ({
                     <PageBtn
                       onClick={() => setOrderPage(p => Math.min(totalPaginas, p + 1))}
                       disabled={orderPage === totalPaginas}
-                      aria-label="Página siguiente"
+                      aria-label={t('Página siguiente')}
                     >
                       <ChevronRight size={14} />
                     </PageBtn>
@@ -2057,17 +2078,17 @@ const ShoppingCart = ({
 
             {/* Right: summary — todo con datos reales del pedido creado */}
             <ConfirmSummaryCard>
-              <ConfirmSummaryTitle>Resumen del pedido</ConfirmSummaryTitle>
+              <ConfirmSummaryTitle>{t('Resumen del pedido')}</ConfirmSummaryTitle>
               <OrderNumber><Hash size={14} strokeWidth={2.2} /> {numeroPedido}</OrderNumber>
 
-              <SummaryCardRow><span>Total de artículos</span><span>${subtotalReal.toFixed(2)}</span></SummaryCardRow>
+              <SummaryCardRow><span>{t('Total de artículos')}</span><span>${subtotalReal.toFixed(2)}</span></SummaryCardRow>
               <SummaryCardRow>
-                <span>Gastos de envío</span>
-                <span>{envioReal > 0 ? `$${envioReal.toFixed(2)}` : 'Gratis'}</span>
+                <span>{t('Gastos de envío')}</span>
+                <span>{envioReal > 0 ? `$${envioReal.toFixed(2)}` : t('Gratis')}</span>
               </SummaryCardRow>
               {Number(ordenCreada?.discount || descuento) > 0 && (
                 <SummaryCardRow style={{ color: 'var(--exito-vivo)', fontWeight: 600 }}>
-                  <span>Descuento por puntos</span>
+                  <span>{t('Descuento por puntos')}</span>
                   <span>−${Number(ordenCreada?.discount || descuento).toFixed(2)}</span>
                 </SummaryCardRow>
               )}
@@ -2094,10 +2115,10 @@ const ShoppingCart = ({
                   : <StoreFront size={16} color={BROWN} style={{ marginTop: 2, flexShrink: 0 }} />}
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>
-                    {esDomicilioReal ? 'Dirección de entrega' : 'Retiro en el local'}
+                    {esDomicilioReal ? t('Dirección de entrega') : t('Retiro en el local')}
                   </div>
                   {esDomicilioReal && (
-                    <div style={{ color: 'var(--marca-texto)', fontSize: 13 }}>{direccionReal || 'Sin dirección'}</div>
+                    <div style={{ color: 'var(--marca-texto)', fontSize: 13 }}>{direccionReal || t('Sin dirección')}</div>
                   )}
                 </div>
               </DeliveryAddress>
@@ -2105,7 +2126,7 @@ const ShoppingCart = ({
               {/* Se quitó "Ver el estado del pedido": el avance y el mapa ya se ven
                   arriba, en la misma confirmación, y se actualizan solos. */}
               <PlaceOrderBtn style={{ marginTop: 18 }} onClick={handleConfirmClose}>
-                Volver a la tienda
+                {t('Volver a la tienda')}
               </PlaceOrderBtn>
             </ConfirmSummaryCard>
           </ConfirmLayout>

@@ -3,6 +3,7 @@ import { LocateFixed, MapPin, Loader2 } from 'lucide-react';
 import Mapa from '../Mapa/Mapa';
 import { useUbicacion, CENTRO_POR_DEFECTO } from '../../hooks/useUbicacion';
 import { EsperaMascota } from '../UI/Mascota';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -41,6 +42,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
   const { posicion, direccion, setDireccion, buscando, localizando, marcarEn, localizarme } = useUbicacion();
   const [nombre, setNombre] = useState('');
   const [referencia, setReferencia] = useState('');
+  const { t } = useIdioma();
 
   const centro = posicion || CENTRO_POR_DEFECTO;
   // Sin pin no se guarda: ver el encabezado de este archivo.
@@ -98,7 +100,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
             background: 'color-mix(in srgb, var(--papel) 94%, transparent)', borderRadius: 8, padding: '7px 10px',
             fontSize: 12.5, color: 'var(--tinta-suave)', textAlign: 'center', pointerEvents: 'none',
           }}>
-            Toque en el mapa dónde le dejamos su pedido
+            {t('Toque en el mapa dónde le dejamos su pedido')}
           </div>
         )}
       </div>
@@ -116,21 +118,21 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
         }}
       >
         {localizando
-          ? <><EsperaMascota alto={19} /> Buscándolo…</>
-          : <><LocateFixed size={15} /> Usar mi ubicación</>}
+          ? <><EsperaMascota alto={19} /> {t('Buscándolo…')}</>
+          : <><LocateFixed size={15} /> {t('Usar mi ubicación')}</>}
       </button>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div>
           <label htmlFor="mapa-direccion" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--tinta-suave)' }}>
-            Dirección
+            {t('Dirección')}
           </label>
           <div style={{ position: 'relative' }}>
             <input
               id="mapa-direccion"
               value={direccion}
               onChange={(e) => setDireccion(e.target.value)}
-              placeholder={posicion ? 'Calle, número y colonia' : 'Se llena al marcar en el mapa'}
+              placeholder={posicion ? t('Calle, número y colonia') : t('Se llena al marcar en el mapa')}
               style={{ ...campo, marginTop: 3, paddingRight: 34 }}
             />
             {/* Mientras Nominatim traduce el punto a palabras. */}
@@ -151,25 +153,25 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 140px' }}>
             <label htmlFor="mapa-nombre" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--tinta-suave)' }}>
-              Nombre <span style={{ fontWeight: 400, color: 'var(--tinta-tenue)' }}>(opcional)</span>
+              {t('Nombre')} <span style={{ fontWeight: 400, color: 'var(--tinta-tenue)' }}>{t('(opcional)')}</span>
             </label>
             <input
               id="mapa-nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Casa, Trabajo…"
+              placeholder={t('Casa, Trabajo…')}
               style={{ ...campo, marginTop: 3 }}
             />
           </div>
           <div style={{ flex: '1 1 180px' }}>
             <label htmlFor="mapa-referencia" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--tinta-suave)' }}>
-              Referencia <span style={{ fontWeight: 400, color: 'var(--tinta-tenue)' }}>(opcional)</span>
+              {t('Referencia')} <span style={{ fontWeight: 400, color: 'var(--tinta-tenue)' }}>{t('(opcional)')}</span>
             </label>
             <input
               id="mapa-referencia"
               value={referencia}
               onChange={(e) => setReferencia(e.target.value)}
-              placeholder="Portón verde, frente a la cancha"
+              placeholder={t('Portón verde, frente a la cancha')}
               style={{ ...campo, marginTop: 3 }}
             />
           </div>
@@ -187,7 +189,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
               fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
-            Cancelar
+            {t('Cancelar')}
           </button>
         )}
         <button
@@ -202,7 +204,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
           }}
         >
           <MapPin size={15} />
-          {guardando ? 'Guardando…' : posicion ? 'Guardar esta dirección' : 'Marque el punto en el mapa'}
+          {guardando ? t('Guardando…') : posicion ? t('Guardar esta dirección') : t('Marque el punto en el mapa')}
         </button>
       </div>
     </form>

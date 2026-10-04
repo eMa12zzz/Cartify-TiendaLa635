@@ -3,6 +3,7 @@ import { usePromoCarousel, useCabenTres } from '../../hooks/usePromoCarousel';
 import { etiquetaPromo, textoVencimiento } from '../../utils/promos';
 import { EASE_OUT } from '../../utils/motion';
 import PromoCard from './PromoCard';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * PromoBanners — carrusel 3D de las promociones anunciadas.
@@ -121,6 +122,7 @@ const DEGRADADO_ORILLAS =
 
 const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
   const reducirMovimiento = useReducedMotion();
+  const { t, locale } = useIdioma();
   const cabenTres = useCabenTres();
   // moduloId: si el cliente está parado en un pasillo, solo salen sus promos.
   const { promos, activa, total, irA, siguiente, anterior, distancia, pausar, reanudar } =
@@ -141,7 +143,7 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
 
   return (
     <section
-      aria-label="Promociones de la tienda"
+      aria-label={t('Promociones de la tienda')}
       onMouseEnter={pausar}
       onMouseLeave={reanudar}
       onFocus={pausar}
@@ -249,7 +251,7 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
                * abrir algo que no se alcanza a leer se siente a trampa.
                */
               onClick={() => ((enFila && !enOrilla) || esCentro ? onSelectPromo(promo) : irA(i))}
-              title={(enFila && !enOrilla) || esCentro ? 'Ver los productos de esta promoción' : 'Ver esta promoción'}
+              title={(enFila && !enOrilla) || esCentro ? t('Ver los productos de esta promoción') : t('Ver esta promoción')}
               animate={{
                 x: `${x}%`,
                 /*
@@ -301,8 +303,8 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
                 imagenCompleta={promo.imagenCompleta}
                 title={promo.title}
                 descripcion={promo.promoDescription}
-                etiqueta={etiquetaPromo(promo)}
-                vencimiento={textoVencimiento(promo)}
+                etiqueta={etiquetaPromo(promo, t)}
+                vencimiento={textoVencimiento(promo, t, locale)}
                 icono={promo.icono}
                 atenuada={enOrilla || (!enFila && !esCentro)}
                 mostrarFlecha={(enFila && !enOrilla) || esCentro}
@@ -321,7 +323,7 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: enFila ? -20 : 14 }}>
           <button
             onClick={anterior}
-            aria-label="Promoción anterior"
+            aria-label={t('Promoción anterior')}
             className="press"
             style={flecha}
           >‹</button>
@@ -338,7 +340,7 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
               <button
                 key={promo._id}
                 onClick={() => irA(i)}
-                aria-label={`Ir a la promoción ${i + 1}`}
+                aria-label={t('Ir a la promoción {n}', { n: i + 1 })}
                 aria-current={i === activa}
                 style={{
                   display: 'flex',
@@ -367,7 +369,7 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
 
           <button
             onClick={siguiente}
-            aria-label="Siguiente promoción"
+            aria-label={t('Siguiente promoción')}
             className="press"
             style={flecha}
           >›</button>

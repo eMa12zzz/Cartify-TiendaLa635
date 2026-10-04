@@ -6,12 +6,14 @@ import { Loader2 } from 'lucide-react';
 import api from '../api/api';
 import { useAjustesCtx } from '../context/AjustesContext';
 import Mascota from '../components/UI/Mascota';
+import { useIdioma } from '../hooks/useIdioma';
 
 const ForgotPassword = () => {
   // El nombre de la tienda sale de los ajustes, no escrito a mano.
   const { ajustes } = useAjustesCtx();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { t } = useIdioma();
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   // 1- Enviar la solicitud de recuperación
@@ -24,7 +26,7 @@ const ForgotPassword = () => {
         email: data.email
       });
 
-      toast.success(response.data.message || 'Se enviará un código a tu correo si existe.');
+      toast.success(t(response.data.message || 'Se enviará un código a tu correo si existe.'));
       
       // Guardar flujo para que Verification sepa
       localStorage.setItem('verificationFlow', 'recovery');
@@ -66,18 +68,18 @@ const ForgotPassword = () => {
               {ajustes.nombreLinea1}
               {ajustes.nombreLinea2 && <><br />{ajustes.nombreLinea2}</>}
             </h1>
-            <p className="text-[var(--tinta-suave)] text-sm font-medium">Recuperar contraseña</p>
+            <p className="text-[var(--tinta-suave)] text-sm font-medium">{t('Recuperar contraseña')}</p>
             <p className="text-[var(--tinta-tenue)] text-xs mt-2 max-w-xs mx-auto">
-              Ingresa el correo asociado a tu cuenta y te enviaremos las instrucciones.
+              {t('Ingresa el correo asociado a tu cuenta y te enviaremos las instrucciones.')}
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5 relative">
             <div>
-              <label htmlFor="campo-email" className="block text-sm font-semibold text-[var(--tinta-suave)] mb-1.5">Correo</label>
+              <label htmlFor="campo-email" className="block text-sm font-semibold text-[var(--tinta-suave)] mb-1.5">{t('Correo')}</label>
               <input
                 type="email"
-                placeholder="Introduce tu correo electrónico"
+                placeholder={t('Introduce tu correo electrónico')}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.email ? 'border-[var(--peligro)]' : 'border-[var(--linea-fuerte)]'} focus:outline-none focus:border-[var(--marca-600)] focus:ring-1 focus:ring-[var(--marca-600)] transition-colors text-sm`}
                 id="campo-email"
                 {...register("email", { 
@@ -90,7 +92,7 @@ const ForgotPassword = () => {
               />
               {errors.email && (
                 <span className="text-[var(--peligro)] text-xs mt-1 block absolute">
-                  {errors.email.message}
+                  {t(errors.email.message)}
                 </span>
               )}
             </div>
@@ -100,15 +102,15 @@ const ForgotPassword = () => {
               disabled={loading}
               className="w-full py-3 px-4 bg-[var(--marca-600)] hover:bg-[var(--marca-700)] text-white rounded-lg text-sm font-semibold transition-colors mt-6 shadow-sm flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Recuperar contraseña'}
+              {loading ? <Loader2 size={18} className="animate-spin" /> : t('Recuperar contraseña')}
             </button>
           </form>
 
           <div className="mt-8 text-center flex flex-col gap-2">
             <p className="text-xs text-[var(--tinta-suave)]">
-              ¿Ya la recordaste?{' '}
+              {t('¿Ya la recordaste?')}{' '}
               <Link to="/iniciar-sesion" className="text-[var(--marca-texto)] hover:text-[var(--marca-texto-fuerte)] font-semibold transition-colors">
-                Iniciar sesión
+                {t('Iniciar sesión')}
               </Link>
             </p>
           </div>

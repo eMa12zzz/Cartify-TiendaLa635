@@ -12,6 +12,7 @@ import ProductDetailModal from '../components/Store/ProductDetailModal';
 import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
 import EsqueletoProductos from '../components/Store/EsqueletoProductos';
+import { useIdioma } from '../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -172,6 +173,7 @@ const Seccion = () => {
    * que ahí sí va a la portada. El hook distingue los dos casos.
    */
   const { volver } = useVolver('/');
+  const { t } = useIdioma();
 
   return (
     <Contenedor>
@@ -200,7 +202,7 @@ const Seccion = () => {
           */}
           <Volver onClick={volver}>
             <ArrowLeft size={17} strokeWidth={2.3} />
-            Volver
+            {t('Volver')}
           </Volver>
         </BarraInterior>
       </Barra>
@@ -225,10 +227,9 @@ const Seccion = () => {
           <Vacio>
             {/* Perdida, mirando para un lado: la sección que buscaba ya no está. */}
             <Mascota pose="perdida" alto={140} />
-            <h2>Esta sección ya no está</h2>
+            <h2>{t('Esta sección ya no está')}</h2>
             <p>
-              Las secciones se arman con lo que hay en existencia, así que
-              cambian según lo que va entrando y saliendo de la tienda.
+              {t('Las secciones se arman con lo que hay en existencia, así que cambian según lo que va entrando y saliendo de la tienda.')}
             </p>
             <Volver onClick={volver}>
               <ArrowLeft size={17} strokeWidth={2.3} />
@@ -237,9 +238,9 @@ const Seccion = () => {
           </Vacio>
         ) : (
           <>
-            <Titulo>{seccion.titulo}</Titulo>
+            <Titulo>{t(seccion.titulo)}</Titulo>
             <Cuenta>
-              {lista.length} {lista.length === 1 ? 'producto' : 'productos'}
+              {t(lista.length === 1 ? '{n} producto' : '{n} productos', { n: lista.length })}
             </Cuenta>
 
             <Cuadricula>

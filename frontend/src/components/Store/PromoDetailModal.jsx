@@ -7,6 +7,7 @@ import ProductCard from './ProductCard';
 import { coloresDePromo } from '../../utils/temasPromo';
 import { iconoDePromo } from '../../utils/iconosPromo';
 import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promos';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -371,6 +372,7 @@ const PromoDetailModal = ({
    */
   header = {},
 }) => {
+  const { t, locale } = useIdioma();
   /*
    * UN SOLO SCROLL: esta capa scrollea por dentro, y sin congelar el de la
    * tienda de atrás quedaban dos barras peleando. Mismo candado que la ficha
@@ -386,8 +388,8 @@ const PromoDetailModal = ({
   if (!promo) return null;
 
   const colores = coloresDePromo(promo);
-  const etiqueta = etiquetaPromo(promo);
-  const vencimiento = textoVencimiento(promo);
+  const etiqueta = etiquetaPromo(promo, t);
+  const vencimiento = textoVencimiento(promo, t, locale);
   const vencida = promoVencida(promo);
 
   const imagen = promo.image;
@@ -407,7 +409,7 @@ const PromoDetailModal = ({
   const pasillos = [...new Set(productos.map((p) => p.modulo).filter(Boolean))].sort();
 
   return (
-    <Capa role="dialog" aria-modal="true" aria-label={promo.title || 'Promoción'}>
+    <Capa role="dialog" aria-modal="true" aria-label={promo.title || t('Promoción')}>
       <Pagina>
         <HeaderTienda {...header} />
 
@@ -415,9 +417,9 @@ const PromoDetailModal = ({
           <Portada $fondo="#ECE7E1" $texto="#1c1614">
             <VolverSobreFoto onClick={onCerrar}>
               <ChevronLeft size={17} strokeWidth={2.4} />
-              Volver
+              {t('Volver')}
             </VolverSobreFoto>
-            <FotoASangre src={imagen} alt={promo.title || promo.promoDescription || 'Promoción'} draggable={false} />
+            <FotoASangre src={imagen} alt={promo.title || promo.promoDescription || t('Promoción')} draggable={false} />
           </Portada>
         ) : (
           <Portada $fondo={colores.fondo} $texto={colores.texto}>
@@ -431,7 +433,7 @@ const PromoDetailModal = ({
             <PortadaInterior>
               <Volver onClick={onCerrar} $sobreFoto={acompana}>
                 <ChevronLeft size={17} strokeWidth={2.4} />
-                Volver
+                {t('Volver')}
               </Volver>
 
               <Texto $conFoto={acompana}>
@@ -453,7 +455,7 @@ const PromoDetailModal = ({
                   </Sellos>
                 )}
 
-                <Titulo>{promo.title || 'Promoción'}</Titulo>
+                <Titulo>{promo.title || t('Promoción')}</Titulo>
                 {/* Aquí va completa: en el carrusel se corta a dos renglones */}
                 {promo.promoDescription && <Bajada>{promo.promoDescription}</Bajada>}
               </Texto>
@@ -464,7 +466,7 @@ const PromoDetailModal = ({
         <Contenido>
           {aSangre && (
             <>
-              <TituloTexto>{promo.title || 'Promoción'}</TituloTexto>
+              <TituloTexto>{promo.title || t('Promoción')}</TituloTexto>
               {promo.promoDescription && <BajadaTexto>{promo.promoDescription}</BajadaTexto>}
             </>
           )}
@@ -477,24 +479,24 @@ const PromoDetailModal = ({
               <span><Clock size={15} strokeWidth={2.3} />{vencimiento}</span>
             )}
             <span>
-              <strong>{productos.length}</strong> {productos.length === 1 ? 'producto' : 'productos'}
+              <strong>{productos.length}</strong> {productos.length === 1 ? t('producto') : t('productos')}
             </span>
             {pasillos.length > 0 && (
               <span>
                 <MapPin size={15} strokeWidth={2.3} />
-                {pasillos.length === 1 ? 'Lo encontrás en' : 'Lo encontrás en los pasillos'}
+                {pasillos.length === 1 ? t('Lo encontrás en') : t('Lo encontrás en los pasillos')}
                 <strong>{pasillos.join(' · ')}</strong>
               </span>
             )}
           </Datos>
 
-          <TituloSeccion>Productos en esta promoción</TituloSeccion>
+          <TituloSeccion>{t('Productos en esta promoción')}</TituloSeccion>
 
           {productos.length === 0 ? (
             <Vacio>
               {vencida
-                ? 'Esta promoción ya venció.'
-                : 'Los productos de esta promoción no están disponibles en este momento.'}
+                ? t('Esta promoción ya venció.')
+                : t('Los productos de esta promoción no están disponibles en este momento.')}
             </Vacio>
           ) : (
             <Grid>
@@ -513,7 +515,7 @@ const PromoDetailModal = ({
 
           {productos.length > 0 && (
             <VerTienda onClick={onVerEnTienda}>
-              Ver todos en la tienda
+              {t('Ver todos en la tienda')}
               <ArrowRight size={17} strokeWidth={2.4} />
             </VerTienda>
           )}

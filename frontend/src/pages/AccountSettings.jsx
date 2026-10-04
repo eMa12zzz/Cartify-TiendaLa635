@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useTheme, palettes } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { Check, Palette, User, CheckCircle2, LogOut, Camera, Loader2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -7,9 +7,15 @@ import { useAuth } from '../hooks/useAuth';
 import { perfilService } from '../api/perfilService';
 import { BotonOjo } from '../components/UI/CampoContrasena';
 import { formatearDui, formatearTelefono, LARGO_DUI, LARGO_TELEFONO } from '../utils/mascaras';
+import OpcionesLectura from '../components/Layout/OpcionesLectura';
 
 const AccountSettings = () => {
-  const { paletteId, setPaletteId, palette } = useTheme();
+  /*
+   * Las paletas del contexto, no las del módulo: esas no traen "Mi marca" (la
+   * arma el contexto), y quien se cambiaba de paleta aquí no tenía cómo volver
+   * a la de siempre.
+   */
+  const { paletteId, setPaletteId, palette, palettes } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [verPass, setVerPass] = useState(false);
   const { user, logoutTodo, actualizarUsuario } = useAuth();
@@ -89,7 +95,7 @@ const AccountSettings = () => {
 
   const tabs = [
     { id: 'profile', label: 'Mi Perfil', icon: User },
-    { id: 'theme', label: 'Paleta de Colores', icon: Palette },
+    { id: 'theme', label: 'Colores y lectura', icon: Palette },
   ];
 
   return (
@@ -312,6 +318,15 @@ const AccountSettings = () => {
                 </button>
               );
             })}
+          </div>
+
+          {/* Texto más grande y demás: se combinan con cualquier paleta. */}
+          <div className="mt-8 pt-6 border-t max-w-lg" style={{ borderColor: 'var(--theme-card-border)' }}>
+            <h3 className="text-base font-bold mb-1" style={{ color: 'var(--theme-text-primary)' }}>Lectura</h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--theme-text-secondary)' }}>
+              Agrande el texto y ajuste cómo se lee el panel. Se guarda en este equipo.
+            </p>
+            <OpcionesLectura />
           </div>
         </div>
       )}

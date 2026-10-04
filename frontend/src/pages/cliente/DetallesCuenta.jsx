@@ -5,6 +5,7 @@ import { EsperaMascota, CargandoMascota } from '../../components/UI/Mascota';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { formatearDui, formatearTelefono, LARGO_TELEFONO, LARGO_DUI } from '../../utils/mascaras';
 import { calcularEdad, EDAD_MINIMA, esMayorDeEdad } from '../../utils/edad';
+import BotonCerrarSesion from '../../components/Cuenta/BotonCerrarSesion';
 
 // Fecha (Date/ISO) → valor de un <input type="date"> ("YYYY-MM-DD").
 const aInputDate = (valor) => {
@@ -197,7 +198,8 @@ const DetallesCuenta = () => {
               )}
             </div>
 
-            <div className="pt-2">
+            {/* Cerrar sesión, al lado: antes estaba en el menú de arriba, fuera de la vista. */}
+            <div className="pt-2 flex flex-wrap items-center gap-3">
               <button
                 type="submit" disabled={saving}
                 className="px-8 py-2.5 rounded-full font-bold shadow-sm transition-colors disabled:opacity-60"
@@ -205,6 +207,7 @@ const DetallesCuenta = () => {
               >
                 {saving ? 'Guardando…' : 'Guardar cambios'}
               </button>
+              <BotonCerrarSesion />
             </div>
           </form>
         </div>

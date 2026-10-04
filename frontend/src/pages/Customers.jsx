@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, UserSquare2, Phone, Mail, Star, ChevronDown,
-  BadgeCheck, ShieldAlert, MapPin, IdCard,
+  BadgeCheck, ShieldAlert, MapPin, IdCard, UserX,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import FilterSelect from '../components/UI/FilterSelect';
+import ModalEliminarCliente from '../components/Admin/ModalEliminarCliente';
 import { useClientes, ESTADOS } from '../hooks/useClientes';
 import { DUR, EASE_OUT, stagger } from '../utils/motion';
 
@@ -73,7 +75,7 @@ const Contacto = ({ icono: Icono, children, vacio }) => (
   </div>
 );
 
-const TarjetaCliente = ({ cliente, indice }) => {
+const TarjetaCliente = ({ cliente, indice, onEliminar }) => {
   const [abierta, setAbierta] = useState(false);
 
   return (
@@ -209,6 +211,19 @@ const TarjetaCliente = ({ cliente, indice }) => {
               {cliente.tieneDireccion ? cliente.direccion : 'Sin dirección guardada'}
             </span>
           </div>
+
+          {/*
+            Eliminar va aquí, detrás de "Ver más", y no junto al contacto: no
+            se deshace, y no tiene que quedar a un toque de distancia de lo que
+            se usa todos los días. Pide confirmación (ModalEliminarCliente).
+          */}
+          <button
+            type="button"
+            onClick={() => onEliminar(cliente)}
+            className="self-start inline-flex items-center gap-1.5 mt-1 text-xs font-semibold text-red-600 hover:bg-red-50 px-2 py-1 -ml-2 rounded-full transition-colors"
+          >
+            <UserX className="w-3.5 h-3.5" /> Eliminar cliente
+          </button>
         </div>
       )}
     </motion.div>
@@ -218,8 +233,21 @@ const TarjetaCliente = ({ cliente, indice }) => {
 const Customers = () => {
   const {
     clientes, resumen, cargando,
-    busqueda, setBusqueda, estado, setEstado, hayClientes,
+    busqueda, setBusqueda, estado, setEstado, hayClientes, eliminar,
   } = useClientes();
+
+  // El cliente que se está por eliminar; null = el modal está cerrado.
+  const [aEliminar, setAEliminar] = useState(null);
+  const confirmarEliminar = async (cliente) => {
+    try {
+      await eliminar(cliente._id || cliente.id);
+      toast.success(`${cliente.fullName || 'El cliente'} quedó eliminado`);
+      setAEliminar(null);
+    } catch {
+      // Un pedido en curso, por ejemplo: el aviso ya lo pintó api.js y el
+      // modal se queda abierto.
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full pb-8">
@@ -315,11 +343,18 @@ const Customers = () => {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {clientes.map((cliente, i) => (
-              <TarjetaCliente key={cliente._id || cliente.id || i} cliente={cliente} indice={i} />
+              <TarjetaCliente key={cliente._id || cliente.id || i} cliente={cliente} indice={i} onEliminar={setAEliminar} />
             ))}
           </div>
         )}
       </div>
+
+      <ModalEliminarCliente
+        key={aEliminar?._id || aEliminar?.id || 'ninguno'}
+        cliente={aEliminar}
+        onClose={() => setAEliminar(null)}
+        onConfirm={confirmarEliminar}
+      />
     </div>
   );
 };

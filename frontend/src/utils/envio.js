@@ -21,6 +21,10 @@ const esCoord = (v) => v !== null && v !== undefined && v !== "" && Number.isFin
 const hayCoord = (lat, lng) => esCoord(lat) && esCoord(lng);
 const redondear = (n) => Number(num(n, 0).toFixed(2));
 
+// Hasta dónde se entrega: el mismo tope que el servidor (ver RADIO_MAXIMO_KM
+// en backend/src/utils/envio.js). Más lejos, el pedido a domicilio no se acepta.
+export const RADIO_MAXIMO_KM = 30;
+
 // Distancia en km entre dos puntos (haversine).
 export const distanciaKm = (lat1, lng1, lat2, lng2) => {
   const dLat = rad(lat2 - lat1);
@@ -61,6 +65,7 @@ export const calcularEnvio = (ajustes = {}, destino = {}) => {
       metodo: "km",
       distanciaKm: Math.round(km * 10) / 10,
       zona: null,
+      fueraDeCobertura: km > num(ajustes.radioMaximoKm, RADIO_MAXIMO_KM),
     };
   }
 

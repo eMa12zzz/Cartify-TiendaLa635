@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageCircle, X } from 'lucide-react';
 import { RUTAS_DEL_PANEL } from '../../utils/sesion';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * BotonWhatsApp — el botón flotante para escribirle a la tienda.
@@ -41,6 +42,7 @@ const BotonWhatsApp = () => {
   const { pathname } = useLocation();
   const [visible, setVisible] = useState(false);
   const [globo, setGlobo] = useState(false);
+  const { t } = useIdioma();
 
   useEffect(() => {
     // Aparece cuando ya se bajó una pantalla: para entonces el cliente está
@@ -69,7 +71,7 @@ const BotonWhatsApp = () => {
   // Login y panel del empleado se quedan sin él (el "/" exacto es el login).
   if (pathname === '/' || RUTAS_SIN_BOTON.some(r => pathname.startsWith(r))) return null;
 
-  const enlace = `https://wa.me/${NUMERO}?text=${encodeURIComponent(SALUDO)}`;
+  const enlace = `https://wa.me/${NUMERO}?text=${encodeURIComponent(t(SALUDO))}`;
 
   return (
     <div
@@ -102,10 +104,10 @@ const BotonWhatsApp = () => {
             border: '1px solid var(--linea)',
           }}
         >
-          ¿Necesita ayuda? Escríbanos
+          {t('¿Necesita ayuda? Escríbanos')}
           <button
             onClick={cerrarGlobo}
-            aria-label="Cerrar mensaje"
+            aria-label={t('Cerrar mensaje')}
             style={{
               position: 'absolute', top: 6, right: 6,
               background: 'none', border: 'none', cursor: 'pointer',
@@ -121,8 +123,8 @@ const BotonWhatsApp = () => {
         href={enlace}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Escribir a la tienda por WhatsApp"
-        title="Escribir por WhatsApp"
+        aria-label={t('Escribir a la tienda por WhatsApp')}
+        title={t('Escribir por WhatsApp')}
         className="hover-scale press"
         style={{
           width: 56,

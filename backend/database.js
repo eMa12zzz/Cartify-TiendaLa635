@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config(); // Forzamos la lectura del .env justo en este instante
 import mongoose from "mongoose";
 
-console.log("DB_URI:", process.env.DB_URI);
+console.log("Conectando a la base...");
 
 mongoose.connect(process.env.DB_URI, {
     family: 4

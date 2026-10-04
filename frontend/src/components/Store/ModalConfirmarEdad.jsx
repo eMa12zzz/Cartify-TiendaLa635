@@ -3,6 +3,7 @@ import { ShieldAlert, X } from 'lucide-react';
 import { duiEsValido, MENSAJE_DUI_INVALIDO } from '../../utils/validaciones';
 import { formatearDui, LARGO_DUI } from '../../utils/mascaras';
 import { EDAD_MINIMA } from '../../utils/edad';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ModalConfirmarEdad — el candado de los productos +18.
@@ -15,15 +16,16 @@ import { EDAD_MINIMA } from '../../utils/edad';
 const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
   const [dui, setDui] = useState('');
   const [error, setError] = useState('');
+  const { t } = useIdioma();
 
   if (!abierto) return null;
 
   const enviar = (e) => {
     e.preventDefault();
     const d = dui.replace(/\D/g, '');
-    if (!d.length) { setError('Ingresá tu número de DUI.'); return; }
-    if (d.length < 9) { setError('El DUI lleva 9 dígitos (12345678-9).'); return; }
-    if (!duiEsValido(dui)) { setError(MENSAJE_DUI_INVALIDO); return; }
+    if (!d.length) { setError(t('Ingresá tu número de DUI.')); return; }
+    if (d.length < 9) { setError(t('El DUI lleva 9 dígitos (12345678-9).')); return; }
+    if (!duiEsValido(dui)) { setError(t(MENSAJE_DUI_INVALIDO)); return; }
     setError('');
     setDui('');
     onConfirmar(formatearDui(dui));
@@ -48,7 +50,7 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
         }}
       >
         <button
-          type="button" onClick={cerrar} aria-label="Cerrar"
+          type="button" onClick={cerrar} aria-label={t('Cerrar')}
           style={{
             position: 'absolute', top: 12, right: 12, width: 34, height: 34,
             borderRadius: '50%', border: '1px solid var(--linea)', background: 'var(--papel)',
@@ -70,11 +72,10 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
           </div>
 
           <h3 style={{ margin: '0 0 8px', fontSize: 19, fontWeight: 800, color: 'var(--tinta)' }}>
-            Producto para mayores de {EDAD_MINIMA}
+            {t('Producto para mayores de {edad}', { edad: EDAD_MINIMA })}
           </h3>
           <p style={{ margin: '0 0 18px', fontSize: 14, color: 'var(--tinta-suave)', lineHeight: 1.5 }}>
-            Ingresá tu número de DUI para verlo. Al recibir el pedido se te pedirá el documento
-            físico; sin él, este producto no se puede entregar.
+            {t('Ingresá tu número de DUI para verlo. Al recibir el pedido se te pedirá el documento físico; sin él, este producto no se puede entregar.')}
           </p>
 
           <form onSubmit={enviar}>
@@ -105,12 +106,12 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
                 background: 'var(--marca-600)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
               }}
             >
-              Confirmar
+              {t('Confirmar')}
             </button>
           </form>
 
           <p style={{ margin: '14px 0 0', fontSize: 11.5, color: 'var(--tinta-tenue)', lineHeight: 1.45 }}>
-            Solo se usa para habilitar la compra de productos restringidos. No se comparte.
+            {t('Solo se usa para habilitar la compra de productos restringidos. No se comparte.')}
           </p>
         </div>
       </div>

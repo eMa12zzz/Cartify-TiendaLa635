@@ -8,6 +8,8 @@ import { orderService } from '../../api/orderService';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import SeguimientoCompacto from '../../components/Store/SeguimientoCompacto';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
+import { textoDevuelto, sellosDeCancelacion } from '../../utils/pasosPedido';
+import ModalCancelarMiPedido from '../../components/Cuenta/ModalCancelarMiPedido';
 
 /*
  * MisPedidos — historial de pedidos del cliente (área "Mi Cuenta").
@@ -124,6 +126,13 @@ const MisPedidos = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { orders, loading } = useMyOrders();
+  /*
+   * Cancelar un pedido por preparar. `cambios` guarda lo que devolvió el
+   * servidor por id, y se pinta encima de la lista: así la tarjeta cambia al
+   * instante sin volver a cargar todo (y sin el "Cargando…" de por medio).
+   */
+  const [aCancelar, setACancelar] = useState(null);
+  const [cambios, setCambios] = useState({});
 
   return (
     <div>
@@ -140,7 +149,8 @@ const MisPedidos = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {orders.map((order) => {
+          {orders.map((original) => {
+            const order = { ...original, ...cambios[original._id] };
             const estado = estadoInfo[order.status] || estadoInfo.pagado;
             return (
               <div
@@ -171,6 +181,25 @@ const MisPedidos = () => {
                   Ver SeguimientoCompacto.
                 */}
                 <SeguimientoCompacto pedido={order} />
+
+                {/* Cancelado: por qué, y lo que se le devolvió. */}
+                {order.status === 'cancelado' && (order.cancelReason || textoDevuelto(order)) && (
+                  <div
+                    className="mb-3 rounded-xl px-3 py-2 text-sm"
+                    style={{ backgroundColor: 'rgba(220,38,38,.08)', color: c.textSecondary }}
+                  >
+                    {order.cancelledByClient && (
+                      <p className="font-semibold" style={{ color: c.textPrimary }}>Lo canceló usted.</p>
+                    )}
+                    {order.cancelReason && (
+                      <p>
+                        <span className="font-semibold" style={{ color: 'var(--peligro)' }}>Motivo: </span>
+                        {order.cancelReason}
+                      </p>
+                    )}
+                    {textoDevuelto(order) && <p className="mt-0.5 text-xs">{textoDevuelto(order)}</p>}
+                  </div>
+                )}
 
                 {/*
                   El código de entrega, en pequeño. En la lista va la versión
@@ -209,7 +238,8 @@ const MisPedidos = () => {
                   className="flex items-center justify-between pt-3"
                   style={{ borderTop: `1px solid ${c.cardBorder}` }}
                 >
-                  {order.pointsEarned > 0 ? (
+                  {/* Un cancelado ya no da puntos: se retiraron al cancelarlo. */}
+                  {order.pointsEarned > 0 && order.status !== 'cancelado' ? (
                     <span className="flex items-center gap-1 text-xs font-medium" style={{ color: c.accent }}>
                       <Star className="w-3.5 h-3.5" /> +{order.pointsEarned} puntos
                     </span>
@@ -230,6 +260,18 @@ const MisPedidos = () => {
                   Ver estado del pedido <ChevronRight className="w-4 h-4" />
                 </button>
 
+                {/* Cancelar, solo mientras está por preparar. */}
+                {order.status === 'pagado' && (
+                  <button
+                    type="button"
+                    onClick={() => setACancelar(order)}
+                    className="mt-2 w-full py-2 rounded-full text-sm font-semibold transition-colors"
+                    style={{ color: 'var(--peligro)', background: 'transparent' }}
+                  >
+                    Cancelar pedido
+                  </button>
+                )}
+
                 {/* Valorar el servicio: solo en domicilios ya entregados. */}
                 {order.deliveryType === 'delivery' && order.status === 'entregado' && (
                   <ValoracionServicio order={order} c={c} />
@@ -239,6 +281,14 @@ const MisPedidos = () => {
           })}
         </div>
       )}
+
+      <ModalCancelarMiPedido
+        pedido={aCancelar}
+        onClose={() => setACancelar(null)}
+        alCancelar={(cancelado) => {
+          if (cancelado) setCambios((prev) => ({ ...prev, [cancelado._id]: sellosDeCancelacion(cancelado) }));
+        }}
+      />
     </div>
   );
 };

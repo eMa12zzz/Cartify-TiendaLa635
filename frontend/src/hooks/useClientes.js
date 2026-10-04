@@ -81,6 +81,17 @@ export const useClientes = () => {
   useEffect(() => { cargar(); }, [cargar]);
 
   /*
+   * Eliminar un cliente. Si el servidor dice que no (un pedido en curso), el
+   * error sube a quien llamó para que el modal se quede abierto; el aviso ya
+   * lo pinta el interceptor de api.js.
+   */
+  const eliminar = useCallback(async (id) => {
+    const r = await customerService.deleteCustomer(id);
+    setClientes((lista) => lista.filter((c) => (c._id || c.id) !== id));
+    return r;
+  }, []);
+
+  /*
    * El resumen de arriba. Se calcula sobre TODOS los clientes, no sobre los
    * filtrados: es el estado del negocio, y cambiaría de significado si se
    * moviera cada vez que alguien escribe en el buscador.
@@ -127,6 +138,7 @@ export const useClientes = () => {
     busqueda, setBusqueda,
     estado, setEstado,
     recargar: cargar,
+    eliminar,
     // Para distinguir "no hay clientes" de "la búsqueda no encontró nada":
     // son dos pantallas vacías que dicen cosas muy distintas.
     hayClientes: clientes.length > 0,

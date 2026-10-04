@@ -48,6 +48,9 @@ const PESO_MAXIMO = 10 * 1024 * 1024;
 
 const PAPELES = ['Normal', 'Fotográfico', 'Cartulina', 'Reciclado'];
 
+// El mismo tope de copias que el servidor (MAX_COPIAS en orderController).
+const MAX_COPIAS = 200;
+
 const Impresiones = ({ alVolver }) => {
   const { user } = useAuth();
   const { colores } = useTema();
@@ -324,13 +327,13 @@ const Impresiones = ({ alVolver }) => {
               <TextInput
                 accessibilityLabel="Número de copias"
                 value={String(copias)}
-                onChangeText={(t) => setCopias(Math.max(1, Number(t.replace(/[^0-9]/g, '')) || 1))}
+                onChangeText={(t) => setCopias(Math.min(MAX_COPIAS, Math.max(1, Number(t.replace(/[^0-9]/g, '')) || 1)))}
                 keyboardType="number-pad"
                 keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                 style={estilos.inputCopias}
               />
               <Pressable accessibilityRole="button"
-                onPress={() => setCopias((n) => n + 1)}
+                onPress={() => setCopias((n) => Math.min(MAX_COPIAS, n + 1))}
                 hitSlop={8}
                 style={estilos.botonContador}
                 accessibilityLabel="Agregar una copia"

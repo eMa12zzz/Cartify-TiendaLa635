@@ -11,11 +11,17 @@
 const numero = (v) => Number(v) || 0;
 
 /*
+ * Sin traductor (el panel, que va en español) se usa el texto tal cual, con
+ * sus llaves {n} rellenadas. La tienda pasa `t` de useIdioma.
+ */
+const sinTraducir = (s, v) => (v ? String(s).replace(/\{(\w+)\}/g, (m, k) => (v[k] ?? m)) : s);
+
+/*
  * El sello del ahorro que va en la tarjeta: "-25%", "$1.25" o "2x1".
  * Ojo: el descuento vive en cada item, NO a nivel de promo — antes se leía
  * promo.discount y salía "-undefined%".
  */
-export const etiquetaPromo = (promo) => {
+export const etiquetaPromo = (promo, t = sinTraducir) => {
   if (!promo) return '';
   const items = Array.isArray(promo.items) ? promo.items : [];
 
@@ -25,7 +31,7 @@ export const etiquetaPromo = (promo) => {
    * peor que no poner nada.
    */
   if (promo.type === 'anuncio') {
-    return (promo.etiqueta || '').trim() || 'Nuevo';
+    return (promo.etiqueta || '').trim() || t('Nuevo');
   }
 
   if (promo.type === 'nxm') {
@@ -34,13 +40,13 @@ export const etiquetaPromo = (promo) => {
 
   if (promo.type === 'precio_fijo') {
     const precios = items.map((it) => numero(it.fixedPrice)).filter((n) => n > 0);
-    if (!precios.length) return 'Oferta';
+    if (!precios.length) return t('Oferta');
     return `$${Math.min(...precios).toFixed(2)}`;
   }
 
   // Descuento: mostramos el mayor, que es el gancho.
   const descuentos = items.map((it) => numero(it.discount)).filter((n) => n > 0);
-  if (!descuentos.length) return 'Oferta';
+  if (!descuentos.length) return t('Oferta');
   return `-${Math.max(...descuentos)}%`;
 };
 
@@ -78,20 +84,20 @@ export const promoVigente = (promo) =>
  * Cuánto le queda, dicho como lo diría una persona. "Termina el 3 de agosto"
  * sirve para planear; "Último día" es lo que hace que alguien compre hoy.
  */
-export const textoVencimiento = (promo) => {
+export const textoVencimiento = (promo, t = sinTraducir, locale = 'es') => {
   const fin = fechaFin(promo);
   if (!fin) return null;
-  if (promoVencida(promo)) return 'Vencida';
+  if (promoVencida(promo)) return t('Vencida');
 
   const finDia = new Date(fin);
   finDia.setHours(0, 0, 0, 0);
   const dias = Math.round((finDia - hoyCero()) / 86400000);
 
-  if (dias <= 0) return 'Último día';
-  if (dias === 1) return 'Termina mañana';
-  if (dias <= 6) return `Quedan ${dias} días`;
+  if (dias <= 0) return t('Último día');
+  if (dias === 1) return t('Termina mañana');
+  if (dias <= 6) return t('Quedan {n} días', { n: dias });
 
-  return `Termina el ${fin.toLocaleDateString('es', { day: 'numeric', month: 'long' })}`;
+  return t('Termina el {fecha}', { fecha: fin.toLocaleDateString(locale, { day: 'numeric', month: 'long' }) });
 };
 
 /*

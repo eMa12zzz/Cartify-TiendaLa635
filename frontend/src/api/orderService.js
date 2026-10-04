@@ -51,6 +51,16 @@ export const orderService = {
     return response.data;
   },
 
+  /*
+   * El cliente cancela SU pedido, solo mientras está por preparar. Devuelve el
+   * pedido ya cancelado (con lo que se le devolvió en `reembolso`). Ver
+   * orderController.cancelarPorCliente.
+   */
+  cancelarPorCliente: async (id, motivo) => {
+    const response = await api.patch(`/order/${id}/cancelar`, { motivo });
+    return response.data;
+  },
+
   // El cliente valora el SERVICIO de entrega de su pedido entregado (1-5 estrellas).
   rateService: async (id, { rating, comment }) => {
     const response = await api.patch(`/order/${id}/rating`, { rating, comment });

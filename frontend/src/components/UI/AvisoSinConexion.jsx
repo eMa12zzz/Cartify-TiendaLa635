@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { areaDeRuta } from '../../utils/sesion';
 import Mascota from './Mascota';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -25,6 +26,7 @@ import Mascota from './Mascota';
 const MS_DE_VUELTA = 2400;
 
 const AvisoSinConexion = () => {
+  const { t } = useIdioma();
   const { pathname } = useLocation();
   const [enLinea, setEnLinea] = useState(() => (typeof navigator === 'undefined' ? true : navigator.onLine));
   const [deVuelta, setDeVuelta] = useState(false);
@@ -57,8 +59,8 @@ const AvisoSinConexion = () => {
     <div className="aviso-conexion" role="status" aria-live="polite">
       <Mascota pose={enLinea ? 'saludo' : 'sin-conexion'} alto={58} />
       <div className="aviso-conexion-texto">
-        <strong>{enLinea ? 'Volvió la conexión' : 'Sin conexión'}</strong>
-        <span>{enLinea ? 'Ya puedes seguir comprando.' : 'Revisa tu internet. Tu carrito queda guardado.'}</span>
+        <strong>{enLinea ? t('Volvió la conexión') : t('Sin conexión')}</strong>
+        <span>{enLinea ? t('Ya puedes seguir comprando.') : t('Revisa tu internet. Tu carrito queda guardado.')}</span>
       </div>
     </div>
   );

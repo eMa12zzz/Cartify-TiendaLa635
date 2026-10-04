@@ -44,6 +44,14 @@ export const getPedidosDeCliente = async (clienteId) => {
 export const crearPedido = (datos) => peticion('/order', { metodo: 'POST', cuerpo: datos });
 
 /*
+ * El cliente cancela SU pedido, solo mientras está por preparar (el servidor
+ * lo revisa). Devuelve { order } ya cancelado, con lo devuelto en `reembolso`.
+ * Ver orderController.cancelarPorCliente.
+ */
+export const cancelarPedido = (pedidoId, motivo) =>
+  peticion(`/order/${pedidoId}/cancelar`, { metodo: 'PATCH', cuerpo: { motivo } });
+
+/*
  * Cuánto se ha tardado de verdad en llegar a ese punto, según las entregas ya
  * hechas por ahí. Devuelve `{ hayDatos: false }` cuando todavía no hay
  * historial suficiente, y entonces la pantalla no dice nada: inventar un

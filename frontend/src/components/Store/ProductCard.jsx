@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useFavoritosCtx } from '../../context/FavoritosContext';
 import { useEdad } from '../../context/EdadContext';
 import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
+import { useIdioma } from '../../hooks/useIdioma';
 
 // Paleta del diseño (WEB.pdf), medida sobre el mockup.
 const BROWN = 'var(--marca-600)';
@@ -387,6 +388,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
   // Candado +18: si el producto es restringido y aún no confirmó su edad, se
   // tapa y cada intento (ver o agregar) pasa antes por la confirmación.
   const { mayorConfirmado, pedirConfirmacion } = useEdad();
+  const { t } = useIdioma();
   const tapado = esSoloAdultos(producto) && !mayorConfirmado;
 
   const bajoStock = producto.stock < 10;
@@ -429,15 +431,15 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
             : producto.promo.type === 'descuento'
               ? `-${producto.promo.discount}%`
               : producto.promo.type === 'anuncio'
-                ? (producto.promo.etiqueta || 'Nuevo')
-                : 'Oferta'}
+                ? (producto.promo.etiqueta || t('Nuevo'))
+                : t('Oferta')}
         </BestSellerBadge>
       )}
       <WishlistButton
         className="wishlist-button"
         onClick={handleWishlist}
         $liked={liked}
-        aria-label={`Guardar ${producto.nombre} en favoritos`}
+        aria-label={t('Guardar {nombre} en favoritos', { nombre: producto.nombre })}
         aria-pressed={liked}
       >
         {/* El símbolo solo se ve: el lector lo leía "palo de corazones". */}
@@ -458,8 +460,8 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
         {tapado && (
           <CoberturaEdad>
             <Lock size={20} />
-            <span style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.2 }}>Mayores de 18</span>
-            <span style={{ fontSize: 10.5, opacity: 0.85, lineHeight: 1.25 }}>Toque para confirmar su edad</span>
+            <span style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.2 }}>{t('Mayores de 18')}</span>
+            <span style={{ fontSize: 10.5, opacity: 0.85, lineHeight: 1.25 }}>{t('Toque para confirmar su edad')}</span>
           </CoberturaEdad>
         )}
       </ImageWrapper>
@@ -479,9 +481,9 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
           pocas.
         */}
         {producto.stock === 0 ? (
-          <StockInfo $bajoStock>Agotado</StockInfo>
+          <StockInfo $bajoStock>{t('Agotado')}</StockInfo>
         ) : bajoStock ? (
-          <StockInfo $bajoStock>¡Quedan pocas!</StockInfo>
+          <StockInfo $bajoStock>{t('¡Quedan pocas!')}</StockInfo>
         ) : null}
 
         <PriceRow>
@@ -505,13 +507,13 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
               cómo comparar. Solo sale si la tienda lo declaró.
             */}
             {!esPorLibra(producto) && piezasEnTexto(producto) && (
-              <Contenido>{piezasEnTexto(producto)}</Contenido>
+              <Contenido>{piezasEnTexto(producto, t)}</Contenido>
             )}
           </PriceBlock>
           <AddButton
             className="add-button"
             onClick={handleAgregar}
-            aria-label={`Agregar ${producto.nombre} al carrito`}
+            aria-label={t('Agregar {nombre} al carrito', { nombre: producto.nombre })}
           >
             <span aria-hidden="true">+</span>
           </AddButton>

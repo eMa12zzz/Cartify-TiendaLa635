@@ -13,6 +13,7 @@ import { EsperaMascota } from '../components/UI/Mascota';
 import MascotaColgada from '../components/UI/MascotaColgada';
 import { consumirRecienRegistrado } from '../utils/primerIngreso';
 import { ICONOS } from '../utils/iconosAviso';
+import { useIdioma } from '../hooks/useIdioma';
 
 const BROWN = 'var(--marca-600)';
 
@@ -389,6 +390,7 @@ const LoginClient = () => {
   const { login, haySesionDePersonal } = useAuth();
   const [loading, setLoading] = useState(false);
   const [verPass, setVerPass] = useState(false);
+  const { t, idioma } = useIdioma();
 
   /*
    * A dónde iba antes de que le pidiéramos la cuenta. Lo pone
@@ -444,7 +446,7 @@ const LoginClient = () => {
    * cuenta tiene que entrar con la suya.
    */
   const irAlPanel = (correo) => {
-    toast('Tu cuenta es del personal: entra por aquí, con tu código.', {
+    toast(t('Tu cuenta es del personal: entra por aquí, con tu código.'), {
       id: 'a-su-puerta',
       icon: ICONOS.atencion,
       duration: 5000,
@@ -517,7 +519,7 @@ const LoginClient = () => {
         return;
       }
       negar();
-      toast.error(err.message || 'Credenciales inválidas');
+      toast.error(t(err.message || 'Credenciales inválidas'));
     } finally {
       setLoading(false);
     }
@@ -528,7 +530,7 @@ const LoginClient = () => {
   const onGoogle = async (credentialResponse) => {
     const credential = credentialResponse?.credential;
     if (!credential) {
-      toast.error('No se recibió la respuesta de Google');
+      toast.error(t('No se recibió la respuesta de Google'));
       return;
     }
     try {
@@ -561,7 +563,7 @@ const LoginClient = () => {
         });
         return;
       }
-      toast.error(err.message || 'No se pudo iniciar sesión con Google');
+      toast.error(t(err.message || 'No se pudo iniciar sesión con Google'));
     } finally {
       setLoading(false);
     }
@@ -589,39 +591,38 @@ const LoginClient = () => {
         */}
         <Saludo>
           <Titular>
-            El súper de la esquina, <strong>a un toque</strong>
+            {t('El súper de la esquina,')} <strong>{t('a un toque')}</strong>
           </Titular>
           <Bajada>
-            Con su cuenta guardamos su dirección, sus puntos y lo que suele llevar,
-            para que pedir la próxima vez le tome menos que hacer la lista.
+            {t('Con su cuenta guardamos su dirección, sus puntos y lo que suele llevar, para que pedir la próxima vez le tome menos que hacer la lista.')}
           </Bajada>
 
           <Ventajas>
             <Ventaja>
               <IconoVentaja><Bike size={16} strokeWidth={2.2} /></IconoVentaja>
-              <span><strong>Siga su pedido en el mapa.</strong> Vea al repartidor acercarse y sepa cuándo salir a la puerta.</span>
+              <span><strong>{t('Siga su pedido en el mapa.')}</strong> {t('Vea al repartidor acercarse y sepa cuándo salir a la puerta.')}</span>
             </Ventaja>
             <Ventaja>
               <IconoVentaja><Star size={16} strokeWidth={2.2} /></IconoVentaja>
-              <span><strong>Junte puntos con cada compra.</strong> Se convierten en descuento la próxima vez.</span>
+              <span><strong>{t('Junte puntos con cada compra.')}</strong> {t('Se convierten en descuento la próxima vez.')}</span>
             </Ventaja>
             <Ventaja>
               <IconoVentaja><Heart size={16} strokeWidth={2.2} /></IconoVentaja>
-              <span><strong>Guarde sus favoritos.</strong> Lo de siempre, sin volver a buscarlo.</span>
+              <span><strong>{t('Guarde sus favoritos.')}</strong> {t('Lo de siempre, sin volver a buscarlo.')}</span>
             </Ventaja>
           </Ventajas>
 
           <SinCuenta>
-            <SinCuentaTexto>¿No tiene cuenta?</SinCuentaTexto>
+            <SinCuentaTexto>{t('¿No tiene cuenta?')}</SinCuentaTexto>
             <BotonRegistro to="/register">
-              Regístrese aquí <ArrowRight size={16} strokeWidth={2.4} />
+              {t('Regístrese aquí')} <ArrowRight size={16} strokeWidth={2.4} />
             </BotonRegistro>
           </SinCuenta>
         </Saludo>
 
         <Card>
-          <SectionTitle>Inicie sesión para comprar</SectionTitle>
-          <SubTitle>Puede seguir viendo la tienda sin cuenta.</SubTitle>
+          <SectionTitle>{t('Inicie sesión para comprar')}</SectionTitle>
+          <SubTitle>{t('Puede seguir viendo la tienda sin cuenta.')}</SubTitle>
 
           <form
             onSubmit={handleSubmit(onSubmit, negar)}
@@ -630,12 +631,12 @@ const LoginClient = () => {
           >
 
             <FieldGroup>
-              <Label htmlFor="campo-email">Correo Electrónico</Label>
+              <Label htmlFor="campo-email">{t('Correo Electrónico')}</Label>
               <InputWrapper>
                 <IconWrapper><Mail size={18} /></IconWrapper>
                 <Input
                   type="email"
-                  placeholder="juan@ejemplo.com"
+                  placeholder={t('juan@ejemplo.com')}
                   $error={!!errors.email}
                   id="campo-email"
                   {...register('email', {
@@ -644,11 +645,11 @@ const LoginClient = () => {
                   })}
                 />
               </InputWrapper>
-              {errors.email && <ErrorMsg>{errors.email.message}</ErrorMsg>}
+              {errors.email && <ErrorMsg>{t(errors.email.message)}</ErrorMsg>}
             </FieldGroup>
 
             <FieldGroup>
-              <Label htmlFor="campo-password">Contraseña</Label>
+              <Label htmlFor="campo-password">{t('Contraseña')}</Label>
               {/* data-campo: el botón del ojo también cuenta como "en la contraseña". */}
               <InputWrapper data-campo="password">
                 <IconWrapper><Lock size={18} /></IconWrapper>
@@ -665,39 +666,39 @@ const LoginClient = () => {
                 />
                 <BotonOjo visible={verPass} onToggle={() => setVerPass((v) => !v)} />
               </InputWrapper>
-              {errors.password && <ErrorMsg>{errors.password.message}</ErrorMsg>}
+              {errors.password && <ErrorMsg>{t(errors.password.message)}</ErrorMsg>}
             </FieldGroup>
 
             <Row>
               <RememberLabel>
                 <input type="checkbox" {...register('rememberMe')} />
-                Recordarme 30 días
+                {t('Recordarme 30 días')}
               </RememberLabel>
-              <ForgotLink to="/forgot-password">¿Olvidaste tu contraseña?</ForgotLink>
+              <ForgotLink to="/forgot-password">{t('¿Olvidaste tu contraseña?')}</ForgotLink>
             </Row>
 
             <Button type="submit" disabled={loading}>
-              {loading ? <><EsperaMascota sobre="color" /> Entrando…</> : 'Iniciar sesión'}
+              {loading ? <><EsperaMascota sobre="color" /> {t('Entrando…')}</> : t('Iniciar sesión')}
             </Button>
 
           </form>
 
-          <Divisor>o</Divisor>
+          <Divisor>{t('o')}</Divisor>
 
           <GoogleFila>
             <GoogleLogin
               onSuccess={onGoogle}
-              onError={() => toast.error('No se pudo iniciar sesión con Google')}
+              onError={() => toast.error(t('No se pudo iniciar sesión con Google'))}
               text="continue_with"
               shape="pill"
-              locale="es"
+              locale={idioma}
               width="320"
             />
           </GoogleFila>
 
           <FooterText>
-            ¿No tiene una cuenta?{' '}
-            <FooterLink to="/register">Regístrese</FooterLink>
+            {t('¿No tiene una cuenta?')}{' '}
+            <FooterLink to="/register">{t('Regístrese')}</FooterLink>
           </FooterText>
 
           {/*
@@ -705,8 +706,8 @@ const LoginClient = () => {
             el Reparto (esos viven en la app): lleva al login del panel.
           */}
           <PiePersonal>
-            ¿Trabajas en la tienda?{' '}
-            <FooterLink to={puertaDelPersonal}>Entra aquí</FooterLink>
+            {t('¿Trabajas en la tienda?')}{' '}
+            <FooterLink to={puertaDelPersonal}>{t('Entra aquí')}</FooterLink>
           </PiePersonal>
         </Card>
       </Body>

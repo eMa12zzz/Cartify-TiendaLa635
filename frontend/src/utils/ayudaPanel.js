@@ -45,7 +45,7 @@ export const TEMAS_AYUDA = [
     resumen: 'El panel es donde se maneja la tienda: pedidos, productos, precios, promociones y personas.',
     pasos: [
       'El menú de la izquierda (en el teléfono, el botón ☰ de arriba) tiene todas las pantallas. Dashboard, Pedidos e Inventario son las del día a día; Catálogo, Ventas y Personas se despliegan cuando hay que configurar algo.',
-      'El botón con la paleta, arriba, cambia los colores del panel. Hay paletas pensadas para quien ve poco, para el daltonismo y para descansar la vista.',
+      'El botón con la paleta, arriba, cambia los colores del panel y el tamaño del texto. Hay paletas pensadas para quien ve poco, para leer mucho rato y para descansar la vista.',
       'El botón “?” de arriba abre la ayuda de la pantalla en la que usted está.',
       'Tiqui, abajo a la derecha, contesta preguntas sobre la tienda y hace cambios si se los pide.',
       'Para salir, toque su nombre arriba a la derecha y elija “Cerrar sesión”.',
@@ -103,9 +103,11 @@ export const TEMAS_AYUDA = [
       'Para marcarlo entregado hace falta el código de 4 dígitos que el cliente ve en su pedido: así se sabe que llegó a la persona correcta.',
       'Busque por el nombre del cliente o por el número del pedido, el que empieza con #.',
       'En los pedidos de impresiones, “Imprimir” abre el archivo que mandó el cliente, listo para la impresora.',
+      'Para cancelar un pedido, toque “Cancelar” y escriba el motivo (o elija uno de los rápidos). Al cliente le llega tal cual. Los productos vuelven al inventario y, si pagó con su saldo o canjeó puntos, se le devuelven solos.',
     ],
     consejos: [
-      'Al cliente le llega un aviso cada vez que su pedido cambia de estado, también si se cancela.',
+      'Al cliente le llega un aviso cada vez que su pedido cambia de estado. Si se cancela, le llega también el motivo, por notificación y por correo.',
+      'Un pedido entregado ya no se cancela, y uno cancelado ya no se reabre: si hubo un error, se hace un pedido nuevo. Los cancelados se ven en el filtro “Cancelados”.',
       'El reparto con GPS se hace desde la app del teléfono: “¿Trabajas en la tienda?” en el inicio de sesión.',
     ],
   },
@@ -273,9 +275,11 @@ export const TEMAS_AYUDA = [
     pasos: [
       'Arriba verá cuántos clientes hay, cuántos están activos y cuántos no han verificado su correo.',
       'Busque por nombre, correo o teléfono.',
+      'Para eliminar a un cliente, toque “Ver más” en su tarjeta y luego “Eliminar cliente”. Se borran su cuenta y sus datos personales; sus pedidos se quedan en la contabilidad, sin nada que lo identifique.',
     ],
     consejos: [
       'Los datos de los clientes solo los ve el administrador. Úselos únicamente para atender sus pedidos.',
+      'Si un cliente pide que borren sus datos, así se hace. Si tiene un pedido en curso, primero hay que entregarlo o cancelarlo. Eliminar no se puede deshacer.',
     ],
   },
   {
@@ -322,11 +326,14 @@ export const TEMAS_AYUDA = [
     resumen: 'Sus datos, su contraseña y los colores del panel.',
     pasos: [
       'Actualice su nombre, usuario, correo, teléfono y contraseña.',
-      'En la pestaña de colores elija la paleta que le resulte más cómoda: Mi marca (la de siempre), Alto contraste (para quien ve poco), Deuteranopía y Tritanopía (para el daltonismo), Modo oscuro, Calma y Calma noche.',
+      'En “Colores y lectura” elija la paleta que le resulte más cómoda: Mi marca (la de siempre), Lectura (sepia, para leer mucho rato), Contraste reforzado (para quien ve poco), Modo oscuro, Calma y Calma noche.',
+      'Debajo, en Lectura: el tamaño del texto (normal, grande o muy grande), más espacio entre líneas, menos animaciones y resaltar enlaces y foco.',
     ],
     consejos: [
+      'Lo mismo está a un clic desde cualquier pantalla, en el botón de la paleta de la barra de arriba.',
       'Calma y Calma noche usan colores suaves y menos brillo, sin dejar de leerse bien: pensadas para quien se cansa o se abruma con la pantalla. Calma es clara y Calma noche es su versión oscura.',
-      'La paleta se guarda en esta computadora o teléfono: cada persona puede tener la suya.',
+      'Contraste reforzado se lee mejor junto con el texto grande.',
+      'Los colores y la lectura se guardan en esta computadora o teléfono: cada persona puede tener los suyos.',
     ],
   },
 ];

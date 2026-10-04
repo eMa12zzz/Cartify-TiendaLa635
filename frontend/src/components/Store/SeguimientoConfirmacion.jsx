@@ -2,6 +2,7 @@ import { Bike, Check } from 'lucide-react';
 import { useSeguimientoEnVivo } from '../../hooks/useSeguimientoEnVivo';
 import { pasosDe, indiceDePaso } from '../../utils/pasosPedido';
 import MapaSeguimiento from './MapaSeguimiento';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -28,6 +29,7 @@ const BROWN = 'var(--marca-600)';
 
 const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
   const seg = useSeguimientoEnVivo(orderId, !!orderId);
+  const { t } = useIdioma();
 
   const estado = seg.estado || 'pagado';
   const PASOS = pasosDe(esDomicilio ? 'delivery' : 'retiro');
@@ -54,7 +56,7 @@ const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
                 background: activo ? BROWN : 'var(--linea)',
               }} />
               <div style={{ fontSize: 12, textAlign: 'center', color: activo ? BROWN : 'var(--tinta-tenue)', fontWeight: activo ? 600 : 400 }}>
-                {p.label}
+                {t(p.label)}
               </div>
             </div>
           );
@@ -77,10 +79,10 @@ const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
             background: 'var(--papel)',
           }}>
             {enCamino
-              ? <><Bike size={15} strokeWidth={2.4} /> {seg.yaCasi ? 'Ya casi toca su puerta' : seg.espera}{seg.distancia ? ` · a ${seg.distancia}` : ''}</>
+              ? <><Bike size={15} strokeWidth={2.4} /> {seg.yaCasi ? t('Ya casi toca su puerta') : seg.espera}{seg.distancia ? ` · ${t('a {distancia}', { distancia: seg.distancia })}` : ''}</>
               : (estado === 'entregado'
-                  ? <><Check size={15} strokeWidth={2.4} /> Entregado en su dirección</>
-                  : <>Aquí le llevaremos su pedido. En cuanto el repartidor salga, verá su punto moverse.</>)}
+                  ? <><Check size={15} strokeWidth={2.4} /> {t('Entregado en su dirección')}</>
+                  : <>{t('Aquí le llevaremos su pedido. En cuanto el repartidor salga, verá su punto moverse.')}</>)}
           </div>
         </div>
       )}

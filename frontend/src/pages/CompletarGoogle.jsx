@@ -4,6 +4,7 @@ import { Phone, Calendar, IdCard, Loader2, ArrowRight } from 'lucide-react';
 import ModalTerminos from '../components/Store/ModalTerminos';
 import { useModalTerminos } from '../hooks/useModalTerminos';
 import { useCompletarGoogle } from '../hooks/useCompletarGoogle';
+import { useIdioma } from '../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -282,6 +283,7 @@ const CompletarGoogle = () => {
   } = useCompletarGoogle();
 
   const { abierto, abrir: abrirTerminos, cerrar: cerrarTerminos, clave: documentoAbierto } = useModalTerminos();
+  const { t } = useIdioma();
 
   /*
    * Sin token no hay nada que completar. Pasa si alguien recarga la página o
@@ -296,9 +298,9 @@ const CompletarGoogle = () => {
   return (
     <Pantalla>
       <Tarjeta>
-        <Titulo>Ya casi</Titulo>
+        <Titulo>{t('Ya casi')}</Titulo>
         <Bajada>
-          Google nos confirmó quién es usted. Nos falta lo que Google no sabe.
+          {t('Google nos confirmó quién es usted. Nos falta lo que Google no sabe.')}
         </Bajada>
 
         <Identidad>
@@ -306,14 +308,14 @@ const CompletarGoogle = () => {
             ? <Foto src={sugerido.image} alt="" referrerPolicy="no-referrer" />
             : <SinFoto>{inicial}</SinFoto>}
           <Datos>
-            <strong>{sugerido.fullName || 'Su cuenta'}</strong>
+            <strong>{sugerido.fullName || t('Su cuenta')}</strong>
             <span>{sugerido.email}</span>
           </Datos>
         </Identidad>
 
         <form onSubmit={onSubmit} noValidate>
           <Campo>
-            <Etiqueta htmlFor="phoneNumber">Teléfono</Etiqueta>
+            <Etiqueta htmlFor="phoneNumber">{t('Teléfono')}</Etiqueta>
             <Marco>
               <Phone size={17} strokeWidth={2} />
               <Entrada
@@ -331,33 +333,32 @@ const CompletarGoogle = () => {
                 })}
               />
             </Marco>
-            <Porque>Solo para llamarle si quien lleva su pedido no encuentra la casa.</Porque>
-            {errors.phoneNumber && <Error>{errors.phoneNumber.message}</Error>}
+            <Porque>{t('Solo para llamarle si quien lleva su pedido no encuentra la casa.')}</Porque>
+            {errors.phoneNumber && <Error>{t(errors.phoneNumber.message)}</Error>}
           </Campo>
 
           <Campo>
             <Etiqueta htmlFor="fechaNacimiento">
-              Fecha de nacimiento <small>· opcional</small>
+              {t('Fecha de nacimiento')} <small>· {t('opcional')}</small>
             </Etiqueta>
             <Marco>
               <Calendar size={17} strokeWidth={2} />
               <Entrada id="fechaNacimiento" type="date" {...register('fechaNacimiento')} />
             </Marco>
             <Porque>
-              Sin ella la tienda funciona igual, pero los productos para mayores de 18
-              quedan tapados.
+              {t('Sin ella la tienda funciona igual, pero los productos para mayores de 18 quedan tapados.')}
             </Porque>
           </Campo>
 
           <Campo>
             <Etiqueta htmlFor="dui">
-              DUI <small>· opcional</small>
+              DUI <small>· {t('opcional')}</small>
             </Etiqueta>
             <Marco>
               <IdCard size={17} strokeWidth={2} />
               <Entrada id="dui" type="text" placeholder="00000000-0" {...register('dui')} />
             </Marco>
-            <Porque>Puede dejarlo en blanco: su cuenta funciona igual.</Porque>
+            <Porque>{t('Puede dejarlo en blanco: su cuenta funciona igual.')}</Porque>
           </Campo>
 
           <BloqueConsentimiento>
@@ -370,17 +371,17 @@ const CompletarGoogle = () => {
               <input
                 type="checkbox"
                 id="aceptaTerminos"
-                aria-label="He leído y acepto los términos y condiciones y la política de privacidad"
+                aria-label={t('He leído y acepto los términos y condiciones y la política de privacidad')}
                 {...register('aceptaTerminos', { required: true })}
               />
               <div>
-                <label htmlFor="aceptaTerminos">He leído y acepto los </label>
+                <label htmlFor="aceptaTerminos">{t('He leído y acepto los')} </label>
                 <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'terminos')}>
-                    términos y condiciones
+                    {t('términos y condiciones')}
                   </EnlaceTerminos>
-                  {' y la '}
+                  {` ${t('y la')} `}
                   <EnlaceTerminos type="button" onClick={(e) => abrirTerminos(e, 'privacidad')}>
-                    política de privacidad
+                    {t('política de privacidad')}
                   </EnlaceTerminos>
                   .
               </div>
@@ -394,9 +395,9 @@ const CompletarGoogle = () => {
             <Casilla>
               <input type="checkbox" id="promociones" {...register('promociones')} />
               <label htmlFor="promociones">
-                Quiero recibir promociones y novedades por correo.
+                {t('Quiero recibir promociones y novedades por correo.')}
                 <Aclaracion>
-                  Opcional. Puede apagarlo cuando quiera desde Mi Cuenta.
+                  {t('Opcional. Puede apagarlo cuando quiera desde Mi Cuenta.')}
                 </Aclaracion>
               </label>
             </Casilla>
@@ -410,12 +411,12 @@ const CompletarGoogle = () => {
           <Boton type="submit" disabled={cargando || !aceptoTerminos}>
             {cargando
               ? <Loader2 size={18} className="animate-spin" />
-              : <>Crear mi cuenta <ArrowRight size={17} strokeWidth={2.4} /></>}
+              : <>{t('Crear mi cuenta')} <ArrowRight size={17} strokeWidth={2.4} /></>}
           </Boton>
         </form>
 
         <Cancelar type="button" onClick={cancelar}>
-          Mejor no, volver a iniciar sesión
+          {t('Mejor no, volver a iniciar sesión')}
         </Cancelar>
       </Tarjeta>
 

@@ -26,7 +26,7 @@
 import clientModel from "../models/client.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
 import { sendEmail } from "./sendMailMailjet.js";
-import { plantillaProductosNuevos, plantillaPedidoEnCamino } from "./plantillasAviso.js";
+import { plantillaProductosNuevos, plantillaPedidoEnCamino, plantillaPedidoCancelado } from "./plantillasAviso.js";
 import { dispositivosDe, enviarPushEnSegundoPlano } from "./pushExpo.js";
 import { enlaceDeBaja, enlaceDeBajaUnClic } from "./tokenBaja.js";
 
@@ -239,6 +239,26 @@ export const TEXTOS_PEDIDO = {
   },
 };
 
+/*
+ * La notificación de cancelado: el motivo y lo devuelto, en lo que cabe en
+ * la barra del teléfono. Sin motivo (pedidos cancelados antes de que se
+ * pidiera) queda el texto de siempre.
+ */
+const cuerpoDeCancelado = (pedido) => {
+  const motivo = String(pedido?.cancelReason || "").trim();
+  const saldo = Number(pedido?.reembolso?.saldo) || 0;
+  const puntos = Number(pedido?.reembolso?.puntos) || 0;
+  const devuelto = [
+    saldo > 0 ? `$${saldo.toFixed(2)} a su saldo` : "",
+    puntos > 0 ? `${puntos} puntos` : "",
+  ].filter(Boolean).join(" y ");
+  const partes = [
+    motivo ? `Motivo: ${motivo.length > 110 ? `${motivo.slice(0, 107)}…` : motivo}` : TEXTOS_PEDIDO.cancelado.cuerpo,
+    devuelto ? `Le devolvimos ${devuelto}.` : "",
+  ].filter(Boolean);
+  return partes.join(" ");
+};
+
 const clienteDelPedido = async (pedido) => {
   const idCliente = pedido?.clientId?._id || pedido?.clientId;
   if (!idCliente) return null;
@@ -269,6 +289,8 @@ export const avisarPasoDelPedido = async (pedido, estado) => {
   const tokens = cliente.pushTokens || [];
   enviarPushEnSegundoPlano(tokens, {
     ...texto,
+    // Al cancelar, el cuerpo es el porqué: es lo primero que se pregunta.
+    ...(estado === "cancelado" ? { cuerpo: cuerpoDeCancelado(pedido) } : {}),
     canal: "pedidos",
     datos: {
       tipo: estado === "en_camino" ? "pedidoEnCamino" : "pedido",
@@ -305,8 +327,26 @@ export const avisarPedidoEnCamino = async (pedido) => {
 };
 
 /*
+ * El CORREO de cancelado. Sale siempre, sin interruptor: quien compró en la
+ * web y no tiene la app no tiene otra forma de enterarse de que su pedido no
+ * va a llegar, ni de por qué.
+ */
+export const avisarPedidoCancelado = async (pedido) => {
+  const cliente = await clienteDelPedido(pedido);
+  if (!cliente) return { enviados: 0, motivo: "sin cliente activo" };
+  if (!cliente.email) return { enviados: 0, motivo: "el cliente no tiene correo" };
+
+  const tienda = await identidadDeLaTienda();
+  return enviarEnFila(
+    [cliente],
+    () => plantillaPedidoCancelado({ pedido, nombreCliente: cliente.fullName || "", tienda }),
+    "aviso de pedido cancelado"
+  );
+};
+
+/*
  * La versión que llama el controlador: dispara y se olvida. El push del paso
- * y, si va en camino, el correo.
+ * y, si va en camino o se canceló, el correo.
  *
  * El .catch no es opcional. Sin él, un tropiezo aquí adentro es una promesa
  * rechazada sin dueño, y Node se lleva el proceso entero por delante — o sea,
@@ -319,6 +359,11 @@ export const avisarCambioDePedidoEnSegundoPlano = (pedido, estado) => {
   if (estado === "en_camino") {
     avisarPedidoEnCamino(pedido).catch((error) => {
       console.log("correo de pedido en camino: falló el envío: " + error);
+    });
+  }
+  if (estado === "cancelado") {
+    avisarPedidoCancelado(pedido).catch((error) => {
+      console.log("correo de pedido cancelado: falló el envío: " + error);
     });
   }
 };
