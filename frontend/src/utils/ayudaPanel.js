@@ -275,9 +275,11 @@ export const TEMAS_AYUDA = [
     pasos: [
       'Arriba verá cuántos clientes hay, cuántos están activos y cuántos no han verificado su correo.',
       'Busque por nombre, correo o teléfono.',
+      'Para eliminar a un cliente, toque “Ver más” en su tarjeta y luego “Eliminar cliente”. Se borran su cuenta y sus datos personales; sus pedidos se quedan en la contabilidad, sin nada que lo identifique.',
     ],
     consejos: [
       'Los datos de los clientes solo los ve el administrador. Úselos únicamente para atender sus pedidos.',
+      'Si un cliente pide que borren sus datos, así se hace. Si tiene un pedido en curso, primero hay que entregarlo o cancelarlo. Eliminar no se puede deshacer.',
     ],
   },
   {

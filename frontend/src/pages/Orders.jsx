@@ -294,7 +294,7 @@ const Orders = () => {
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0">
                       <div className="text-sm font-bold break-words" style={{ color: 'var(--theme-text-primary)' }}>
-                        {order.clientId?.fullName || 'Cliente'}
+                        {order.clientId?.fullName || (order.clienteEliminado ? 'Cliente eliminado' : 'Cliente')}
                       </div>
                       <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs mt-0.5" style={{ color: 'var(--theme-text-muted)' }}>
                         <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {haceCuanto(order.createdAt)}</span>

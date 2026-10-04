@@ -175,6 +175,13 @@ const orderItemSchema = new Schema({
 
 const orderSchema = new Schema({
     clientId: { type: Schema.Types.ObjectId, ref: 'clientModel', required: true },
+    /*
+     * La cuenta de quien compró se eliminó: el pedido se queda en la
+     * contabilidad, pero ya sin dirección ni nada que lleve a esa persona
+     * (ver utils/eliminarCliente.js). `clientId` apunta a una cuenta que ya
+     * no existe; las pantallas dicen "Cliente eliminado".
+     */
+    clienteEliminado: { type: Boolean },
     items: { type: [orderItemSchema], required: true },
     subtotal: { type: Number },            // antes del descuento por puntos
     discount: { type: Number, default: 0 }, // descuento aplicado al canjear puntos
