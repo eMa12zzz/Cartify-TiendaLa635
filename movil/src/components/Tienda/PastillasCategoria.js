@@ -14,6 +14,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const Pastilla = ({ texto, activa, alPresionar, colores }) => {
   const estilos = useEstilos(crearEstilos);
@@ -39,6 +40,7 @@ const Pastilla = ({ texto, activa, alPresionar, colores }) => {
 };
 
 const PastillasCategoria = ({ categorias, seleccionada, alSeleccionar }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
 
@@ -51,7 +53,7 @@ const PastillasCategoria = ({ categorias, seleccionada, alSeleccionar }) => {
       directionalLockEnabled
     >
       <Pastilla
-        texto="Todos"
+        texto={t('Todos')}
         activa={!seleccionada}
         alPresionar={() => alSeleccionar(null)}
         colores={colores}
@@ -59,7 +61,7 @@ const PastillasCategoria = ({ categorias, seleccionada, alSeleccionar }) => {
       {categorias.map((cat) => (
         <Pastilla
           key={cat}
-          texto={cat}
+          texto={t(cat)}
           activa={seleccionada === cat}
           alPresionar={() => alSeleccionar(cat)}
           colores={colores}

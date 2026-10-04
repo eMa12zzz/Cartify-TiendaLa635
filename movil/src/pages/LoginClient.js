@@ -55,10 +55,13 @@ import { googleLoginDB, loginClientDB } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { useEstilos } from '../context/ModoContext';
+import { useIdioma } from '../context/IdiomaContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 import { URL_WEB_LEGAL } from '../utils/legales';
+import SelectorIdioma from '../components/UI/SelectorIdioma';
 
 const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
+  const { t } = useIdioma();
   const { login } = useAuth();
   // La paleta de la temporada: el botón y los enlaces se pintan con ella, igual
   // que la tienda. Fuera de temporada es el café de la marca de siempre.
@@ -124,7 +127,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
        * hay que cerrar: "la contraseña es incorrecta" se lee al lado del campo
        * que hay que corregir, con la contraseña todavía escrita.
        */
-      setAvisoServidor(err.message || 'No se pudo iniciar sesión');
+      setAvisoServidor(err.message || t('No se pudo iniciar sesión'));
     } finally {
       setCargando(false);
     }
@@ -152,7 +155,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
 
       const idToken = respuesta.data.idToken;
       if (!idToken) {
-        setAvisoServidor('No se recibió la respuesta de Google');
+        setAvisoServidor(t('No se recibió la respuesta de Google'));
         return;
       }
 
@@ -168,10 +171,10 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
        * las casillas de los términos al lado.
        */
       if (err.requiereConsentimiento) {
-        setAvisoServidor('No tiene una cuenta con ese correo de Google. Regístrese primero: también puede hacerlo con Google.');
+        setAvisoServidor(t('No tiene una cuenta con ese correo de Google. Regístrese primero: también puede hacerlo con Google.'));
         return;
       }
-      setAvisoServidor(err.message || 'No se pudo iniciar sesión con Google');
+      setAvisoServidor(err.message || t('No se pudo iniciar sesión con Google'));
     } finally {
       setCargandoGoogle(false);
     }
@@ -181,7 +184,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
     <View style={estilos.pantalla}>
       <BarraMarca
         alTocarMarca={irATienda}
-        textoAccion="Seguir viendo la tienda"
+        textoAccion={t('Seguir viendo la tienda')}
         alPresionarAccion={irATienda}
       />
 
@@ -206,12 +209,12 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
               largo={70}
             />
           </View>
-          <Text style={estilos.titulo}>Bienvenido de nuevo</Text>
-          <Text style={estilos.subtitulo}>Inicie sesión para seguir con su compra.</Text>
+          <Text style={estilos.titulo}>{t('Bienvenido de nuevo')}</Text>
+          <Text style={estilos.subtitulo}>{t('Inicie sesión para seguir con su compra.')}</Text>
 
           <CampoTexto
             icono={Mail}
-            marcador="Correo electrónico"
+            marcador={t('Correo electrónico')}
             valor={valores.email}
             alCambiar={cambiar('email')}
             error={errores.email}
@@ -220,13 +223,13 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
             autoComplete="email"
             textContentType="emailAddress"
             siguiente={campoContrasena}
-            accessibilityLabel="Correo electrónico"
+            accessibilityLabel={t('Correo electrónico')}
             redondo
           />
 
           <CampoTexto
             icono={Lock}
-            marcador="Contraseña"
+            marcador={t('Contraseña')}
             valor={valores.password}
             alCambiar={cambiar('password')}
             error={errores.password}
@@ -238,12 +241,12 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
             onFocus={() => setEnContrasena(true)}
             onBlur={() => setEnContrasena(false)}
             alEnviar={enviar}
-            accessibilityLabel="Contraseña"
+            accessibilityLabel={t('Contraseña')}
             redondo
           />
 
           <View style={estilos.fila}>
-            <Casilla marcada={recordarme} alCambiar={setRecordarme} etiqueta="Recordarme 30 días" />
+            <Casilla marcada={recordarme} alCambiar={setRecordarme} etiqueta={t('Recordarme 30 días')} />
             {/*
               La recuperación todavía no existe en la app: se hace en la web,
               que ya la tiene completa. Antes este enlace no hacía nada.
@@ -253,7 +256,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
               accessibilityRole="link"
               onPress={() => Linking.openURL(`${URL_WEB_LEGAL}/forgot-password`)}
             >
-              <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>¿Olvidó su contraseña?</Text>
+              <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>{t('¿Olvidó su contraseña?')}</Text>
             </Pressable>
           </View>
 
@@ -264,7 +267,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
           ) : null}
 
           <Boton
-            texto="Iniciar sesión"
+            texto={t('Iniciar sesión')}
             alPresionar={enviar}
             cargando={cargando}
             deshabilitado={cargandoGoogle}
@@ -276,13 +279,13 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
           <View style={estilos.divisor}>
             <View style={estilos.linea} />
             {/* Solo "o", como la web: el "Continuar" ya lo dice el botón de abajo. */}
-            <Text style={estilos.divisorTexto}>o</Text>
+            <Text style={estilos.divisorTexto}>{t('o')}</Text>
             <View style={estilos.linea} />
           </View>
 
           <BotonGoogle
-            texto="Continuar con Google"
-            textoCargando="Entrando…"
+            texto={t('Continuar con Google')}
+            textoCargando={t('Entrando…')}
             cargando={cargandoGoogle}
             deshabilitado={cargando}
             alPresionar={conGoogle}
@@ -294,9 +297,9 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
             tiene con qué entrar.
           */}
           <Text style={estilos.pie}>
-            ¿No tiene una cuenta?{' '}
+            {t('¿No tiene una cuenta?')}{' '}
             <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irARegistro}>
-              Regístrese
+              {t('Regístrese')}
             </Text>
           </Text>
 
@@ -307,12 +310,17 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
           */}
           {irAPersonal ? (
             <Text style={estilos.pieAdmin}>
-              ¿Trabajas en la tienda?{' '}
+              {t('¿Trabajas en la tienda?')}{' '}
               <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={() => irAPersonal()} accessibilityRole="link">
-                Entra aquí
+                {t('Entra aquí')}
               </Text>
             </Text>
           ) : null}
+
+          {/* Sin cuenta todavía no hay Preferencias: el idioma, a la mano aquí. */}
+          <View style={estilos.idioma}>
+            <SelectorIdioma />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -320,6 +328,9 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
 };
 
 const crearEstilos = (COLORES) => StyleSheet.create({
+  idioma: {
+    marginTop: 22,
+  },
   pantalla: {
     flex: 1,
     backgroundColor: COLORES.fondo,

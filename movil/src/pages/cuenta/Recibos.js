@@ -33,14 +33,15 @@ import { getPedidosDeCliente } from '../../api/pedidosApi';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import { Estrella } from '../../components/UI/Iconos';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Mismas tres formas de pago que Checkout.js, con el mismo texto que ahí.
 const PAGO = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', saldo: 'Mi saldo' };
 
-const fechaCorta = (iso) => {
+const fechaCorta = (iso, locale) => {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleDateString('es-SV', {
+    return new Date(iso).toLocaleDateString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -54,6 +55,7 @@ const fechaCorta = (iso) => {
 const numeroCorto = (id) => String(id || '').slice(-6).toUpperCase();
 
 const TarjetaRecibo = ({ pedido, colores }) => {
+  const { t, locale } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
 
@@ -61,13 +63,13 @@ const TarjetaRecibo = ({ pedido, colores }) => {
     <View style={estilos.tarjeta}>
       <View style={estilos.cabecera}>
         <View style={estilos.identidad}>
-          <Text style={estilos.numero}>Recibo #{numeroCorto(pedido._id)}</Text>
-          <Text style={estilos.fecha}>{fechaCorta(pedido.createdAt)}</Text>
+          <Text style={estilos.numero}>{t('Recibo #{numero}', { numero: numeroCorto(pedido._id) })}</Text>
+          <Text style={estilos.fecha}>{fechaCorta(pedido.createdAt, locale)}</Text>
         </View>
 
         <View style={[estilos.chapa, { backgroundColor: COLORES.exitoFondo }]}>
           <CircleCheck size={12} color={COLORES.exitoVivo} strokeWidth={2.4} />
-          <Text style={estilos.chapaTexto}>Entregado</Text>
+          <Text style={estilos.chapaTexto}>{t('Entregado')}</Text>
         </View>
       </View>
 
@@ -75,7 +77,7 @@ const TarjetaRecibo = ({ pedido, colores }) => {
         {(pedido.items || []).map((item, i) => (
           <View key={i} style={estilos.linea}>
             <Text style={estilos.lineaNombre} numberOfLines={1}>
-              {item.amount}× {item.name || item.productId?.name || 'Producto'}
+              {item.amount}× {item.name || item.productId?.name || t('Producto')}
             </Text>
             <Text style={estilos.lineaPrecio}>
               ${(Number(item.price) * Number(item.amount)).toFixed(2)}
@@ -86,7 +88,7 @@ const TarjetaRecibo = ({ pedido, colores }) => {
 
       <View style={estilos.pie}>
         <View style={estilos.filaPie}>
-          <Text style={estilos.pago}>Pago: {PAGO[pedido.paymentMethod] || pedido.paymentMethod}</Text>
+          <Text style={estilos.pago}>{t('Pago: {metodo}', { metodo: PAGO[pedido.paymentMethod] ? t(PAGO[pedido.paymentMethod]) : pedido.paymentMethod })}</Text>
           {pedido.pointsEarned > 0 && (
             <View style={estilos.puntos}>
               <Estrella size={12} color={colores.marca} />
@@ -94,13 +96,14 @@ const TarjetaRecibo = ({ pedido, colores }) => {
             </View>
           )}
         </View>
-        <Text style={estilos.total}>Total: ${Number(pedido.total).toFixed(2)}</Text>
+        <Text style={estilos.total}>{t('Total: ${monto}', { monto: Number(pedido.total).toFixed(2) })}</Text>
       </View>
     </View>
   );
 };
 
 const Recibos = ({ alVolver }) => {
+  const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
@@ -120,7 +123,7 @@ const Recibos = ({ alVolver }) => {
       const entregados = (Array.isArray(lista) ? lista : []).filter((p) => p.status === 'entregado');
       setRecibos(entregados);
     } catch (e) {
-      setError(e?.message || 'No se pudieron cargar sus recibos');
+      setError(e?.message || t('No se pudieron cargar sus recibos'));
     } finally {
       setCargando(false);
     }
@@ -132,19 +135,19 @@ const Recibos = ({ alVolver }) => {
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Recibos" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Recibos')} alVolver={alVolver} />
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tus recibos…" />
+          <CargandoMascota texto={t('Cargando tus recibos…')} />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>No se pudieron cargar sus recibos</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus recibos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
-              texto="Reintentar"
+              texto={t('Reintentar')}
               alPresionar={cargar}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
@@ -154,9 +157,9 @@ const Recibos = ({ alVolver }) => {
       ) : recibos.length === 0 ? (
         <View style={estilos.centro}>
           <Receipt size={38} color={COLORES.marcador} strokeWidth={1.5} />
-          <Text style={estilos.vacioTitulo}>Sin recibos todavía</Text>
+          <Text style={estilos.vacioTitulo}>{t('Sin recibos todavía')}</Text>
           <Text style={estilos.vacioTexto}>
-            Cuando le entreguen un pedido, su recibo va a aparecer aquí.
+            {t('Cuando le entreguen un pedido, su recibo va a aparecer aquí.')}
           </Text>
         </View>
       ) : (

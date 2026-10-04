@@ -20,8 +20,10 @@ import { useEstilos } from '../../context/ModoContext';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useTema } from '../../context/TemaContext';
 import { ChevronIzquierda } from '../UI/Iconos';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const BarraCuenta = ({ titulo, alVolver }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
 
@@ -31,7 +33,7 @@ const BarraCuenta = ({ titulo, alVolver }) => {
         onPress={alVolver}
         hitSlop={10}
         accessibilityRole="button"
-        accessibilityLabel="Volver a mi cuenta"
+        accessibilityLabel={t('Volver a mi cuenta')}
         style={({ pressed }) => [
           estilos.botonVolver,
           pressed && { backgroundColor: colores.marcaSuave },

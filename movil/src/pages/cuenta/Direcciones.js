@@ -38,6 +38,7 @@ import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import ModalMapaDireccion from '../../components/UI/ModalMapaDireccion';
 import ModalConfirmar from '../../components/UI/ModalConfirmar';
+import { useIdioma } from '../../context/IdiomaContext';
 
 /*
  * Las direcciones viejas son texto suelto y las nuevas son un objeto. Se
@@ -58,6 +59,7 @@ const normalizar = (item) => {
 };
 
 const Direcciones = ({ alVolver }) => {
+  const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
@@ -85,7 +87,7 @@ const Direcciones = ({ alVolver }) => {
       const lista = Array.isArray(cliente?.clientAddress) ? cliente.clientAddress : [];
       setDirecciones(lista.map(normalizar));
     } catch (e) {
-      setError(e?.message || 'No se pudieron cargar sus direcciones');
+      setError(e?.message || t('No se pudieron cargar sus direcciones'));
     } finally {
       setCargando(false);
     }
@@ -102,9 +104,9 @@ const Direcciones = ({ alVolver }) => {
       await actualizarDirecciones(user.id, lista);
       setDirecciones(lista);
       setMostrarMapa(false);
-      avisar('Dirección guardada', 'exito');
+      avisar(t('Dirección guardada'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo guardar la dirección', 'error');
+      avisar(e?.message || t('No se pudo guardar la dirección'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -117,10 +119,10 @@ const Direcciones = ({ alVolver }) => {
       await actualizarDirecciones(user.id, quedan);
       setDirecciones(quedan);
       setPorQuitar(null);
-      avisar('Dirección quitada', 'quitar');
+      avisar(t('Dirección quitada'), 'quitar');
     } catch (e) {
       // No se toca la lista: si el servidor no la borró, sigue estando.
-      avisar(e?.message || 'No se pudo quitar la dirección', 'error');
+      avisar(e?.message || t('No se pudo quitar la dirección'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -128,19 +130,19 @@ const Direcciones = ({ alVolver }) => {
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Direcciones" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Direcciones')} alVolver={alVolver} />
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tus direcciones…" />
+          <CargandoMascota texto={t('Cargando tus direcciones…')} />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>No se pudieron cargar sus direcciones</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus direcciones')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
-              texto="Reintentar"
+              texto={t('Reintentar')}
               alPresionar={cargar}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
@@ -155,15 +157,15 @@ const Direcciones = ({ alVolver }) => {
           ListEmptyComponent={
             <View style={estilos.vacio}>
               <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />
-              <Text style={estilos.vacioTitulo}>Sin direcciones guardadas</Text>
-              <Text style={estilos.vacioTexto}>Agregue la primera abajo.</Text>
+              <Text style={estilos.vacioTitulo}>{t('Sin direcciones guardadas')}</Text>
+              <Text style={estilos.vacioTexto}>{t('Agregue la primera abajo.')}</Text>
             </View>
           }
           ListFooterComponent={
             <View style={estilos.agregar}>
               <Pressable accessibilityRole="button" onPress={() => setMostrarMapa(true)} hitSlop={8}>
                 <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>
-                  {direcciones.length === 0 ? '+ Agregar mi primera dirección' : '+ Agregar otra dirección'}
+                  {direcciones.length === 0 ? t('+ Agregar mi primera dirección') : t('+ Agregar otra dirección')}
                 </Text>
               </Pressable>
             </View>
@@ -190,7 +192,7 @@ const Direcciones = ({ alVolver }) => {
                 disabled={guardando}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel={`Quitar ${item.nombre || 'dirección'}`}
+                accessibilityLabel={item.nombre ? t('Quitar {nombre}', { nombre: item.nombre }) : t('Quitar dirección')}
                 style={({ pressed }) => [
                   estilos.botonBorrar,
                   pressed && estilos.botonBorrarPresionado,
@@ -215,9 +217,9 @@ const Direcciones = ({ alVolver }) => {
 
       {porQuitar !== null && (
         <ModalConfirmar
-          titulo="¿Quitar esta dirección?"
-          mensaje={`${direcciones[porQuitar]?.nombre || direcciones[porQuitar]?.direccion}\n\nPara volver a tenerla habrá que escribirla de nuevo al hacer un pedido.`}
-          textoConfirmar="Quitar"
+          titulo={t('¿Quitar esta dirección?')}
+          mensaje={`${direcciones[porQuitar]?.nombre || direcciones[porQuitar]?.direccion}\n\n${t('Para volver a tenerla habrá que escribirla de nuevo al hacer un pedido.')}`}
+          textoConfirmar={t('Quitar')}
           destructivo
           trabajando={guardando}
           alConfirmar={quitar}

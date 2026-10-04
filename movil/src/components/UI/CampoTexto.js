@@ -17,6 +17,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const CampoTexto = ({
   etiqueta,
@@ -46,6 +47,7 @@ const CampoTexto = ({
 }) => {
   const [enfocado, setEnfocado] = useState(false);
   const [verTexto, setVerTexto] = useState(false);
+  const { t } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
 
@@ -123,7 +125,7 @@ const CampoTexto = ({
             style={estilos.ojo}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={verTexto ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            accessibilityLabel={verTexto ? t('Ocultar contraseña') : t('Mostrar contraseña')}
           >
             {verTexto ? (
               <EyeOff size={17} color={COLORES.tintaTenue} />

@@ -12,20 +12,22 @@
  * ============================================================
  */
 
+import { tAhora } from './idioma';
+
 const vacio = (valor) => !String(valor || '').trim();
 
 export const requerido = (valor, mensaje) => (vacio(valor) ? mensaje : null);
 
 export const validarCorreo = (valor) => {
-  if (vacio(valor)) return 'El correo es requerido';
+  if (vacio(valor)) return tAhora('El correo es requerido');
   // El mismo patrón de la web: algo, arroba, algo, punto, algo.
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) return 'Formato inválido';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) return tAhora('Formato inválido');
   return null;
 };
 
 export const validarContrasena = (valor) => {
-  if (vacio(valor)) return 'La contraseña es requerida';
-  if (valor.length < 6) return 'Mínimo 6 caracteres';
+  if (vacio(valor)) return tAhora('La contraseña es requerida');
+  if (valor.length < 6) return tAhora('Mínimo 6 caracteres');
   return null;
 };
 
@@ -63,14 +65,14 @@ export const duiEsValido = (valor) => {
 export const validarDui = (valor) => {
   const d = digitosDelDui(valor);
   if (!d.length) return null; // no lo puso: perfecto, seguimos
-  if (d.length < 9) return 'El DUI lleva 9 dígitos (12345678-9)';
-  return duiEsValido(valor) ? null : 'Ese DUI no parece correcto, revise los números';
+  if (d.length < 9) return tAhora('El DUI lleva 9 dígitos (12345678-9)');
+  return duiEsValido(valor) ? null : tAhora('Ese DUI no parece correcto, revise los números');
 };
 
 // Teléfono salvadoreño: 8 dígitos, normalmente 1234-5678.
 export const validarTelefono = (valor) => {
-  if (vacio(valor)) return 'El teléfono es obligatorio';
-  if (!/^\d{4}-?\d{4}$/.test(valor)) return 'Formato de teléfono: 1234-5678';
+  if (vacio(valor)) return tAhora('El teléfono es obligatorio');
+  if (!/^\d{4}-?\d{4}$/.test(valor)) return tAhora('Formato de teléfono: 1234-5678');
   return null;
 };
 

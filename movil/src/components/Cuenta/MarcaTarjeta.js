@@ -17,8 +17,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CreditCard } from 'lucide-react-native';
 import { useColores } from '../../context/ModoContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const MarcaTarjeta = ({ marca = 'otra', sobreColor = false, alto = 30 }) => {
+  const { t } = useIdioma();
   const COLORES = useColores();
   const ancho = Math.round(alto * 1.5);
   const caja = {
@@ -101,7 +103,7 @@ const MarcaTarjeta = ({ marca = 'otra', sobreColor = false, alto = 30 }) => {
   return (
     <View
       style={[caja, { backgroundColor: sobreColor ? 'transparent' : COLORES.marcaSuave }]}
-      accessibilityLabel="Tarjeta"
+      accessibilityLabel={t('Tarjeta')}
     >
       <CreditCard size={alto * 0.6} color={sobreColor ? '#FFFFFF' : COLORES.marca} />
     </View>

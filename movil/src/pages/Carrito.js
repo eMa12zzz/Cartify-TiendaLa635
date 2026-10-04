@@ -48,8 +48,10 @@ import { totalDeLinea } from '../utils/catalogo';
 import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils/unidades';
 import { iconoDeModulo } from '../utils/modulos';
 import { avisarActividad } from '../utils/actividadUsuario';
+import { useIdioma } from '../context/IdiomaContext';
 
 const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, colores }) => {
+  const { t } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const [fallóImagen, setFallóImagen] = useState(false);
@@ -64,7 +66,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
     <View style={estilos.linea}>
       {/* Foto, nombre y precio abren la ficha del producto; los controles de
           cantidad se quedan aparte para que no compitan por el mismo toque. */}
-      <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={`Ver ${item.nombre}`}>
+      <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={t('Ver {nombre}', { nombre: item.nombre })}>
         <View style={estilos.miniatura}>
           {item.imagen && !fallóImagen ? (
             <Image
@@ -80,7 +82,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
       </Pressable>
 
       <View style={estilos.datos}>
-        <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={`Ver ${item.nombre}`}>
+        <Pressable onPress={() => alAbrir(item)} accessibilityRole="button" accessibilityLabel={t('Ver {nombre}', { nombre: item.nombre })}>
           <Text style={estilos.nombre} numberOfLines={2}>{item.nombre}</Text>
 
           <View style={estilos.filaPrecio}>
@@ -110,7 +112,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
             disabled={item.cantidad <= paso}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Quitar uno"
+            accessibilityLabel={t('Quitar uno')}
             style={({ pressed }) => [
               estilos.botonPaso,
               pressed && { backgroundColor: colores.marcaSuave, borderColor: colores.marca },
@@ -127,7 +129,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
             disabled={item.cantidad >= item.stock}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Agregar uno"
+            accessibilityLabel={t('Agregar uno')}
             style={({ pressed }) => [
               estilos.botonPaso,
               pressed && { backgroundColor: colores.marcaSuave, borderColor: colores.marca },
@@ -143,7 +145,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
             onPress={() => alEliminar(item.id)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`Quitar ${item.nombre} del carrito`}
+            accessibilityLabel={t('Quitar {nombre} del carrito', { nombre: item.nombre })}
             style={({ pressed }) => [estilos.botonQuitar, pressed && estilos.botonQuitarPresionado]}
           >
             <Trash2 size={14} color={COLORES.textoSuave} />
@@ -157,6 +159,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
 };
 
 const Carrito = ({ irAInicio, irAPagar }) => {
+  const { t } = useIdioma();
   const { carrito, totalCarrito, cantidadItems, actualizarCantidad, eliminarDelCarrito, limpiarCarrito, agregarAlCarrito, pasillos } =
     useTienda();
   const { colores } = useTema();
@@ -177,7 +180,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
           onPress={irAInicio}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Volver a la tienda"
+          accessibilityLabel={t('Volver a la tienda')}
           style={({ pressed }) => [
             estilos.botonVolver,
             pressed && { backgroundColor: colores.marcaSuave },
@@ -188,10 +191,10 @@ const Carrito = ({ irAInicio, irAPagar }) => {
 
         <View style={estilos.tituloBarra}>
           <ShoppingBag size={18} color={COLORES.texto} />
-          <Text style={estilos.tituloTexto}>Carrito</Text>
+          <Text style={estilos.tituloTexto}>{t('Carrito')}</Text>
           {!vacio && (
             <Text style={estilos.conteo}>
-              ({carrito.length} {carrito.length === 1 ? 'artículo' : 'artículos'})
+              ({carrito.length} {t(carrito.length === 1 ? 'artículo' : 'artículos')})
             </Text>
           )}
         </View>
@@ -201,11 +204,11 @@ const Carrito = ({ irAInicio, irAPagar }) => {
         <View style={estilos.centro}>
           {/* Como en la web: Tiqui mirando un carrito vacío. */}
           <Mascota pose="vacio" alto={130} />
-          <Text style={estilos.vacioTitulo}>Su carrito está vacío</Text>
-          <Text style={estilos.vacioTexto}>¡Agregue productos para comenzar!</Text>
+          <Text style={estilos.vacioTitulo}>{t('Su carrito está vacío')}</Text>
+          <Text style={estilos.vacioTexto}>{t('¡Agregue productos para comenzar!')}</Text>
           <View style={estilos.botonVacio}>
             <Boton
-              texto="Ver la tienda"
+              texto={t('Ver la tienda')}
               alPresionar={irAInicio}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
@@ -232,7 +235,7 @@ const Carrito = ({ irAInicio, irAPagar }) => {
                     <Text style={estilos.tiendaLugar}>Mejicanos, San Salvador</Text>
                   </View>
                 </View>
-                <Text style={estilos.etiquetaProductos}>Productos</Text>
+                <Text style={estilos.etiquetaProductos}>{t('Productos')}</Text>
               </>
             }
             renderItem={({ item }) => (
@@ -262,16 +265,16 @@ const Carrito = ({ irAInicio, irAPagar }) => {
           */}
           <View style={[estilos.pie, { paddingBottom: Math.max(bottom + 10, 26) }]}>
             <View style={estilos.resumen}>
-              <Text style={estilos.resumenTitulo}>Resumen de orden</Text>
+              <Text style={estilos.resumenTitulo}>{t('Resumen de orden')}</Text>
               <View style={estilos.resumenFila}>
                 <Text style={estilos.resumenEtiqueta}>
-                  {cantidadItems === 1 ? '1 artículo' : `${cantidadItems} artículos`}
+                  {cantidadItems === 1 ? t('1 artículo') : t('{n} artículos', { n: cantidadItems })}
                 </Text>
                 <Text style={estilos.resumenValor}>${totalCarrito.toFixed(2)}</Text>
               </View>
               <View style={estilos.separador} />
               <View style={estilos.resumenFila}>
-                <Text style={estilos.totalEtiqueta}>Subtotal</Text>
+                <Text style={estilos.totalEtiqueta}>{t('Subtotal')}</Text>
                 <Text style={estilos.totalValor}>${totalCarrito.toFixed(2)}</Text>
               </View>
             </View>
@@ -288,14 +291,14 @@ const Carrito = ({ irAInicio, irAPagar }) => {
                 accessibilityRole="button"
                 style={({ pressed }) => [estilos.botonVaciar, pressed && estilos.botonVaciarPresionado]}
               >
-                <Text style={estilos.botonVaciarTexto}>Vaciar</Text>
+                <Text style={estilos.botonVaciarTexto}>{t('Vaciar')}</Text>
               </Pressable>
 
               <View style={estilos.botonPagar}>
                 {/* Lleva el monto encima: es la última vez que se ve antes de
                     empezar a elegir cómo se paga. */}
                 <Boton
-                  texto={`Ir a pagar · $${totalCarrito.toFixed(2)}`}
+                  texto={t('Ir a pagar · ${total}', { total: totalCarrito.toFixed(2) })}
                   alPresionar={irAPagar}
                   color={colores.marca}
                   colorPresionado={colores.marcaOscuro}

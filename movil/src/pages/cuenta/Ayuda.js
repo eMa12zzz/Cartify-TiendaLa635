@@ -26,6 +26,7 @@ import { useTema } from '../../context/TemaContext';
 import { useAviso } from '../../context/AvisoContext';
 import { DIRECCION_EN_UNA_LINEA, enlaceWhatsApp } from '../../utils/tienda';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const SALUDO_WHATSAPP = 'Hola, vengo de la app y necesito ayuda con mi pedido.';
 
@@ -46,6 +47,7 @@ const FAQS = [
 ];
 
 const Ayuda = ({ alVolver }) => {
+  const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const { colores } = useTema();
@@ -58,13 +60,13 @@ const Ayuda = ({ alVolver }) => {
     try {
       await Linking.openURL(whatsapp);
     } catch {
-      avisar('No se pudo abrir WhatsApp', 'error');
+      avisar(t('No se pudo abrir WhatsApp'), 'error');
     }
   };
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Ayuda y contacto" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Ayuda y contacto')} alVolver={alVolver} />
 
       <ScrollView contentContainerStyle={[estilos.cuerpo, { paddingBottom: aireAbajo }]}>
         {/* Sin WhatsApp configurado solo queda la dirección; sin ninguno de
@@ -75,7 +77,7 @@ const Ayuda = ({ alVolver }) => {
               <Pressable
                 onPress={abrirWhatsApp}
                 accessibilityRole="button"
-                accessibilityLabel="Escribirnos por WhatsApp"
+                accessibilityLabel={t('Escribirnos por WhatsApp')}
                 style={({ pressed }) => [estilos.canal, pressed && { backgroundColor: colores.marcaTenue }]}
               >
                 <View style={[estilos.cuadroIcono, { backgroundColor: colores.marcaSuave }]}>
@@ -83,7 +85,7 @@ const Ayuda = ({ alVolver }) => {
                 </View>
                 <View style={estilos.canalTextos}>
                   <Text style={estilos.canalEtiqueta}>WhatsApp</Text>
-                  <Text style={estilos.canalValor}>Escríbanos, le contestamos ahí</Text>
+                  <Text style={estilos.canalValor}>{t('Escríbanos, le contestamos ahí')}</Text>
                 </View>
               </Pressable>
             )}
@@ -94,7 +96,7 @@ const Ayuda = ({ alVolver }) => {
                   <MapPin size={18} color={colores.marca} strokeWidth={2} />
                 </View>
                 <View style={estilos.canalTextos}>
-                  <Text style={estilos.canalEtiqueta}>Pasa a la tienda</Text>
+                  <Text style={estilos.canalEtiqueta}>{t('Pasa a la tienda')}</Text>
                   <Text style={estilos.canalValor}>{DIRECCION_EN_UNA_LINEA}</Text>
                 </View>
               </View>
@@ -104,14 +106,14 @@ const Ayuda = ({ alVolver }) => {
 
         <View style={estilos.filaTituloFaq}>
           <HelpCircle size={17} color={colores.marca} strokeWidth={2} />
-          <Text style={estilos.tituloFaq}>Preguntas frecuentes</Text>
+          <Text style={estilos.tituloFaq}>{t('Preguntas frecuentes')}</Text>
         </View>
 
         <View style={estilos.faqs}>
           {FAQS.map((faq, i) => (
             <View key={i}>
-              <Text style={estilos.faqPregunta}>{faq.q}</Text>
-              <Text style={estilos.faqRespuesta}>{faq.a}</Text>
+              <Text style={estilos.faqPregunta}>{t(faq.q)}</Text>
+              <Text style={estilos.faqRespuesta}>{t(faq.a)}</Text>
             </View>
           ))}
         </View>

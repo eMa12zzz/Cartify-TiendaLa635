@@ -57,6 +57,7 @@ import { crearHtmlMapa } from './mapaDireccionHtml';
 import Boton from './Boton';
 import CampoTexto from './CampoTexto';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from './BarraInferior';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const ALTO_MAPA = 260;
 
@@ -69,6 +70,7 @@ const ALTO_MAPA = 260;
  * `ModalProducto` (ver el comentario grande ahí).
  */
 const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFlotante = false }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -197,7 +199,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel={t('Cerrar')} />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -221,7 +223,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={estilos.titulo}>Marque su dirección</Text>
+            <Text style={estilos.titulo}>{t('Marque su dirección')}</Text>
 
             <View style={estilos.marcoMapa}>
               <WebView
@@ -240,7 +242,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
               */}
               {!posicion && (
                 <View style={estilos.avisoSobreMap}>
-                  <Text style={estilos.avisoSobreMapTexto}>Toque en el mapa dónde le dejamos su pedido</Text>
+                  <Text style={estilos.avisoSobreMapTexto}>{t('Toque en el mapa dónde le dejamos su pedido')}</Text>
                 </View>
               )}
             </View>
@@ -262,14 +264,14 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
                 <LocateFixed size={15} color={colores.marca} />
               )}
               <Text style={[estilos.textoUbicacion, { color: colores.marcaTexto }]}>
-                {localizando ? 'Buscando su ubicación…' : 'Dirección actual'}
+                {localizando ? t('Buscando su ubicación…') : t('Dirección actual')}
               </Text>
             </Pressable>
 
             <CampoTexto
-              etiqueta="Dirección"
+              etiqueta={t('Dirección')}
               icono={MapPin}
-              marcador={posicion ? 'Calle, número y colonia' : 'Se llena al marcar en el mapa'}
+              marcador={posicion ? t('Calle, número y colonia') : t('Se llena al marcar en el mapa')}
               valor={direccion}
               alCambiar={setDireccion}
               redondo
@@ -277,21 +279,21 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
             {buscando && (
               <View style={estilos.filaBuscando}>
                 <EsperaMascota alto={20} />
-                <Text style={estilos.buscandoTexto}>Buscando la dirección de ese punto…</Text>
+                <Text style={estilos.buscandoTexto}>{t('Buscando la dirección de ese punto…')}</Text>
               </View>
             )}
             {avisoGeocod ? <Text style={estilos.avisoGeocod}>{avisoGeocod}</Text> : null}
 
             <CampoTexto
-              etiqueta="Nombre (opcional)"
-              marcador="Casa, Trabajo…"
+              etiqueta={t('Nombre (opcional)')}
+              marcador={t('Casa, Trabajo…')}
               valor={nombre}
               alCambiar={setNombre}
               redondo
             />
             <CampoTexto
-              etiqueta="Referencia (opcional)"
-              marcador="Portón verde, frente a la cancha"
+              etiqueta={t('Referencia (opcional)')}
+              marcador={t('Portón verde, frente a la cancha')}
               valor={referencia}
               alCambiar={setReferencia}
               redondo
@@ -299,11 +301,11 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
 
             <View style={estilos.filaBotones}>
               <Pressable accessibilityRole="button" onPress={cerrarConAnimacion} hitSlop={8} style={estilos.botonCancelar}>
-                <Text style={estilos.textoCancelar}>Cancelar</Text>
+                <Text style={estilos.textoCancelar}>{t('Cancelar')}</Text>
               </Pressable>
               <View style={estilos.botonGuardar}>
                 <Boton
-                  texto={posicion ? 'Guardar esta dirección' : 'Marque el punto en el mapa'}
+                  texto={posicion ? t('Guardar esta dirección') : t('Marque el punto en el mapa')}
                   alPresionar={guardar}
                   cargando={guardando}
                   deshabilitado={!listo}

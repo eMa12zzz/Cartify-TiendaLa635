@@ -107,8 +107,11 @@ export const LARGO_VENCIMIENTO = 5; // MM/AA
  * "Visa crédito", "Mastercard débito"… o "Tarjeta" para las guardadas antes de
  * que la app supiera de marcas. Igual que en la web (MetodoPago.jsx).
  */
-export const nombreMarcaTipo = (metodo) => {
-  const marca = NOMBRE_MARCA[metodo.brand] && metodo.brand !== 'otra' ? NOMBRE_MARCA[metodo.brand] : 'Tarjeta';
+const sinTraducir = (texto, vars) => (vars ? texto.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m) : texto);
+
+// `t` (de useIdioma) para mostrarlo en el idioma de la tienda; sin él sale en español.
+export const nombreMarcaTipo = (metodo, t = sinTraducir) => {
+  const marca = NOMBRE_MARCA[metodo.brand] && metodo.brand !== 'otra' ? NOMBRE_MARCA[metodo.brand] : t('Tarjeta');
   if (!metodo.cardType) return marca;
-  return `${marca} ${metodo.cardType === 'debito' ? 'débito' : 'crédito'}`;
+  return t(metodo.cardType === 'debito' ? '{marca} débito' : '{marca} crédito', { marca });
 };

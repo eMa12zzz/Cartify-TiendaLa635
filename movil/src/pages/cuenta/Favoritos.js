@@ -37,8 +37,10 @@ import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import TarjetaProducto from '../../components/Tienda/TarjetaProducto';
 import ModalProducto from '../../components/Tienda/ModalProducto';
 import { avisarActividad } from '../../utils/actividadUsuario';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const Favoritos = ({ alVolver }) => {
+  const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const COLORES = useColores();
@@ -55,18 +57,18 @@ const Favoritos = ({ alVolver }) => {
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Mis favoritos" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Mis favoritos')} alVolver={alVolver} />
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tus favoritos…" />
+          <CargandoMascota texto={t('Cargando tus favoritos…')} />
         </View>
       ) : marcados.length === 0 ? (
         <View style={estilos.centro}>
           <Heart size={38} color={COLORES.marcador} strokeWidth={1.5} />
-          <Text style={estilos.vacioTitulo}>Todavía no tiene favoritos</Text>
+          <Text style={estilos.vacioTitulo}>{t('Todavía no tiene favoritos')}</Text>
           <Text style={estilos.vacioTexto}>
-            Toque el corazón de un producto en la tienda y lo va a encontrar aquí.
+            {t('Toque el corazón de un producto en la tienda y lo va a encontrar aquí.')}
           </Text>
         </View>
       ) : (
@@ -79,7 +81,7 @@ const Favoritos = ({ alVolver }) => {
           onScrollBeginDrag={avisarActividad}
           ListHeaderComponent={
             <Text style={estilos.conteo}>
-              {marcados.length} {marcados.length === 1 ? 'producto guardado' : 'productos guardados'}
+              {marcados.length} {t(marcados.length === 1 ? 'producto guardado' : 'productos guardados')}
             </Text>
           }
           renderItem={({ item, index }) => (

@@ -34,6 +34,7 @@ import { ALTURA_ESTADO } from '../../theme/pantalla';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { Flecha } from '../UI/Iconos';
 import { NAVY, AZUL_TEXTO, FONDO, GRIS, LINEA } from './EscenasTiqui';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const ANCHO_PUNTO = 7;
 const ANCHO_PILDORA = 22;
@@ -51,11 +52,14 @@ const TutorialTiqui = ({
   alTerminar,
   textoFinal,
   cerrar = 'x',
-  etiquetaCerrar = 'Cerrar',
+  etiquetaCerrar,
   atrasCierra = true,
   // Algo fijo arriba a la izquierda (la bienvenida pone la marca de la tienda).
   arriba = null,
+  // Algo debajo de los puntos (la bienvenida pone ahí el selector de idioma).
+  pie = null,
 }) => {
+  const { t } = useIdioma();
   const insets = useSafeAreaInsets();
   const [ancho, setAncho] = useState(Dimensions.get('window').width);
   const [alto, setAlto] = useState(Dimensions.get('window').height);
@@ -163,11 +167,11 @@ const TutorialTiqui = ({
                   style={[estilos.bloqueTitulo, animTitulo]}
                   accessible
                   accessibilityRole="header"
-                  accessibilityLabel={`${(d.tituloPrefijo + d.tituloAcento).replace(/\s+/g, ' ')}. ${i + 1} de ${diapositivas.length}`}
+                  accessibilityLabel={`${(t(d.tituloPrefijo) + t(d.tituloAcento)).replace(/\s+/g, ' ')}. ${t('{n} de {total}', { n: i + 1, total: diapositivas.length })}`}
                 >
                   <Text style={estilos.titulo}>
-                    {d.tituloPrefijo}
-                    <Text style={estilos.tituloAcento}>{d.tituloAcento}</Text>
+                    {t(d.tituloPrefijo)}
+                    <Text style={estilos.tituloAcento}>{t(d.tituloAcento)}</Text>
                   </Text>
                 </Animated.View>
 
@@ -182,17 +186,17 @@ const TutorialTiqui = ({
                 </View>
 
                 <Animated.View style={animTexto}>
-                  <Text style={estilos.texto}>{d.texto}</Text>
+                  <Text style={estilos.texto}>{t(d.texto)}</Text>
                 </Animated.View>
 
                 <Animated.View style={[estilos.zonaBoton, animBoton]}>
                   <Pressable
                     onPress={siguiente}
                     accessibilityRole="button"
-                    accessibilityLabel={esUltima ? textoFinal : 'Siguiente'}
+                    accessibilityLabel={t(esUltima ? textoFinal : 'Siguiente')}
                     style={({ pressed }) => [estilos.boton, pressed && estilos.botonPresionado]}
                   >
-                    <Text style={estilos.botonTexto}>{esUltima ? textoFinal : 'Siguiente'}</Text>
+                    <Text style={estilos.botonTexto}>{t(esUltima ? textoFinal : 'Siguiente')}</Text>
                     <View style={estilos.botonFlecha}>
                       <Flecha size={16} color="#FFFFFF" />
                     </View>
@@ -206,7 +210,7 @@ const TutorialTiqui = ({
                       onPress={() => irA(j)}
                       hitSlop={10}
                       accessibilityRole="button"
-                      accessibilityLabel={`Ir a la ilustración ${j + 1}`}
+                      accessibilityLabel={t('Ir a la ilustración {n}', { n: j + 1 })}
                       accessibilityState={{ selected: j === activa }}
                     >
                       <Animated.View
@@ -215,6 +219,7 @@ const TutorialTiqui = ({
                     </Pressable>
                   ))}
                 </View>
+                {pie ? <View style={estilos.pie}>{pie}</View> : null}
               </View>
             </View>
           );
@@ -233,7 +238,7 @@ const TutorialTiqui = ({
           onPress={alTerminar}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel={etiquetaCerrar}
+          accessibilityLabel={t(etiquetaCerrar || 'Cerrar')}
           style={[estilos.cerrar, { top: ALTURA_ESTADO + 12 }]}
         >
           <X size={22} color={NAVY} strokeWidth={2.2} />
@@ -243,10 +248,10 @@ const TutorialTiqui = ({
           onPress={alTerminar}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel={etiquetaCerrar}
+          accessibilityLabel={t(etiquetaCerrar || 'Cerrar')}
           style={[estilos.saltar, { top: ALTURA_ESTADO + 14 }]}
         >
-          <Text style={estilos.saltarTexto}>Saltar</Text>
+          <Text style={estilos.saltarTexto}>{t('Saltar')}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -301,6 +306,7 @@ const estilos = StyleSheet.create({
   },
   puntos: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 18 },
   punto: { height: 7, borderRadius: 4 },
+  pie: { marginTop: 14 },
   arriba: { position: 'absolute', left: 22 },
   cerrar: {
     position: 'absolute',

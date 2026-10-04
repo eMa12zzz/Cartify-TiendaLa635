@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ShieldCheck, Store as TiendaIcono, Bike } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 /*
  * ============================================================
@@ -17,6 +18,7 @@ import { useTema } from '../../context/TemaContext';
  * entregado o cancelado tampoco lo necesita.
  */
 const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -28,7 +30,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
     return (
       <View style={estilos.filaCompacta}>
         <ShieldCheck size={14} color={COLORES.marca} strokeWidth={2.2} />
-        <Text style={estilos.etiquetaCompacta}>Código de entrega</Text>
+        <Text style={estilos.etiquetaCompacta}>{t('Código de entrega')}</Text>
         <Text style={estilos.codigoCompacto}>{codigo}</Text>
       </View>
     );
@@ -37,8 +39,8 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
   const esDomicilio = deliveryType === 'delivery';
   const Icono = esDomicilio ? Bike : TiendaIcono;
   const explicacion = esDomicilio
-    ? 'Dígaselos a quien le entregue el pedido en la puerta.'
-    : 'Dígaselos en el mostrador al recoger su pedido.';
+    ? t('Dígaselos a quien le entregue el pedido en la puerta.')
+    : t('Dígaselos en el mostrador al recoger su pedido.');
 
   // Separados: un "0451" de corrido se lee mal en un teléfono a contraluz.
   const digitos = String(codigo).split('');
@@ -47,7 +49,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
     <View style={[estilos.tarjeta, { backgroundColor: colores.marcaTenue, borderColor: colores.marcaSuave }]}>
       <View style={estilos.filaTitulo}>
         <ShieldCheck size={16} color={colores.marca} strokeWidth={2.2} />
-        <Text style={estilos.titulo}>Su código de entrega</Text>
+        <Text style={estilos.titulo}>{t('Su código de entrega')}</Text>
       </View>
 
       <View style={estilos.filaDigitos}>
@@ -61,7 +63,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
       <View style={estilos.filaExplicacion}>
         <Icono size={14} color={COLORES.textoTenue} strokeWidth={2} style={estilos.iconoExplicacion} />
         <Text style={estilos.explicacion}>
-          {explicacion} <Text style={estilos.explicacionTenue}>Nadie de la tienda lo ve en su pantalla: se lo tienen que pedir a usted.</Text>
+          {explicacion} <Text style={estilos.explicacionTenue}>{t('Nadie de la tienda lo ve en su pantalla: se lo tienen que pedir a usted.')}</Text>
         </Text>
       </View>
     </View>

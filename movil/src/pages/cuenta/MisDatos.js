@@ -41,6 +41,7 @@ import * as ImagePicker from 'expo-image-picker';
 // Los mismos iconos que el registro (y que la web): fecha `Calendar`, DUI `Hash`.
 import { AtSign, Calendar, Camera, Hash, Mail, Phone, User } from 'lucide-react-native';
 import { useEstilos } from '../../context/ModoContext';
+import { tAhora } from '../../utils/idioma';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useAuth } from '../../hooks/useAuth';
 import { useTema } from '../../context/TemaContext';
@@ -60,6 +61,7 @@ import {
   LARGO_TELEFONO,
 } from '../../utils/mascaras';
 import { calcularEdad, EDAD_MINIMA, esMayorDeEdad } from '../../utils/edad';
+import { useIdioma } from '../../context/IdiomaContext';
 import {
   requerido,
   validarCorreo,
@@ -79,15 +81,15 @@ import {
 const validarFechaOpcional = (valor) => {
   if (!String(valor || '').trim()) return null;
   const iso = fechaISO(valor);
-  if (!iso) return 'Esa fecha no es válida';
+  if (!iso) return tAhora('Esa fecha no es válida');
   const edad = calcularEdad(iso);
-  if (edad < 0 || edad > 120) return 'Revise la fecha';
+  if (edad < 0 || edad > 120) return tAhora('Revise la fecha');
   return null;
 };
 
 const REGLAS = {
-  fullName: (v) => requerido(v, 'El nombre es requerido'),
-  userName: (v) => requerido(v, 'El usuario es requerido'),
+  fullName: (v) => requerido(v, tAhora('El nombre es requerido')),
+  userName: (v) => requerido(v, tAhora('El usuario es requerido')),
   email: validarCorreo,
   phoneNumber: validarTelefono,
   fechaNacimiento: validarFechaOpcional,
@@ -95,6 +97,7 @@ const REGLAS = {
 };
 
 const MisDatos = ({ alVolver }) => {
+  const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const { user, actualizarUsuario } = useAuth();
@@ -139,7 +142,7 @@ const MisDatos = ({ alVolver }) => {
         });
         setFoto(cliente?.image || null);
       } catch (e) {
-        if (vivo) avisar(e?.message || 'No se pudieron cargar sus datos', 'error');
+        if (vivo) avisar(e?.message || t('No se pudieron cargar sus datos'), 'error');
       } finally {
         if (vivo) setCargando(false);
       }
@@ -160,7 +163,7 @@ const MisDatos = ({ alVolver }) => {
   const elegirFoto = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permiso.granted) {
-      avisar('Necesita darle permiso a la app para ver sus fotos', 'error');
+      avisar(t('Necesita darle permiso a la app para ver sus fotos'), 'error');
       return;
     }
 
@@ -183,9 +186,9 @@ const MisDatos = ({ alVolver }) => {
         type: elegida.mimeType || 'image/jpeg',
       });
       setFoto(respuesta?.client?.image || elegida.uri);
-      avisar('Foto de perfil actualizada', 'exito');
+      avisar(t('Foto de perfil actualizada'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo subir la foto', 'error');
+      avisar(e?.message || t('No se pudo subir la foto'), 'error');
     } finally {
       setSubiendoFoto(false);
     }
@@ -223,10 +226,10 @@ const MisDatos = ({ alVolver }) => {
        * de la tienda aunque acabe de guardarlo aquí.
        */
       actualizarUsuario({ dui });
-      avisar('Sus datos quedaron guardados', 'exito');
+      avisar(t('Sus datos quedaron guardados'), 'exito');
       alVolver?.();
     } catch (e) {
-      avisar(e?.message || 'No se pudieron guardar sus datos', 'error');
+      avisar(e?.message || t('No se pudieron guardar sus datos'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -237,11 +240,11 @@ const MisDatos = ({ alVolver }) => {
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Mis datos" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Mis datos')} alVolver={alVolver} />
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tu perfil…" />
+          <CargandoMascota texto={t('Cargando tu perfil…')} />
         </View>
       ) : (
         <ScrollView
@@ -254,7 +257,7 @@ const MisDatos = ({ alVolver }) => {
               onPress={elegirFoto}
               disabled={subiendoFoto}
               accessibilityRole="button"
-              accessibilityLabel="Cambiar foto de perfil"
+              accessibilityLabel={t('Cambiar foto de perfil')}
               style={estilos.avatarToque}
             >
               {foto ? (
@@ -279,11 +282,11 @@ const MisDatos = ({ alVolver }) => {
           </View>
 
           <CampoTexto
-            etiqueta="Nombre completo"
+            etiqueta={t('Nombre completo')}
             icono={User}
             valor={form.fullName}
             alCambiar={(v) => escribir('fullName', v)}
-            marcador="Su nombre"
+            marcador={t('Su nombre')}
             error={errores.fullName}
             autoCapitalize="words"
             autoComplete="name"
@@ -292,11 +295,11 @@ const MisDatos = ({ alVolver }) => {
           />
 
           <CampoTexto
-            etiqueta="Nombre de usuario"
+            etiqueta={t('Nombre de usuario')}
             icono={AtSign}
             valor={form.userName}
             alCambiar={(v) => escribir('userName', v)}
-            marcador="Su usuario"
+            marcador={t('Su usuario')}
             error={errores.userName}
             autoCapitalize="none"
             autoCorrect={false}
@@ -307,7 +310,7 @@ const MisDatos = ({ alVolver }) => {
           />
 
           <CampoTexto
-            etiqueta="Correo electrónico"
+            etiqueta={t('Correo electrónico')}
             icono={Mail}
             valor={form.email}
             alCambiar={(v) => escribir('email', v)}
@@ -324,7 +327,7 @@ const MisDatos = ({ alVolver }) => {
           {/* El guion lo pone la máscara y el campo topa en 8 dígitos, así el
               teléfono queda guardado igual venga de donde venga. */}
           <CampoTexto
-            etiqueta="Teléfono"
+            etiqueta={t('Teléfono')}
             icono={Phone}
             valor={form.phoneNumber}
             alCambiar={(v) => escribir('phoneNumber', formatearTelefono(v))}
@@ -338,7 +341,7 @@ const MisDatos = ({ alVolver }) => {
               de texto con máscara, el mismo del registro — un selector de
               calendario sería un paquete nuevo para escribir ocho dígitos. */}
           <CampoTexto
-            etiqueta="Fecha de nacimiento"
+            etiqueta={t('Fecha de nacimiento')}
             icono={Calendar}
             valor={form.fechaNacimiento}
             alCambiar={(v) => escribir('fechaNacimiento', formatearFecha(v))}
@@ -348,18 +351,17 @@ const MisDatos = ({ alVolver }) => {
             maxLength={LARGO_FECHA}
           />
           <Text style={estilos.ayuda}>
-            Con ella se habilitan los productos para mayores de {EDAD_MINIMA}. El documento se
-            revisa igual al entregar el pedido.
+            {t('Con ella se habilitan los productos para mayores de {edad}. El documento se revisa igual al entregar el pedido.', { edad: EDAD_MINIMA })}
           </Text>
 
           {/* DUI: opcional, y solo se puede escribir cuando la fecha ya dice
               que es mayor de edad. Igual que en la web. */}
           <CampoTexto
-            etiqueta="DUI (opcional)"
+            etiqueta={t('DUI (opcional)')}
             icono={Hash}
             valor={form.dui}
             alCambiar={(v) => escribir('dui', formatearDui(v))}
-            marcador={mayorDeEdad ? '00000000-0' : `Se habilita al indicar ${EDAD_MINIMA} años o más`}
+            marcador={mayorDeEdad ? '00000000-0' : t('Se habilita al indicar {edad} años o más', { edad: EDAD_MINIMA })}
             error={errores.dui}
             keyboardType="number-pad"
             maxLength={LARGO_DUI}
@@ -368,7 +370,7 @@ const MisDatos = ({ alVolver }) => {
 
           <View style={estilos.boton}>
             <Boton
-              texto="Guardar cambios"
+              texto={t('Guardar cambios')}
               alPresionar={guardar}
               cargando={guardando}
               color={colores.marca}

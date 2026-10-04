@@ -3,6 +3,7 @@ import { Vibration } from 'react-native';
 import { getCourierPosition } from '../api/pedidosApi';
 import { useAviso } from '../context/AvisoContext';
 import { distanciaMetros, minutosDeViaje, textoDeEspera, formatoDistancia } from '../utils/geo';
+import { tAhora } from '../utils/idioma';
 
 /*
  * ============================================================
@@ -69,7 +70,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
           const faltan = distanciaMetros(courier, data.destino);
           if (faltan != null && faltan <= YA_CASI_M) {
             avisadoRef.current = true;
-            avisar('Su pedido ya casi toca su puerta', 'reparto');
+            avisar(tAhora('Su pedido ya casi toca su puerta'), 'reparto');
             Vibration.vibrate([120, 60, 120]);
           }
         }

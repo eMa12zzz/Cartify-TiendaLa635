@@ -14,6 +14,7 @@ import CodigoEntrega from './CodigoEntrega';
 import PasosPedido from './PasosPedido';
 import ValoracionPedido from '../Cuenta/ValoracionPedido';
 import ValoracionServicio from '../Cuenta/ValoracionServicio';
+import { useIdioma } from '../../context/IdiomaContext';
 
 /*
  * Una fila por producto, con su propio estado de "la imagen no cargó": cada
@@ -23,6 +24,7 @@ import ValoracionServicio from '../Cuenta/ValoracionServicio';
  * URLs de Cloudinary que ya usa el catálogo, ver utils/catalogo.js.
  */
 const FilaProducto = ({ item }) => {
+  const { t } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const [fallóImagen, setFallóImagen] = useState(false);
@@ -44,7 +46,7 @@ const FilaProducto = ({ item }) => {
         )}
       </View>
       <Text style={estilos.nombreProducto} numberOfLines={1}>
-        {item.amount}× {item.name || item.productId?.name || 'Producto'}
+        {item.amount}× {item.name || item.productId?.name || t('Producto')}
       </Text>
       <Text style={estilos.precioProducto}>
         ${(Number(item.price) * Number(item.amount)).toFixed(2)}
@@ -80,10 +82,10 @@ const MOTIVOS_CANCELAR = [
   'Prefiero no decirlo.',
 ];
 
-const fechaLarga = (iso) => {
+const fechaLarga = (iso, locale) => {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleDateString('es-SV', {
+    return new Date(iso).toLocaleDateString(locale, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -96,6 +98,7 @@ const fechaLarga = (iso) => {
 };
 
 const ModalPedido = ({ pedido, alCerrar }) => {
+  const { t, locale } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -189,7 +192,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
       soltarCancelacion();
     } catch (e) {
       // Casi siempre: que la tienda ya lo empezó a preparar (lo dice el servidor).
-      setErrorCancelar(e?.message || 'No se pudo cancelar. Intente de nuevo.');
+      setErrorCancelar(e?.message || t('No se pudo cancelar. Intente de nuevo.'));
     } finally {
       setEnviando(false);
     }
@@ -224,7 +227,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel={t('Cerrar')} />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -238,7 +241,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               onPress={cerrarConAnimacion}
               hitSlop={12}
               accessibilityRole="button"
-              accessibilityLabel="Cerrar el detalle del pedido"
+              accessibilityLabel={t('Cerrar el detalle del pedido')}
               style={estilos.cerrar}
             >
               <Equis size={16} color={COLORES.textoSuave} />
@@ -251,8 +254,8 @@ const ModalPedido = ({ pedido, alCerrar }) => {
           >
             <View style={estilos.filaTitulo}>
               <View style={estilos.identidad}>
-                <Text style={estilos.numero}>Pedido #{numero}</Text>
-                <Text style={estilos.fecha}>{fechaLarga(pedido.createdAt)}</Text>
+                <Text style={estilos.numero}>{t('Pedido #{numero}', { numero })}</Text>
+                <Text style={estilos.fecha}>{fechaLarga(pedido.createdAt, locale)}</Text>
               </View>
               <View style={[estilos.chapa, { backgroundColor: estado.fondo }]}>
                 <Text style={[estilos.chapaTexto, { color: estado.color }]}>{estado.texto}</Text>
@@ -272,15 +275,15 @@ const ModalPedido = ({ pedido, alCerrar }) => {
             {esCancelado ? (
               <View style={estilos.notaCancelado}>
                 {pedido.cancelledByClient && (
-                  <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoUsted]}>Usted canceló este pedido.</Text>
+                  <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoUsted]}>{t('Usted canceló este pedido.')}</Text>
                 )}
                 <Text style={estilos.notaCanceladoTexto}>
                   {pedido.cancelReason ? (
                     <>
-                      <Text style={estilos.notaCanceladoTitulo}>Motivo: </Text>
-                      {pedido.cancelReason}
+                      <Text style={estilos.notaCanceladoTitulo}>{t('Motivo: ')}</Text>
+                      {t(pedido.cancelReason)}
                     </>
-                  ) : 'Este pedido fue cancelado.'}
+                  ) : t('Este pedido fue cancelado.')}
                 </Text>
                 {!!textoDevuelto(pedido) && (
                   <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoDevuelto]}>{textoDevuelto(pedido)}</Text>
@@ -303,13 +306,13 @@ const ModalPedido = ({ pedido, alCerrar }) => {
                   accessibilityRole="button"
                   style={({ pressed }) => [estilos.botonCancelar, pressed && { opacity: 0.7 }]}
                 >
-                  <Text style={estilos.botonCancelarTexto}>Cancelar pedido</Text>
+                  <Text style={estilos.botonCancelarTexto}>{t('Cancelar pedido')}</Text>
                 </Pressable>
               ) : (
                 <View style={estilos.cancelar}>
-                  <Text style={estilos.cancelarTitulo}>¿Por qué lo cancela?</Text>
+                  <Text style={estilos.cancelarTitulo}>{t('¿Por qué lo cancela?')}</Text>
                   <Text style={estilos.cancelarBajada}>
-                    Todavía no lo empezamos a preparar, así que se puede cancelar.{devolveria ? ` ${devolveria}` : ''}
+                    {t('Todavía no lo empezamos a preparar, así que se puede cancelar.')}{devolveria ? ` ${devolveria}` : ''}
                   </Text>
                   <View accessibilityRole="radiogroup" style={estilos.opciones}>
                     {MOTIVOS_CANCELAR.map((m) => {
@@ -322,7 +325,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
                           accessibilityState={{ checked: elegido }}
                           style={[estilos.opcion, elegido && { borderColor: colores.marca, backgroundColor: colores.marcaTenue }]}
                         >
-                          <Text style={[estilos.opcionTexto, elegido && { fontWeight: '700', color: colores.marcaTexto }]}>{m}</Text>
+                          <Text style={[estilos.opcionTexto, elegido && { fontWeight: '700', color: colores.marcaTexto }]}>{t(m)}</Text>
                         </Pressable>
                       );
                     })}
@@ -330,7 +333,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
                   {!!errorCancelar && <Text style={estilos.errorCancelar}>{errorCancelar}</Text>}
                   <View style={estilos.filaBotones}>
                     <Pressable onPress={soltarCancelacion} accessibilityRole="button" style={estilos.botonMantener}>
-                      <Text style={estilos.botonMantenerTexto}>No, mantenerlo</Text>
+                      <Text style={estilos.botonMantenerTexto}>{t('No, mantenerlo')}</Text>
                     </Pressable>
                     <Pressable
                       onPress={confirmarCancelacion}
@@ -339,7 +342,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
                       accessibilityState={{ disabled: !motivo || enviando }}
                       style={[estilos.botonConfirmar, (!motivo || enviando) && { opacity: 0.5 }]}
                     >
-                      <Text style={estilos.botonConfirmarTexto}>{enviando ? 'Cancelando…' : 'Sí, cancelar'}</Text>
+                      <Text style={estilos.botonConfirmarTexto}>{enviando ? t('Cancelando…') : t('Sí, cancelar')}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -349,7 +352,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
             <CodigoEntrega codigo={pedido.deliveryCode} estado={pedido.status} compacto />
 
             <View style={estilos.tarjeta}>
-              <Text style={estilos.tarjetaTitulo}>Productos</Text>
+              <Text style={estilos.tarjetaTitulo}>{t('Productos')}</Text>
               {items.map((item, i) => (
                 // Índice como clave: las líneas del pedido no traen `_id`
                 // propio (el esquema las guarda con `_id: false`).
@@ -367,29 +370,29 @@ const ModalPedido = ({ pedido, alCerrar }) => {
                 dice "Gratis" porque eso sí es una buena noticia).
               */}
               <View style={estilos.filaResumen}>
-                <Text style={estilos.resumenEtiqueta}>Productos</Text>
+                <Text style={estilos.resumenEtiqueta}>{t('Productos')}</Text>
                 <Text style={estilos.resumenValor}>${subtotal.toFixed(2)}</Text>
               </View>
 
               {pedido.deliveryType === 'delivery' && (
                 <View style={estilos.filaResumen}>
-                  <Text style={estilos.resumenEtiqueta}>Gastos de envío</Text>
+                  <Text style={estilos.resumenEtiqueta}>{t('Gastos de envío')}</Text>
                   <Text style={estilos.resumenValor}>
-                    {envio > 0 ? `$${envio.toFixed(2)}` : 'Gratis'}
+                    {envio > 0 ? `$${envio.toFixed(2)}` : t('Gratis')}
                   </Text>
                 </View>
               )}
 
               {servicio > 0 && (
                 <View style={estilos.filaResumen}>
-                  <Text style={estilos.resumenEtiqueta}>Tarifa de servicio</Text>
+                  <Text style={estilos.resumenEtiqueta}>{t('Tarifa de servicio')}</Text>
                   <Text style={estilos.resumenValor}>${servicio.toFixed(2)}</Text>
                 </View>
               )}
 
               {descuento > 0 && (
                 <View style={estilos.filaResumen}>
-                  <Text style={estilos.resumenEtiqueta}>Descuento por puntos</Text>
+                  <Text style={estilos.resumenEtiqueta}>{t('Descuento por puntos')}</Text>
                   <Text style={[estilos.resumenValor, estilos.resumenDescuento]}>
                     −${descuento.toFixed(2)}
                   </Text>
@@ -398,26 +401,26 @@ const ModalPedido = ({ pedido, alCerrar }) => {
 
               <View style={estilos.separador} />
               <View style={estilos.filaTotal}>
-                <Text style={estilos.totalEtiqueta}>Total</Text>
+                <Text style={estilos.totalEtiqueta}>{t('Total')}</Text>
                 <Text style={estilos.totalValor}>${Number(pedido.total || 0).toFixed(2)}</Text>
               </View>
             </View>
 
             <View style={estilos.tarjeta}>
               <Text style={estilos.tarjetaTitulo}>
-                {pedido.deliveryType === 'delivery' ? 'Envío a domicilio' : 'Retiro en el local'}
+                {t(pedido.deliveryType === 'delivery' ? 'Envío a domicilio' : 'Retiro en el local')}
               </Text>
               {!!pedido.deliveryAddress && <Text style={estilos.direccion}>{pedido.deliveryAddress}</Text>}
               {!!pedido.deliveryReference && <Text style={estilos.referencia}>{pedido.deliveryReference}</Text>}
               <View style={estilos.separador} />
               <View style={estilos.filaProducto}>
-                <Text style={estilos.nombreProducto}>Método de pago</Text>
+                <Text style={estilos.nombreProducto}>{t('Método de pago')}</Text>
                 <Text style={estilos.precioProducto}>
-                  {pedido.paymentMethod === 'saldo'
+                  {t(pedido.paymentMethod === 'saldo'
                     ? 'Saldo'
                     : pedido.paymentMethod === 'tarjeta'
                       ? 'Tarjeta'
-                      : 'Efectivo'}
+                      : 'Efectivo')}
                 </Text>
               </View>
             </View>
@@ -437,7 +440,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
               <View style={[estilos.puntos, { backgroundColor: colores.marcaTenue }]}>
                 <Estrella size={14} color={colores.marca} />
                 <Text style={[estilos.puntosTexto, { color: colores.marcaTexto }]}>
-                  Ganó {pedido.pointsEarned} {pedido.pointsEarned === 1 ? 'punto' : 'puntos'} con esta compra
+                  {t(pedido.pointsEarned === 1 ? 'Ganó {n} punto con esta compra' : 'Ganó {n} puntos con esta compra', { n: pedido.pointsEarned })}
                 </Text>
               </View>
             )}

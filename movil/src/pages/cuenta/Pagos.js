@@ -66,6 +66,7 @@ import MarcaTarjeta from '../../components/Cuenta/MarcaTarjeta';
 import VistaTarjeta from '../../components/Cuenta/VistaTarjeta';
 import Boton from '../../components/UI/Boton';
 import ModalConfirmar from '../../components/UI/ModalConfirmar';
+import { useIdioma } from '../../context/IdiomaContext';
 import {
   LARGO_NUMERO,
   LARGO_VENCIMIENTO,
@@ -90,12 +91,14 @@ const TIPOS = [
 ];
 
 const Etiqueta = ({ children }) => {
+  const { t } = useIdioma();
   const estilos = useEstilos(crearEstilos);
-  return <Text style={estilos.etiquetaCampo}>{children}</Text>;
+  return <Text style={estilos.etiquetaCampo}>{t(children)}</Text>;
 };
 
 // El error debajo de su campo, no un aviso flotante: hay que ir a arreglarlo ahí.
 const MensajeError = ({ texto }) => {
+  const { t } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   if (!texto) return null;
@@ -103,12 +106,13 @@ const MensajeError = ({ texto }) => {
   return (
     <View style={estilos.filaError}>
       <CircleAlert size={13} color={COLORES.peligro} />
-      <Text style={estilos.textoError}>{texto}</Text>
+      <Text style={estilos.textoError}>{t(texto)}</Text>
     </View>
   );
 };
 
 const Pagos = ({ alVolver }) => {
+  const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
@@ -149,7 +153,7 @@ const Pagos = ({ alVolver }) => {
       setMetodos(lista);
       setSaldo(Number(saldoRes?.balance) || 0);
     } catch (e) {
-      setError(e?.message || 'No se pudo cargar su información de pagos');
+      setError(e?.message || t('No se pudo cargar su información de pagos'));
     } finally {
       setCargando(false);
     }
@@ -168,9 +172,9 @@ const Pagos = ({ alVolver }) => {
       const r = await canjearTarjeta(limpio, user.id);
       setSaldo(Number(r?.balance) || 0);
       setCodigoTarjeta('');
-      avisar(r?.message || 'Tarjeta canjeada', 'exito');
+      avisar(r?.message || t('Tarjeta canjeada'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo canjear la tarjeta', 'error');
+      avisar(e?.message || t('No se pudo canjear la tarjeta'), 'error');
     } finally {
       setCanjeando(false);
     }
@@ -202,27 +206,27 @@ const Pagos = ({ alVolver }) => {
       !tocado.numero || !digitos
         ? ''
         : !numeroCompleto
-          ? `Faltan dígitos: ${NOMBRE_MARCA[marca] === 'Tarjeta' ? 'la tarjeta' : NOMBRE_MARCA[marca]} lleva ${largoDe(marca)}.`
+          ? t('Faltan dígitos: {marca} lleva {n}.', { marca: NOMBRE_MARCA[marca] === 'Tarjeta' ? t('la tarjeta') : NOMBRE_MARCA[marca], n: largoDe(marca) })
           : !numeroValido
-            ? 'Revise el número: no corresponde a una tarjeta válida.'
+            ? t('Revise el número: no corresponde a una tarjeta válida.')
             : duplicada
-              ? 'Esa tarjeta ya está guardada.'
+              ? t('Esa tarjeta ya está guardada.')
               : '',
     vencimiento:
       !tocado.vencimiento || !nuevo.vencimiento
         ? ''
         : !venc
-          ? 'Use el formato MM/AA, con un mes entre 01 y 12.'
+          ? t('Use el formato MM/AA, con un mes entre 01 y 12.')
           : vencida
-            ? 'Esta tarjeta ya venció.'
+            ? t('Esta tarjeta ya venció.')
             : '',
-    titular: tocado.titular && !titularValido ? 'Escriba el nombre como aparece en la tarjeta.' : '',
+    titular: tocado.titular && !titularValido ? t('Escriba el nombre como aparece en la tarjeta.') : '',
   };
 
   const listo = numeroValido && !!venc && !vencida && titularValido && !duplicada;
 
   const cambiar = (campo, valor) => setNuevo((f) => ({ ...f, [campo]: valor }));
-  const tocar = (campo) => setTocado((t) => ({ ...t, [campo]: true }));
+  const tocar = (campo) => setTocado((previo) => ({ ...previo, [campo]: true }));
 
   const cerrarFormulario = () => {
     setEscribiendo(false);
@@ -241,7 +245,7 @@ const Pagos = ({ alVolver }) => {
      */
     const metodo = {
       type: 'tarjeta',
-      alias: nuevo.alias.trim() || `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`,
+      alias: nuevo.alias.trim() || nombreMarcaTipo({ brand: marca, cardType: nuevo.tipo }, t),
       last4: digitos.slice(-4),
       brand: marca,
       cardType: nuevo.tipo,
@@ -256,9 +260,9 @@ const Pagos = ({ alVolver }) => {
       await actualizarMetodosPago(user.id, lista);
       setMetodos(lista);
       cerrarFormulario();
-      avisar('Tarjeta guardada', 'exito');
+      avisar(t('Tarjeta guardada'), 'exito');
     } catch (e) {
-      avisar(e?.message || 'No se pudo guardar el método de pago', 'error');
+      avisar(e?.message || t('No se pudo guardar el método de pago'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -271,9 +275,9 @@ const Pagos = ({ alVolver }) => {
       await actualizarMetodosPago(user.id, quedan);
       setMetodos(quedan);
       setPorQuitar(null);
-      avisar('Método de pago quitado', 'quitar');
+      avisar(t('Método de pago quitado'), 'quitar');
     } catch (e) {
-      avisar(e?.message || 'No se pudo quitar el método de pago', 'error');
+      avisar(e?.message || t('No se pudo quitar el método de pago'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -281,19 +285,19 @@ const Pagos = ({ alVolver }) => {
 
   return (
     <View style={estilos.pantalla}>
-      <BarraCuenta titulo="Pagos" alVolver={alVolver} />
+      <BarraCuenta titulo={t('Pagos')} alVolver={alVolver} />
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tus métodos de pago…" />
+          <CargandoMascota texto={t('Cargando tus métodos de pago…')} />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>No se pudo cargar su información de pagos</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudo cargar su información de pagos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
-              texto="Reintentar"
+              texto={t('Reintentar')}
               alPresionar={cargar}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
@@ -309,7 +313,7 @@ const Pagos = ({ alVolver }) => {
                 <Gift size={19} color={colores.marca} strokeWidth={2} />
               </View>
               <View>
-                <Text style={estilos.etiquetaSaldo}>Su saldo</Text>
+                <Text style={estilos.etiquetaSaldo}>{t('Su saldo')}</Text>
                 <Text style={[estilos.valorSaldo, { color: colores.marcaTexto }]}>
                   ${saldo.toFixed(2)}
                 </Text>
@@ -320,13 +324,13 @@ const Pagos = ({ alVolver }) => {
               <TextInput
                 value={codigoTarjeta}
                 onChangeText={(v) => setCodigoTarjeta(v.toUpperCase())}
-                placeholder="¿Tiene una tarjeta? 635-XXXX-XXXX"
+                placeholder={t('¿Tiene una tarjeta? 635-XXXX-XXXX')}
                 placeholderTextColor={COLORES.marcador}
                 keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                 style={estilos.campoCanje}
                 autoCapitalize="characters"
                 autoCorrect={false}
-                accessibilityLabel="Código de tarjeta de regalo"
+                accessibilityLabel={t('Código de tarjeta de regalo')}
               />
               <Pressable accessibilityRole="button"
                 onPress={canjear}
@@ -338,18 +342,17 @@ const Pagos = ({ alVolver }) => {
                   (canjeando || !codigoTarjeta.trim()) && estilos.botonCanjeApagado,
                 ]}
               >
-                <Text style={estilos.botonCanjeTexto}>{canjeando ? 'Canjeando…' : 'Canjear'}</Text>
+                <Text style={estilos.botonCanjeTexto}>{canjeando ? t('Canjeando…') : t('Canjear')}</Text>
               </Pressable>
             </View>
           </View>
 
           {/* ── Métodos guardados ── */}
-          <Text style={estilos.tituloSeccion}>Métodos guardados</Text>
+          <Text style={estilos.tituloSeccion}>{t('Métodos guardados')}</Text>
 
           {metodos.length === 0 && !escribiendo && (
             <Text style={estilos.vacioTexto}>
-              Sin métodos de pago guardados todavía. Guarde su tarjeta una vez y la tendrá a mano en
-              su próxima compra.
+              {t('Sin métodos de pago guardados todavía. Guarde su tarjeta una vez y la tendrá a mano en su próxima compra.')}
             </Text>
           )}
 
@@ -364,11 +367,11 @@ const Pagos = ({ alVolver }) => {
                * "Mastercard débito" dos veces se lee como un error.
                */
               const detalle = efectivo
-                ? 'Efectivo'
+                ? t('Efectivo')
                 : [
-                    nombreMarcaTipo(metodo) !== metodo.alias && nombreMarcaTipo(metodo),
+                    ![nombreMarcaTipo(metodo), nombreMarcaTipo(metodo, t)].includes(metodo.alias) && nombreMarcaTipo(metodo, t),
                     `•••• ${metodo.last4 || '••••'}`,
-                    vence && `Vence ${vence}`,
+                    vence && t('Vence {fecha}', { fecha: vence }),
                   ]
                     .filter(Boolean)
                     .join(' · ');
@@ -385,7 +388,7 @@ const Pagos = ({ alVolver }) => {
 
                   <View style={estilos.datosMetodo}>
                     <Text style={estilos.aliasMetodo} numberOfLines={1}>
-                      {metodo.alias || (efectivo ? 'Efectivo' : 'Tarjeta')}
+                      {metodo.alias || t(efectivo ? 'Efectivo' : 'Tarjeta')}
                     </Text>
                     <Text style={estilos.detalleMetodo} numberOfLines={1}>
                       {detalle}
@@ -396,7 +399,7 @@ const Pagos = ({ alVolver }) => {
                       no va a servir, y enterarse en la caja es peor. */}
                   {yaVencida && (
                     <View style={estilos.chapaVencida}>
-                      <Text style={estilos.chapaVencidaTexto}>Vencida</Text>
+                      <Text style={estilos.chapaVencidaTexto}>{t('Vencida')}</Text>
                     </View>
                   )}
 
@@ -405,7 +408,7 @@ const Pagos = ({ alVolver }) => {
                     disabled={guardando}
                     hitSlop={8}
                     accessibilityRole="button"
-                    accessibilityLabel={`Quitar ${metodo.alias}`}
+                    accessibilityLabel={t('Quitar {nombre}', { nombre: metodo.alias })}
                     style={({ pressed }) => [
                       estilos.botonBorrar,
                       pressed && estilos.botonBorrarPresionado,
@@ -426,7 +429,7 @@ const Pagos = ({ alVolver }) => {
               <View
                 style={estilos.filaTipo}
                 accessibilityRole="radiogroup"
-                accessibilityLabel="Tipo de método de pago"
+                accessibilityLabel={t('Tipo de método de pago')}
               >
                 {TIPOS.map(({ valor, texto, Icono }) => {
                   const activo = nuevo.tipo === valor;
@@ -443,7 +446,7 @@ const Pagos = ({ alVolver }) => {
                     >
                       <Icono size={15} color={activo ? colores.marca : COLORES.textoSuave} strokeWidth={2} />
                       <Text style={[estilos.pildoraTipoTexto, activo && { color: colores.marcaTexto }]}>
-                        {texto}
+                        {t(texto)}
                       </Text>
                     </Pressable>
                   );
@@ -477,7 +480,7 @@ const Pagos = ({ alVolver }) => {
                     keyboardType="number-pad"
                     maxLength={LARGO_NUMERO}
                     style={[estilos.campo, estilos.campoNumero, !!errores.numero && estilos.campoMal]}
-                    accessibilityLabel="Número de tarjeta"
+                    accessibilityLabel={t('Número de tarjeta')}
                   />
                   {/* El logo de la red, dentro del campo y a la derecha. */}
                   <View style={estilos.logoEnCampo} pointerEvents="none">
@@ -497,14 +500,14 @@ const Pagos = ({ alVolver }) => {
                   value={nuevo.titular}
                   onChangeText={(v) => cambiar('titular', v)}
                   onBlur={() => tocar('titular')}
-                  placeholder="Como aparece en la tarjeta"
+                  placeholder={t('Como aparece en la tarjeta')}
                   placeholderTextColor={COLORES.marcador}
                   keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   maxLength={40}
                   style={[estilos.campo, !!errores.titular && estilos.campoMal]}
-                  accessibilityLabel="Nombre del titular"
+                  accessibilityLabel={t('Nombre del titular')}
                 />
                 <MensajeError texto={errores.titular} />
               </View>
@@ -515,13 +518,13 @@ const Pagos = ({ alVolver }) => {
                   value={nuevo.vencimiento}
                   onChangeText={(v) => cambiar('vencimiento', formatearVencimiento(v))}
                   onBlur={() => tocar('vencimiento')}
-                  placeholder="MM/AA"
+                  placeholder={t('MM/AA')}
                   placeholderTextColor={COLORES.marcador}
                   keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                   keyboardType="number-pad"
                   maxLength={LARGO_VENCIMIENTO}
                   style={[estilos.campo, !!errores.vencimiento && estilos.campoMal]}
-                  accessibilityLabel="Vencimiento de la tarjeta"
+                  accessibilityLabel={t('Vencimiento de la tarjeta')}
                 />
                 <MensajeError texto={errores.vencimiento} />
               </View>
@@ -533,28 +536,26 @@ const Pagos = ({ alVolver }) => {
                   onChangeText={(v) => cambiar('alias', v)}
                   placeholder={
                     digitos
-                      ? `${NOMBRE_MARCA[marca]} ${nuevo.tipo === 'debito' ? 'débito' : 'crédito'}`
-                      : 'Ej. Tarjeta del trabajo'
+                      ? nombreMarcaTipo({ brand: marca, cardType: nuevo.tipo }, t)
+                      : t('Ej. Tarjeta del trabajo')
                   }
                   placeholderTextColor={COLORES.marcador}
                   keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                   maxLength={40}
                   style={estilos.campo}
-                  accessibilityLabel="Nombre del método de pago"
+                  accessibilityLabel={t('Nombre del método de pago')}
                 />
               </View>
 
               <View style={estilos.filaCandado}>
                 <Lock size={13} color={COLORES.textoTenue} style={estilos.candado} />
                 <Text style={estilos.notaCandado}>
-                  Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El
-                  número completo no sale de este formulario, y el código de seguridad se pide solo
-                  al pagar.
+                  {t('Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El número completo no sale de este formulario, y el código de seguridad se pide solo al pagar.')}
                 </Text>
               </View>
 
               <Boton
-                texto={guardando ? 'Guardando…' : 'Guardar tarjeta'}
+                texto={guardando ? t('Guardando…') : t('Guardar tarjeta')}
                 alPresionar={agregar}
                 cargando={guardando}
                 deshabilitado={!listo}
@@ -562,13 +563,13 @@ const Pagos = ({ alVolver }) => {
                 colorPresionado={colores.marcaOscuro}
               />
               <Pressable accessibilityRole="button" onPress={cerrarFormulario} hitSlop={8}>
-                <Text style={estilos.enlaceTenue}>Cancelar</Text>
+                <Text style={estilos.enlaceTenue}>{t('Cancelar')}</Text>
               </Pressable>
             </View>
           ) : (
             <Pressable accessibilityRole="button" onPress={() => setEscribiendo(true)} hitSlop={8}>
               <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>
-                {metodos.length === 0 ? '+ Agregar mi primer método de pago' : '+ Agregar otro método'}
+                {metodos.length === 0 ? t('+ Agregar mi primer método de pago') : t('+ Agregar otro método')}
               </Text>
             </Pressable>
           )}
@@ -577,9 +578,9 @@ const Pagos = ({ alVolver }) => {
 
       {porQuitar !== null && (
         <ModalConfirmar
-          titulo="¿Quitar este método?"
-          mensaje={`${metodos[porQuitar]?.alias || 'Este método'}\n\nEsto no lo cobra ni lo devuelve — solo lo saca de esta lista.`}
-          textoConfirmar="Quitar"
+          titulo={t('¿Quitar este método?')}
+          mensaje={`${metodos[porQuitar]?.alias || t('Este método')}\n\n${t('Esto no lo cobra ni lo devuelve — solo lo saca de esta lista.')}`}
+          textoConfirmar={t('Quitar')}
           destructivo
           trabajando={guardando}
           alConfirmar={quitar}

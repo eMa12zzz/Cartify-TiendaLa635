@@ -20,6 +20,7 @@ import Boton from '../components/UI/Boton';
 import { useTema } from '../context/TemaContext';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { verificarCodigoCorreo } from '../api/authApi';
+import { useIdioma } from '../context/IdiomaContext';
 
 const LARGO = 6;
 
@@ -40,6 +41,7 @@ const LARGO = 6;
  * porque son un campo normal.
  */
 const Verification = ({ correo, alVerificar, alVolver }) => {
+  const { t } = useIdioma();
   // La paleta de la temporada, para que las casillas del código y el botón
   // sigan el mismo color que la tienda. Fuera de temporada es el café de siempre.
   const { colores } = useTema();
@@ -57,7 +59,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
 
   const verificar = async () => {
     if (codigo.length !== LARGO) {
-      setError(`Ingrese el código de ${LARGO} caracteres`);
+      setError(t('Ingrese el código de {n} caracteres', { n: LARGO }));
       return;
     }
 
@@ -67,7 +69,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
       await verificarCodigoCorreo(codigo);
       alVerificar();
     } catch (err) {
-      setError(err.message || 'El código no es válido o ya venció.');
+      setError(err.message || t('El código no es válido o ya venció.'));
     } finally {
       setCargando(false);
     }
@@ -78,16 +80,16 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
       <BarraMarca centrado />
 
       <View style={estilos.cuerpo}>
-        <Pressable onPress={alVolver} hitSlop={12} style={estilos.volver} accessibilityRole="button" accessibilityLabel="Volver">
+        <Pressable onPress={alVolver} hitSlop={12} style={estilos.volver} accessibilityRole="button" accessibilityLabel={t('Volver')}>
           <Text style={estilos.flechaVolver}>←</Text>
         </Pressable>
 
-        <Text style={estilos.titulo}>Ingrese el código de verificación</Text>
+        <Text style={estilos.titulo}>{t('Ingrese el código de verificación')}</Text>
 
         <View style={estilos.caja}>
           <Text style={estilos.info}>
-            Le enviamos un código a{' '}
-            <Text style={estilos.correo}>{correo || 'su correo'}</Text>
+            {t('Le enviamos un código a')}{' '}
+            <Text style={estilos.correo}>{correo || t('su correo')}</Text>
           </Text>
 
           {/*
@@ -124,7 +126,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
               autoCorrect={false}
               autoFocus
               caretHidden
-              accessibilityLabel={`Código de verificación, ${LARGO} caracteres`}
+              accessibilityLabel={t('Código de verificación, {n} caracteres', { n: LARGO })}
               textContentType="oneTimeCode"
               autoComplete="one-time-code"
               keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
@@ -135,7 +137,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
         {error ? <Text style={estilos.error}>{error}</Text> : null}
 
         <Boton
-          texto="Verificar"
+          texto={t('Verificar')}
           alPresionar={verificar}
           cargando={cargando}
           color={colores.marca}
@@ -143,7 +145,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
         />
 
         <Text style={estilos.ayuda}>
-          El código vence a los 15 minutos. Si ya venció, vuelva a registrarse.
+          {t('El código vence a los 15 minutos. Si ya venció, vuelva a registrarse.')}
         </Text>
       </View>
     </View>

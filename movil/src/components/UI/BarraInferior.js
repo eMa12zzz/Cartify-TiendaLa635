@@ -47,6 +47,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Mic, Package, Store, User } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // Las medidas de la píldora flotante, juntas porque las usa el StyleSheet
 // de aquí abajo para armar el mismo tamaño en más de un lugar — y porque
@@ -133,6 +134,7 @@ const useTecladoAbierto = () => {
 };
 
 const BarraInferior = ({ apartado, alCambiar }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -220,7 +222,7 @@ const BarraInferior = ({ apartado, alCambiar }) => {
               onPress={() => alCambiar(clave)}
               accessibilityRole="tab"
               accessibilityState={{ selected: activo }}
-              accessibilityLabel={nombre}
+              accessibilityLabel={t(nombre)}
               style={estilos.apartado}
             >
               {({ pressed }) => (

@@ -16,8 +16,10 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 import { useTema } from '../../context/TemaContext';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const CintaTemporada = () => {
+  const { t } = useIdioma();
   const { decoracion, colores, activo, saludoNormal } = useTema();
 
   /*
@@ -34,7 +36,7 @@ const CintaTemporada = () => {
       style={[estilos.banda, { backgroundColor: colores.marca }]}
       accessibilityRole="text"
     >
-      <Text style={estilos.texto}>{texto}</Text>
+      <Text style={estilos.texto}>{t(texto)}</Text>
     </View>
   );
 };

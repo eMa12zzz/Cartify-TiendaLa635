@@ -75,7 +75,9 @@ import { googleLoginDB, registrarCliente } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { useColores, useEstilos } from '../context/ModoContext';
+import { tAhora } from '../utils/idioma';
 import { calcularEdad, esMayorDeEdad } from '../utils/edad';
+import { useIdioma } from '../context/IdiomaContext';
 import {
   fechaISO,
   formatearDui,
@@ -121,17 +123,17 @@ const validarFechaNacimiento = (valor) => {
   const iso = fechaISO(valor);
   if (!iso) {
     return String(valor || '').replace(/\D/g, '').length
-      ? 'Esa fecha no es válida'
-      : 'La fecha de nacimiento es obligatoria';
+      ? tAhora('Esa fecha no es válida')
+      : tAhora('La fecha de nacimiento es obligatoria');
   }
   const edad = calcularEdad(iso);
-  if (edad < 0 || edad > 120) return 'Revise la fecha';
+  if (edad < 0 || edad > 120) return tAhora('Revise la fecha');
   return null;
 };
 
 const REGLAS = {
-  fullName: (v) => requerido(v, 'El nombre es obligatorio'),
-  userName: (v) => requerido(v, 'El nombre de usuario es obligatorio'),
+  fullName: (v) => requerido(v, tAhora('El nombre es obligatorio')),
+  userName: (v) => requerido(v, tAhora('El nombre de usuario es obligatorio')),
   fechaNacimiento: validarFechaNacimiento,
   dui: validarDui,
   phoneNumber: validarTelefono,
@@ -140,6 +142,7 @@ const REGLAS = {
 };
 
 const Register = ({ irALogin, alPedirCodigo }) => {
+  const { t } = useIdioma();
   // La paleta de la temporada: el botón, los enlaces y la zona de foto se
   // pintan con ella, como la tienda. Fuera de temporada es el café de siempre.
   const { colores } = useTema();
@@ -195,7 +198,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
     setErrorFoto('');
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permiso.granted) {
-      setErrorFoto('No dio permiso para abrir la galería.');
+      setErrorFoto(t('No dio permiso para abrir la galería.'));
       return;
     }
 
@@ -208,7 +211,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
     const elegida = resultado.assets[0];
     if (elegida.fileSize && elegida.fileSize > PESO_MAXIMO_FOTO) {
       const pesoMB = (elegida.fileSize / (1024 * 1024)).toFixed(1);
-      setErrorFoto(`Esa foto pesa ${pesoMB} MB y el máximo son 8 MB.`);
+      setErrorFoto(t('Esa foto pesa {peso} MB y el máximo son 8 MB.', { peso: pesoMB }));
       return;
     }
     setFoto(elegida);
@@ -235,7 +238,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
      * formulario le vaya sacando un problema por intento.
      */
     const faltaAceptar = !aceptaTerminos;
-    setErrorTerminos(faltaAceptar ? 'Hay que aceptar los términos para crear la cuenta' : '');
+    setErrorTerminos(faltaAceptar ? t('Hay que aceptar los términos para crear la cuenta') : '');
 
     if (!sinErrores(encontrados) || faltaAceptar) return;
 
@@ -257,7 +260,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
       // La cuenta todavía no existe: nace cuando vuelva el código del correo.
       alPedirCodigo(valores.email.trim());
     } catch (err) {
-      setAvisoServidor(err.message || 'No se pudo completar el registro');
+      setAvisoServidor(err.message || t('No se pudo completar el registro'));
     } finally {
       setCargando(false);
     }
@@ -274,7 +277,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
    */
   const conGoogle = async () => {
     if (!aceptaTerminos) {
-      setErrorTerminos('Marque primero que acepta los términos y la política de privacidad');
+      setErrorTerminos(t('Marque primero que acepta los términos y la política de privacidad'));
       return;
     }
 
@@ -291,7 +294,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
 
       const idToken = respuesta.data.idToken;
       if (!idToken) {
-        setAvisoServidor('No se recibió la respuesta de Google');
+        setAvisoServidor(t('No se recibió la respuesta de Google'));
         return;
       }
 
@@ -305,7 +308,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
       // Con la sesión puesta, RootNavigator (AuthWatcher) lleva a la tienda.
       login(res.token, res.userType || 'client', res.client);
     } catch (err) {
-      setAvisoServidor(err.message || 'No se pudo registrar con Google');
+      setAvisoServidor(err.message || t('No se pudo registrar con Google'));
     } finally {
       setCargandoGoogle(false);
     }
@@ -329,10 +332,10 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={estilos.titulo}>Regístrate</Text>
+          <Text style={estilos.titulo}>{t('Regístrate')}</Text>
 
           <CampoTexto
-            etiqueta="Nombre Completo"
+            etiqueta={t('Nombre Completo')}
             icono={User}
             marcador="Juan Pérez"
             valor={valores.fullName}
@@ -346,7 +349,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           />
 
           <CampoTexto
-            etiqueta="Nombre de Usuario"
+            etiqueta={t('Nombre de Usuario')}
             icono={User}
             marcador="juanperez99"
             valor={valores.userName}
@@ -361,9 +364,9 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           />
 
           <CampoTexto
-            etiqueta="Fecha de Nacimiento"
+            etiqueta={t('Fecha de Nacimiento')}
             icono={Calendar}
-            marcador="DD/MM/AAAA"
+            marcador={t('DD/MM/AAAA')}
             valor={valores.fechaNacimiento}
             alCambiar={cambiar('fechaNacimiento', formatearFecha)}
             error={errores.fechaNacimiento}
@@ -381,7 +384,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           */}
           {puedeDui && (
             <CampoTexto
-              etiqueta="DUI (opcional)"
+              etiqueta={t('DUI (opcional)')}
               icono={Hash}
               marcador="00000000-0"
               valor={valores.dui}
@@ -396,7 +399,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           )}
 
           <CampoTexto
-            etiqueta="Teléfono"
+            etiqueta={t('Teléfono')}
             icono={Phone}
             marcador="7000-0000"
             valor={valores.phoneNumber}
@@ -412,7 +415,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           />
 
           <CampoTexto
-            etiqueta="Correo Electrónico"
+            etiqueta={t('Correo Electrónico')}
             icono={Mail}
             marcador="juan@ejemplo.com"
             valor={valores.email}
@@ -428,7 +431,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           />
 
           <CampoTexto
-            etiqueta="Contraseña"
+            etiqueta={t('Contraseña')}
             icono={Lock}
             marcador="********"
             valor={valores.password}
@@ -442,7 +445,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             redondo
           />
 
-          <Text style={estilos.etiquetaFoto}>Foto de Perfil (Opcional)</Text>
+          <Text style={estilos.etiquetaFoto}>{t('Foto de Perfil (Opcional)')}</Text>
           <Pressable
             onPress={elegirFoto}
             style={({ pressed }) => [
@@ -451,7 +454,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
               pressed && !foto && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
             ]}
             accessibilityRole="button"
-            accessibilityLabel={foto ? 'Cambiar foto de perfil' : 'Subir foto de perfil'}
+            accessibilityLabel={foto ? t('Cambiar foto de perfil') : t('Subir foto de perfil')}
           >
             {foto ? (
               <>
@@ -460,7 +463,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
                   onPress={() => setFoto(null)}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel="Quitar la foto elegida"
+                  accessibilityLabel={t('Quitar la foto elegida')}
                   style={estilos.quitarFoto}
                 >
                   <Equis size={14} color="#fff" />
@@ -469,8 +472,8 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             ) : (
               <>
                 <Camera size={28} color={COLORES.iconoCampo} />
-                <Text style={estilos.textoFoto}>Toque para elegir su foto</Text>
-                <Text style={estilos.ayudaFoto}>JPG o PNG, hasta 8 MB</Text>
+                <Text style={estilos.textoFoto}>{t('Toque para elegir su foto')}</Text>
+                <Text style={estilos.ayudaFoto}>{t('JPG o PNG, hasta 8 MB')}</Text>
               </>
             )}
           </Pressable>
@@ -491,22 +494,22 @@ const Register = ({ irALogin, alPedirCodigo }) => {
                   setAceptaTerminos(v);
                   if (v) setErrorTerminos('');
                 }}
-                etiqueta="He leído y acepto"
+                etiqueta={t('He leído y acepto')}
               />
               <Text
                 style={[estilos.enlace, { color: colores.marcaTexto }]}
                 accessibilityRole="link"
                 onPress={() => setVerTerminos('terminos')}
               >
-                los términos
+                {t('los términos')}
               </Text>
-              <Text style={estilos.textoCasilla}>y la</Text>
+              <Text style={estilos.textoCasilla}>{t('y la')}</Text>
               <Text
                 style={[estilos.enlace, { color: colores.marcaTexto }]}
                 accessibilityRole="link"
                 onPress={() => setVerTerminos('privacidad')}
               >
-                política de privacidad
+                {t('política de privacidad')}
               </Text>
             </View>
 
@@ -520,7 +523,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             <Casilla
               marcada={promociones}
               alCambiar={setPromociones}
-              etiqueta="Quiero recibir ofertas y novedades por correo (opcional)"
+              etiqueta={t('Quiero recibir ofertas y novedades por correo (opcional)')}
             />
           </View>
 
@@ -531,7 +534,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           ) : null}
 
           <Boton
-            texto="Continuar"
+            texto={t('Continuar')}
             alPresionar={enviar}
             cargando={cargando}
             deshabilitado={cargandoGoogle}
@@ -543,21 +546,21 @@ const Register = ({ irALogin, alPedirCodigo }) => {
           {/* Solo "o", como la web: lo que se hace lo dice el botón de abajo. */}
           <View style={estilos.divisor}>
             <View style={estilos.linea} />
-            <Text style={estilos.divisorTexto}>o</Text>
+            <Text style={estilos.divisorTexto}>{t('o')}</Text>
             <View style={estilos.linea} />
           </View>
 
           <BotonGoogle
-            texto="Registrarse con Google"
+            texto={t('Registrarse con Google')}
             cargando={cargandoGoogle}
             deshabilitado={cargando}
             alPresionar={conGoogle}
           />
 
           <Text style={estilos.pie}>
-            ¿Ya tienes una cuenta?{' '}
+            {t('¿Ya tienes una cuenta?')}{' '}
             <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irALogin}>
-              Iniciar Sesión
+              {t('Iniciar Sesión')}
             </Text>
           </Text>
         </ScrollView>

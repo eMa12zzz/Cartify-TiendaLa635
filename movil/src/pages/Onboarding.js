@@ -27,6 +27,7 @@
 import TutorialTiqui from '../components/Tiqui/TutorialTiqui';
 import { ESCENAS_TIQUI, NAVY } from '../components/Tiqui/EscenasTiqui';
 import MarcaTienda from '../components/UI/MarcaTienda';
+import SelectorIdioma from '../components/UI/SelectorIdioma';
 
 const DIAPOSITIVAS = [
   {
@@ -65,6 +66,8 @@ const Onboarding = ({ alTerminar }) => (
     // En la primera, el atrás de Android sale de la app: es la pantalla de arranque.
     atrasCierra={false}
     arriba={<MarcaTienda tamano={14} color={NAVY} />}
+    // La primera pantalla de todas: quien no lee español cambia aquí.
+    pie={<SelectorIdioma color={NAVY} />}
   />
 );
 

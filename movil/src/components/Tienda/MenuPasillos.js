@@ -31,6 +31,7 @@ import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
 import { navegarA } from '../../navigation/navigationRef';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const Opcion = ({ Icono, texto, activa, colores, onPress }) => {
   const COLORES = useColores();
@@ -57,6 +58,7 @@ const Opcion = ({ Icono, texto, activa, colores, onPress }) => {
 };
 
 const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
   const { bottom } = useSafeAreaInsets();
@@ -144,7 +146,7 @@ const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
   return (
     <View style={estilos.capa}>
       <Animated.View style={[estilos.fondo, { opacity: fondoOpacidad }]}>
-        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={estilos.zonaCierre} onPress={cerrarConAnimacion} accessibilityLabel={t('Cerrar')} />
 
         <Animated.View
           style={[estilos.panel, { transform: [{ translateY: panelY }] }]}
@@ -156,7 +158,7 @@ const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
             </View>
           </View>
 
-          <Text style={estilos.titulo}>Pasillos de la tienda</Text>
+          <Text style={estilos.titulo}>{t('Pasillos de la tienda')}</Text>
 
           <ScrollView
             style={estilos.lista}
@@ -171,7 +173,7 @@ const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
           >
             <Opcion
               Icono={Store}
-              texto="Toda la tienda"
+              texto={t('Toda la tienda')}
               activa={!moduloSeleccionado}
               colores={colores}
               onPress={() => elegir(null)}
@@ -181,7 +183,7 @@ const MenuPasillos = ({ modulos, moduloSeleccionado, alElegir, alCerrar }) => {
               <Opcion
                 key={m._id}
                 Icono={iconoDeModulo(m)}
-                texto={m.name}
+                texto={t(m.name)}
                 activa={String(moduloSeleccionado) === String(m._id)}
                 colores={colores}
                 onPress={() => (flujoDeModulo(m) === 'impresiones' ? abrirImpresiones() : elegir(m._id))}

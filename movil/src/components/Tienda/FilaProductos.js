@@ -18,8 +18,10 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import TarjetaProducto from './TarjetaProducto';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const FilaProductos = ({ seccion, alVerTodos, alVerDetalle, alAgregar }) => {
+  const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
   const total = seccion.todos?.length || seccion.productos.length;
@@ -30,8 +32,8 @@ const FilaProductos = ({ seccion, alVerTodos, alVerDetalle, alAgregar }) => {
     <View style={estilos.seccion}>
       <View style={estilos.encabezado}>
         <Pressable onPress={alVerTodos} style={estilos.titulos} accessibilityRole="button">
-          <Text style={estilos.titulo}>{seccion.titulo}</Text>
-          {!!seccion.subtitulo && <Text style={estilos.subtitulo}>{seccion.subtitulo}</Text>}
+          <Text style={estilos.titulo}>{t(seccion.titulo)}</Text>
+          {!!seccion.subtitulo && <Text style={estilos.subtitulo}>{t(seccion.subtitulo)}</Text>}
         </Pressable>
 
         {hayMas && (
@@ -39,11 +41,11 @@ const FilaProductos = ({ seccion, alVerTodos, alVerDetalle, alAgregar }) => {
             onPress={alVerTodos}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`Ver los ${total} productos de ${seccion.titulo}`}
+            accessibilityLabel={t('Ver los {n} productos de {seccion}', { n: total, seccion: t(seccion.titulo) })}
             style={({ pressed }) => [estilos.verTodos, pressed && { opacity: 0.6 }]}
           >
             <Text style={[estilos.verTodosTexto, { color: colores.marcaTexto }]}>
-              Ver todos ({total})
+              {t('Ver todos ({n})', { n: total })}
             </Text>
           </Pressable>
         )}

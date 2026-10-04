@@ -51,8 +51,10 @@ import { avisarActividad } from '../utils/actividadUsuario';
 import Mascota, { CargandoMascota } from '../components/Tiqui/Mascota';
 import JalarParaRecargar from '../components/Tienda/JalarParaRecargar';
 import { useAviso } from '../context/AvisoContext';
+import { useIdioma } from '../context/IdiomaContext';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
+  const { t } = useIdioma();
   const { colores, recargarAjustes } = useTema();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
@@ -98,8 +100,8 @@ const Inicio = ({ irACarrito, irASeccion }) => {
    */
   const refrescar = useCallback(async () => {
     const [catalogo] = await Promise.all([refrescarCatalogo(), recargarAjustes?.()]);
-    if (!catalogo) avisar('No se pudo recargar la tienda. Revisa tu conexión.', 'error');
-  }, [refrescarCatalogo, recargarAjustes, avisar]);
+    if (!catalogo) avisar(t('No se pudo recargar la tienda. Revisa tu conexión.'), 'error');
+  }, [refrescarCatalogo, recargarAjustes, avisar, t]);
   const [menuPasillosAbierto, setMenuPasillosAbierto] = useState(false);
 
   const verDetalle = useCallback((producto) => setProductoAbierto(producto), []);
@@ -120,7 +122,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
       {/* Saludo con el nombre real de quien tiene sesión. Sin sesión no hay
           a quién saludar: la portada se ve igual que para cualquier visita. */}
       {isAuthenticated && !!nombre && (
-        <Text style={estilos.saludo}>Hola, {nombre} 👋</Text>
+        <Text style={estilos.saludo}>{t('Hola, {nombre} 👋', { nombre })}</Text>
       )}
 
       <PastillasCategoria
@@ -134,20 +136,20 @@ const Inicio = ({ irACarrito, irASeccion }) => {
       {!!promoSeleccionada && (
         <View style={estilos.filaPromoActiva}>
           <Text style={[estilos.promoActivaTexto, { color: colores.marcaTexto }]} numberOfLines={1}>
-            Promo: {promoSeleccionada.title || promoSeleccionada.promoDescription}
+            {t('Promo:')} {promoSeleccionada.title || promoSeleccionada.promoDescription}
           </Text>
           <Pressable
             onPress={() => setPromoSeleccionada(null)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Ver todos los productos"
+            accessibilityLabel={t('Ver todos los productos')}
             style={({ pressed }) => [
               estilos.quitarPromo,
               pressed && { borderColor: colores.marca, backgroundColor: colores.marcaSuave },
             ]}
           >
             <Equis size={11} color={COLORES.textoVentaja} />
-            <Text style={estilos.quitarPromoTexto}>Ver todos</Text>
+            <Text style={estilos.quitarPromoTexto}>{t('Ver todos')}</Text>
           </Pressable>
         </View>
       )}
@@ -163,7 +165,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
                 animarlo obligaría a tener un Animated corriendo siempre, y lo
                 que comunica —que esto se mueve solo— ya lo dice el color. */}
             <View style={estilos.puntoVivo} />
-            <Text style={estilos.tituloSeccion}>Más vendidos</Text>
+            <Text style={estilos.tituloSeccion}>{t('Más vendidos')}</Text>
           </View>
 
           <FlatList
@@ -200,15 +202,15 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
       <View style={estilos.encabezadoCatalogo}>
         <Text style={estilos.tituloSeccion}>
-          {categoriaSeleccionada ||
+          {(categoriaSeleccionada && t(categoriaSeleccionada)) ||
             (terminoBusqueda
               ? `"${terminoBusqueda}"`
               : nombrePasillo
-                ? `Todo en ${nombrePasillo}`
-                : 'Todos los productos')}
+                ? t('Todo en {pasillo}', { pasillo: t(nombrePasillo) })
+                : t('Todos los productos'))}
         </Text>
         <Text style={estilos.conteo}>
-          {productosFiltrados.length} {productosFiltrados.length === 1 ? 'producto' : 'productos'}
+          {productosFiltrados.length} {t(productosFiltrados.length === 1 ? 'producto' : 'productos')}
         </Text>
       </View>
     </View>
@@ -225,10 +227,10 @@ const Inicio = ({ irACarrito, irASeccion }) => {
       */}
       <Text style={estilos.vacioTexto}>
         {terminoBusqueda || categoriaSeleccionada
-          ? `No hay productos para "${terminoBusqueda || categoriaSeleccionada}"`
+          ? t('No hay productos para "{termino}"', { termino: terminoBusqueda || t(categoriaSeleccionada) })
           : nombrePasillo
-            ? `${nombrePasillo} todavía no tiene productos`
-            : 'Todavía no hay productos en la tienda'}
+            ? t('{pasillo} todavía no tiene productos', { pasillo: t(nombrePasillo) })
+            : t('Todavía no hay productos en la tienda')}
       </Text>
     </View>
   );
@@ -253,7 +255,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando la tienda…" />
+          <CargandoMascota texto={t('Cargando la tienda…')} />
         </View>
       ) : errorCarga ? (
         /*
@@ -264,11 +266,11 @@ const Inicio = ({ irACarrito, irASeccion }) => {
         <View style={estilos.centro}>
           {/* Como en la web: se le cortó el cordón y se cayó. */}
           <Mascota pose="error" alto={150} style={{ marginBottom: 12 }} />
-          <Text style={estilos.errorTitulo}>No se pudo cargar la tienda</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudo cargar la tienda')}</Text>
           <Text style={estilos.errorTexto}>{errorCarga}</Text>
           <View style={estilos.botonError}>
             <Boton
-              texto="Reintentar"
+              texto={t('Reintentar')}
               alPresionar={recargar}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}

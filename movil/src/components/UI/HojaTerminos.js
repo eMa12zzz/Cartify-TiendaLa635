@@ -27,6 +27,7 @@ import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { useAjustesTienda } from '../../hooks/useAjustesTienda';
 import { enlaceWhatsApp } from '../../utils/tienda';
 import { documentoLegal, FECHA_LEGAL, VERSION_LEGAL, URL_WEB_LEGAL } from '../../utils/legales';
+import { useIdioma } from '../../context/IdiomaContext';
 
 const MENSAJE_BORRADO =
   'Hola, quiero pedir que borren mi cuenta y mis datos personales de la tienda. Mi correo registrado es: ';
@@ -149,6 +150,7 @@ const Bloque = ({ bloque, negocio, direccion, nombre, irA }) => {
 };
 
 const HojaTerminos = ({ alCerrar, clave: claveInicial = 'terminos' }) => {
+  const { t, idioma } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const { ajustes } = useAjustesTienda();
@@ -162,12 +164,12 @@ const HojaTerminos = ({ alCerrar, clave: claveInicial = 'terminos' }) => {
   return (
     <View style={estilos.capa} accessibilityViewIsModal>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-        <Text style={estilos.tituloBarra} accessibilityRole="header">{documento.titulo}</Text>
+        <Text style={estilos.tituloBarra} accessibilityRole="header">{t(documento.titulo)}</Text>
         <Pressable
           onPress={alCerrar}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel={`Cerrar: ${documento.titulo}`}
+          accessibilityLabel={t('Cerrar: {titulo}', { titulo: t(documento.titulo) })}
           style={({ pressed }) => [estilos.cerrar, pressed && estilos.cerrarPresionado]}
         >
           <Equis size={16} color={COLORES.textoSuave} />
@@ -176,6 +178,7 @@ const HojaTerminos = ({ alCerrar, clave: claveInicial = 'terminos' }) => {
 
       {/* `key`: al cambiar de documento, se empieza a leer desde arriba. */}
       <ScrollView key={clave} contentContainerStyle={estilos.cuerpo} showsVerticalScrollIndicator={false}>
+        {idioma !== 'es' && <Text style={estilos.soloEspanol}>{t('Solo disponible en español')}</Text>}
         {documento.secciones.map((seccion) => (
           <View key={seccion.id} style={estilos.seccion}>
             <Text style={estilos.tituloSeccion} accessibilityRole="header">{seccion.titulo}</Text>
@@ -193,7 +196,7 @@ const HojaTerminos = ({ alCerrar, clave: claveInicial = 'terminos' }) => {
         ))}
 
         <Text style={estilos.pie}>
-          Versión {VERSION_LEGAL} · {FECHA_LEGAL}
+          {t('Versión {version} · {fecha}', { version: VERSION_LEGAL, fecha: FECHA_LEGAL })}
         </Text>
       </ScrollView>
     </View>
@@ -201,6 +204,12 @@ const HojaTerminos = ({ alCerrar, clave: claveInicial = 'terminos' }) => {
 };
 
 const crearEstilos = (COLORES) => StyleSheet.create({
+  soloEspanol: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: COLORES.textoSuave,
+    marginBottom: 14,
+  },
   capa: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORES.fondo,

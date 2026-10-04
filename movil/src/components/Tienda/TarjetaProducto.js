@@ -33,6 +33,7 @@ import { useFavoritos } from '../../context/FavoritosContext';
 import { useEdad } from '../../context/EdadContext';
 import { Corazon, Mas, Paquete } from '../UI/Iconos';
 import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
+import { useIdioma } from '../../context/IdiomaContext';
 
 // El rojo del corazón encendido. No sale del tema: es el rojo de "me gusta" de
 // toda la vida, y en Navidad —donde el acento YA es rojo— un corazón del color
@@ -40,12 +41,12 @@ import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 const ROJO_FAVORITO = '#FF4D6D';
 
 // El sello de la promo, con las mismas palabras que la web.
-const selloDePromo = (promo) => {
+const selloDePromo = (promo, t) => {
   if (!promo) return null;
   if (promo.type === 'nxm') return `${promo.buyQty}x${promo.payQty}`;
   if (promo.type === 'descuento') return `-${promo.discount}%`;
-  if (promo.type === 'anuncio') return promo.etiqueta || 'Nuevo';
-  return 'Oferta';
+  if (promo.type === 'anuncio') return t(promo.etiqueta || 'Nuevo');
+  return t('Oferta');
 };
 
 /*
@@ -62,6 +63,7 @@ const RETRASO_POR_TARJETA = 45;
 const TOPE_RETRASO = 8;
 
 const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
+  const { t } = useIdioma();
   const [fallóImagen, setFallóImagen] = useState(false);
   const { colores } = useTema();
   const COLORES = useColores();
@@ -92,8 +94,8 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
   const tapado = esSoloAdultos(producto) && !mayorConfirmado;
 
   const bajoStock = producto.stock < 10;
-  const sello = selloDePromo(producto.promo);
-  const contenido = !esPorLibra(producto) ? piezasEnTexto(producto) : null;
+  const sello = selloDePromo(producto.promo, t);
+  const contenido = !esPorLibra(producto) ? piezasEnTexto(producto, t) : null;
   const marcado = esFavorito(producto.id);
 
   const alTocarTarjeta = () => {
@@ -123,7 +125,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
       accessibilityRole="button"
       accessibilityLabel={
         tapado
-          ? `${producto.nombre}, producto para mayores de edad, toque para confirmar su edad`
+          ? t('{nombre}, producto para mayores de edad, toque para confirmar su edad', { nombre: producto.nombre })
           : `${producto.nombre}, $${Number(producto.precio).toFixed(2)}`
       }
       style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
@@ -154,8 +156,8 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
         {tapado && (
           <View style={estilos.coberturaEdad}>
             <Lock size={18} color="#FFFFFF" />
-            <Text style={estilos.coberturaTitulo}>Mayores de 18</Text>
-            <Text style={estilos.coberturaTexto}>Toque para confirmar su edad</Text>
+            <Text style={estilos.coberturaTitulo}>{t('Mayores de 18')}</Text>
+            <Text style={estilos.coberturaTexto}>{t('Toque para confirmar su edad')}</Text>
           </View>
         )}
       </View>
@@ -183,7 +185,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
         accessibilityRole="button"
         accessibilityState={{ selected: marcado }}
         accessibilityLabel={
-          marcado ? `Quitar ${producto.nombre} de favoritos` : `Guardar ${producto.nombre} en favoritos`
+          marcado ? t('Quitar {nombre} de favoritos', { nombre: producto.nombre }) : t('Guardar {nombre} en favoritos', { nombre: producto.nombre })
         }
         style={({ pressed }) => [estilos.corazon, pressed && estilos.corazonPresionado]}
       >
@@ -214,9 +216,9 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
           sin que le sirva de nada; lo que sí lo mueve es saber que quedan pocas.
         */}
         {producto.stock === 0 ? (
-          <Text style={estilos.stock}>Agotado</Text>
+          <Text style={estilos.stock}>{t('Agotado')}</Text>
         ) : bajoStock ? (
-          <Text style={estilos.stock}>¡Quedan pocas!</Text>
+          <Text style={estilos.stock}>{t('¡Quedan pocas!')}</Text>
         ) : null}
 
         <View style={estilos.filaPrecio}>
@@ -250,7 +252,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
             disabled={producto.stock === 0}
             hitSlop={6}
             accessibilityRole="button"
-            accessibilityLabel={`Agregar ${producto.nombre} al carrito`}
+            accessibilityLabel={t('Agregar {nombre} al carrito', { nombre: producto.nombre })}
             style={({ pressed }) => [
               estilos.botonMas,
               pressed && estilos.botonMasPresionado,

@@ -37,6 +37,7 @@ import Boton from '../components/UI/Boton';
 import { Estrella } from '../components/UI/Iconos';
 import PastillasCategoria from '../components/Tienda/PastillasCategoria';
 import { avisarActividad } from '../utils/actividadUsuario';
+import { useIdioma } from '../context/IdiomaContext';
 
 // Las tres ventanas de tiempo del filtro (además de "Todos", que ya resuelve
 // PastillasCategoria). "Semana pasada"/"Mes pasado" son ventanas RODANTES
@@ -69,10 +70,10 @@ const dentroDelFiltro = (iso, filtro) => {
  * igual, pero con respaldo: Android sin los datos de idioma cargados devuelve la
  * fecha en inglés en vez de reventar, y eso se ve mal pero no rompe nada.
  */
-const fechaCorta = (iso) => {
+const fechaCorta = (iso, locale) => {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleDateString('es-SV', {
+    return new Date(iso).toLocaleDateString(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -91,6 +92,7 @@ const fechaCorta = (iso) => {
 const numeroCorto = (id) => String(id || '').slice(-6).toUpperCase();
 
 const TarjetaPedido = ({ pedido, alPresionar }) => {
+  const { t, locale } = useIdioma();
   const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const ESTADOS = estadosPedido(COLORES.oscuro);
@@ -101,13 +103,13 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
     <Pressable
       onPress={alPresionar}
       accessibilityRole="button"
-      accessibilityLabel={`Ver el detalle del pedido ${numeroCorto(pedido._id)}`}
+      accessibilityLabel={t('Ver el detalle del pedido {numero}', { numero: numeroCorto(pedido._id) })}
       style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
     >
       <View style={estilos.cabecera}>
         <View style={estilos.identidad}>
-          <Text style={estilos.numero}>Pedido #{numeroCorto(pedido._id)}</Text>
-          <Text style={estilos.fecha}>{fechaCorta(pedido.createdAt)}</Text>
+          <Text style={estilos.numero}>{t('Pedido #{numero}', { numero: numeroCorto(pedido._id) })}</Text>
+          <Text style={estilos.fecha}>{fechaCorta(pedido.createdAt, locale)}</Text>
         </View>
 
         <View style={[estilos.chapa, { backgroundColor: estado.fondo }]}>
@@ -127,7 +129,7 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
             <Text style={estilos.lineaNombre} numberOfLines={1}>
               {/* `name` es la foto del nombre al momento de comprar; si un
                   pedido viejo no la trae, se cae al producto poblado. */}
-              {item.amount}× {item.name || item.productId?.name || 'Producto'}
+              {item.amount}× {item.name || item.productId?.name || t('Producto')}
             </Text>
             <Text style={estilos.lineaPrecio}>
               ${(Number(item.price) * Number(item.amount)).toFixed(2)}
@@ -139,8 +141,8 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
       {/* Cancelado: el motivo, en una o dos líneas; el detalle completo está al tocarlo. */}
       {esCancelado && !!pedido.cancelReason && (
         <Text style={estilos.motivo} numberOfLines={2}>
-          <Text style={estilos.motivoTitulo}>{pedido.cancelledByClient ? 'Lo canceló usted: ' : 'Motivo: '}</Text>
-          {pedido.cancelReason}
+          <Text style={estilos.motivoTitulo}>{pedido.cancelledByClient ? t('Lo canceló usted: ') : t('Motivo: ')}</Text>
+          {t(pedido.cancelReason)}
         </Text>
       )}
 
@@ -149,20 +151,21 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
         {pedido.pointsEarned > 0 && !esCancelado ? (
           <View style={estilos.puntos}>
             <Estrella size={13} color={COLORES.marca} />
-            <Text style={estilos.puntosTexto}>+{pedido.pointsEarned} puntos</Text>
+            <Text style={estilos.puntosTexto}>{t('+{n} puntos', { n: pedido.pointsEarned })}</Text>
           </View>
         ) : (
           // Un hueco vacío para que el total se quede pegado a la derecha
           // aunque el pedido no haya dado puntos.
           <View />
         )}
-        <Text style={estilos.total}>Total: ${Number(pedido.total).toFixed(2)}</Text>
+        <Text style={estilos.total}>{t('Total: ${monto}', { monto: Number(pedido.total).toFixed(2) })}</Text>
       </View>
     </Pressable>
   );
 };
 
 const Pedidos = () => {
+  const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
@@ -213,7 +216,7 @@ const Pedidos = () => {
        * estado, el backend apagado se ve exactamente igual que un cliente nuevo
        * — y uno de los dos tiene arreglo.
        */
-      setError(e?.message || 'No se pudieron cargar sus pedidos');
+      setError(e?.message || t('No se pudieron cargar sus pedidos'));
     } finally {
       setCargando(false);
     }
@@ -237,10 +240,10 @@ const Pedidos = () => {
   return (
     <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
-        <Text style={estilos.titulo}>Mis pedidos</Text>
+        <Text style={estilos.titulo}>{t('Mis pedidos')}</Text>
         {!cargando && !error && pedidos.length > 0 && (
           <Text style={estilos.conteo}>
-            {pedidosFiltrados.length} {pedidosFiltrados.length === 1 ? 'pedido' : 'pedidos'}
+            {pedidosFiltrados.length} {t(pedidosFiltrados.length === 1 ? 'pedido' : 'pedidos')}
           </Text>
         )}
       </View>
@@ -258,15 +261,15 @@ const Pedidos = () => {
 
       {cargando ? (
         <View style={estilos.centro}>
-          <CargandoMascota texto="Cargando tus pedidos…" />
+          <CargandoMascota texto={t('Cargando tus pedidos…')} />
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>No se pudieron cargar sus pedidos</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus pedidos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
-              texto="Reintentar"
+              texto={t('Reintentar')}
               alPresionar={cargar}
               color={colores.marca}
               colorPresionado={colores.marcaOscuro}
@@ -277,17 +280,17 @@ const Pedidos = () => {
         // Vacío es una invitación, no una disculpa (igual que en la web).
         <View style={estilos.centro}>
           <Mascota pose="vacio" alto={120} />
-          <Text style={estilos.vacioTitulo}>Todavía no tiene pedidos</Text>
+          <Text style={estilos.vacioTitulo}>{t('Todavía no tiene pedidos')}</Text>
           <Text style={estilos.vacioTexto}>
-            Cuando compre en la tienda, sus pedidos van a aparecer aquí.
+            {t('Cuando compre en la tienda, sus pedidos van a aparecer aquí.')}
           </Text>
         </View>
       ) : pedidosFiltrados.length === 0 ? (
         // Un vacío distinto: sí ha comprado, solo que no en este período.
         <View style={estilos.centro}>
           <Mascota pose="buscando" alto={120} />
-          <Text style={estilos.vacioTitulo}>Nada por aquí</Text>
-          <Text style={estilos.vacioTexto}>No tiene pedidos en ese período.</Text>
+          <Text style={estilos.vacioTitulo}>{t('Nada por aquí')}</Text>
+          <Text style={estilos.vacioTexto}>{t('No tiene pedidos en ese período.')}</Text>
         </View>
       ) : (
         <FlatList
