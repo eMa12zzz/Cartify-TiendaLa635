@@ -143,6 +143,8 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
 
   return (
     <section
+      // Ancla para que Tiqui las ponga a la vista ("las promociones").
+      id="promociones-tienda"
       aria-label={t('Promociones de la tienda')}
       onMouseEnter={pausar}
       onMouseLeave={reanudar}
