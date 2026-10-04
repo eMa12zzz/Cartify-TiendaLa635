@@ -579,6 +579,10 @@ const EN = {
   'Ver las secciones anteriores': 'See previous sections',
   'Ver más secciones': 'See more sections',
 
+  // ── Barra de categorías de la tienda ──
+  'Ver las categorías anteriores': 'See previous categories',
+  'Ver más categorías': 'See more categories',
+
   // ── El cliente cancela su pedido ──
   'Me equivoqué en el pedido.': 'I made a mistake in my order.',
   'Ya no lo necesito.': 'I don\'t need it anymore.',
