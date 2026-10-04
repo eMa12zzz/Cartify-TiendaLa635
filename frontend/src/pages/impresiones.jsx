@@ -18,6 +18,9 @@ import { pxDesdeCm } from '../utils/pxImpresion';
 const BROWN = 'var(--marca-600)';
 const BROWN_DARK = 'var(--marca-700)';
 
+// El mismo tope que el servidor (MAX_COPIAS en orderController).
+const MAX_COPIAS = 200;
+
 /* Columna flex por lo mismo que la tienda: con poco contenido, el pie tiene
    que aterrizar abajo y no quedar flotando a media pantalla. */
 const Container = styled.div`min-height: 100vh; background: var(--papel-suave); font-family: var(--fuente); display: flex; flex-direction: column;`;
@@ -281,7 +284,21 @@ const Impresiones = () => {
           </Row>
           <Row>
             <Label id="etiqueta-copias">Copias</Label>
-            <NumInput type="number" inputMode="numeric" min="1" aria-labelledby="etiqueta-copias" value={copias} onChange={(e) => setCopias(e.target.value)} />
+            {/*
+              Entero entre 1 y MAX_COPIAS. Un <input type="number"> deja escribir
+              "1e258", y así llegaron pedidos con un total de 10^256. El servidor
+              también lo rechaza (ver createPrintOrder).
+            */}
+            <NumInput
+              type="number" inputMode="numeric" min="1" max={MAX_COPIAS} step="1"
+              aria-labelledby="etiqueta-copias"
+              value={copias}
+              onChange={(e) => {
+                if (e.target.value === '') { setCopias(''); return; }
+                const n = Math.floor(Number(e.target.value));
+                setCopias(Number.isFinite(n) ? Math.min(MAX_COPIAS, Math.max(1, n)) : 1);
+              }}
+            />
           </Row>
           <Row>
             <Label>Doble cara</Label>

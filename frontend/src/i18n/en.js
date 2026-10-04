@@ -599,6 +599,10 @@ const EN = {
   'Ya empezamos a preparar su pedido y no se puede cancelar desde aquí. Escríbanos por WhatsApp y lo vemos.': 'We\'ve already started preparing your order, so it can\'t be canceled here. Message us on WhatsApp and we\'ll sort it out.',
   'Cuéntenos por qué lo cancela: elija una opción.': 'Tell us why you are canceling: choose an option.',
   'Este pedido ya está cancelado.': 'This order is already canceled.',
+
+  // ── Zona de entrega ──
+  'Esa dirección queda fuera de la zona de entrega. Puede elegir recogerlo en la tienda.': 'That address is outside our delivery area. You can choose to pick it up at the store.',
+  'Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Puede elegir recogerlo en la tienda.': 'That address is {km} km from the store, outside our delivery area. You can choose to pick it up at the store.',
 };
 
 export default EN;

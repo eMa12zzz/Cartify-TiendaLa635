@@ -1294,6 +1294,11 @@ const ShoppingCart = ({
       toast.error(t('Elija una dirección de entrega'));
       return;
     }
+    // Muy lejos de la tienda no se entrega (el servidor tampoco lo acepta).
+    if (entrega === 'delivery' && envioCalc.fueraDeCobertura) {
+      toast.error(t('Esa dirección queda fuera de la zona de entrega. Puede elegir recogerlo en la tienda.'));
+      return;
+    }
     // Se compara contra totalAPagar (ya con el descuento de puntos aplicado),
     // que es lo que de verdad se va a cobrar.
     if (metodoPago === 'saldo' && saldo < totalAPagar) {
@@ -1588,6 +1593,18 @@ const ShoppingCart = ({
                     cuánto me llega?" — responderlo después, en el correo de
                     confirmación, ya no le sirve para decidir.
                   */}
+                  {entrega === 'delivery' && envioCalc.fueraDeCobertura && (
+                    <div
+                      role="alert"
+                      style={{
+                        marginTop: 10, padding: '10px 12px', borderRadius: 12, fontSize: 12.5,
+                        background: 'rgba(220,38,38,.08)', color: 'var(--peligro)', fontWeight: 600,
+                      }}
+                    >
+                      {t('Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Puede elegir recogerlo en la tienda.', { km: envioCalc.distanciaKm })}
+                    </div>
+                  )}
+
                   {entrega === 'delivery' && zona.hayDatos && (
                     <div style={{
                       display: 'flex', alignItems: 'flex-start', gap: 8,

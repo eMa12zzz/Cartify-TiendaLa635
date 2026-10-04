@@ -27,6 +27,21 @@ const esCoord = (v) => v !== null && v !== undefined && v !== "" && Number.isFin
 const hayCoord = (lat, lng) => esCoord(lat) && esCoord(lng);
 const redondear = (n) => Number(num(n, 0).toFixed(2));
 
+/*
+ * HASTA DÓNDE SE ENTREGA.
+ *
+ * El cobro por km no tenía techo, y la distancia sale del punto que marca el
+ * cliente. El GPS del emulador de Android viene de fábrica en California: un
+ * pedido de prueba desde ahí salía a 4,000 km de la tienda y se cobraba $12,000
+ * de envío, que el dashboard sumaba como ventas.
+ *
+ * Más allá de este radio no se cobra un envío: el pedido a domicilio no se
+ * acepta (ver createOrder) y se ofrece pasar a recogerlo. La tienda puede
+ * cambiarlo con `radioMaximoKm` en sus ajustes; si no lo tiene, vale este.
+ * La web repite la misma cuenta en frontend/src/utils/envio.js.
+ */
+export const RADIO_MAXIMO_KM = 30;
+
 // Distancia en km entre dos puntos (haversine).
 export const distanciaKm = (lat1, lng1, lat2, lng2) => {
   const dLat = rad(lat2 - lat1);
@@ -74,6 +89,8 @@ export const calcularEnvio = (ajustes = {}, destino = {}) => {
       metodo: "km",
       distanciaKm: Math.round(km * 10) / 10,
       zona: null,
+      // Ver RADIO_MAXIMO_KM: fuera de aquí no se entrega.
+      fueraDeCobertura: km > num(ajustes.radioMaximoKm, RADIO_MAXIMO_KM),
     };
   }
 

@@ -2,3 +2,5 @@
 .env
 *.env
 node_modules
+# Respaldos de los scripts de limpieza: llevan datos de clientes.
+respaldos/

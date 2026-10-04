@@ -144,19 +144,25 @@ orderController.createOrder = async (req, res) => {
     // ── CANJE DE PUNTOS ──
     // Nos protegemos de tres cosas: que no canjee más de lo que tiene, que no
     // canjee más de lo que cuesta la compra, y que respete el mínimo.
-    let pointsRedeemed = 0;
+    /*
+     * Aquí solo se CALCULA cuántos se canjean. Se consumen al final, cuando ya
+     * no queda nada que pueda rechazar el pedido: antes se consumían aquí, y si
+     * después faltaba la dirección o no alcanzaba el saldo, el pedido no se
+     * hacía y los puntos se perdían igual.
+     */
+    let aCanjear = 0;
     let discount = 0;
     const pedidos = Number(pointsToRedeem) || 0;
+    const tasa = config.pointsPerDollarRedeem || 100;
 
     if (pedidos > 0 && config.isActive) {
       const disponibles = await puntosDisponibles(clientId);
-      const tasa = config.pointsPerDollarRedeem || 100;
       const topePorCompra = Math.floor(subtotal * tasa); // no regalar más que el total
       const posibles = Math.min(pedidos, disponibles, topePorCompra);
 
       if (posibles >= (config.minRedeemPoints || 0)) {
-        pointsRedeemed = await consumirPuntos(clientId, posibles);
-        discount = Number((pointsRedeemed / tasa).toFixed(2));
+        aCanjear = posibles;
+        discount = Number((aCanjear / tasa).toFixed(2));
       }
     }
 
@@ -176,10 +182,17 @@ orderController.createOrder = async (req, res) => {
      */
     const ajustesTienda = await storeSettingsModel
       .findOne({ clave: CLAVE_UNICA })
-      .select("ubicacionTienda envioBase envioPorKm zonasEnvio servicioActivo servicioTipo servicioValor");
-    const shippingCost = entrega === "delivery"
-      ? calcularEnvio(ajustesTienda || {}, { lat: deliveryLat, lng: deliveryLng }).costo
-      : 0;
+      .select("ubicacionTienda envioBase envioPorKm zonasEnvio radioMaximoKm servicioActivo servicioTipo servicioValor");
+    const envio = entrega === "delivery"
+      ? calcularEnvio(ajustesTienda || {}, { lat: deliveryLat, lng: deliveryLng })
+      : null;
+    // Muy lejos de la tienda no se entrega. Ver RADIO_MAXIMO_KM en utils/envio.js.
+    if (envio?.fueraDeCobertura) {
+      return res.status(400).json({
+        message: `Esa dirección queda a ${envio.distanciaKm} km de la tienda, fuera de la zona de entrega. Puede elegir recogerlo en la tienda.`,
+      });
+    }
+    const shippingCost = envio ? envio.costo : 0;
 
     /*
      * Tarifa de servicio: solo si la tienda la tiene activa. Fija (dólares) o un
@@ -220,6 +233,14 @@ orderController.createOrder = async (req, res) => {
         });
       }
     }
+
+    /*
+     * Ahora sí se consumen los puntos: ya pasó todo lo que podía rechazar el
+     * pedido. Si justo en este instante otra compra gastó parte de ellos, se
+     * canjean los que quedan; el descuento ya está en el total, y es un caso
+     * tan raro que no vale la pena rehacer el cobro por él.
+     */
+    const pointsRedeemed = aCanjear > 0 ? await consumirPuntos(clientId, aCanjear) : 0;
 
     const newOrder = new orderModel({
       clientId,
@@ -567,6 +588,10 @@ orderController.cancelarPorCliente = async (req, res) => {
   }
 };
 
+// Topes de un trabajo de impresión (la web y la app usan los mismos).
+export const MAX_COPIAS = 200;
+export const MAX_PAGINAS = 500;
+
 // INSERT — Crear un pedido de IMPRESIÓN (sube archivo + opciones).
 orderController.createPrintOrder = async (req, res) => {
   try {
@@ -589,8 +614,20 @@ orderController.createPrintOrder = async (req, res) => {
     }
 
     const esColor = color === "true" || color === true;
-    const nCopias = Number(copies) || 1;
-    const nPaginas = Number(pages) || 1;
+    /*
+     * Copias y páginas, enteras y con tope. Antes pasaba cualquier número: el
+     * campo de copias de la web acepta "1e258" (un <input type="number"> deja
+     * escribir exponentes) y llegaron pedidos de 10^258 copias, con un total y
+     * unos puntos de 5×10^256 que dejaron el dashboard ilegible.
+     */
+    const nCopias = copies === undefined || copies === "" ? 1 : Number(copies);
+    const nPaginas = pages === undefined || pages === "" ? 1 : Number(pages);
+    if (!Number.isInteger(nCopias) || nCopias < 1 || nCopias > MAX_COPIAS) {
+      return res.status(400).json({ message: `Las copias van de 1 a ${MAX_COPIAS}.` });
+    }
+    if (!Number.isInteger(nPaginas) || nPaginas < 1 || nPaginas > MAX_PAGINAS) {
+      return res.status(400).json({ message: `El documento puede tener de 1 a ${MAX_PAGINAS} páginas.` });
+    }
     const doble = doubleSided === "true" || doubleSided === true;
 
     /*
