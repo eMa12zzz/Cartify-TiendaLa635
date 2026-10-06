@@ -28,6 +28,36 @@ productController.getProduct = async (req, res) => {
   }
 };
 
+/*
+ * Un solo producto, con lo que se puede mostrar en público.
+ *
+ * GET /product/:id caía en getProduct y devolvía el catálogo entero sin mirar
+ * el id. Ahora devuelve solo ese producto, y solo lo que ve un cliente: lo usa
+ * la vista previa al compartir un enlace (frontend/middleware.js), que no
+ * tiene por qué saber el costo ni el proveedor.
+ */
+const CAMPOS_PUBLICOS = "name image salePrice unidadVenta piezas description soloAdultos isActive typeId brandId";
+
+productController.getProductById = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Ese producto no existe" });
+  }
+  try {
+    const producto = await productModel.findById(id, CAMPOS_PUBLICOS)
+      .populate("typeId", "type")
+      .populate("brandId", "name")
+      .lean();
+    if (!producto || producto.isActive === false) {
+      return res.status(404).json({ message: "Ese producto no existe" });
+    }
+    return res.status(200).json(producto);
+  } catch (error) {
+    console.log("error " + error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 // INSERT
 productController.insertProduct = async (req, res) => {
 
