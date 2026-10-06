@@ -189,7 +189,7 @@ const CreatePassword = () => {
                 $error={!!errors.confirmNewPassword}
                 id="campo-confirmNewPassword"
                 {...register("confirmNewPassword", {
-                  required: "Debe confirmar la contraseña",
+                  required: "Confirma la contraseña",
                   validate: value => value === newPassword || "Las contraseñas no coinciden"
                 })}
               />

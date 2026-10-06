@@ -44,7 +44,7 @@ export const useReviews = (productoId) => {
 
   const guardar = async ({ rating, comment }) => {
     if (!esCliente) {
-      toast('Inicie sesión para dejar su opinión');
+      toast('Inicia sesión para dejar tu opinión');
       return false;
     }
 
@@ -68,7 +68,7 @@ export const useReviews = (productoId) => {
     if (!esCliente) return;
     try {
       await reviewService.eliminar(productoId, user.id);
-      toast.success('Se quitó su valoración');
+      toast.success('Se quitó tu valoración');
       await cargar();
     } catch (error) {
       console.error(error);

@@ -60,7 +60,7 @@ export const useUbicacion = () => {
        * persona puede escribir la dirección a mano. Quedarse sin poder
        * continuar por un servicio ajeno sería peor.
        */
-      toast('No se pudo leer la dirección; puede escribirla usted');
+      toast('No se pudo leer la dirección; puedes escribirla tú');
     } finally {
       setBuscando(false);
     }
@@ -72,7 +72,7 @@ export const useUbicacion = () => {
    */
   const localizarme = () => {
     if (!navigator.geolocation) {
-      toast.error('Su navegador no permite ubicarlo automáticamente');
+      toast.error('Tu navegador no permite ubicarte automáticamente');
       return;
     }
 
@@ -85,9 +85,9 @@ export const useUbicacion = () => {
       (error) => {
         setLocalizando(false);
         const mensajes = {
-          1: 'No nos dio permiso de ubicarlo. Puede mover el pin en el mapa.',
-          2: 'No pudimos ubicarlo. Pruebe moviendo el pin en el mapa.',
-          3: 'La ubicación tardó demasiado. Pruebe moviendo el pin en el mapa.',
+          1: 'No nos diste permiso de ubicarte. Puedes mover el pin en el mapa.',
+          2: 'No pudimos ubicarte. Prueba moviendo el pin en el mapa.',
+          3: 'La ubicación tardó demasiado. Prueba moviendo el pin en el mapa.',
         };
         toast(mensajes[error.code] || 'No pudimos ubicarlo', { duration: 5000 });
       },

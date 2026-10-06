@@ -141,7 +141,7 @@ const BurbujaPedido = () => {
       <button
         type="button"
         onClick={agrandar}
-        aria-label={t('Ver su pedido: {estado}', { estado: enCamino ? seguimiento.espera : t(paso.label) })}
+        aria-label={t('Ver tu pedido: {estado}', { estado: enCamino ? seguimiento.espera : t(paso.label) })}
         style={{
           position: 'fixed',
           left: 'max(20px, env(safe-area-inset-left))',
@@ -230,15 +230,15 @@ const BurbujaPedido = () => {
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
                   <Bike size={15} strokeWidth={2.4} />
-                  {seguimiento.yaCasi ? t('Ya casi toca su puerta') : seguimiento.espera}
+                  {seguimiento.yaCasi ? t('Ya casi toca tu puerta') : seguimiento.espera}
                 </div>
                 <div style={{ fontSize: 11.5, color: seguimiento.yaCasi ? 'var(--exito-suave)' : 'var(--info-suave)', marginTop: 2 }}>
                   {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
                   {/* La distancia solo sale si el pedido guardó su punto en el
                       mapa; los viejos traen nada más la dirección escrita */}
                   {seguimiento.distancia
-                    ? t('a {distancia} de su dirección', { distancia: seguimiento.distancia })
-                    : t('Le llevan su pedido')}
+                    ? t('a {distancia} de tu dirección', { distancia: seguimiento.distancia })
+                    : t('Te llevan tu pedido')}
                 </div>
               </div>
             </div>
@@ -316,13 +316,13 @@ const BurbujaPedido = () => {
             */}
             {esDomicilio && seguimiento.senalFria && (
               <p style={{ fontSize: 11.5, color: 'var(--tinta-tenue)', margin: '10px 0 0', lineHeight: 1.45 }}>
-                {t('Su pedido va en camino. La última novedad del repartidor fue hace {n} min.', { n: seguimiento.minutosDesdeUltimoDato || 1 })}
+                {t('Tu pedido va en camino. La última novedad del repartidor fue hace {n} min.', { n: seguimiento.minutosDesdeUltimoDato || 1 })}
               </p>
             )}
 
             {esDomicilio && enCurso.deliveryAddress && (
               <p style={{ fontSize: 11.5, color: 'var(--tinta-tenue)', margin: '10px 0 0', lineHeight: 1.45 }}>
-                {t('Se lo llevamos a: {direccion}', { direccion: enCurso.deliveryAddress })}
+                {t('Te lo llevamos a: {direccion}', { direccion: enCurso.deliveryAddress })}
               </p>
             )}
 
@@ -347,7 +347,7 @@ const BurbujaPedido = () => {
         type="button"
         onClick={() => setAbierta((v) => !v)}
         aria-expanded={abierta}
-        aria-label={enCamino ? t('Su pedido va en camino. {espera}', { espera: seguimiento.espera }) : t('Su pedido: {estado}', { estado: t(paso.label) })}
+        aria-label={enCamino ? t('Tu pedido va en camino. {espera}', { espera: seguimiento.espera }) : t('Tu pedido: {estado}', { estado: t(paso.label) })}
         style={{
           display: 'flex',
           flexDirection: 'column',

@@ -83,7 +83,7 @@ const validarFechaOpcional = (valor) => {
   const iso = fechaISO(valor);
   if (!iso) return tAhora('Esa fecha no es válida');
   const edad = calcularEdad(iso);
-  if (edad < 0 || edad > 120) return tAhora('Revise la fecha');
+  if (edad < 0 || edad > 120) return tAhora('Revisa la fecha');
   return null;
 };
 
@@ -142,7 +142,7 @@ const MisDatos = ({ alVolver }) => {
         });
         setFoto(cliente?.image || null);
       } catch (e) {
-        if (vivo) avisar(e?.message || t('No se pudieron cargar sus datos'), 'error');
+        if (vivo) avisar(e?.message || t('No se pudieron cargar tus datos'), 'error');
       } finally {
         if (vivo) setCargando(false);
       }
@@ -163,7 +163,7 @@ const MisDatos = ({ alVolver }) => {
   const elegirFoto = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permiso.granted) {
-      avisar(t('Necesita darle permiso a la app para ver sus fotos'), 'error');
+      avisar(t('Necesitas darle permiso a la app para ver tus fotos'), 'error');
       return;
     }
 
@@ -226,10 +226,10 @@ const MisDatos = ({ alVolver }) => {
        * de la tienda aunque acabe de guardarlo aquí.
        */
       actualizarUsuario({ dui });
-      avisar(t('Sus datos quedaron guardados'), 'exito');
+      avisar(t('Tus datos quedaron guardados'), 'exito');
       alVolver?.();
     } catch (e) {
-      avisar(e?.message || t('No se pudieron guardar sus datos'), 'error');
+      avisar(e?.message || t('No se pudieron guardar tus datos'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -286,7 +286,7 @@ const MisDatos = ({ alVolver }) => {
             icono={User}
             valor={form.fullName}
             alCambiar={(v) => escribir('fullName', v)}
-            marcador={t('Su nombre')}
+            marcador={t('Tu nombre')}
             error={errores.fullName}
             autoCapitalize="words"
             autoComplete="name"
@@ -299,7 +299,7 @@ const MisDatos = ({ alVolver }) => {
             icono={AtSign}
             valor={form.userName}
             alCambiar={(v) => escribir('userName', v)}
-            marcador={t('Su usuario')}
+            marcador={t('Tu usuario')}
             error={errores.userName}
             autoCapitalize="none"
             autoCorrect={false}

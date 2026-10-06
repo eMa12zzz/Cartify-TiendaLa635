@@ -35,7 +35,7 @@ import { useIdioma } from '../../context/IdiomaContext';
  * ── Qué NO trae, a propósito ──
  * La web muestra un mapita en miniatura con el repartidor acercándose
  * (MapaSeguimiento). Aquí no: el texto de la espera ("Llega en 10 min
- * aprox.", "Ya casi toca su puerta") ya dice lo que importa, y meter un mapa
+ * aprox.", "Ya casi toca tu puerta") ya dice lo que importa, y meter un mapa
  * chico aquí es una WebView más corriendo todo el tiempo que la burbuja está
  * abierta. Si hace falta el mapa de verdad, es un siguiente paso, no parte
  * de este.
@@ -358,7 +358,7 @@ const BurbujaPedido = () => {
           <Pressable
             onPress={() => { setOculta(false); agrandar(); }}
             accessibilityRole="button"
-            accessibilityLabel={t('Ver su pedido: {estado}', { estado: enCamino ? seguimiento.espera : paso.label })}
+            accessibilityLabel={t('Ver tu pedido: {estado}', { estado: enCamino ? seguimiento.espera : paso.label })}
             style={estilos.botonRedondoToque}
           >
             {/* Tiqui en el paso del pedido, como en la web (en patineta si va en camino). */}
@@ -444,7 +444,7 @@ const BurbujaPedido = () => {
                         { color: seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto },
                       ]}
                     >
-                      {seguimiento.yaCasi ? t('Ya casi toca su puerta') : seguimiento.espera}
+                      {seguimiento.yaCasi ? t('Ya casi toca tu puerta') : seguimiento.espera}
                     </Text>
                   </View>
                   <Text
@@ -454,7 +454,7 @@ const BurbujaPedido = () => {
                     ]}
                   >
                     {seguimiento.repartidor ? `${seguimiento.repartidor} · ` : ''}
-                    {seguimiento.distancia ? t('a {distancia} de su dirección', { distancia: seguimiento.distancia }) : t('Le llevan su pedido')}
+                    {seguimiento.distancia ? t('a {distancia} de tu dirección', { distancia: seguimiento.distancia }) : t('Te llevan tu pedido')}
                   </Text>
                 </View>
               </>
@@ -471,7 +471,7 @@ const BurbujaPedido = () => {
                   <Clock size={14} color={COLORES.exitoTexto} strokeWidth={2.4} />
                   <Text style={[estilos.infoTitulo, { color: COLORES.exitoTexto }]}>{zona.tipico === zona.holgado ? t('Llega en unos {min} min', { min: zona.tipico }) : t('Llega entre {desde} y {hasta} min', { desde: zona.tipico, hasta: zona.holgado })}</Text>
                 </View>
-                <Text style={[estilos.infoDetalle, { color: COLORES.exitoSuave }]}>{t(zona.entregas === 1 ? 'Según {n} entrega a su zona. No es una promesa: es lo que hemos tardado.' : 'Según {n} entregas a su zona. No es una promesa: es lo que hemos tardado.', { n: zona.entregas })}</Text>
+                <Text style={[estilos.infoDetalle, { color: COLORES.exitoSuave }]}>{t(zona.entregas === 1 ? 'Según {n} entrega a tu zona. No es una promesa: es lo que hemos tardado.' : 'Según {n} entregas a tu zona. No es una promesa: es lo que hemos tardado.', { n: zona.entregas })}</Text>
               </View>
             )}
 
@@ -482,12 +482,12 @@ const BurbujaPedido = () => {
 
               {esDomicilio && seguimiento.senalFria && (
                 <Text style={estilos.notaPequena}>
-                  {t('Su pedido va en camino. La última novedad del repartidor fue hace {n} min.', { n: seguimiento.minutosDesdeUltimoDato || 1 })}
+                  {t('Tu pedido va en camino. La última novedad del repartidor fue hace {n} min.', { n: seguimiento.minutosDesdeUltimoDato || 1 })}
                 </Text>
               )}
 
               {esDomicilio && pedido.deliveryAddress && (
-                <Text style={estilos.notaPequena}>{t('Se lo llevamos a: {direccion}', { direccion: pedido.deliveryAddress })}</Text>
+                <Text style={estilos.notaPequena}>{t('Te lo llevamos a: {direccion}', { direccion: pedido.deliveryAddress })}</Text>
               )}
 
               <Pressable accessibilityRole="button" onPress={irAPedidos} style={estilos.botonVerPedido}>
@@ -505,7 +505,7 @@ const BurbujaPedido = () => {
         onLayout={(e) => setAnchoPildora(e.nativeEvent.layout.width)}
         accessibilityRole="button"
         accessibilityState={{ expanded: abierta }}
-        accessibilityLabel={enCamino ? t('Su pedido va en camino. {espera}', { espera: seguimiento.espera }) : t('Su pedido: {estado}', { estado: paso.label })}
+        accessibilityLabel={enCamino ? t('Tu pedido va en camino. {espera}', { espera: seguimiento.espera }) : t('Tu pedido: {estado}', { estado: paso.label })}
         style={[estilos.botonBurbuja, { backgroundColor: seguimiento.yaCasi ? '#14663A' : colores.marca }]}
         /*
          * Generoso arriba y abajo a propósito: la píldora tiene las puntas

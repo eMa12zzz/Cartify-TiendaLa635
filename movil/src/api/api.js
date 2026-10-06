@@ -62,10 +62,10 @@ export class ErrorApi extends Error {
 }
 
 const RESPALDO_POR_ESTADO = {
-  400: 'Revise los datos e intente de nuevo',
+  400: 'Revisa los datos e intenta de nuevo',
   401: 'El correo o contraseña son incorrectos',
-  403: 'No tiene permiso para hacer esto',
-  404: 'No encontramos lo que buscaba',
+  403: 'No tienes permiso para hacer esto',
+  404: 'No encontramos lo que buscabas',
   500: 'Error interno del servidor',
 };
 
@@ -110,7 +110,7 @@ export const peticion = async (ruta, { metodo = 'GET', cuerpo, cabeceras, tiempo
     throw new ErrorApi(
       corte?.signal.aborted
         ? tAhora('El servidor tardó demasiado en contestar.')
-        : tAhora('No se pudo conectar con el servidor ({url}). Revise que el backend esté encendido.', { url: URL_API }),
+        : tAhora('No pudimos conectarnos con la tienda. Revisa tu conexión e inténtalo otra vez.', { url: URL_API }),
       0
     );
   } finally {

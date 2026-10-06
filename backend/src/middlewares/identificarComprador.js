@@ -66,13 +66,13 @@ export const identificarComprador = async (req, res, next) => {
 
       if (!sesion || sesion.estado !== "vinculada" || !sesion.clientId) {
         return res.status(401).json({
-          message: "La sesión del kiosco no es válida. Vuelva a escanear el código.",
+          message: "La sesión del kiosco no es válida. Vuelve a escanear el código.",
         });
       }
 
       if (sesion.expiraEn && sesion.expiraEn.getTime() < Date.now()) {
         return res.status(401).json({
-          message: "La sesión del kiosco venció. Vuelva a escanear el código.",
+          message: "La sesión del kiosco venció. Vuelve a escanear el código.",
         });
       }
 
@@ -87,7 +87,7 @@ export const identificarComprador = async (req, res, next) => {
       return next();
     }
 
-    return res.status(401).json({ message: "Inicie sesión para hacer su pedido" });
+    return res.status(401).json({ message: "Inicia sesión para hacer tu pedido" });
   } catch (error) {
     console.log("error identificarComprador: " + error);
     return res.status(500).json({ message: "Error interno del servidor" });

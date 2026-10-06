@@ -171,7 +171,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
        * las casillas de los términos al lado.
        */
       if (err.requiereConsentimiento) {
-        setAvisoServidor(t('No tiene una cuenta con ese correo de Google. Regístrese primero: también puede hacerlo con Google.'));
+        setAvisoServidor(t('No tienes una cuenta con ese correo de Google. Regístrate primero: también puedes hacerlo con Google.'));
         return;
       }
       setAvisoServidor(err.message || t('No se pudo iniciar sesión con Google'));
@@ -209,8 +209,8 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
               largo={70}
             />
           </View>
-          <Text style={estilos.titulo}>{t('Bienvenido de nuevo')}</Text>
-          <Text style={estilos.subtitulo}>{t('Inicie sesión para seguir con su compra.')}</Text>
+          <Text style={estilos.titulo}>{t('Qué bueno verte de nuevo')}</Text>
+          <Text style={estilos.subtitulo}>{t('Inicia sesión para seguir con tu compra.')}</Text>
 
           <CampoTexto
             icono={Mail}
@@ -256,7 +256,7 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
               accessibilityRole="link"
               onPress={() => Linking.openURL(`${URL_WEB_LEGAL}/forgot-password`)}
             >
-              <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>{t('¿Olvidó su contraseña?')}</Text>
+              <Text style={[estilos.enlace, { color: colores.marcaTexto }]}>{t('¿Olvidaste tu contraseña?')}</Text>
             </Pressable>
           </View>
 
@@ -297,9 +297,9 @@ const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
             tiene con qué entrar.
           */}
           <Text style={estilos.pie}>
-            {t('¿No tiene una cuenta?')}{' '}
+            {t('¿No tienes una cuenta?')}{' '}
             <Text style={[estilos.pieEnlace, { color: colores.marcaTexto }]} onPress={irARegistro}>
-              {t('Regístrese')}
+              {t('Regístrate')}
             </Text>
           </Text>
 

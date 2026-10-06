@@ -185,7 +185,7 @@ registerClientController.register = async (req, res) => {
       return res.status(500).json({ message: "No se pudo enviar el correo" });
     }
 
-    return res.status(200).json({ message: "Le enviamos el código a su correo" });
+    return res.status(200).json({ message: "Te enviamos el código a tu correo" });
   } catch (error) {
     console.log("error register cliente: " + error);
     return res.status(500).json({ message: "Error interno del servidor" });
@@ -198,7 +198,7 @@ registerClientController.verifyCode = async (req, res) => {
     const token = req.cookies.registrationCookie;
 
     if (!token) {
-      return res.status(400).json({ message: "El registro venció. Vuelva a empezar." });
+      return res.status(400).json({ message: "El registro venció. Vuelve a empezar." });
     }
 
     const decoded = jsonwebtoken.verify(token, config.JWT.secret);

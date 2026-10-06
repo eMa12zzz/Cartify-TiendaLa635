@@ -464,7 +464,7 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
           <CoberturaEdad>
             <Lock size={20} />
             <span style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.2 }}>{t('Mayores de 18')}</span>
-            <span style={{ fontSize: 10.5, opacity: 0.85, lineHeight: 1.25 }}>{t('Toque para confirmar su edad')}</span>
+            <span style={{ fontSize: 10.5, opacity: 0.85, lineHeight: 1.25 }}>{t('Toca para confirmar tu edad')}</span>
           </CoberturaEdad>
         )}
       </ImageWrapper>

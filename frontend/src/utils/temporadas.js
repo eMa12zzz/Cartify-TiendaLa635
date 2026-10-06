@@ -58,7 +58,7 @@ export const TEMAS_DE_TEMPORADA = [
     },
     muestras: ['#166534', '#C1121F', '#DCEEE1'],
     decoracion: {
-      saludo: 'Felices fiestas — pida con tiempo, que diciembre se llena',
+      saludo: 'Felices fiestas — pide con tiempo, que diciembre se llena',
       figura: 'copo',
       // Cuántas figuras caen a la vez. Pocas a propósito: veinte copos ya no
       // son "está nevando", son un protector de pantalla encima de la tienda.
@@ -138,7 +138,7 @@ export const TEMAS_DE_TEMPORADA = [
     },
     muestras: ['#BE185D', '#EC7FB0', '#FCE7F1'],
     decoracion: {
-      saludo: 'Día del cariño — llévele algo a quien quiere',
+      saludo: 'Día del cariño — llévale algo a quien quieres',
       figura: 'corazon',
       cantidad: 12,
       caida: 'meciendo',

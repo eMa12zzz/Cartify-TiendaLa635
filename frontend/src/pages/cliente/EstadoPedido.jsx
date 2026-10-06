@@ -87,7 +87,7 @@ const EstadoPedido = () => {
   const seguimiento = useSeguimientoEnVivo(pedido?._id, !!enCurso);
 
   if (cargando) {
-    return <CargandoMascota texto="Cargando su pedido…" />;
+    return <CargandoMascota texto="Cargando tu pedido…" />;
   }
   if (error || !pedido) {
     return (
@@ -177,9 +177,9 @@ const EstadoPedido = () => {
               </div>
               <div className="text-base font-bold text-center" style={{ color: c.textPrimary }}>
                 {cancelado
-                  ? (pedido.cancelledByClient ? 'Usted canceló este pedido' : 'Este pedido se canceló')
+                  ? (pedido.cancelledByClient ? 'Cancelaste este pedido' : 'Este pedido se canceló')
                   : enCamino
-                    ? (seguimiento.yaCasi ? 'Ya casi llega a su puerta' : seguimiento.espera)
+                    ? (seguimiento.yaCasi ? 'Ya casi llega a tu puerta' : seguimiento.espera)
                     : (PASOS[pasoActual] || PASOS[0]).detalle}
               </div>
 
@@ -197,7 +197,7 @@ const EstadoPedido = () => {
                     </p>
                   )}
                   {textoDevuelto(pedido) && <p className="mt-1">{textoDevuelto(pedido)}</p>}
-                  <p className="mt-1" style={{ color: c.textMuted }}>Si tiene dudas, escríbanos y lo revisamos.</p>
+                  <p className="mt-1" style={{ color: c.textMuted }}>Si tienes dudas, escríbenos y lo revisamos.</p>
                 </div>
               )}
             </div>
@@ -263,7 +263,7 @@ const EstadoPedido = () => {
                 <div className="px-4 py-3 flex items-center gap-2 text-sm font-semibold"
                      style={{ color: seguimiento.yaCasi ? 'var(--exito-texto)' : 'var(--info-texto)', background: c.cardBg }}>
                   <Bike className="w-4 h-4" />
-                  {seguimiento.yaCasi ? 'Ya casi toca su puerta' : seguimiento.espera}
+                  {seguimiento.yaCasi ? 'Ya casi toca tu puerta' : seguimiento.espera}
                   {seguimiento.distancia ? ` · a ${seguimiento.distancia}` : ''}
                 </div>
               </div>

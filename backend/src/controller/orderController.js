@@ -261,7 +261,7 @@ orderController.createOrder = async (req, res) => {
     // Muy lejos de la tienda no se entrega. Ver RADIO_MAXIMO_KM en utils/envio.js.
     if (envio?.fueraDeCobertura) {
       return res.status(400).json({
-        message: `Esa dirección queda a ${envio.distanciaKm} km de la tienda, fuera de la zona de entrega. Puede elegir recogerlo en la tienda.`,
+        message: `Esa dirección queda a ${envio.distanciaKm} km de la tienda, fuera de la zona de entrega. Puedes elegir recogerlo en la tienda.`,
       });
     }
     const shippingCost = envio ? envio.costo : 0;
@@ -301,7 +301,7 @@ orderController.createOrder = async (req, res) => {
       if (!cobrado) {
         const cliente = await clientModel.findById(clientId).select("balance");
         return res.status(400).json({
-          message: `Saldo insuficiente. Tiene $${(cliente?.balance || 0).toFixed(2)} y el pedido es de $${total.toFixed(2)}`,
+          message: `Saldo insuficiente. Tienes $${(cliente?.balance || 0).toFixed(2)} y el pedido es de $${total.toFixed(2)}`,
         });
       }
     }
@@ -513,7 +513,7 @@ orderController.rateService = async (req, res) => {
       return res.status(400).json({ message: "Solo se valora el servicio de los pedidos a domicilio" });
     }
     if (pedido.status !== "entregado") {
-      return res.status(400).json({ message: "Puede valorar el servicio cuando el pedido esté entregado" });
+      return res.status(400).json({ message: "Puedes valorar el servicio cuando el pedido esté entregado" });
     }
 
     pedido.serviceRating = {
@@ -618,7 +618,7 @@ orderController.updateOrderStatus = async (req, res) => {
  * el cliente y lo lee el personal en Pedidos.
  */
 const YA_EN_PREPARACION =
-  "Ya empezamos a preparar su pedido y no se puede cancelar desde aquí. Escríbanos por WhatsApp y lo vemos.";
+  "Ya empezamos a preparar tu pedido y no se puede cancelar desde aquí. Escríbenos por WhatsApp y lo vemos.";
 
 orderController.cancelarPorCliente = async (req, res) => {
   try {

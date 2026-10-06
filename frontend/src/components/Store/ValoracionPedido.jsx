@@ -56,7 +56,7 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
 
   const enviar = async () => {
     if (rating < 1) {
-      toast.error(t('Elija cuántas estrellas antes de enviar'));
+      toast.error(t('Elige cuántas estrellas antes de enviar'));
       return;
     }
     setGuardando(true);
@@ -68,9 +68,9 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
         )
       );
       setEnviado(true);
-      toast.success(t('¡Gracias por calificar su pedido!'));
+      toast.success(t('¡Gracias por calificar tu pedido!'));
     } catch {
-      toast.error(t('No se pudo guardar su valoración. Intente de nuevo.'));
+      toast.error(t('No se pudo guardar tu valoración. Intenta de nuevo.'));
     } finally {
       setGuardando(false);
     }
@@ -83,16 +83,16 @@ const ValoracionPedido = ({ items = [], pedidoId = '' }) => {
       className="p-6 rounded-2xl border"
       style={{ backgroundColor: 'var(--papel)', borderColor: 'var(--linea)' }}
     >
-      <h2 className="text-lg font-bold" style={{ color: 'var(--tinta)' }}>{t('¿Qué le pareció su pedido?')}</h2>
+      <h2 className="text-lg font-bold" style={{ color: 'var(--tinta)' }}>{t('¿Qué te pareció tu pedido?')}</h2>
 
       {enviado ? (
         <div className="flex items-center gap-2 mt-3 text-sm font-semibold" style={{ color: 'var(--exito)' }}>
-          <Check className="w-5 h-5" /> {t('¡Gracias por calificar su pedido!')}
+          <Check className="w-5 h-5" /> {t('¡Gracias por calificar tu pedido!')}
         </div>
       ) : (
         <>
           <p className="text-sm mt-0.5 mb-4" style={{ color: 'var(--tinta-suave)' }}>
-            {t('Su pedido ya llegó. Déjenos saber qué tal estuvo, para que otros vecinos se animen.')}
+            {t('Tu pedido ya llegó. Cuéntanos qué tal estuvo, para que otros vecinos se animen.')}
           </p>
 
           {/* Una sola fila de estrellas para todo el pedido */}

@@ -62,7 +62,7 @@ export const useKiosco = () => {
       });
       setImagenQR(png);
     } catch {
-      setError('No se pudo abrir la sesión. Intente de nuevo.');
+      setError('No se pudo abrir la sesión. Intenta de nuevo.');
     } finally {
       setAbriendo(false);
     }

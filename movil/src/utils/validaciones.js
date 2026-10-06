@@ -66,7 +66,7 @@ export const validarDui = (valor) => {
   const d = digitosDelDui(valor);
   if (!d.length) return null; // no lo puso: perfecto, seguimos
   if (d.length < 9) return tAhora('El DUI lleva 9 dígitos (12345678-9)');
-  return duiEsValido(valor) ? null : tAhora('Ese DUI no parece correcto, revise los números');
+  return duiEsValido(valor) ? null : tAhora('Ese DUI no parece correcto, revisa los números');
 };
 
 // Teléfono salvadoreño: 8 dígitos, normalmente 1234-5678.

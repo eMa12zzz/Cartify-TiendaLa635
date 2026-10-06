@@ -205,8 +205,8 @@ const Carrito = ({ irAInicio, irAPagar }) => {
         <View style={estilos.centro}>
           {/* Como en la web: Tiqui mirando un carrito vacío. */}
           <Mascota pose="vacio" alto={130} />
-          <Text style={estilos.vacioTitulo}>{t('Su carrito está vacío')}</Text>
-          <Text style={estilos.vacioTexto}>{t('¡Agregue productos para comenzar!')}</Text>
+          <Text style={estilos.vacioTitulo}>{t('Tu carrito está vacío')}</Text>
+          <Text style={estilos.vacioTexto}>{t('¡Agrega productos para comenzar!')}</Text>
           <View style={estilos.botonVacio}>
             <Boton
               texto={t('Ver la tienda')}

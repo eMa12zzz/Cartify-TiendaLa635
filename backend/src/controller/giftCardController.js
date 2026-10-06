@@ -171,7 +171,7 @@ giftCardController.redeemGiftCard = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: `Se agregaron $${tarjeta.amount.toFixed(2)} a su saldo`,
+      message: `Se agregaron $${tarjeta.amount.toFixed(2)} a tu saldo`,
       amount: tarjeta.amount,
       balance: cliente.balance,
     });

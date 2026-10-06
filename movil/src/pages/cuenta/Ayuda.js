@@ -34,15 +34,15 @@ const SALUDO_WHATSAPP = 'Hola, vengo de la app y necesito ayuda con mi pedido.';
 const FAQS = [
   {
     q: '¿Cómo hago un pedido?',
-    a: 'Explora la tienda, agrega productos al carrito y presiona comprar. También puede usar el asistente por voz para pedir hablando.',
+    a: 'Explora la tienda, agrega productos al carrito y presiona comprar. También puedes usar el asistente por voz para pedir hablando.',
   },
   {
     q: '¿Cómo funcionan los puntos de fidelidad?',
-    a: 'Gana puntos con cada compra según lo que gaste. Los ve en la sección "Puntos de fidelidad" y vencen pasado un tiempo.',
+    a: 'Gana puntos con cada compra según lo que gastes. Los ves en la sección "Puntos de fidelidad" y vencen pasado un tiempo.',
   },
   {
     q: '¿Dónde veo mis pedidos?',
-    a: 'En "Recibos" ve sus pedidos ya entregados; mientras están en curso, la burbuja de abajo dice en qué van.',
+    a: 'En "Recibos" ves tus pedidos ya entregados; mientras están en curso, la burbuja de abajo dice en qué van.',
   },
 ];
 
@@ -85,7 +85,7 @@ const Ayuda = ({ alVolver }) => {
                 </View>
                 <View style={estilos.canalTextos}>
                   <Text style={estilos.canalEtiqueta}>WhatsApp</Text>
-                  <Text style={estilos.canalValor}>{t('Escríbanos, le contestamos ahí')}</Text>
+                  <Text style={estilos.canalValor}>{t('Escríbenos, te contestamos ahí')}</Text>
                 </View>
               </Pressable>
             )}

@@ -474,6 +474,17 @@ const SummaryRow = styled.div`
   span:last-child { color: var(--tinta); font-weight: 500; }
 `;
 
+/*
+ * "Se calcula al pagar": un dato pendiente, no un monto, así que va más tenue.
+ * Con !important porque SummaryRow pinta en negrita a su último <span> con un
+ * selector más fuerte que una clase sola.
+ */
+const PorCalcular = styled.span`
+  color: var(--tinta-tenue) !important;
+  font-weight: 400 !important;
+  font-style: italic;
+`;
+
 const Divider = styled.div`
   height: 1px;
   background: var(--papel-gris);
@@ -1185,7 +1196,7 @@ const ShoppingCart = ({
   const guardarNuevaDireccion = (dir) => {
     // Las direcciones se guardan en la cuenta: sin sesión no hay dónde ponerlas.
     if (!user?.id) {
-      toast(t('Inicie sesión para guardar su dirección'));
+      toast(t('Inicia sesión para guardar tu dirección'));
       navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
       return;
     }
@@ -1283,7 +1294,7 @@ const ShoppingCart = ({
      * clientes, con su stock descontado y su lote de puntos escrito.
      */
     if (!esCliente) {
-      toast(t('Inicie sesión para terminar su pedido'));
+      toast(t('Inicia sesión para terminar tu pedido'));
       // Vuelve a la pantalla en la que estaba, no a "/" a secas: la tienda
       // también se abre desde "/store" y desde una sección.
       navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
@@ -1292,18 +1303,18 @@ const ShoppingCart = ({
     // Con envío a domicilio la dirección es obligatoria; el servidor también
     // lo revisa, pero avisar acá evita que llene todo y falle al final.
     if (entrega === 'delivery' && !direccionElegida) {
-      toast.error(t('Elija una dirección de entrega'));
+      toast.error(t('Elige una dirección de entrega'));
       return;
     }
     // Muy lejos de la tienda no se entrega (el servidor tampoco lo acepta).
     if (entrega === 'delivery' && envioCalc.fueraDeCobertura) {
-      toast.error(t('Esa dirección queda fuera de la zona de entrega. Puede elegir recogerlo en la tienda.'));
+      toast.error(t('Esa dirección queda fuera de la zona de entrega. Puedes elegir recogerlo en la tienda.'));
       return;
     }
     // Se compara contra totalAPagar (ya con el descuento de puntos aplicado),
     // que es lo que de verdad se va a cobrar.
     if (metodoPago === 'saldo' && saldo < totalAPagar) {
-      toast.error(t('Su saldo es de {saldo} y el pedido cuesta {total}', { saldo: `$${saldo.toFixed(2)}`, total: `$${totalAPagar.toFixed(2)}` }));
+      toast.error(t('Tu saldo es de {saldo} y el pedido cuesta {total}', { saldo: `$${saldo.toFixed(2)}`, total: `$${totalAPagar.toFixed(2)}` }));
       return;
     }
 
@@ -1397,7 +1408,7 @@ const ShoppingCart = ({
    */
   const irAlCheckout = () => {
     if (!esCliente) {
-      toast(t('Inicie sesión para continuar con su pedido'));
+      toast(t('Inicia sesión para continuar con tu pedido'));
       navigate(`/iniciar-sesion?volver=${encodeURIComponent(rutaActual)}`);
       return;
     }
@@ -1488,10 +1499,25 @@ const ShoppingCart = ({
               <OrderSummaryBox>
                 <SummaryTitle>{t('Resumen de orden')}</SummaryTitle>
                 <SummaryRow><span>{t('Total de artículos')}</span><span>${subtotal.toFixed(2)}</span></SummaryRow>
-                <SummaryRow><span>{t('Costo de envío')}</span><span>${ENVIO.toFixed(2)}</span></SummaryRow>
+                {/* Se cobra en el total, así que se muestra: si no, los renglones no cuadraban con él. */}
+                {SERVICIO > 0 && (
+                  <SummaryRow><span>{t('Tarifa de servicio')}</span><span>${SERVICIO.toFixed(2)}</span></SummaryRow>
+                )}
+                {/*
+                  Aquí todavía no se eligió cómo se entrega (eso es al pagar),
+                  así que no hay envío que cobrar. Antes decía "$0.00", que se
+                  leía como envío gratis y luego aparecía el cobro. Si ya eligió
+                  domicilio, se muestra el monto y el total lo incluye.
+                */}
+                <SummaryRow>
+                  <span>{t('Costo de envío')}</span>
+                  {entrega === 'delivery'
+                    ? <span>${ENVIO.toFixed(2)}</span>
+                    : <PorCalcular>{t('Se calcula al pagar')}</PorCalcular>}
+                </SummaryRow>
                 <Divider />
                 <TotalRow>
-                  <TotalLabel>{t('Subtotal')}</TotalLabel>
+                  <TotalLabel>{entrega === 'delivery' ? t('Total') : t('Subtotal')}</TotalLabel>
                   <TotalPrice>${totalFinal.toFixed(2)}</TotalPrice>
                 </TotalRow>
               </OrderSummaryBox>
@@ -1558,7 +1584,7 @@ const ShoppingCart = ({
                 <div style={{ padding: '18px 20px', borderTop: '1px solid var(--linea)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                     <CheckoutIconBox><MapPin size={18} color={BROWN} /></CheckoutIconBox>
-                    <CheckoutSectionTitle>{t('¿Cómo lo recibe?')}</CheckoutSectionTitle>
+                    <CheckoutSectionTitle>{t('¿Cómo lo recibes?')}</CheckoutSectionTitle>
                   </div>
 
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1602,7 +1628,7 @@ const ShoppingCart = ({
                         background: 'rgba(220,38,38,.08)', color: 'var(--peligro)', fontWeight: 600,
                       }}
                     >
-                      {t('Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Puede elegir recogerlo en la tienda.', { km: envioCalc.distanciaKm })}
+                      {t('Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Puedes elegir recogerlo en la tienda.', { km: envioCalc.distanciaKm })}
                     </div>
                   )}
 
@@ -1615,7 +1641,7 @@ const ShoppingCart = ({
                       <Clock size={15} color="var(--exito-texto)" style={{ flexShrink: 0, marginTop: 1 }} />
                       <div>
                         <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--exito-texto)' }}>
-                          {t('{tiempo} a {lugar}', { tiempo: zona.texto, lugar: direccionElegida?.nombre || t('su dirección') })}
+                          {t('{tiempo} a {lugar}', { tiempo: zona.texto, lugar: direccionElegida?.nombre || t('tu dirección') })}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--exito-suave)', marginTop: 1 }}>
                           {zona.respaldo}. {t('No es una promesa: es lo que hemos tardado.')}
@@ -1639,7 +1665,7 @@ const ShoppingCart = ({
                           background: 'var(--marca-50)', textAlign: 'center',
                         }}>
                           <p style={{ fontSize: 13, color: 'var(--tinta-suave)', margin: '0 0 10px' }}>
-                            {t('Todavía no tiene direcciones guardadas.')}
+                            {t('Todavía no tienes direcciones guardadas.')}
                           </p>
                           {/*
                             UN SOLO CAMINO: el mapa. Ya no se ofrece escribirla
@@ -1772,7 +1798,7 @@ const ShoppingCart = ({
                       type="button"
                       $activa={metodoPago === 'saldo'}
                       disabled={saldo < totalAPagar}
-                      title={saldo < totalAPagar ? t('Su saldo no alcanza para este pedido') : t('Pagar con su saldo')}
+                      title={saldo < totalAPagar ? t('Tu saldo no alcanza para este pedido') : t('Pagar con tu saldo')}
                       onClick={() => setMetodoPago('saldo')}
                     >
                       <Gift size={16} strokeWidth={2} />
@@ -1787,7 +1813,7 @@ const ShoppingCart = ({
 
                   {metodoPago === 'saldo' && (
                     <p style={{ fontSize: 12, color: 'var(--marca-texto)', margin: '10px 0 0', fontWeight: 500 }}>
-                      {t('Le quedarán {monto} después de este pedido.', { monto: `$${(saldo - totalAPagar).toFixed(2)}` })}
+                      {t('Te quedarán {monto} después de este pedido.', { monto: `$${(saldo - totalAPagar).toFixed(2)}` })}
                     </p>
                   )}
 
@@ -1829,7 +1855,7 @@ const ShoppingCart = ({
                     <input
                       value={codigoTarjeta}
                       onChange={(e) => setCodigoTarjeta(e.target.value.toUpperCase())}
-                      placeholder={t('¿Tiene una tarjeta de regalo? 635-XXXX-XXXX')}
+                      placeholder={t('¿Tienes una tarjeta de regalo? 635-XXXX-XXXX')}
                       aria-label={t('Código de tarjeta de regalo')}
                       style={{
                         flex: 1, padding: '11px 14px', fontSize: 13, fontFamily: 'inherit',
@@ -1877,7 +1903,11 @@ const ShoppingCart = ({
             {/* Right summary */}
             <SummaryCard>
               <SummaryCardTitle>{t('Resumen de orden')}</SummaryCardTitle>
-              <SummaryCardRow><span>{t('Costo de envío')}</span><span>${ENVIO.toFixed(2)}</span></SummaryCardRow>
+              <SummaryCardRow>
+                <span>{t('Costo de envío')}</span>
+                {/* Quien recoge no paga envío: se dice así y no con un "$0.00". */}
+                <span>{entrega === 'delivery' ? `${ENVIO.toFixed(2)}` : t('Recoges en tienda')}</span>
+              </SummaryCardRow>
               {/* La tarifa de servicio solo se muestra si la tienda la cobra. */}
               {SERVICIO > 0 && (
                 <SummaryCardRow><span>{t('Tarifa de servicio')}</span><span>${SERVICIO.toFixed(2)}</span></SummaryCardRow>
@@ -1933,7 +1963,7 @@ const ShoppingCart = ({
                 casi no se leía, y es justo lo que alguien debería poder leer.
               */}
               <p style={{ fontSize: 12.5, color: 'var(--tinta-suave)', marginTop: 12, lineHeight: 1.55 }}>
-                {t('Al realizar este pedido, usted acepta los')}{' '}
+                {t('Al hacer este pedido, aceptas los')}{' '}
                 <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--marca-texto-fuerte)', fontWeight: 600, textDecoration: 'underline' }}>
                   {t('términos y condiciones')}
                 </a>{' '}{t('y la')}{' '}

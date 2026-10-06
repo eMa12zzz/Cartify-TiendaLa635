@@ -398,6 +398,50 @@ input:disabled {
 }
 
 /*
+  Texto de la tarjeta de promoción (PromoCard).
+
+  La tarjeta es su propio contenedor (container-type en PromoCard), así que
+  estas medidas siguen al ancho de la TARJETA y no al de la ventana: la misma
+  pieza se ve en el carrusel de la tienda y, chiquita, en el panel.
+
+  En una tarjeta angosta —el teléfono, donde mide unos 270 × 120 px— no cabía
+  todo: etiquetas, dos líneas de título y dos de descripción sumaban más que
+  el alto, y como el bloque va centrado se cortaba arriba y abajo a media
+  línea. Ahí se queda con lo que vende: las etiquetas y el título, un poco más
+  grande y sin meterse debajo de la flecha. La descripción completa se ve al
+  abrir la promoción.
+*/
+.promo-etiquetas { margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+.promo-titulo,
+.promo-descripcion {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.promo-titulo { font-size: clamp(14px, 6cqw, 32px); }
+.promo-descripcion { font-size: clamp(11px, 3cqw, 16px); }
+
+@container (max-width: 380px) {
+  /*
+    Las etiquetas, en UNA fila: si se partían en dos (pasaba con "Del día",
+    más ancha que "-10%") le quitaban un renglón al título. Sin el reloj
+    caben; y si una etiqueta fuera todavía más larga, la fecha se recorta
+    con "…" en vez de empujar al título.
+  */
+  .promo-etiquetas { margin-bottom: 8px; gap: 6px; flex-wrap: nowrap; }
+  .promo-vence { min-width: 0; }
+  .promo-vence svg { display: none; }
+  .promo-vence-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .promo-titulo {
+    font-size: clamp(15px, 6.6cqw, 22px);
+    /* La flecha redonda vive abajo a la derecha: el título no se le mete. */
+    padding-right: 40px;
+  }
+  .promo-descripcion { display: none; }
+}
+
+/*
   ACCESIBILIDAD — "menos movimiento".
   Si la persona lo pidió en su sistema (tercera edad, migrañas, mareo),
   quitamos los desplazamientos pero dejamos los cambios de color/opacidad,

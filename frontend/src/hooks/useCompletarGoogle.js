@@ -56,7 +56,7 @@ export const useCompletarGoogle = () => {
 
   const enviar = async (datos) => {
     if (!credential) {
-      toast.error(tAhora('La sesión de Google venció. Vuelva a intentarlo.'));
+      toast.error(tAhora('La sesión de Google venció. Vuelve a intentarlo.'));
       navigate('/iniciar-sesion');
       return;
     }
@@ -86,7 +86,7 @@ export const useCompletarGoogle = () => {
        * Ver utils/primerIngreso.js.
        */
       marcarRecienRegistrado();
-      toast.success(tAhora('¡Listo! Su cuenta quedó creada.'));
+      toast.success(tAhora('¡Listo! Tu cuenta quedó creada.'));
 
       /*
        * `replace` a propósito: esta pantalla ya cumplió. Sin él, el "atrás"
@@ -99,7 +99,7 @@ export const useCompletarGoogle = () => {
        * pantalla abierta y vuelve mañana, el servidor lo rechaza — y decirle
        * "error 401" no le sirve de nada.
        */
-      toast.error(tAhora(error.message || 'No se pudo crear la cuenta. Vuelva a entrar con Google.'));
+      toast.error(tAhora(error.message || 'No se pudo crear la cuenta. Vuelve a entrar con Google.'));
     } finally {
       setCargando(false);
     }

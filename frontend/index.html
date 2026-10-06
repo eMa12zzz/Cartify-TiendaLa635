@@ -7,6 +7,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!--
+      Cómo se ve la tienda al compartirla (WhatsApp, Facebook, Telegram…) y en
+      Google. Sin esto, un enlace a la tienda llegaba pelado: sin imagen ni
+      descripción. Los enlaces a un producto (/producto/:id) llevan su propia
+      foto, nombre y precio: los pone middleware.js.
+
+      og:url y og:image van con la dirección completa porque así lo exigen
+      WhatsApp y Facebook. Si la tienda estrena dominio propio, cambiarlo aquí
+      y en public/robots.txt.
+    -->
+    <meta name="description" content="El súper de la esquina, a un toque. Pide desde el celular y te lo llevamos a la puerta, o pasa a recogerlo." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tienda la 635" />
+    <meta property="og:locale" content="es_SV" />
+    <meta property="og:title" content="Tienda la 635 — El súper de la esquina, a un toque" />
+    <meta property="og:description" content="Pide desde el celular y te lo llevamos a la puerta, o pasa a recogerlo." />
+    <meta property="og:url" content="https://cartify-tienda-la635.vercel.app/" />
+    <meta property="og:image" content="https://cartify-tienda-la635.vercel.app/compartir.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tiqui, la mascota de Tienda la 635, junto al lema: El súper de la esquina, a un toque" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!--
+      Instalar la web en el teléfono ("Agregar a la pantalla de inicio"): el
+      manifiesto le da nombre e ícono. theme-color pinta la barra del sistema
+      del mismo blanco que el encabezado; el script de abajo la oscurece si la
+      persona eligió el modo oscuro, y utils/modo.js la sigue al cambiarlo.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="apple-mobile-web-app-title" content="La 635" />
+
+    <!--
       Abrir la conexión con el servidor y con las fotos desde el primer
       momento, mientras todavía se descarga el código: cuando la tienda pida
       el catálogo y las imágenes, el saludo seguro (DNS + TLS) ya está hecho.
@@ -69,6 +103,9 @@
           var panel = /^\/(admin|dashboard|inventario|pedidos|modulos|marcas|empleados|clientes|proveedores|categorias|fidelidad|promociones|servicios-impresion|tarjetas|personalizacion|cuenta)(\/|$)/;
           if (oscuro && !panel.test(location.pathname)) {
             document.documentElement.setAttribute('data-modo', 'oscuro');
+            // La barra del sistema, del mismo color que el fondo oscuro (--papel).
+            var barra = document.querySelector('meta[name="theme-color"]');
+            if (barra) barra.setAttribute('content', '#121417');
           }
         } catch (error) {
           // Sin localStorage: se queda en claro.

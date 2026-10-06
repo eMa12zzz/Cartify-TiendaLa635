@@ -87,7 +87,7 @@ const ValoracionPedido = ({ pedido }) => {
 
   const enviar = async () => {
     if (!estrellas) {
-      avisar(t('Elija cuántas estrellas antes de enviar'), 'error');
+      avisar(t('Elige cuántas estrellas antes de enviar'), 'error');
       return;
     }
     setGuardando(true);
@@ -99,9 +99,9 @@ const ValoracionPedido = ({ pedido }) => {
         )
       );
       setEnviado(true);
-      avisar(t('¡Gracias por calificar su pedido!'), 'exito');
+      avisar(t('¡Gracias por calificar tu pedido!'), 'exito');
     } catch (e) {
-      avisar(e?.message || t('No se pudo guardar su valoración'), 'error');
+      avisar(e?.message || t('No se pudo guardar tu valoración'), 'error');
     } finally {
       setGuardando(false);
     }
@@ -109,17 +109,17 @@ const ValoracionPedido = ({ pedido }) => {
 
   return (
     <View style={estilos.tarjeta}>
-      <Text style={estilos.titulo}>{t('¿Qué le pareció su pedido?')}</Text>
+      <Text style={estilos.titulo}>{t('¿Qué te pareció tu pedido?')}</Text>
 
       {enviado ? (
         <View style={estilos.filaGracias}>
           <Check size={17} color={COLORES.exito} strokeWidth={2.4} />
-          <Text style={estilos.gracias}>{t('¡Gracias por calificar su pedido!')}</Text>
+          <Text style={estilos.gracias}>{t('¡Gracias por calificar tu pedido!')}</Text>
         </View>
       ) : (
         <>
           <Text style={estilos.texto}>
-            {t('Su pedido ya llegó. Déjenos saber qué tal estuvo, para que otros vecinos se animen.')}
+            {t('Tu pedido ya llegó. Cuéntanos qué tal estuvo, para que otros vecinos se animen.')}
           </Text>
 
           <Estrellas valor={estrellas} alElegir={setEstrellas} tamano={32} soloLectura={guardando} />

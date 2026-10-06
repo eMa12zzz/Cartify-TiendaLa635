@@ -184,7 +184,7 @@ const LoginPassword = () => {
         <Card>
           <BackButton type="button" aria-label="Volver" onClick={() => navigate('/iniciar-sesion')}>←</BackButton>
 
-          <SectionTitle>Bienvenido de vuelta</SectionTitle>
+          <SectionTitle>Qué bueno verte de nuevo</SectionTitle>
           <Subtitle>Ingresa tu contraseña para continuar</Subtitle>
 
           <Label htmlFor="campo-password">Contraseña</Label>

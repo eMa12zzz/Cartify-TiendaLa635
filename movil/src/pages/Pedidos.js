@@ -141,7 +141,7 @@ const TarjetaPedido = ({ pedido, alPresionar }) => {
       {/* Cancelado: el motivo, en una o dos líneas; el detalle completo está al tocarlo. */}
       {esCancelado && !!pedido.cancelReason && (
         <Text style={estilos.motivo} numberOfLines={2}>
-          <Text style={estilos.motivoTitulo}>{pedido.cancelledByClient ? t('Lo canceló usted: ') : t('Motivo: ')}</Text>
+          <Text style={estilos.motivoTitulo}>{pedido.cancelledByClient ? t('Lo cancelaste: ') : t('Motivo: ')}</Text>
           {t(pedido.cancelReason)}
         </Text>
       )}
@@ -216,7 +216,7 @@ const Pedidos = () => {
        * estado, el backend apagado se ve exactamente igual que un cliente nuevo
        * — y uno de los dos tiene arreglo.
        */
-      setError(e?.message || t('No se pudieron cargar sus pedidos'));
+      setError(e?.message || t('No se pudieron cargar tus pedidos'));
     } finally {
       setCargando(false);
     }
@@ -265,7 +265,7 @@ const Pedidos = () => {
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus pedidos')}</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar tus pedidos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
@@ -280,9 +280,9 @@ const Pedidos = () => {
         // Vacío es una invitación, no una disculpa (igual que en la web).
         <View style={estilos.centro}>
           <Mascota pose="vacio" alto={120} />
-          <Text style={estilos.vacioTitulo}>{t('Todavía no tiene pedidos')}</Text>
+          <Text style={estilos.vacioTitulo}>{t('Todavía no tienes pedidos')}</Text>
           <Text style={estilos.vacioTexto}>
-            {t('Cuando compre en la tienda, sus pedidos van a aparecer aquí.')}
+            {t('Cuando compres en la tienda, tus pedidos van a aparecer aquí.')}
           </Text>
         </View>
       ) : pedidosFiltrados.length === 0 ? (
@@ -290,7 +290,7 @@ const Pedidos = () => {
         <View style={estilos.centro}>
           <Mascota pose="buscando" alto={120} />
           <Text style={estilos.vacioTitulo}>{t('Nada por aquí')}</Text>
-          <Text style={estilos.vacioTexto}>{t('No tiene pedidos en ese período.')}</Text>
+          <Text style={estilos.vacioTexto}>{t('No tienes pedidos en ese período.')}</Text>
         </View>
       ) : (
         <FlatList

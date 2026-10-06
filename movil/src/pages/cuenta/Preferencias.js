@@ -69,7 +69,7 @@ const MiniTienda = ({ p, partida = false }) => (
 const OPCIONES = [
   { clave: 'claro', titulo: 'Claro', detalle: 'Fondo blanco, como siempre.', dibujo: <MiniTienda p={CLARO} /> },
   { clave: 'oscuro', titulo: 'Oscuro', detalle: 'Descansa la vista de noche.', dibujo: <MiniTienda p={OSCURO} /> },
-  { clave: 'sistema', titulo: 'Automático', detalle: 'Igual que su teléfono.', dibujo: <MiniTienda p={CLARO} partida /> },
+  { clave: 'sistema', titulo: 'Automático', detalle: 'Igual que tu teléfono.', dibujo: <MiniTienda p={CLARO} partida /> },
 ];
 
 const Preferencias = ({ alVolver }) => {

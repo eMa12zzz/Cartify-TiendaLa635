@@ -48,7 +48,7 @@ const ValoracionServicio = ({ pedido }) => {
 
   const enviar = async () => {
     if (!estrellas) {
-      avisar(t('Elija de 1 a 5 estrellas'), 'error');
+      avisar(t('Elige de 1 a 5 estrellas'), 'error');
       return;
     }
     setEnviando(true);
@@ -57,7 +57,7 @@ const ValoracionServicio = ({ pedido }) => {
       setGuardado(true);
       avisar(t('¡Gracias por valorar el servicio!'), 'exito');
     } catch (e) {
-      avisar(e?.message || t('No se pudo guardar su valoración'), 'error');
+      avisar(e?.message || t('No se pudo guardar tu valoración'), 'error');
     } finally {
       setEnviando(false);
     }

@@ -75,7 +75,7 @@ const ModalConfirmarEdad = ({ abierto, onCerrar, onConfirmar }) => {
             {t('Producto para mayores de {edad}', { edad: EDAD_MINIMA })}
           </h3>
           <p style={{ margin: '0 0 18px', fontSize: 14, color: 'var(--tinta-suave)', lineHeight: 1.5 }}>
-            {t('Ingresá tu número de DUI para verlo. Al recibir el pedido se te pedirá el documento físico; sin él, este producto no se puede entregar.')}
+            {t('Ingresa tu número de DUI para verlo. Al recibir el pedido te pedirán el documento físico; sin él, este producto no se puede entregar.')}
           </p>
 
           <form onSubmit={enviar}>

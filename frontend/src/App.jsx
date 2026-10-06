@@ -297,6 +297,13 @@ function App() {
           <Route path="/bienvenida"      element={<Bienvenida />} />
           <Route path="/tienda-dashboard" element={<Dashboard />} />
           <Route path="/store"           element={<Store />} />
+          {/*
+            La ficha de un producto tiene dirección propia: se puede compartir,
+            guardar y cerrar con el "atrás" del teléfono. Es la misma tienda
+            (React no la vuelve a montar), con la ficha abierta encima. La
+            vista previa de WhatsApp para estos enlaces la arma middleware.js.
+          */}
+          <Route path="/producto/:id"    element={<Store />} />
           {/* "Ver todos" de una fila de la portada: /seccion/familia-quesos */}
           <Route path="/seccion/:clave"  element={<Seccion />} />
           <Route path="/impresiones"     element={<Impresiones />} />

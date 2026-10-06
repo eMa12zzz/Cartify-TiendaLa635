@@ -44,7 +44,7 @@ export const TEMAS_DE_TEMPORADA = [
       acento: '#C1121F',
     },
     decoracion: {
-      saludo: 'Felices fiestas — pida con tiempo, que diciembre se llena',
+      saludo: 'Felices fiestas — pide con tiempo, que diciembre se llena',
       figura: 'copo',
       /*
        * Cuántas figuras caen a la vez. Pocas a propósito: veinte copos ya no
@@ -122,7 +122,7 @@ export const TEMAS_DE_TEMPORADA = [
       acento: '#BE185D',
     },
     decoracion: {
-      saludo: 'Día del cariño — llévele algo a quien quiere',
+      saludo: 'Día del cariño — llévale algo a quien quieres',
       figura: 'corazon',
       cantidad: 12,
       caida: 'meciendo',

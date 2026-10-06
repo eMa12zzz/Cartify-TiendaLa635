@@ -66,7 +66,7 @@ export const FavoritosProvider = ({ children, alPedirSesion }) => {
   const alternar = useCallback(
     async (productoId, nombre = tAhora('El producto')) => {
       if (!esCliente) {
-        avisar(tAhora('Inicie sesión para guardar sus favoritos'));
+        avisar(tAhora('Inicia sesión para guardar tus favoritos'));
         // Se le lleva a entrar, pero no se le arrastra: estaba viendo un
         // producto, no buscando su cuenta.
         alPedirSesion?.();

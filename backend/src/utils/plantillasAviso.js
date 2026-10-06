@@ -112,7 +112,7 @@ export const plantillaProductosNuevos = ({ productos = [], tienda, enlaceBaja })
     '',
     `Verlos en la tienda: ${urlTienda()}/`,
     '',
-    'Le llega este correo porque pidió que le avisáramos de los productos nuevos.',
+    'Te llega este correo porque pediste que te avisáramos de los productos nuevos.',
     enlaceBaja ? `Para dejar de recibirlos: ${enlaceBaja}` : '',
   ].filter((l) => l !== '').join('\n');
 
@@ -128,7 +128,7 @@ export const plantillaProductosNuevos = ({ productos = [], tienda, enlaceBaja })
       accion: { texto: 'Ver en la tienda', url: `${urlTienda()}/` },
       // Esto SÍ es publicidad: lleva su salida.
       enlaceBaja,
-      motivoBaja: 'Le llega este correo porque pidió que le avisáramos de los productos nuevos.',
+      motivoBaja: 'Te llega este correo porque pediste que te avisáramos de los productos nuevos.',
     }),
     texto,
   };
@@ -137,12 +137,12 @@ export const plantillaProductosNuevos = ({ productos = [], tienda, enlaceBaja })
 /* ══════════ 2. El pedido va en camino ══════════ */
 
 export const plantillaPedidoEnCamino = ({ pedido, nombreCliente, tienda }) => {
-  const saluda = nombreCliente ? `${nombreCliente.split(' ')[0]}, su` : 'Su';
+  const saluda = nombreCliente ? `${nombreCliente.split(' ')[0]}, tu` : 'Tu';
   const enlace = `${urlTienda()}/mi-cuenta/pedido/${pedido._id}`;
 
   const cuerpo = `
     <p class="texto" style="margin:0 0 18px;font-size:15px;color:#555555;line-height:1.6;">
-      ${limpio(saluda)} pedido ya salió de la tienda. Puede ver en el mapa por dónde
+      ${limpio(saluda)} pedido ya salió de la tienda. Puedes ver en el mapa por dónde
       viene y calcular cuándo salir a la puerta.
     </p>
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;">
@@ -152,26 +152,26 @@ export const plantillaPedidoEnCamino = ({ pedido, nombreCliente, tienda }) => {
       </tr>
     </table>
     <p class="tenue" style="margin:16px 0 0;font-size:13px;color:#9C9691;line-height:1.55;">
-      Si nadie contesta en la puerta, quien lo lleva le va a llamar al teléfono
-      de su cuenta.
+      Si nadie contesta en la puerta, quien lo lleva te va a llamar al teléfono
+      de tu cuenta.
     </p>`;
 
   const texto = [
-    'Su pedido va en camino',
+    'Tu pedido va en camino',
     '',
     `${saluda} pedido ya salió de la tienda.`,
     `Total: ${dinero(pedido.total)}`,
     '',
     `Seguirlo en el mapa: ${enlace}`,
     '',
-    'Si nadie contesta en la puerta, quien lo lleva le va a llamar.',
+    'Si nadie contesta en la puerta, quien lo lleva te va a llamar.',
   ].join('\n');
 
   return {
-    asunto: `Su pedido va en camino — ${tienda.nombre}`,
+    asunto: `Tu pedido va en camino — ${tienda.nombre}`,
     html: sobre({
       tienda,
-      encabezado: 'Su pedido va en camino',
+      encabezado: 'Tu pedido va en camino',
       subtitulo: 'Ya salió de la tienda.',
       cuerpo,
       accion: { texto: 'Seguirlo en el mapa', url: enlace },
@@ -203,13 +203,13 @@ export const plantillaPedidoCancelado = ({ pedido, nombreCliente, tienda }) => {
   const puntos = Number(pedido.reembolso?.puntos) || 0;
 
   const devuelto = [
-    saldo > 0 ? `${dinero(saldo)} a su saldo` : '',
-    puntos > 0 ? `${puntos} puntos a su cuenta` : '',
+    saldo > 0 ? `${dinero(saldo)} a tu saldo` : '',
+    puntos > 0 ? `${puntos} puntos a tu cuenta` : '',
   ].filter(Boolean);
 
   const cuerpo = `
     <p class="texto" style="margin:0 0 18px;font-size:15px;color:#555555;line-height:1.6;">
-      ${limpio(saluda)} sentimos: tuvimos que cancelar su pedido #${numero}.
+      ${limpio(saluda)} sentimos: tuvimos que cancelar tu pedido #${numero}.
     </p>
     ${motivo ? `
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;">
@@ -222,29 +222,29 @@ export const plantillaPedidoCancelado = ({ pedido, nombreCliente, tienda }) => {
     </table>` : ''}
     ${devuelto.length ? `
     <p class="texto" style="margin:16px 0 0;font-size:14px;color:#555555;line-height:1.55;">
-      Ya le devolvimos ${limpio(devuelto.join(' y '))}.
+      Ya te devolvimos ${limpio(devuelto.join(' y '))}.
     </p>` : ''}
     <p class="tenue" style="margin:16px 0 0;font-size:13px;color:#9C9691;line-height:1.55;">
-      Si tiene dudas, escríbanos y lo revisamos.
+      Si tienes dudas, escríbenos y lo revisamos.
     </p>`;
 
   const texto = [
-    'Su pedido fue cancelado',
+    'Tu pedido fue cancelado',
     '',
-    `${saluda} sentimos: tuvimos que cancelar su pedido #${numero}.`,
+    `${saluda} sentimos: tuvimos que cancelar tu pedido #${numero}.`,
     motivo ? `Motivo: ${motivo}` : '',
-    devuelto.length ? `Ya le devolvimos ${devuelto.join(' y ')}.` : '',
+    devuelto.length ? `Ya te devolvimos ${devuelto.join(' y ')}.` : '',
     '',
     `Ver el pedido: ${enlace}`,
     '',
-    'Si tiene dudas, escríbanos y lo revisamos.',
+    'Si tienes dudas, escríbenos y lo revisamos.',
   ].filter((l, i, arr) => l !== '' || arr[i - 1] !== '').join('\n');
 
   return {
-    asunto: `Su pedido #${numero} fue cancelado — ${tienda.nombre}`,
+    asunto: `Tu pedido #${numero} fue cancelado — ${tienda.nombre}`,
     html: sobre({
       tienda,
-      encabezado: 'Su pedido fue cancelado',
+      encabezado: 'Tu pedido fue cancelado',
       subtitulo: `Pedido #${numero}`,
       cuerpo,
       accion: { texto: 'Ver el pedido', url: enlace },

@@ -68,7 +68,7 @@ const Direcciones = () => {
           <MapPin className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
           <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>Sin direcciones guardadas</p>
           <p className="text-sm mb-5" style={{ color: c.textSecondary }}>
-            Marque en el mapa dónde le dejamos sus pedidos.
+            Marca en el mapa dónde te dejamos tus pedidos.
           </p>
           <button
             onClick={abrirMapa}

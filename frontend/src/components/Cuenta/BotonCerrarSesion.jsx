@@ -77,7 +77,7 @@ const BotonCerrarSesion = () => {
                 </div>
                 <h2 id="titulo-cerrar-sesion" className="mb-1 text-center text-lg font-bold">{t('¿Cerrar sesión?')}</h2>
                 <p className="mb-6 text-center text-sm" style={{ color: c.textSecondary }}>
-                  {t('Tendrá que volver a ingresar su correo y contraseña para entrar de nuevo.')}
+                  {t('Tendrás que volver a ingresar tu correo y contraseña para entrar de nuevo.')}
                 </p>
                 <div className="flex gap-3">
                   <button

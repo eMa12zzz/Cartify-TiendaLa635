@@ -100,7 +100,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
             background: 'color-mix(in srgb, var(--papel) 94%, transparent)', borderRadius: 8, padding: '7px 10px',
             fontSize: 12.5, color: 'var(--tinta-suave)', textAlign: 'center', pointerEvents: 'none',
           }}>
-            {t('Toque en el mapa dónde le dejamos su pedido')}
+            {t('Toca en el mapa dónde te dejamos tu pedido')}
           </div>
         )}
       </div>
@@ -204,7 +204,7 @@ const MapaDireccion = ({ onGuardar, onCancelar, guardando = false, alto = 260 })
           }}
         >
           <MapPin size={15} />
-          {guardando ? t('Guardando…') : posicion ? t('Guardar esta dirección') : t('Marque el punto en el mapa')}
+          {guardando ? t('Guardando…') : posicion ? t('Guardar esta dirección') : t('Marca el punto en el mapa')}
         </button>
       </div>
     </form>

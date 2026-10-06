@@ -44,7 +44,7 @@ const OPCIONES = [
   {
     clave: 'sistema',
     titulo: 'Automático',
-    detalle: 'Igual que su teléfono o computadora.',
+    detalle: 'Igual que tu teléfono o computadora.',
     // Mitad y mitad: se parte en diagonal para que se lea como "cambia solo".
     dibujo: (
       <div className="relative w-full h-full">

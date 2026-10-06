@@ -93,7 +93,7 @@ const prepararCanal = async () => {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CANAL_PEDIDOS, {
     name: 'Mi pedido',
-    description: 'Cuando su pedido se prepara, sale, está listo o llega.',
+    description: 'Cuando tu pedido se prepara, sale, está listo o llega.',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#003049',

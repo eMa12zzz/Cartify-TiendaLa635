@@ -39,8 +39,8 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
   const esDomicilio = deliveryType === 'delivery';
   const Icono = esDomicilio ? Bike : TiendaIcono;
   const explicacion = esDomicilio
-    ? t('Dígaselos a quien le entregue el pedido en la puerta.')
-    : t('Dígaselos en el mostrador al recoger su pedido.');
+    ? t('Díselos a quien te entregue el pedido en la puerta.')
+    : t('Díselos en el mostrador al recoger tu pedido.');
 
   // Separados: un "0451" de corrido se lee mal en un teléfono a contraluz.
   const digitos = String(codigo).split('');
@@ -49,7 +49,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
     <View style={[estilos.tarjeta, { backgroundColor: colores.marcaTenue, borderColor: colores.marcaSuave }]}>
       <View style={estilos.filaTitulo}>
         <ShieldCheck size={16} color={colores.marca} strokeWidth={2.2} />
-        <Text style={estilos.titulo}>{t('Su código de entrega')}</Text>
+        <Text style={estilos.titulo}>{t('Tu código de entrega')}</Text>
       </View>
 
       <View style={estilos.filaDigitos}>
@@ -63,7 +63,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false }) => {
       <View style={estilos.filaExplicacion}>
         <Icono size={14} color={COLORES.textoTenue} strokeWidth={2} style={estilos.iconoExplicacion} />
         <Text style={estilos.explicacion}>
-          {explicacion} <Text style={estilos.explicacionTenue}>{t('Nadie de la tienda lo ve en su pantalla: se lo tienen que pedir a usted.')}</Text>
+          {explicacion} <Text style={estilos.explicacionTenue}>{t('Nadie de la tienda lo ve en su pantalla: te lo tienen que pedir a ti.')}</Text>
         </Text>
       </View>
     </View>

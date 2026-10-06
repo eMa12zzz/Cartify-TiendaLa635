@@ -54,13 +54,13 @@ const DESTINO_POR_DEFECTO = { lat: 13.7035, lng: -89.2244 };
  * backend/src/utils/avisosCliente.js). Si allá cambian, se cambian aquí.
  */
 export const TEXTOS_PEDIDO = {
-  preparando: { titulo: 'Estamos preparando su pedido', cuerpo: 'Ya estamos juntando sus productos.' },
+  preparando: { titulo: 'Estamos preparando tu pedido', cuerpo: 'Ya estamos juntando tus productos.' },
   en_camino: {
-    titulo: 'Su pedido va en camino',
-    cuerpo: 'Ya salió de la tienda. Puede verlo en el mapa y saber cuándo salir a la puerta.',
+    titulo: 'Tu pedido va en camino',
+    cuerpo: 'Ya salió de la tienda. Puedes verlo en el mapa y saber cuándo salir a la puerta.',
   },
-  listo: { titulo: 'Su pedido está listo', cuerpo: 'Ya puede pasar a recogerlo a la tienda.' },
-  entregado: { titulo: 'Su pedido llegó', cuerpo: '¡Que lo disfrute! Si quiere, califique la entrega desde la app.' },
+  listo: { titulo: 'Tu pedido está listo', cuerpo: 'Ya puedes pasar a recogerlo a la tienda.' },
+  entregado: { titulo: 'Tu pedido llegó', cuerpo: '¡Que lo disfrutes! Si quieres, califica la entrega desde la app.' },
 };
 
 let sim = null;

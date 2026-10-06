@@ -138,7 +138,7 @@ router.route("/")
 
 router.route("/:id")
     .put(soloAdmin, upload.single('image'), productController.updateProduct)
-    .get(productController.getProduct)
+    .get(productController.getProductById)
     .delete(soloAdmin, productController.deleteProduct);
 
 export default router;

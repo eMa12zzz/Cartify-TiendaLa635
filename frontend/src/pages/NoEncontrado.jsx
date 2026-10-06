@@ -157,7 +157,7 @@ const NoEncontrado = () => {
         </Cuatro>
         <Titulo>{t('Esta página no existe')}</Titulo>
         <Texto>
-          {t('Puede que la dirección esté mal escrita, o que la página se haya movido de lugar. No es nada que usted haya hecho mal.')}
+          {t('Puede que la dirección esté mal escrita, o que la página se haya movido de lugar. No es nada que hayas hecho mal.')}
         </Texto>
         <Ruta>{pathname}</Ruta>
 

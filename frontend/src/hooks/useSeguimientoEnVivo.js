@@ -98,7 +98,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
         if (courier) anteriorRef.current = { ...courier, velocidad };
 
         /*
-         * ── "Ya casi toca su puerta" ──
+         * ── "Ya casi toca tu puerta" ──
          * El aviso que de verdad importa. Mirar un puntito acercarse es
          * entretenido, pero lo que la gente quiere es que le digan CUÁNDO
          * levantarse: nadie se queda con el teléfono en la mano midiendo
@@ -111,7 +111,7 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
           const faltan = distanciaMetros(courier, data.destino);
           if (faltan != null && faltan <= YA_CASI_M) {
             avisadoRef.current = true;
-            toast(tAhora('Su pedido ya casi toca su puerta'), {
+            toast(tAhora('Tu pedido ya casi toca tu puerta'), {
               id: `ya-casi-${pedidoId}`,
               duration: 8000,
               icon: ICONOS.reparto,

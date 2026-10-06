@@ -28,12 +28,12 @@ import { Package, ChefHat, Bike, Check, Store } from 'lucide-react';
  * todo tiene que caber en un círculo chico.
  */
 export const PASOS_TODOS = [
-  { id: 'pagado', label: 'Recibido', detalle: 'Su pedido entró a la tienda', Icono: Package, pose: 'recibido' },
-  { id: 'preparando', label: 'Preparando', detalle: 'Están juntando sus productos', Icono: ChefHat, pose: 'preparando' },
-  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para su casa', Icono: Bike, pose: 'en-camino' },
+  { id: 'pagado', label: 'Recibido', detalle: 'Tu pedido entró a la tienda', Icono: Package, pose: 'recibido' },
+  { id: 'preparando', label: 'Preparando', detalle: 'Están juntando tus productos', Icono: ChefHat, pose: 'preparando' },
+  { id: 'en_camino', label: 'En camino', detalle: 'Un repartidor va para tu casa', Icono: Bike, pose: 'en-camino' },
   // Solo retiro en la tienda: el aviso de "ya puede pasar por él".
-  { id: 'listo', label: 'Listo para recoger', detalle: 'Ya puede pasar por él a la tienda', Icono: Store, pose: 'entregado' },
-  { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrute!', Icono: Check, pose: 'entregado' },
+  { id: 'listo', label: 'Listo para recoger', detalle: 'Ya puedes pasar por él a la tienda', Icono: Store, pose: 'entregado' },
+  { id: 'entregado', label: 'Entregado', detalle: '¡Que lo disfrutes!', Icono: Check, pose: 'entregado' },
 ];
 
 /*
@@ -92,7 +92,7 @@ export const sellosDeCancelacion = (pedido) => {
 export const textoDevuelto = (pedido) => {
   const saldo = Number(pedido?.reembolso?.saldo) || 0;
   const puntos = Number(pedido?.reembolso?.puntos) || 0;
-  const partes = [saldo > 0 ? `$${saldo.toFixed(2)} a su saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
+  const partes = [saldo > 0 ? `$${saldo.toFixed(2)} a tu saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
     .filter(Boolean);
-  return partes.length ? `Le devolvimos ${partes.join(' y ')}.` : '';
+  return partes.length ? `Te devolvimos ${partes.join(' y ')}.` : '';
 };
