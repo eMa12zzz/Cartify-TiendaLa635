@@ -6,6 +6,7 @@ import {
   Megaphone, Award, Gift,
   UserSquare2, Users, Truck,
   Library, Store, Contact, Palette,
+  Wrench, Bug,
 } from 'lucide-react';
 import { useAuth } from './useAuth';
 
@@ -73,6 +74,15 @@ export const GRUPOS = [
       { name: 'Clientes', path: '/clientes', icon: UserSquare2 },
       { name: 'Empleados', path: '/empleados', icon: Users },
       { name: 'Proveedores', path: '/proveedores', icon: Truck },
+    ],
+  },
+  {
+    // Cómo está funcionando la tienda por dentro. Ver pages/Errores.jsx.
+    id: 'sistema',
+    name: 'Sistema',
+    icon: Wrench,
+    items: [
+      { name: 'Errores', path: '/errores', icon: Bug },
     ],
   },
 ];

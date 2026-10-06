@@ -1,4 +1,3 @@
-/* global process */
 /*
  * ============================================================
  * VISTA PREVIA DE LOS ENLACES — middleware.js (Vercel)

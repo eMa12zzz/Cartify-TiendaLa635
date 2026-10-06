@@ -5,6 +5,7 @@ import { RotateCcw, Store } from 'lucide-react';
 import { areaDeRuta } from '../../utils/sesion';
 import Mascota from './Mascota';
 import { traducir, leerIdiomaGuardado } from '../../utils/idioma';
+import { reportarError } from '../../utils/reportarError';
 
 /*
  * ============================================================
@@ -156,6 +157,12 @@ class LimiteDeError extends Component {
     // Queda en la consola con el árbol de componentes: es lo que de verdad
     // sirve para encontrar el archivo culpable.
     console.error('Error de render contenido por LimiteDeError:', error, info?.componentStack);
+    /*
+     * Y ahora sí "queda anotado", como dice la pantalla: antes esa frase era
+     * mentira, el error moría en la consola de quien lo sufría. El árbol de
+     * componentes va con él: dice en qué pieza de la pantalla se rompió.
+     */
+    reportarError(error, { extra: info?.componentStack ? `Componentes:${info.componentStack.slice(0, 1500)}` : '' });
   }
 
   /*

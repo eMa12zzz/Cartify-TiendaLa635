@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Trash2, Save } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modalTransition } from '../../utils/motion';
 

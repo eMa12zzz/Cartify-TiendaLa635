@@ -100,7 +100,7 @@
           var modo = localStorage.getItem('la635_modo');
           var oscuro = modo === 'oscuro' ||
             (modo === 'sistema' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          var panel = /^\/(admin|dashboard|inventario|pedidos|modulos|marcas|empleados|clientes|proveedores|categorias|fidelidad|promociones|servicios-impresion|tarjetas|personalizacion|cuenta)(\/|$)/;
+          var panel = /^\/(admin|dashboard|inventario|pedidos|modulos|marcas|empleados|clientes|proveedores|categorias|fidelidad|promociones|servicios-impresion|tarjetas|personalizacion|cuenta|ayuda|errores)(\/|$)/;
           if (oscuro && !panel.test(location.pathname)) {
             document.documentElement.setAttribute('data-modo', 'oscuro');
             // La barra del sistema, del mismo color que el fondo oscuro (--papel).

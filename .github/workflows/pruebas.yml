@@ -1,0 +1,76 @@
+# Revisión automática de cada cambio.
+#
+# En cada pull request (y al llegar a develop o main) corre, por separado y
+# a la vez, lo de la web, el servidor y la app: el linter, las pruebas y la
+# construcción. Si algo falla, el PR lo muestra en rojo antes de juntarlo;
+# hasta ahora cada cambio se probaba a mano y lo roto se descubría publicado.
+#
+# Las pruebas no tocan la base de datos ni mandan correos: lo que necesita
+# servidor o base se reemplaza dentro de cada prueba.
+name: Pruebas
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+jobs:
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Linter
+        run: npm run lint
+      - name: Pruebas
+        run: npm test
+      - name: Construir
+        run: npm run build
+        env:
+          VITE_API_URL: https://cartify-tiendala635.onrender.com/api
+
+  servidor:
+    name: Servidor
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Pruebas
+        run: npm test
+
+  app:
+    name: App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: movil
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: movil/package-lock.json
+      - run: npm ci
+      - name: Pruebas
+        run: npm test
+      # La revisión oficial de Expo: versiones compatibles y configuración.
+      - name: Revisión de Expo
+        run: npx expo-doctor@latest

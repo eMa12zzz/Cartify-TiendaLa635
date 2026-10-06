@@ -22,9 +22,6 @@ const FilterSelect = ({
   options = [],
   icon: Icono = ListFilter,
 }) => {
-  const isDefault = value === defaultValue;
-  const activeOption = options.find(o => o.value === value);
-
   return (
     <div className="relative inline-flex items-center">
       <div className="pointer-events-none absolute left-3 flex items-center">

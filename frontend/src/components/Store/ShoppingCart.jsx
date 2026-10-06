@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Package, MessageCircle, Store as StoreFront, CalendarDays, Hash, Wallet, Gift, Clock } from 'lucide-react';
+import { X, Minus, Plus, Trash2, ShoppingBag, ChevronLeft, CreditCard, MapPin, ChevronRight, Package, MessageCircle, Store as StoreFront, Hash, Wallet, Gift, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
@@ -585,28 +585,11 @@ const CheckoutCard = styled.div`
   margin-bottom: 16px;
 `;
 
-const CheckoutSection = styled.div`
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--linea);
-  cursor: pointer;
-  &:last-child { border-bottom: none; }
-  &:hover { background: var(--papel-suave); }
-`;
-
 const CheckoutSectionTitle = styled.div`
   font-size: 15px;
   font-weight: 600;
   color: var(--tinta);
   margin-bottom: 2px;
-`;
-
-const CheckoutSectionSub = styled.div`
-  font-size: 13px;
-  color: var(--marca-texto);
-  font-weight: 500;
 `;
 
 const CheckoutIconBox = styled.div`
@@ -619,20 +602,6 @@ const CheckoutIconBox = styled.div`
   justify-content: center;
   margin-right: 16px;
   flex-shrink: 0;
-`;
-
-const DeliveryBadge = styled.div`
-  background: var(--papel-gris);
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 12px;
-  color: var(--tinta-suave);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-
-  svg { flex-shrink: 0; }
 `;
 
 const OrderThumbsRow = styled.div`
@@ -719,63 +688,6 @@ const TotalBig = styled.div`
   font-size: 15px;
   font-weight: 700;
   color: var(--tinta);
-`;
-
-/* Tips */
-const TipsSection = styled.div`
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--linea);
-`;
-
-const TipsLabel = styled.div`
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--tinta);
-  margin-bottom: 4px;
-`;
-
-const TipsSub = styled.div`
-  font-size: 11px;
-  color: var(--tinta-tenue);
-  margin-bottom: 10px;
-`;
-
-const TipsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-`;
-
-const TipBtn = styled.button`
-  padding: 6px 14px;
-  border: 1.5px solid ${props => props.$active ? BROWN : 'var(--linea-fuerte)'};
-  border-radius: 8px;
-  background: ${props => props.$active ? BROWN_LIGHT : 'var(--papel)'};
-  color: ${props => props.$active ? BROWN : 'var(--tinta-suave)'};
-  font-size: 13px;
-  font-weight: ${props => props.$active ? '700' : '400'};
-  cursor: pointer;
-  transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out);
-`;
-
-const CouponRow = styled.div`
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--linea);
-`;
-
-const CouponBtn = styled.button`
-  background: none;
-  border: none;
-  font-size: 13px;
-  color: var(--marca-texto);
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  &:hover { text-decoration: underline; }
 `;
 
 const PlaceOrderBtn = styled.button`
@@ -872,46 +784,6 @@ const AcceptedMsg = styled.div`
   font-weight: 700;
   color: var(--tinta);
   margin-bottom: 24px;
-`;
-
-/* Timeline */
-const Timeline = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 24px;
-`;
-
-const TimelineStep = styled.div`
-  flex: 1;
-  text-align: center;
-  position: relative;
-`;
-
-const TimelineDot = styled.div`
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: ${props => props.$active ? BROWN : 'var(--linea-fuerte)'};
-  margin: 0 auto 6px;
-  position: relative;
-  z-index: 1;
-`;
-
-const TimelineLine = styled.div`
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  right: -50%;
-  height: 2px;
-  background: ${props => props.$active ? BROWN : 'var(--linea-fuerte)'};
-  z-index: 0;
-`;
-
-const TimelineLabel = styled.div`
-  font-size: 11px;
-  color: ${props => props.$active ? BROWN : 'var(--tinta-tenue)'};
-  font-weight: ${props => props.$active ? '600' : '400'};
 `;
 
 /* Products table */
@@ -2000,9 +1872,6 @@ const ShoppingCart = ({
       || (entrega === 'delivery' ? direccionElegida?.direccion : null);
     // Nombre de la forma de pago tal como se muestra al cliente.
     const nombrePago = t({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', saldo: 'Saldo / Gift card' }[metodoReal] || 'Efectivo');
-    // Los tres pasos reales del pedido (mismos que en la burbuja y la pantalla
-    // de estado). El pedido recién creado está en el primero.
-    const PASOS_CONFIRM = ['Recibido', 'Preparando', 'Entregado'];
 
     return (
       <Overlay $montado={montado} onClick={() => {}}>

@@ -4,7 +4,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { EsperaMascota, CargandoMascota } from '../../components/UI/Mascota';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { formatearDui, formatearTelefono, LARGO_TELEFONO, LARGO_DUI } from '../../utils/mascaras';
-import { calcularEdad, EDAD_MINIMA, esMayorDeEdad } from '../../utils/edad';
+import { EDAD_MINIMA, esMayorDeEdad } from '../../utils/edad';
 import BotonCerrarSesion from '../../components/Cuenta/BotonCerrarSesion';
 
 // Fecha (Date/ISO) → valor de un <input type="date"> ("YYYY-MM-DD").
