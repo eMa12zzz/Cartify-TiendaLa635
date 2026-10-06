@@ -26,12 +26,12 @@ const Favoritos = () => {
       <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Mis favoritos</h1>
 
       {cargando ? (
-        <CargandoMascota texto="Cargando sus favoritos…" />
+        <CargandoMascota texto="Cargando tus favoritos…" />
       ) : productos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Heart className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
           <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>
-            Todavía no tiene favoritos
+            Todavía no tienes favoritos
           </p>
           <p className="text-sm mb-5" style={{ color: c.textSecondary }}>
             Toque el corazón de un producto en la tienda y aparecerá aquí.

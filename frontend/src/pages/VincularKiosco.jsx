@@ -36,7 +36,7 @@ const VincularKiosco = () => {
       await kioscoService.vincular(codigo, user.id);
       setEstado('listo');
     } catch (e) {
-      setMensaje(e?.response?.data?.message || 'No se pudo vincular. Pida un código nuevo en el kiosco.');
+      setMensaje(e?.response?.data?.message || 'No se pudo vincular. Pide un código nuevo en el kiosco.');
       setEstado('error');
     }
   };
@@ -51,7 +51,7 @@ const VincularKiosco = () => {
         {/* Sin sesión no hay a qué cuenta pegarle la compra */}
         {!esCliente ? (
           <>
-            <h1 style={titulo}>Inicie sesión para continuar</h1>
+            <h1 style={titulo}>Inicia sesión para continuar</h1>
             <p style={bajada}>
               Necesitamos saber a qué cuenta cargarle esta compra y sus puntos.
             </p>
@@ -69,8 +69,8 @@ const VincularKiosco = () => {
             </div>
             <h1 style={titulo}>¡Listo, {user.userName || user.fullName}!</h1>
             <p style={bajada}>
-              Su compra quedará a su nombre y los puntos le caen solos al pagar.
-              Ya puede volver a la pantalla de la tienda.
+              Tu compra quedará a tu nombre y los puntos te caen solos al pagar.
+              Ya puedes volver a la pantalla de la tienda.
             </p>
             <button style={botonSuave} onClick={() => navigate('/')}>
               <Store size={16} /> Ir a la tienda
@@ -87,7 +87,7 @@ const VincularKiosco = () => {
           </>
         ) : (
           <>
-            <h1 style={titulo}>¿Es suya esta compra?</h1>
+            <h1 style={titulo}>¿Es tuya esta compra?</h1>
             <p style={bajada}>
               La compra del kiosco quedará a nombre de <strong>{user.userName || user.fullName}</strong>,
               con sus puntos de fidelidad.

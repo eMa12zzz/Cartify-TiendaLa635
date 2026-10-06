@@ -83,7 +83,7 @@ const cerrarSesionVencida = () => {
    * visitante anónimo terminaría en el login por curiosear.
    */
   if (!localStorage.getItem(CAJON[area])) {
-    toast.error(tAhora('Inicie sesión para ver esto.'));
+    toast.error(tAhora('Inicia sesión para ver esto.'));
     return;
   }
 
@@ -93,7 +93,7 @@ const cerrarSesionVencida = () => {
   echandoSesion = true;
   try { localStorage.removeItem(CAJON[area]); } catch { /* si falla, igual salimos */ }
 
-  toast.error(tAhora('Su sesión venció. Vuelva a iniciar sesión.'));
+  toast.error(tAhora('Tu sesión venció. Vuelve a iniciar sesión.'));
 
   // Se lleva a dónde estaba para devolverlo ahí después de entrar.
   const volver = encodeURIComponent(window.location.pathname + window.location.search);

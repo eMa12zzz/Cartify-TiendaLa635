@@ -89,11 +89,11 @@ import { useIdioma } from '../context/IdiomaContext';
 const SECCIONES = [
   { clave: 'datos', titulo: 'Mis datos', sub: 'Nombre, correo y teléfono', icono: User },
   { clave: 'favoritos', titulo: 'Mis favoritos', sub: 'Lo que marcó con el corazón', icono: Heart },
-  { clave: 'direcciones', titulo: 'Direcciones', sub: 'A dónde le llevamos el pedido', icono: MapPin },
-  { clave: 'pagos', titulo: 'Pagos', sub: 'Su saldo y sus métodos guardados', icono: CreditCard },
-  { clave: 'avisos', titulo: 'Notificaciones', sub: 'Qué avisos quiere recibir', icono: Bell },
-  { clave: 'puntos', titulo: 'Puntos de fidelidad', sub: 'Su saldo y cuánto valen', icono: Star },
-  { clave: 'recibos', titulo: 'Recibos', sub: 'Sus pedidos ya entregados', icono: Receipt },
+  { clave: 'direcciones', titulo: 'Direcciones', sub: 'A dónde te llevamos el pedido', icono: MapPin },
+  { clave: 'pagos', titulo: 'Pagos', sub: 'Tu saldo y tus métodos guardados', icono: CreditCard },
+  { clave: 'avisos', titulo: 'Notificaciones', sub: 'Qué avisos quieres recibir', icono: Bell },
+  { clave: 'puntos', titulo: 'Puntos de fidelidad', sub: 'Tu saldo y cuánto valen', icono: Star },
+  { clave: 'recibos', titulo: 'Recibos', sub: 'Tus pedidos ya entregados', icono: Receipt },
   { clave: 'preferencias', titulo: 'Preferencias', sub: 'Apariencia e idioma', icono: SlidersHorizontal },
   { clave: 'ayuda', titulo: 'Ayuda y contacto', sub: 'Preguntas frecuentes y cómo escribirnos', icono: HelpCircle },
 ];
@@ -306,7 +306,7 @@ const Perfil = () => {
       {confirmarSalida && (
         <ModalConfirmar
           titulo={t('¿Cerrar sesión?')}
-          mensaje={t('Tendrá que volver a escribir su correo y su contraseña para entrar de nuevo.')}
+          mensaje={t('Tendrás que volver a escribir tu correo y tu contraseña para entrar de nuevo.')}
           textoConfirmar={t('Cerrar sesión')}
           textoCancelar={t('Quedarme')}
           destructivo

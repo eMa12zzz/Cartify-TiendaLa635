@@ -23,7 +23,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, PanResponder, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // El Image de expo-image y no el de react-native: el nativo no decodifica
 // WebP/AVIF de forma fiable, y las fotos vienen de Cloudinary en .webp.
@@ -32,7 +32,8 @@ import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useEdad } from '../../context/EdadContext';
 import Boton from '../UI/Boton';
-import { Equis, Mas, Menos, Paquete } from '../UI/Iconos';
+import { Compartir, Equis, Mas, Menos, Paquete } from '../UI/Iconos';
+import { URL_WEB_LEGAL } from '../../utils/legales';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { cantidadConUnidad, esPorLibra, esSoloAdultos, pasoDe, piezasEnTexto, ajustarCantidad } from '../../utils/unidades';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
@@ -209,6 +210,29 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
             <View style={estilos.zonaAsa} {...panResponder.panHandlers}>
               <View style={estilos.asa} />
             </View>
+            {/*
+              Compartir manda el enlace de la WEB (/producto/:id): lo abre
+              cualquiera, tenga o no la app, y en WhatsApp llega con la foto,
+              el nombre y el precio (frontend/middleware.js).
+            */}
+            <Pressable
+              onPress={() => {
+                const precio = `$${Number(producto.precio).toFixed(2)}${esPorLibra(producto) ? '/lb' : ''}`;
+                const url = `${URL_WEB_LEGAL}/producto/${producto.id}`;
+                Share.share({
+                  title: producto.nombre,
+                  // Android solo manda "message": el enlace va dentro del texto.
+                  message: `${t('{nombre} a {precio} en {tienda}', { nombre: producto.nombre, precio, tienda: 'Tienda la 635' })}
+${url}`,
+                }).catch(() => {});
+              }}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t('Compartir este producto')}
+              style={estilos.compartir}
+            >
+              <Compartir size={17} color={COLORES.textoSuave} />
+            </Pressable>
             <Pressable
               onPress={cerrarConAnimacion}
               hitSlop={12}
@@ -416,6 +440,17 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     backgroundColor: COLORES.borde,
   },
   // Más metida en la esquina que antes (era right:14, top:6).
+  // A la izquierda de la equis, del mismo tamaño: las dos acciones de la esquina.
+  compartir: {
+    position: 'absolute',
+    right: 50,
+    top: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cerrar: {
     position: 'absolute',
     right: 10,

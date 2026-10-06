@@ -120,9 +120,9 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
 
   const enviar = async () => {
     const d = dui.replace(/\D/g, '');
-    if (!d.length) { setError(t('Ingrese su número de DUI.')); return; }
+    if (!d.length) { setError(t('Ingresa tu número de DUI.')); return; }
     if (d.length < 9) { setError(t('El DUI lleva 9 dígitos (12345678-9).')); return; }
-    if (!duiEsValido(dui)) { setError(t('Ese DUI no parece correcto, revise los números.')); return; }
+    if (!duiEsValido(dui)) { setError(t('Ese DUI no parece correcto, revisa los números.')); return; }
 
     setEnviando(true);
     try {
@@ -156,7 +156,7 @@ const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
 
             <Text style={estilos.titulo}>{t('Producto para mayores de {edad}', { edad: EDAD_MINIMA })}</Text>
             <Text style={estilos.texto}>
-              {t('Ingrese su número de DUI para verlo. Al recibir el pedido se le pedirá el documento físico; sin él, este producto no se puede entregar.')}
+              {t('Ingresa tu número de DUI para verlo. Al recibir el pedido te pedirán el documento físico; sin él, este producto no se puede entregar.')}
             </Text>
 
             <CampoTexto

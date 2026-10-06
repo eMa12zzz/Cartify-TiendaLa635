@@ -92,7 +92,7 @@ export const duiEsValido = (valor) => {
 
 // Mensaje único: si el número no cuadra, la persona necesita saber que revise
 // lo que escribió, no enterarse de que existe un dígito verificador.
-export const MENSAJE_DUI_INVALIDO = 'Ese DUI no parece correcto, revise los números';
+export const MENSAJE_DUI_INVALIDO = 'Ese DUI no parece correcto, revisa los números';
 
 /*
  * DUI del personal: obligatorio y con formato 12345678-9.

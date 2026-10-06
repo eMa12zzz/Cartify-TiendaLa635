@@ -594,13 +594,13 @@ const LoginClient = () => {
             {t('El súper de la esquina,')} <strong>{t('a un toque')}</strong>
           </Titular>
           <Bajada>
-            {t('Con su cuenta guardamos su dirección, sus puntos y lo que suele llevar, para que pedir la próxima vez le tome menos que hacer la lista.')}
+            {t('Con tu cuenta guardamos tu dirección, tus puntos y lo que sueles llevar, para que pedir la próxima vez te tome menos que hacer la lista.')}
           </Bajada>
 
           <Ventajas>
             <Ventaja>
               <IconoVentaja><Bike size={16} strokeWidth={2.2} /></IconoVentaja>
-              <span><strong>{t('Siga su pedido en el mapa.')}</strong> {t('Vea al repartidor acercarse y sepa cuándo salir a la puerta.')}</span>
+              <span><strong>{t('Sigue tu pedido en el mapa.')}</strong> {t('Mira al repartidor acercarse y sabrás cuándo salir a la puerta.')}</span>
             </Ventaja>
             <Ventaja>
               <IconoVentaja><Star size={16} strokeWidth={2.2} /></IconoVentaja>
@@ -608,21 +608,21 @@ const LoginClient = () => {
             </Ventaja>
             <Ventaja>
               <IconoVentaja><Heart size={16} strokeWidth={2.2} /></IconoVentaja>
-              <span><strong>{t('Guarde sus favoritos.')}</strong> {t('Lo de siempre, sin volver a buscarlo.')}</span>
+              <span><strong>{t('Guarda tus favoritos.')}</strong> {t('Lo de siempre, sin volver a buscarlo.')}</span>
             </Ventaja>
           </Ventajas>
 
           <SinCuenta>
-            <SinCuentaTexto>{t('¿No tiene cuenta?')}</SinCuentaTexto>
+            <SinCuentaTexto>{t('¿No tienes cuenta?')}</SinCuentaTexto>
             <BotonRegistro to="/register">
-              {t('Regístrese aquí')} <ArrowRight size={16} strokeWidth={2.4} />
+              {t('Regístrate aquí')} <ArrowRight size={16} strokeWidth={2.4} />
             </BotonRegistro>
           </SinCuenta>
         </Saludo>
 
         <Card>
-          <SectionTitle>{t('Inicie sesión para comprar')}</SectionTitle>
-          <SubTitle>{t('Puede seguir viendo la tienda sin cuenta.')}</SubTitle>
+          <SectionTitle>{t('Inicia sesión para comprar')}</SectionTitle>
+          <SubTitle>{t('Puedes seguir viendo la tienda sin cuenta.')}</SubTitle>
 
           <form
             onSubmit={handleSubmit(onSubmit, negar)}
@@ -697,8 +697,8 @@ const LoginClient = () => {
           </GoogleFila>
 
           <FooterText>
-            {t('¿No tiene una cuenta?')}{' '}
-            <FooterLink to="/register">{t('Regístrese')}</FooterLink>
+            {t('¿No tienes una cuenta?')}{' '}
+            <FooterLink to="/register">{t('Regístrate')}</FooterLink>
           </FooterText>
 
           {/*

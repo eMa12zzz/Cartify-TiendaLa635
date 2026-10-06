@@ -59,7 +59,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
 
   const verificar = async () => {
     if (codigo.length !== LARGO) {
-      setError(t('Ingrese el código de {n} caracteres', { n: LARGO }));
+      setError(t('Ingresa el código de {n} caracteres', { n: LARGO }));
       return;
     }
 
@@ -84,12 +84,12 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
           <Text style={estilos.flechaVolver}>←</Text>
         </Pressable>
 
-        <Text style={estilos.titulo}>{t('Ingrese el código de verificación')}</Text>
+        <Text style={estilos.titulo}>{t('Ingresa el código de verificación')}</Text>
 
         <View style={estilos.caja}>
           <Text style={estilos.info}>
-            {t('Le enviamos un código a')}{' '}
-            <Text style={estilos.correo}>{correo || t('su correo')}</Text>
+            {t('Te enviamos un código a')}{' '}
+            <Text style={estilos.correo}>{correo || t('tu correo')}</Text>
           </Text>
 
           {/*
@@ -145,7 +145,7 @@ const Verification = ({ correo, alVerificar, alVolver }) => {
         />
 
         <Text style={estilos.ayuda}>
-          {t('El código vence a los 15 minutos. Si ya venció, vuelva a registrarse.')}
+          {t('El código vence a los 15 minutos. Si ya venció, vuelve a registrarte.')}
         </Text>
       </View>
     </View>

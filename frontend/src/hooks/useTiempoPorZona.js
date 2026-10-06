@@ -64,7 +64,7 @@ export const useTiempoPorZona = (lat, lng) => {
     : '';
 
   const respaldo = actual?.hayDatos
-    ? t(actual.entregas === 1 ? 'Según {n} entrega a su zona' : 'Según {n} entregas a su zona', { n: actual.entregas })
+    ? t(actual.entregas === 1 ? 'Según {n} entrega a tu zona' : 'Según {n} entregas a tu zona', { n: actual.entregas })
     : '';
 
   return {

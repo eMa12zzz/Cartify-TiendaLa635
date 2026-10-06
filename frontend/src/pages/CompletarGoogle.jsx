@@ -300,7 +300,7 @@ const CompletarGoogle = () => {
       <Tarjeta>
         <Titulo>{t('Ya casi')}</Titulo>
         <Bajada>
-          {t('Google nos confirmó quién es usted. Nos falta lo que Google no sabe.')}
+          {t('Google nos confirmó quién eres. Nos falta lo que Google no sabe.')}
         </Bajada>
 
         <Identidad>
@@ -308,7 +308,7 @@ const CompletarGoogle = () => {
             ? <Foto src={sugerido.image} alt="" referrerPolicy="no-referrer" />
             : <SinFoto>{inicial}</SinFoto>}
           <Datos>
-            <strong>{sugerido.fullName || t('Su cuenta')}</strong>
+            <strong>{sugerido.fullName || t('Tu cuenta')}</strong>
             <span>{sugerido.email}</span>
           </Datos>
         </Identidad>
@@ -325,15 +325,15 @@ const CompletarGoogle = () => {
                 placeholder="7777-7777"
                 $error={!!errors.phoneNumber}
                 {...register('phoneNumber', {
-                  required: 'Necesitamos su teléfono para poder entregarle',
+                  required: 'Necesitamos tu teléfono para poder entregarte',
                   pattern: {
                     value: /^[0-9\s-]{8,}$/,
-                    message: 'Escriba un teléfono válido, con sus ocho dígitos',
+                    message: 'Escribe un teléfono válido, con sus ocho dígitos',
                   },
                 })}
               />
             </Marco>
-            <Porque>{t('Solo para llamarle si quien lleva su pedido no encuentra la casa.')}</Porque>
+            <Porque>{t('Solo para llamarte si quien lleva tu pedido no encuentra la casa.')}</Porque>
             {errors.phoneNumber && <Error>{t(errors.phoneNumber.message)}</Error>}
           </Campo>
 
@@ -358,7 +358,7 @@ const CompletarGoogle = () => {
               <IdCard size={17} strokeWidth={2} />
               <Entrada id="dui" type="text" placeholder="00000000-0" {...register('dui')} />
             </Marco>
-            <Porque>{t('Puede dejarlo en blanco: su cuenta funciona igual.')}</Porque>
+            <Porque>{t('Puedes dejarlo en blanco: tu cuenta funciona igual.')}</Porque>
           </Campo>
 
           <BloqueConsentimiento>
@@ -397,7 +397,7 @@ const CompletarGoogle = () => {
               <label htmlFor="promociones">
                 {t('Quiero recibir promociones y novedades por correo.')}
                 <Aclaracion>
-                  {t('Opcional. Puede apagarlo cuando quiera desde Mi Cuenta.')}
+                  {t('Opcional. Puedes apagarlo cuando quieras desde Mi Cuenta.')}
                 </Aclaracion>
               </label>
             </Casilla>

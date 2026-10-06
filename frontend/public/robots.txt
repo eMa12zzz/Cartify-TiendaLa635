@@ -1,0 +1,35 @@
+# Tienda la 635
+# Los buscadores ven la tienda, sus secciones y cada producto. El panel del
+# personal y las pantallas de la cuenta del cliente no tienen nada que buscar.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /pedidos
+Disallow: /inventario
+Disallow: /modulos
+Disallow: /marcas
+Disallow: /empleados
+Disallow: /clientes
+Disallow: /proveedores
+Disallow: /categorias
+Disallow: /fidelidad
+Disallow: /promociones
+Disallow: /servicios-impresion
+Disallow: /tarjetas
+Disallow: /personalizacion
+Disallow: /cuenta
+Disallow: /ayuda
+Disallow: /mi-cuenta
+Disallow: /bienvenida
+Disallow: /vincular/
+Disallow: /baja
+Disallow: /verification
+Disallow: /create-password
+Disallow: /login-password
+Disallow: /completar-registro
+Disallow: /forgot-password
+
+# Si la tienda estrena dominio propio, cambiarlo aquí y en index.html.
+Sitemap: https://cartify-tienda-la635.vercel.app/sitemap.xml

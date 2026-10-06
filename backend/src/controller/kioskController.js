@@ -131,7 +131,7 @@ kioskController.vincularSesion = async (req, res) => {
 
         const sesion = await kioskSessionModel.findOne({ codigo });
         if (!sesion) {
-            return res.status(404).json({ message: "Ese código venció. Pida uno nuevo en el kiosco." });
+            return res.status(404).json({ message: "Ese código venció. Pide uno nuevo en el kiosco." });
         }
         // Una sesión ya cobrada no se reabre: si no, el mismo QR serviría para
         // colgarle otra compra a la misma persona.

@@ -135,12 +135,12 @@ const AvisoCookies = () => {
     <Franja aria-labelledby="aviso-cookies-titulo">
       <Interior>
         <Texto>
-          <h2 id="aviso-cookies-titulo">{t('Sus datos, sus reglas')}</h2>
+          <h2 id="aviso-cookies-titulo">{t('Tus datos, tus reglas')}</h2>
           <p>
-            {t('Usamos lo necesario para que la tienda funcione: su sesión y su carrito. Si nos deja, también medimos las visitas de forma anónima, sin cookies, para mejorar la tienda.')}{' '}
+            {t('Usamos lo necesario para que la tienda funcione: tu sesión y tu carrito. Si nos dejas, también medimos las visitas de forma anónima, sin cookies, para mejorar la tienda.')}{' '}
             <Link to="/cookies">{t('Ver la política de cookies')}</Link>
             {consentimiento && (
-              <> · {consentimiento.analiticas ? t('Ahora tiene las analíticas activadas.') : t('Ahora tiene las analíticas apagadas.')}</>
+              <> · {consentimiento.analiticas ? t('Ahora tienes las analíticas activadas.') : t('Ahora tienes las analíticas apagadas.')}</>
             )}
           </p>
         </Texto>

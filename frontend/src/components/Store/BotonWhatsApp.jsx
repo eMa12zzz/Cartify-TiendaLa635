@@ -104,7 +104,7 @@ const BotonWhatsApp = () => {
             border: '1px solid var(--linea)',
           }}
         >
-          {t('¿Necesita ayuda? Escríbanos')}
+          {t('¿Necesitas ayuda? Escríbenos')}
           <button
             onClick={cerrarGlobo}
             aria-label={t('Cerrar mensaje')}

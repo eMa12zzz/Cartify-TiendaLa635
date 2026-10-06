@@ -189,7 +189,7 @@ const MisPedidos = () => {
                     style={{ backgroundColor: 'rgba(220,38,38,.08)', color: c.textSecondary }}
                   >
                     {order.cancelledByClient && (
-                      <p className="font-semibold" style={{ color: c.textPrimary }}>Lo canceló usted.</p>
+                      <p className="font-semibold" style={{ color: c.textPrimary }}>Lo cancelaste.</p>
                     )}
                     {order.cancelReason && (
                       <p>

@@ -383,7 +383,7 @@ export const TiendaProvider = ({ children }) => {
          * seguiría bien en pantalla y aparecería vacío al volver mañana, sin
          * que nadie entienda por qué.
          */
-        if (!ok) avisar(tAhora('Su carrito funciona, pero no se pudo guardar para la próxima vez'), 'error');
+        if (!ok) avisar(tAhora('Tu carrito funciona, pero no se pudo guardar para la próxima vez'), 'error');
       });
     },
     [llaveActual, avisar, setLineas]
@@ -428,7 +428,7 @@ export const TiendaProvider = ({ children }) => {
           : tAhora('de {n} quedaban menos unidades de las que llevaba', { n: recortados })
       );
     }
-    avisar(tAhora('De su carrito guardado, {partes}. Ya está corregido.', { partes: partes.join(tAhora(' y ')) }));
+    avisar(tAhora('De tu carrito guardado, {partes}. Ya está corregido.', { partes: partes.join(tAhora(' y ')) }));
   }, [cargando, carritoLeido, productos, lineas, carrito, guardarCarrito, avisar]);
 
   /*
@@ -482,7 +482,7 @@ export const TiendaProvider = ({ children }) => {
       avisar(
         nuevaCantidad > 1
           ? tAhora('{nombre} · {cantidad} en el carrito', { nombre: producto.nombre, cantidad: cantidadConUnidad(producto, nuevaCantidad) })
-          : tAhora('{nombre} agregado al carrito', { nombre: producto.nombre }),
+          : tAhora('Agregaste {nombre} al carrito', { nombre: producto.nombre }),
         'exito'
       );
       return entra;

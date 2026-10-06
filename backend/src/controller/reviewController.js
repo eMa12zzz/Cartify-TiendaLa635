@@ -63,7 +63,7 @@ reviewController.upsert = async (req, res) => {
 
     if (!loCompro) {
       return res.status(403).json({
-        message: "Solo puede valorar productos que haya comprado",
+        message: "Solo puedes valorar productos que hayas comprado",
       });
     }
 
@@ -73,7 +73,7 @@ reviewController.upsert = async (req, res) => {
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
-    return res.status(200).json({ message: "¡Gracias por su opinión!", review });
+    return res.status(200).json({ message: "¡Gracias por tu opinión!", review });
   } catch (error) {
     console.log("error upsert review: " + error);
     return res.status(500).json({ message: "Error interno del servidor" });

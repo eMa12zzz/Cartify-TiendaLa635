@@ -53,4 +53,10 @@ export const aplicarModo = (oscuro) => {
   const raiz = document.documentElement;
   if (oscuro) raiz.setAttribute('data-modo', 'oscuro');
   else raiz.removeAttribute('data-modo');
+  /*
+   * La barra del sistema del teléfono (y de la web instalada) toma el color
+   * del fondo de la página, --papel en index.css: blanca en claro, casi negra
+   * en oscuro. Si no, quedaba una franja blanca encima de la tienda oscura.
+   */
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', oscuro ? '#121417' : '#FFFFFF');
 };

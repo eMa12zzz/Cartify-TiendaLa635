@@ -87,7 +87,7 @@ const Direcciones = ({ alVolver }) => {
       const lista = Array.isArray(cliente?.clientAddress) ? cliente.clientAddress : [];
       setDirecciones(lista.map(normalizar));
     } catch (e) {
-      setError(e?.message || t('No se pudieron cargar sus direcciones'));
+      setError(e?.message || t('No se pudieron cargar tus direcciones'));
     } finally {
       setCargando(false);
     }
@@ -138,7 +138,7 @@ const Direcciones = ({ alVolver }) => {
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus direcciones')}</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar tus direcciones')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
@@ -158,7 +158,7 @@ const Direcciones = ({ alVolver }) => {
             <View style={estilos.vacio}>
               <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />
               <Text style={estilos.vacioTitulo}>{t('Sin direcciones guardadas')}</Text>
-              <Text style={estilos.vacioTexto}>{t('Agregue la primera abajo.')}</Text>
+              <Text style={estilos.vacioTexto}>{t('Agrega la primera abajo.')}</Text>
             </View>
           }
           ListFooterComponent={

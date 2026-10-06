@@ -30,6 +30,7 @@ const Encabezado = styled.div`
 
 const Titulo = styled.h2`
   font-size: 24px;
+  @media (max-width: 560px) { font-size: 21px; }
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--tinta);
@@ -98,6 +99,13 @@ const VerTodos = styled.button`
     &:hover { color: var(--marca-texto-fuerte); }
   }
   &:active { transform: scale(0.97); }
+
+  /*
+   * En el teléfono no cabía junto al título: "Nuevos en la tienda" se partía
+   * en tres renglones. Ahí el título mismo, con su flechita siempre visible,
+   * ya es la puerta a la sección completa.
+   */
+  @media (max-width: 560px) { display: none; }
 `;
 
 const Acciones = styled.div`
@@ -117,6 +125,9 @@ const Flechas = styled.div`
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+
+  /* En pantalla táctil la fila se desliza con el dedo: las flechas sobran. */
+  @media (hover: none), (pointer: coarse) { display: none; }
 `;
 
 const Circulo = styled.button`

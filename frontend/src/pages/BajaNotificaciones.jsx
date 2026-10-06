@@ -124,7 +124,7 @@ const BajaNotificaciones = () => {
 
         {estado === 'listo' && (
           <>
-            <Titulo>Listo, ya no le escribimos</Titulo>
+            <Titulo>Listo, ya no te escribimos</Titulo>
             <Texto>
               Dejará de recibir {queSeApago} por correo. Los avisos de sus pedidos
               siguen llegando, porque esos no son publicidad.

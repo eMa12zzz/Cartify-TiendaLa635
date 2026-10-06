@@ -153,7 +153,7 @@ const Pagos = ({ alVolver }) => {
       setMetodos(lista);
       setSaldo(Number(saldoRes?.balance) || 0);
     } catch (e) {
-      setError(e?.message || t('No se pudo cargar su información de pagos'));
+      setError(e?.message || t('No se pudo cargar tu información de pagos'));
     } finally {
       setCargando(false);
     }
@@ -208,7 +208,7 @@ const Pagos = ({ alVolver }) => {
         : !numeroCompleto
           ? t('Faltan dígitos: {marca} lleva {n}.', { marca: NOMBRE_MARCA[marca] === 'Tarjeta' ? t('la tarjeta') : NOMBRE_MARCA[marca], n: largoDe(marca) })
           : !numeroValido
-            ? t('Revise el número: no corresponde a una tarjeta válida.')
+            ? t('Revisa el número: no corresponde a una tarjeta válida.')
             : duplicada
               ? t('Esa tarjeta ya está guardada.')
               : '',
@@ -216,11 +216,11 @@ const Pagos = ({ alVolver }) => {
       !tocado.vencimiento || !nuevo.vencimiento
         ? ''
         : !venc
-          ? t('Use el formato MM/AA, con un mes entre 01 y 12.')
+          ? t('Usa el formato MM/AA, con un mes entre 01 y 12.')
           : vencida
             ? t('Esta tarjeta ya venció.')
             : '',
-    titular: tocado.titular && !titularValido ? t('Escriba el nombre como aparece en la tarjeta.') : '',
+    titular: tocado.titular && !titularValido ? t('Escribe el nombre como aparece en la tarjeta.') : '',
   };
 
   const listo = numeroValido && !!venc && !vencida && titularValido && !duplicada;
@@ -293,7 +293,7 @@ const Pagos = ({ alVolver }) => {
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>{t('No se pudo cargar su información de pagos')}</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudo cargar tu información de pagos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
@@ -313,7 +313,7 @@ const Pagos = ({ alVolver }) => {
                 <Gift size={19} color={colores.marca} strokeWidth={2} />
               </View>
               <View>
-                <Text style={estilos.etiquetaSaldo}>{t('Su saldo')}</Text>
+                <Text style={estilos.etiquetaSaldo}>{t('Tu saldo')}</Text>
                 <Text style={[estilos.valorSaldo, { color: colores.marcaTexto }]}>
                   ${saldo.toFixed(2)}
                 </Text>
@@ -324,7 +324,7 @@ const Pagos = ({ alVolver }) => {
               <TextInput
                 value={codigoTarjeta}
                 onChangeText={(v) => setCodigoTarjeta(v.toUpperCase())}
-                placeholder={t('¿Tiene una tarjeta? 635-XXXX-XXXX')}
+                placeholder={t('¿Tienes una tarjeta? 635-XXXX-XXXX')}
                 placeholderTextColor={COLORES.marcador}
                 keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
                 style={estilos.campoCanje}
@@ -352,7 +352,7 @@ const Pagos = ({ alVolver }) => {
 
           {metodos.length === 0 && !escribiendo && (
             <Text style={estilos.vacioTexto}>
-              {t('Sin métodos de pago guardados todavía. Guarde su tarjeta una vez y la tendrá a mano en su próxima compra.')}
+              {t('Sin métodos de pago guardados todavía. Guarda tu tarjeta una vez y la tendrás a mano en tu próxima compra.')}
             </Text>
           )}
 

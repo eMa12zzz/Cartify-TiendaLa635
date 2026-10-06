@@ -59,11 +59,11 @@ export const useClientProfile = () => {
     if (!esCliente || !profile || !archivo) return;
 
     if (!archivo.type?.startsWith('image/')) {
-      toast.error('Ese archivo no es una imagen. Use JPG, PNG o WEBP.');
+      toast.error('Ese archivo no es una imagen. Usa JPG, PNG o WEBP.');
       return;
     }
     if (archivo.size > 8 * 1024 * 1024) {
-      toast.error('La imagen pesa demasiado. Use una de menos de 8 MB.');
+      toast.error('La imagen pesa demasiado. Usa una de menos de 8 MB.');
       return;
     }
 

@@ -69,7 +69,7 @@ const Puntos = ({ alVolver }) => {
       setResumen(sum || { available: 0, nextExpiry: null, expiringSoon: 0 });
       setConfig(cfg);
     } catch (e) {
-      setError(e?.message || t('No se pudieron cargar sus puntos'));
+      setError(e?.message || t('No se pudieron cargar tus puntos'));
     } finally {
       setCargando(false);
     }
@@ -106,7 +106,7 @@ const Puntos = ({ alVolver }) => {
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus puntos')}</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar tus puntos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
@@ -154,7 +154,7 @@ const Puntos = ({ alVolver }) => {
 
               {/* Lo que de verdad le importa al cliente: cuánto valen. */}
               <Text style={estilos.valor}>
-                {t('Valen ${monto} en su próxima compra', { monto: valorEnDinero.toFixed(2) })}
+                {t('Valen ${monto} en tu próxima compra', { monto: valorEnDinero.toFixed(2) })}
               </Text>
               <Text style={estilos.detalle}>
                 {t(plural ? 'Gana {n} puntos por cada $1 que gasta.' : 'Gana {n} punto por cada $1 que gasta.', { n: porDolar })}
@@ -169,7 +169,7 @@ const Puntos = ({ alVolver }) => {
             <View style={estilos.aviso}>
               <TriangleAlert size={16} color={COLORES.avisoVivo} strokeWidth={2} />
               <Text style={estilos.avisoTexto}>
-                {t('Tiene {n} puntos que vencen en los próximos 30 días.', { n: resumen.expiringSoon })}
+                {t('Tienes {n} puntos que vencen en los próximos 30 días.', { n: resumen.expiringSoon })}
               </Text>
             </View>
           )}
@@ -182,7 +182,7 @@ const Puntos = ({ alVolver }) => {
             />
             <Pregunta
               titulo={t('¿Cómo los uso?')}
-              texto={t('Cada {tasa} puntos equivalen a $1 de descuento. Al pagar en la tienda puede elegir usarlos (necesita al menos {minimo}).', { tasa: tasaCanje, minimo: minimoCanje })}
+              texto={t('Cada {tasa} puntos equivalen a $1 de descuento. Al pagar en la tienda puedes elegir usarlos (necesitas al menos {minimo}).', { tasa: tasaCanje, minimo: minimoCanje })}
             />
             <Pregunta
               titulo={t('¿Cuándo vencen?')}

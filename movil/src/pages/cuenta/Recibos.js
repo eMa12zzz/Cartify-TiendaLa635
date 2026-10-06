@@ -123,7 +123,7 @@ const Recibos = ({ alVolver }) => {
       const entregados = (Array.isArray(lista) ? lista : []).filter((p) => p.status === 'entregado');
       setRecibos(entregados);
     } catch (e) {
-      setError(e?.message || t('No se pudieron cargar sus recibos'));
+      setError(e?.message || t('No se pudieron cargar tus recibos'));
     } finally {
       setCargando(false);
     }
@@ -143,7 +143,7 @@ const Recibos = ({ alVolver }) => {
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus recibos')}</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar tus recibos')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton
@@ -159,7 +159,7 @@ const Recibos = ({ alVolver }) => {
           <Receipt size={38} color={COLORES.marcador} strokeWidth={1.5} />
           <Text style={estilos.vacioTitulo}>{t('Sin recibos todavía')}</Text>
           <Text style={estilos.vacioTexto}>
-            {t('Cuando le entreguen un pedido, su recibo va a aparecer aquí.')}
+            {t('Cuando te entreguen un pedido, tu recibo va a aparecer aquí.')}
           </Text>
         </View>
       ) : (

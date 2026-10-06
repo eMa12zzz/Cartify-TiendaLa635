@@ -56,7 +56,7 @@ const OPCIONES = [
    * Los avisos del pedido en la app (preparando, en camino, listo, entregado)
    * llegan siempre: son de servicio. Este interruptor es solo el correo.
    */
-  { clave: 'pedidoCerca', titulo: 'Correo cuando mi pedido sale', sub: 'En la app los avisos de su pedido llegan siempre; esto suma un correo.' },
+  { clave: 'pedidoCerca', titulo: 'Correo cuando mi pedido sale', sub: 'En la app los avisos de tu pedido llegan siempre; esto suma un correo.' },
 ];
 
 // Mismo tiempo que --dur-press en la web: es el mismo interruptor, misma duración.
@@ -135,7 +135,7 @@ const Notificaciones = ({ alVolver }) => {
       const cliente = await getCliente(user.id);
       setPrefs({ ...POR_DEFECTO, ...(cliente?.notificationPrefs || {}) });
     } catch (e) {
-      setError(e?.message || t('No se pudieron cargar sus preferencias'));
+      setError(e?.message || t('No se pudieron cargar tus preferencias'));
     } finally {
       setCargando(false);
     }
@@ -219,7 +219,7 @@ const Notificaciones = ({ alVolver }) => {
    * quien compila la app, no quien la usa.
    */
   const PIES = {
-    listo: 'Le avisamos en este teléfono.',
+    listo: 'Te avisamos en este teléfono.',
     'sin-permiso': 'Este teléfono tiene los avisos bloqueados. Se cambia en los ajustes del sistema.',
     emulador: 'Los avisos llegan a un teléfono de verdad; en el emulador no suena nada.',
     'sin-proyecto': 'Esta versión de la app todavía no puede recibir avisos.',
@@ -229,7 +229,7 @@ const Notificaciones = ({ alVolver }) => {
   const pie = t(avisos
     ? PIES[avisos]
     : HAY_PUSH
-      ? 'Encienda lo que quiera y le avisamos en este teléfono.'
+      ? 'Enciende lo que quieras y te avisamos en este teléfono.'
       : PIES['sin-proyecto']);
 
   return (
@@ -242,7 +242,7 @@ const Notificaciones = ({ alVolver }) => {
         </View>
       ) : error ? (
         <View style={estilos.centro}>
-          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar sus preferencias')}</Text>
+          <Text style={estilos.errorTitulo}>{t('No se pudieron cargar tus preferencias')}</Text>
           <Text style={estilos.errorTexto}>{error}</Text>
           <View style={estilos.botonError}>
             <Boton

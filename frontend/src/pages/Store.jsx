@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import styled from 'styled-components';
@@ -259,6 +260,13 @@ const SectionNav = styled.div`
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+
+  /*
+   * En pantalla táctil la fila se desliza con el dedo: las flechas sobran y
+   * en un teléfono le quitaban el lugar al título ("Más vendidos6 productos",
+   * pegados).
+   */
+  @media (hover: none), (pointer: coarse) { display: none; }
 `;
 
 const NavCircle = styled.button`
@@ -397,6 +405,9 @@ const TrendingHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  /* El alto de las flechas, aunque no estén: así mide lo mismo que FilaCargando. */
+  min-height: 40px;
   margin-bottom: 8px;
 `;
 
@@ -577,7 +588,8 @@ const Store = () => {
    * pasillo. Se lee una sola vez, al montar: después manda la barra de arriba.
    */
   const [searchParams, setSearchParams] = useSearchParams();
-  const { pathname } = useLocation();
+  const { pathname, search, state: estadoNavegacion } = useLocation();
+  const { id: idProducto } = useParams();
   const { esCliente } = useAuth();
   const { t } = useIdioma();
   const { pasillos } = useModulos();
@@ -686,7 +698,7 @@ const Store = () => {
    * El orden y la visibilidad de las filas los decide el panel. Ver
    * utils/portada.js y la pantalla de Personalización.
    */
-  const { portadaVisible } = useAjustesCtx();
+  const { portadaVisible, ajustes } = useAjustesCtx();
 
   /*
    * Qué filas guardan su lugar mientras carga el catálogo: "Más vendidos" y la
@@ -717,7 +729,36 @@ const Store = () => {
     return mapa;
   }, [secciones]);
 
-  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  /*
+   * LA FICHA ABIERTA SALE DE LA DIRECCIÓN (/producto/:id).
+   *
+   * Antes era un estado suelto: la dirección no cambiaba, así que un producto
+   * no se podía compartir ni guardar, y el "atrás" del teléfono sacaba de la
+   * tienda en vez de cerrar la ficha. Ahora abrir es navegar y cerrar es
+   * volver; el producto se busca en el catálogo ya cargado (con su precio de
+   * oferta, igual que en las tarjetas).
+   */
+  const productoSeleccionado = useMemo(
+    () => (idProducto ? productos.find((p) => String(p.id) === idProducto) || null : null),
+    [idProducto, productos]
+  );
+
+  // Un enlace a un producto que ya no está (se agotó del todo o se quitó): se
+  // dice y se queda en la tienda, en vez de mostrar una ficha vacía.
+  useEffect(() => {
+    if (!idProducto || cargando || errorCarga || productoSeleccionado) return;
+    toast(t('Ese producto ya no está en la tienda'), { id: 'producto-no-esta' });
+    navigate({ pathname: '/', search }, { replace: true });
+  }, [idProducto, cargando, errorCarga, productoSeleccionado, navigate, search, t]);
+
+  // La pestaña dice qué producto es: se lee en el historial y al compartir.
+  useEffect(() => {
+    if (!productoSeleccionado) return undefined;
+    const previo = document.title;
+    const tienda = `${ajustes.nombreLinea1 || ''} ${ajustes.nombreLinea2 || ''}`.trim() || 'Tienda la 635';
+    document.title = `${productoSeleccionado.nombre} · ${tienda}`;
+    return () => { document.title = previo; };
+  }, [productoSeleccionado, ajustes.nombreLinea1, ajustes.nombreLinea2]);
   /*
    * ?pagar=1: viene del login al que lo mandó Tiqui para pagar. Se abre el
    * carrito directo en el pago, que es donde iba antes de que le pidieran la
@@ -785,8 +826,23 @@ const Store = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleAbrirDetalle = (producto) => setProductoSeleccionado(producto);
-  const handleCerrarDetalle = () => setProductoSeleccionado(null);
+  /*
+   * Abrir una ficha es una página más en el historial. `fichas` cuenta
+   * cuántas se abrieron seguidas (de una recomendación a otra) para que
+   * cerrar vuelva a la tienda de una vez, y no ficha por ficha.
+   */
+  const handleAbrirDetalle = (producto) => {
+    if (!producto?.id || String(producto.id) === idProducto) return;
+    const fichas = idProducto ? (estadoNavegacion?.fichas || 0) + 1 : 1;
+    navigate({ pathname: `/producto/${producto.id}`, search }, { state: { fichas } });
+  };
+  const handleCerrarDetalle = () => {
+    if (!idProducto) return;
+    const fichas = estadoNavegacion?.fichas;
+    // Entró directo por un enlace: no hay a dónde "volver", se va a la tienda.
+    if (fichas) navigate(-fichas);
+    else navigate({ pathname: '/', search }, { replace: true });
+  };
 
   const precioFiltros = [
     { key: 'todos', label: 'Todos' },

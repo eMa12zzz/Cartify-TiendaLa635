@@ -54,7 +54,7 @@ loginClientController.login = async (req, res) => {
   }
   if (!password) {
    return res.status(400).json({
-      message:"Escriba su contraseña"
+      message:"Escribe tu contraseña"
    });
  }
 
@@ -83,7 +83,7 @@ loginClientController.login = async (req, res) => {
     // Verificar bloqueo temporal
     if (clientFound.timeOut && clientFound.timeOut > Date.now()) {
       return res.status(403).json({
-        message: "Cuenta bloqueada un rato. Intente de nuevo en unos minutos."
+        message: "Cuenta bloqueada un rato. Intenta de nuevo en unos minutos."
       });
     }
 
@@ -115,7 +115,7 @@ loginClientController.login = async (req, res) => {
         await clientFound.save();
 
         return res.status(403).json({
-          message: "Cuenta bloqueada por varios intentos fallidos. Espere 5 minutos."
+          message: "Cuenta bloqueada por varios intentos fallidos. Espera 5 minutos."
         });
       }
 

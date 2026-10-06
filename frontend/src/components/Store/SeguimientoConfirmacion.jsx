@@ -79,10 +79,10 @@ const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
             background: 'var(--papel)',
           }}>
             {enCamino
-              ? <><Bike size={15} strokeWidth={2.4} /> {seg.yaCasi ? t('Ya casi toca su puerta') : seg.espera}{seg.distancia ? ` · ${t('a {distancia}', { distancia: seg.distancia })}` : ''}</>
+              ? <><Bike size={15} strokeWidth={2.4} /> {seg.yaCasi ? t('Ya casi toca tu puerta') : seg.espera}{seg.distancia ? ` · ${t('a {distancia}', { distancia: seg.distancia })}` : ''}</>
               : (estado === 'entregado'
-                  ? <><Check size={15} strokeWidth={2.4} /> {t('Entregado en su dirección')}</>
-                  : <>{t('Aquí le llevaremos su pedido. En cuanto el repartidor salga, verá su punto moverse.')}</>)}
+                  ? <><Check size={15} strokeWidth={2.4} /> {t('Entregado en tu dirección')}</>
+                  : <>{t('Aquí te llevaremos tu pedido. En cuanto el repartidor salga, verás su punto moverse.')}</>)}
           </div>
         </div>
       )}

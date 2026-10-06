@@ -108,7 +108,7 @@ const SeguimientoCompacto = ({ pedido }) => {
         >
           <Bike className="w-3.5 h-3.5 flex-none" style={{ color: 'var(--marca-texto)' }} />
           <span style={{ fontWeight: 600, color: c.textPrimary }}>
-            {seguimiento.yaCasi ? t('Ya casi llega a su puerta') : seguimiento.espera}
+            {seguimiento.yaCasi ? t('Ya casi llega a tu puerta') : seguimiento.espera}
           </span>
           {seguimiento.distancia && (
             <span style={{ color: c.textMuted }}>· {t('a {distancia}', { distancia: seguimiento.distancia })}</span>

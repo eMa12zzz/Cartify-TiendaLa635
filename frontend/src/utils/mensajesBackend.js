@@ -31,15 +31,15 @@
  * Request", que no le dice a nadie qué hacer a continuación.
  */
 const POR_ESTADO = {
-  400: 'Revise los datos: algo quedó incompleto o no es válido.',
-  401: 'Sesión expirada o inválida. Debe iniciar sesión.',
-  403: 'No tiene permiso para esta acción.',
-  404: 'No se encontró lo que buscaba.',
+  400: 'Revisa los datos: algo quedó incompleto o no es válido.',
+  401: 'Tu sesión venció o no es válida. Inicia sesión de nuevo.',
+  403: 'No tienes permiso para esta acción.',
+  404: 'No encontramos lo que buscabass.',
   408: 'El servidor tardó demasiado en responder.',
   409: 'Ese registro ya existe.',
   413: 'El archivo es demasiado grande.',
-  422: 'Revise los datos: algo quedó incompleto o no es válido.',
-  429: 'Demasiados intentos seguidos. Espere un momento.',
+  422: 'Revisa los datos: algo quedó incompleto o no es válido.',
+  429: 'Demasiados intentos seguidos. Espera un momento.',
   500: 'Error interno del servidor.',
   502: 'El servidor no está respondiendo.',
   503: 'El servicio no está disponible en este momento.',
@@ -96,34 +96,34 @@ const DICCIONARIO = {
   // Correo y códigos
   'invalid email': 'El correo no es válido.',
   'invalid code': 'El código no es válido.',
-  'email sent': 'Le enviamos el código a su correo.',
+  'email sent': 'Te enviamos el código a tu correo.',
   'error sending email': 'No se pudo enviar el correo.',
-  'recovery code sent successfully': 'Le enviamos el código a su correo.',
+  'recovery code sent successfully': 'Te enviamos el código a tu correo.',
   'code verified successfully': 'Código verificado.',
-  'code not verified': 'Primero verifique el código.',
-  'recovery session expired': 'La recuperación venció. Pida un código nuevo.',
-  'verification session expired': 'El registro venció. Vuelva a empezar.',
+  'code not verified': 'Primero verifica el código.',
+  'recovery session expired': 'La recuperación venció. Pide un código nuevo.',
+  'verification session expired': 'El registro venció. Vuelve a empezar.',
 
   // Contraseñas
-  'password required': 'Escriba su contraseña.',
+  'password required': 'Escribe tu contraseña.',
   'incorrect password': 'La contraseña es incorrecta.',
   'passwords do not match': 'Las contraseñas no coinciden.',
-  'both password fields are required': 'Escriba la contraseña nueva y su confirmación.',
+  'both password fields are required': 'Escribe la contraseña nueva y su confirmación.',
   'password updated successfully': 'Contraseña actualizada.',
 
   // Estado de la cuenta
   'account disabled': 'La cuenta está desactivada.',
   'account not verified': 'La cuenta todavía no está verificada.',
   'account temporarily blocked. try again later':
-    'Cuenta bloqueada un rato. Intente de nuevo en unos minutos.',
+    'Cuenta bloqueada un rato. Intenta de nuevo en unos minutos.',
   'account blocked due to multiple failed login attempts':
-    'Cuenta bloqueada por varios intentos fallidos. Espere 5 minutos.',
+    'Cuenta bloqueada por varios intentos fallidos. Espera 5 minutos.',
 
   // Sesión y registro
   'login successful': 'Sesión iniciada.',
   'logout successful': 'Sesión cerrada.',
-  'unauthorized': 'Debe iniciar sesión.',
-  'forbidden': 'No tiene permiso para esta acción.',
+  'unauthorized': 'Inicia sesión.',
+  'forbidden': 'No tienes permiso para esta acción.',
   'client already exists with this email': 'Ya existe una cuenta con ese correo.',
   'client registered successfully': 'Cuenta creada.',
   'administrator already exists': 'Ya existe un administrador con ese correo.',
@@ -188,7 +188,7 @@ const FAMILIAS = [
     patron: /^(.+?) not found$/,
     armar: ([, entidad]) => {
       const dato = buscarEntidad(entidad);
-      return dato ? `No se encontró ${conArticulo(dato)}.` : 'No se encontró lo que buscaba.';
+      return dato ? `No se encontró ${conArticulo(dato)}.` : 'No encontramos lo que buscabass.';
     },
   },
   // "Brand created successfully" -> "Marca creada"

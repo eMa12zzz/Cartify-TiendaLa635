@@ -191,7 +191,17 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
 
   return (
     <Zona ref={ref}>
-      <Boton onClick={toggle} aria-expanded={isOpen} aria-haspopup="menu" aria-label={t('Pasillos de la tienda')}>
+      {/*
+        Sin aria-label: el nombre del botón sale de lo que se VE ("Tienda la
+        635") más un texto oculto que solo oyen los lectores de pantalla. Con
+        un aria-label propio el nombre no empezaba con lo escrito y quien
+        maneja el teléfono por voz, que dice lo que lee, no le atinaba.
+      */}
+      <Boton
+        onClick={toggle}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+      >
         <Hamburguesa><Menu size={20} strokeWidth={2.2} /></Hamburguesa>
         {/*
           La marca salió de aquí a MarcaTienda.jsx. Este bloque era el único
@@ -199,6 +209,7 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
           ahora todas piden lo mismo. Este es el tamaño de referencia.
         */}
         <MarcaTienda tamano={19} alto={38} />
+        <span className="sr-only">{' — '}{t('Pasillos de la tienda')}</span>
       </Boton>
 
       {isOpen && (

@@ -38,8 +38,8 @@ export const useSaldo = () => {
 
   const canjear = async (codigo) => {
     const limpio = String(codigo || '').trim().toUpperCase();
-    if (!limpio) { toast.error('Escriba el código de su tarjeta'); return false; }
-    if (!esCliente) { toast.error('Inicie sesión con su cuenta de cliente para canjear'); return false; }
+    if (!limpio) { toast.error('Escribe el código de tu tarjeta'); return false; }
+    if (!esCliente) { toast.error('Inicia sesión con tu cuenta de cliente para canjear'); return false; }
 
     setCanjeando(true);
     try {

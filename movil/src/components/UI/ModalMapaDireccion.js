@@ -223,7 +223,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={estilos.titulo}>{t('Marque su dirección')}</Text>
+            <Text style={estilos.titulo}>{t('Marca tu dirección')}</Text>
 
             <View style={estilos.marcoMapa}>
               <WebView
@@ -242,7 +242,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
               */}
               {!posicion && (
                 <View style={estilos.avisoSobreMap}>
-                  <Text style={estilos.avisoSobreMapTexto}>{t('Toque en el mapa dónde le dejamos su pedido')}</Text>
+                  <Text style={estilos.avisoSobreMapTexto}>{t('Toca en el mapa dónde te dejamos tu pedido')}</Text>
                 </View>
               )}
             </View>
@@ -264,7 +264,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
                 <LocateFixed size={15} color={colores.marca} />
               )}
               <Text style={[estilos.textoUbicacion, { color: colores.marcaTexto }]}>
-                {localizando ? t('Buscando su ubicación…') : t('Dirección actual')}
+                {localizando ? t('Buscando tu ubicación…') : t('Dirección actual')}
               </Text>
             </Pressable>
 
@@ -305,7 +305,7 @@ const ModalMapaDireccion = ({ alCerrar, alGuardar, guardando = false, conBarraFl
               </Pressable>
               <View style={estilos.botonGuardar}>
                 <Boton
-                  texto={posicion ? t('Guardar esta dirección') : t('Marque el punto en el mapa')}
+                  texto={posicion ? t('Guardar esta dirección') : t('Marca el punto en el mapa')}
                   alPresionar={guardar}
                   cargando={guardando}
                   deshabilitado={!listo}

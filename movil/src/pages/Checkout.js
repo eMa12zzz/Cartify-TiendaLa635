@@ -149,7 +149,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   /*
-   * Qué miniaturas de "Su orden" fallaron al cargar (por id de producto).
+   * Qué miniaturas de "Tu orden" fallaron al cargar (por id de producto).
    * Sin esto, un WebP/AVIF que expo-image no decodifica —el mismo problema
    * que Carrito.js y TarjetaProducto.js ya cubren con su propio
    * `fallóImagen`— se quedaba en blanco para siempre en vez de caer al
@@ -347,16 +347,16 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
   const realizarPedido = async () => {
     if (entrega === 'delivery' && !direccionElegida) {
-      avisar(t('Elija una dirección de entrega'), 'error');
+      avisar(t('Elige una dirección de entrega'), 'error');
       return;
     }
     // El botón ya está apagado en este caso; esto es por si se cuela un toque.
     if (fueraDeCobertura) {
-      avisar(t('Esa dirección queda fuera de la zona de entrega. Elija otra o el retiro en el local.'), 'error');
+      avisar(t('Esa dirección queda fuera de la zona de entrega. Elige otra o el retiro en el local.'), 'error');
       return;
     }
     if (metodoPago === 'saldo' && !saldoAlcanza) {
-      avisar(t('Su saldo es de ${saldo} y el pedido cuesta ${total}', { saldo: saldo.toFixed(2), total: totalAPagar.toFixed(2) }), 'error');
+      avisar(t('Tu saldo es de ${saldo} y el pedido cuesta ${total}', { saldo: saldo.toFixed(2), total: totalAPagar.toFixed(2) }), 'error');
       return;
     }
 
@@ -415,9 +415,9 @@ const Checkout = ({ alVolver, alConfirmar }) => {
       <View style={estilos.pantalla}>
         <Barra alVolver={alVolver} colores={colores} />
         <View style={estilos.centro}>
-          <Text style={estilos.avisoTitulo}>{t('Necesita una cuenta de cliente')}</Text>
+          <Text style={estilos.avisoTitulo}>{t('Necesitas una cuenta de cliente')}</Text>
           <Text style={estilos.avisoTexto}>
-            {t('El pedido tiene que ir a nombre de alguien y a una dirección. Entre con su cuenta de cliente para terminarlo.')}
+            {t('El pedido tiene que ir a nombre de alguien y a una dirección. Entra con tu cuenta de cliente para terminarlo.')}
           </Text>
         </View>
       </View>
@@ -441,7 +441,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
       <ScrollView contentContainerStyle={estilos.cuerpo} keyboardShouldPersistTaps="handled">
         {/* ── 1. Cómo lo recibe ── */}
-        <Seccion icono={MapPin} titulo={t('¿Cómo lo recibe?')} colores={colores}>
+        <Seccion icono={MapPin} titulo={t('¿Cómo lo recibes?')} colores={colores}>
           <Opcion
             icono={Tienda}
             titulo={t('Retiro en el local')}
@@ -467,7 +467,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                 <View style={estilos.fueraDeZona} accessibilityRole="alert">
                   <TriangleAlert size={15} color={COLORES.peligro} strokeWidth={2.2} />
                   <Text style={estilos.fueraDeZonaTexto}>
-                    {t('Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Elija otra dirección o el retiro en el local.', { km: envioCalc.distanciaKm })}
+                    {t('Esa dirección queda a {km} km de la tienda, fuera de la zona de entrega. Elige otra dirección o el retiro en el local.', { km: envioCalc.distanciaKm })}
                   </Text>
                 </View>
               )}
@@ -485,7 +485,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
                         : t('Llega entre {desde} y {hasta} min', { desde: zona.tipico, hasta: zona.holgado })}
                     </Text>
                     <Text style={estilos.tiempoSub}>
-                      {t(zona.entregas === 1 ? 'Según {n} entrega a su zona. No es una promesa: es lo que hemos tardado.' : 'Según {n} entregas a su zona. No es una promesa: es lo que hemos tardado.', { n: zona.entregas })}
+                      {t(zona.entregas === 1 ? 'Según {n} entrega a tu zona. No es una promesa: es lo que hemos tardado.' : 'Según {n} entregas a tu zona. No es una promesa: es lo que hemos tardado.', { n: zona.entregas })}
                     </Text>
                   </View>
                 </View>
@@ -562,7 +562,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
 
           {metodoPago === 'saldo' && (
             <Text style={[estilos.nota, { color: colores.marcaTexto }]}>
-              {t('Le quedarán ${monto} después de este pedido.', { monto: (saldo - totalAPagar).toFixed(2) })}
+              {t('Te quedarán ${monto} después de este pedido.', { monto: (saldo - totalAPagar).toFixed(2) })}
             </Text>
           )}
 
@@ -606,7 +606,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
             <TextInput
               value={codigoTarjeta}
               onChangeText={(v) => setCodigoTarjeta(v.toUpperCase())}
-              placeholder={t('¿Tiene una tarjeta? 635-XXXX-XXXX')}
+              placeholder={t('¿Tienes una tarjeta? 635-XXXX-XXXX')}
               placeholderTextColor={COLORES.marcador}
               keyboardAppearance={COLORES.oscuro ? 'dark' : 'light'}
               style={[estilos.campo, estilos.campoCanje]}
@@ -635,7 +635,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
         {/* El mismo Package de lucide que la píldora usa para "Pedidos": es
             la orden que se está por hacer, así que lleva el mismo icono que
             la sección donde va a vivir después de confirmada. */}
-        <Seccion icono={Package} titulo={t('Su orden')} colores={colores}>
+        <Seccion icono={Package} titulo={t('Tu orden')} colores={colores}>
           <View style={estilos.miniaturas}>
             {carrito.slice(0, MINIATURAS).map((item) => (
               <View key={item.id} style={estilos.miniatura}>

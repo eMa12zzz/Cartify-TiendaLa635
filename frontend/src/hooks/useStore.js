@@ -491,7 +491,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
         ? tAhora('de otro quedaban menos unidades de las que llevaba')
         : tAhora('de {n} quedaban menos unidades de las que llevaba', { n: recortados }));
     }
-    toast(tAhora('De su carrito guardado, {partes}. Ya está corregido.', { partes: partes.join(tAhora(' y ')) }), { duration: 6000 });
+    toast(tAhora('De tu carrito guardado, {partes}. Ya está corregido.', { partes: partes.join(tAhora(' y ')) }), { duration: 6000 });
   }, [cargando, productos, lineas, carrito, guardarCarrito]);
 
   /*
@@ -570,7 +570,7 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
     avisarAgregado(
       nuevaCantidad > 1
         ? tAhora('{nombre} · {cantidad} en el carrito', { nombre: producto.nombre, cantidad: cantidadConUnidad(producto, nuevaCantidad) })
-        : tAhora('{nombre} agregado al carrito', { nombre: producto.nombre })
+        : tAhora('Agregaste {nombre} al carrito', { nombre: producto.nombre })
     );
     return entra;
   };

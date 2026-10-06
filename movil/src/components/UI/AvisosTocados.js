@@ -5,7 +5,7 @@
  * Tocar una notificación tiene que llevar justo a lo que avisaba, no a la
  * portada para que la persona lo busque a mano:
  *
- *   "Su pedido va en camino"   → la tienda, con la burbuja del pedido
+ *   "Tu pedido va en camino"   → la tienda, con la burbuja del pedido
  *                                desplegada: el mapa y el repartidor.
  *   preparando / listo /       → el detalle de ESE pedido.
  *   llegó / cancelado

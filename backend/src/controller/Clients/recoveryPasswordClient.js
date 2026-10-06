@@ -56,7 +56,7 @@ recoveryPasswordClientController.requestCode = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "Le enviamos el código a su correo",
+      message: "Te enviamos el código a tu correo",
     });
 
   } catch (error) {
@@ -76,7 +76,7 @@ recoveryPasswordClientController.verifyCode = async (req, res) => {
 
     if (!token) {
       return res.status(400).json({
-        message: "La recuperación venció. Pida un código nuevo.",
+        message: "La recuperación venció. Pide un código nuevo.",
       });
     }
 
@@ -124,7 +124,7 @@ recoveryPasswordClientController.newPassword = async (req, res) => {
 
     if (!newPassword || !confirmNewPassword) {
       return res.status(400).json({
-        message: "Escriba la contraseña nueva y su confirmación",
+        message: "Escribe la contraseña nueva y su confirmación",
       });
     }
 
@@ -138,7 +138,7 @@ recoveryPasswordClientController.newPassword = async (req, res) => {
 
     if (!token) {
       return res.status(400).json({
-        message: "La recuperación venció. Pida un código nuevo.",
+        message: "La recuperación venció. Pide un código nuevo.",
       });
     }
 
