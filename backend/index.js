@@ -1,5 +1,30 @@
 import app from "./app.js";
 import "./database.js";
+import { registrarError } from "./src/utils/registroErrores.js";
+
+/*
+ * Lo que se escapa de todo: una promesa rechazada que nadie esperaba, o un
+ * error fuera de cualquier petición. Se anota (ver utils/registroErrores.js).
+ *
+ * La promesa rechazada no tumba el servidor: se anota y se sigue atendiendo.
+ * El error no atrapado sí lo deja caer, como siempre (Render lo levanta solo),
+ * pero un segundo después, para que alcance a quedar anotado.
+ */
+process.on("unhandledRejection", (motivo) => {
+  console.log("promesa rechazada sin atender: " + (motivo?.message || motivo));
+  registrarError({
+    origen: "servidor",
+    mensaje: String(motivo?.message || motivo || "Promesa rechazada"),
+    pila: String(motivo?.stack || ""),
+    donde: "proceso",
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  console.log("error no atrapado: " + (error?.message || error));
+  registrarError({ origen: "servidor", mensaje: String(error?.message || error), pila: String(error?.stack || ""), donde: "proceso" })
+    .finally(() => setTimeout(() => process.exit(1), 1000));
+});
 
 /*
  * EL PUERTO LO MANDA EL ENTORNO, no lo elegimos nosotros.

@@ -84,6 +84,7 @@ const Promociones = lazy(() => import('./pages/Promociones'));
 const GiftCards = lazy(() => import('./pages/GiftCards'));
 const ServiciosImpresion = lazy(() => import('./pages/ServiciosImpresion'));
 const Personalizacion = lazy(() => import('./pages/Personalizacion'));
+const Errores = lazy(() => import('./pages/Errores'));      // Lo que falló en la web, la app o el servidor
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const AyudaPanel = lazy(() => import('./pages/AyudaPanel'));     // Cómo funciona cada apartado del panel
 
@@ -353,6 +354,7 @@ function App() {
                 <Route path="/tarjetas"    element={<GiftCards />} />
                 {/* Nombre, logo y orden de la portada de la tienda */}
                 <Route path="/personalizacion" element={<Personalizacion />} />
+                <Route path="/errores"     element={<Errores />} />
               </Route>
             </Route>
           </Route>
