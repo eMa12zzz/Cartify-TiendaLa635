@@ -29,7 +29,7 @@
  * ============================================================
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { useTienda } from '../context/TiendaContext';
@@ -52,6 +52,7 @@ import Mascota, { CargandoMascota } from '../components/Tiqui/Mascota';
 import JalarParaRecargar from '../components/Tienda/JalarParaRecargar';
 import { useAviso } from '../context/AvisoContext';
 import { useIdioma } from '../context/IdiomaContext';
+import { soltarProductoPedido, useProductoPedido } from '../utils/enlaces';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { t } = useIdioma();
@@ -61,6 +62,7 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   const { isAuthenticated, user } = useAuth();
   const nombre = user?.fullName || user?.userName;
   const {
+    productos,
     cargando,
     errorCarga,
     recargar,
@@ -105,6 +107,20 @@ const Inicio = ({ irACarrito, irASeccion }) => {
   const [menuPasillosAbierto, setMenuPasillosAbierto] = useState(false);
 
   const verDetalle = useCallback((producto) => setProductoAbierto(producto), []);
+
+  /*
+   * Un producto que llegó por enlace (ver components/UI/EnlacesEntrantes.js).
+   * Se abre cuando el catálogo ya está; si el producto ya no existe, se dice
+   * en vez de no hacer nada.
+   */
+  const productoPedido = useProductoPedido();
+  useEffect(() => {
+    if (!productoPedido || cargando) return;
+    const producto = (productos || []).find((p) => String(p.id) === productoPedido);
+    if (producto) setProductoAbierto(producto);
+    else avisar(t('Ese producto ya no está en la tienda'), 'info');
+    soltarProductoPedido();
+  }, [productoPedido, cargando, productos, avisar, t]);
 
   // La portada completa solo cuando no se está filtrando nada.
   const mostrarPortada = !categoriaSeleccionada && !terminoBusqueda && !promoSeleccionada;
