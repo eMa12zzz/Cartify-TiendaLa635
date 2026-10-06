@@ -54,6 +54,12 @@ export const useCabenTres = () =>
 export const usePromoCarousel = ({ autoplay = true, moduloId = null } = {}) => {
   // Todas las anunciables; el filtro por pasillo se aplica después.
   const [todas, setTodas] = useState([]);
+  /*
+   * Mientras llegan, el carrusel guarda su lugar (ver PromoBanners). Sin esto
+   * no pintaba nada y, al llegar, aparecía de golpe empujando toda la tienda
+   * hacia abajo: el producto que alguien iba a tocar se le corría del dedo.
+   */
+  const [cargando, setCargando] = useState(true);
   const [activa, setActiva] = useState(0);
   const [pausada, setPausada] = useState(false);
   const temporizador = useRef(null);
@@ -70,7 +76,8 @@ export const usePromoCarousel = ({ autoplay = true, moduloId = null } = {}) => {
           .slice(0, MAXIMO);
         setTodas(visibles);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (vivo) setCargando(false); });
     return () => { vivo = false; };
   }, []);
 
@@ -130,6 +137,7 @@ export const usePromoCarousel = ({ autoplay = true, moduloId = null } = {}) => {
 
   return {
     promos,
+    cargando,
     activa: activaSegura,
     total,
     irA,

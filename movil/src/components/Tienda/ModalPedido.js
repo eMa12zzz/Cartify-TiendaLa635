@@ -15,6 +15,7 @@ import PasosPedido from './PasosPedido';
 import ValoracionPedido from '../Cuenta/ValoracionPedido';
 import ValoracionServicio from '../Cuenta/ValoracionServicio';
 import { useIdioma } from '../../context/IdiomaContext';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * Una fila por producto, con su propio estado de "la imagen no cargó": cada
@@ -36,7 +37,7 @@ const FilaProducto = ({ item }) => {
       <View style={estilos.miniatura}>
         {imagen && !fallóImagen ? (
           <Image
-            source={{ uri: imagen }}
+            source={{ uri: foto(imagen, ANCHO.miniatura) }}
             contentFit="contain"
             style={estilos.miniaturaImagen}
             onError={() => setFallóImagen(true)}

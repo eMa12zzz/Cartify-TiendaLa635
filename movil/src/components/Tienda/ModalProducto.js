@@ -37,6 +37,7 @@ import { useBotonAtras } from '../../hooks/useBotonAtras';
 import { cantidadConUnidad, esPorLibra, esSoloAdultos, pasoDe, piezasEnTexto, ajustarCantidad } from '../../utils/unidades';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import { useIdioma } from '../../context/IdiomaContext';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * `conBarraFlotante`: true solo cuando quien abre este detalle vive DENTRO
@@ -224,7 +225,7 @@ const ModalProducto = ({ producto, alCerrar, alAgregar, conBarraFlotante = false
             <View ref={marcoRef} style={estilos.marcoImagen}>
               {producto.imagen && !fallóImagen ? (
                 <Image
-                  source={{ uri: producto.imagen }}
+                  source={{ uri: foto(producto.imagen, ANCHO.ficha) }}
                   contentFit="contain"
                   style={estilos.imagen}
                   onError={() => setFallóImagen(true)}

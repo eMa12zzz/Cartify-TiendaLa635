@@ -45,6 +45,7 @@ import CodigoEntrega from '../components/Tienda/CodigoEntrega';
 import MapaSeguimiento from '../components/Tienda/MapaSeguimiento';
 import ModalMapaSeguimiento from '../components/Tienda/ModalMapaSeguimiento';
 import { useIdioma } from '../context/IdiomaContext';
+import { foto, ANCHO } from '../utils/fotos';
 
 /*
  * Una fila por producto, con su propia foto. El pedido que devuelve
@@ -65,7 +66,7 @@ const FilaProducto = ({ item, imagen }) => {
       <View style={estilos.miniatura}>
         {imagen && !fallóImagen ? (
           <Image
-            source={{ uri: imagen }}
+            source={{ uri: foto(imagen, ANCHO.miniatura) }}
             contentFit="contain"
             style={estilos.miniaturaImagen}
             onError={() => setFallóImagen(true)}

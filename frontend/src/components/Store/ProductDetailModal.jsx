@@ -7,6 +7,7 @@ import ProductCard from './ProductCard';
 import { useDetalleProducto } from '../../hooks/useDetalleProducto';
 import { unidadDe, piezasEnTexto } from '../../utils/unidades';
 import { useIdioma } from '../../hooks/useIdioma';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * ============================================================
@@ -616,7 +617,7 @@ const ProductDetailModal = ({
                 entender que había varias vistas cuando no las hay.
               */}
               {producto.imagen && !imgError ? (
-                <Foto data-foto-detalle src={producto.imagen} alt={producto.nombre} onError={marcarImagenRota} />
+                <Foto data-foto-detalle src={foto(producto.imagen, ANCHO.ficha)} alt={producto.nombre} onError={marcarImagenRota} />
               ) : (
                 <SinFoto><Package size={84} strokeWidth={1.1} /></SinFoto>
               )}

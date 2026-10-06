@@ -71,6 +71,7 @@ import { totalDeLinea } from '../utils/catalogo';
 import { calcularEnvio } from '../utils/envio';
 import { calcularServicio } from '../utils/servicio';
 import { useIdioma } from '../context/IdiomaContext';
+import { foto, ANCHO } from '../utils/fotos';
 
 // Cuántas fotos de producto caben en la tira del resumen antes del "+3".
 const MINIATURAS = 6;
@@ -640,7 +641,7 @@ const Checkout = ({ alVolver, alConfirmar }) => {
               <View key={item.id} style={estilos.miniatura}>
                 {item.imagen && !fallosImagen[item.id] ? (
                   <Image
-                    source={{ uri: item.imagen }}
+                    source={{ uri: foto(item.imagen, ANCHO.miniatura) }}
                     contentFit="contain"
                     style={estilos.miniaturaImagen}
                     onError={() => setFallosImagen((f) => ({ ...f, [item.id]: true }))}

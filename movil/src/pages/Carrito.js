@@ -49,6 +49,7 @@ import { ajustarCantidad, cantidadConUnidad, esPorLibra, pasoDe } from '../utils
 import { iconoDeModulo } from '../utils/modulos';
 import { avisarActividad } from '../utils/actividadUsuario';
 import { useIdioma } from '../context/IdiomaContext';
+import { foto, ANCHO } from '../utils/fotos';
 
 const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, colores }) => {
   const { t } = useIdioma();
@@ -70,7 +71,7 @@ const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, color
         <View style={estilos.miniatura}>
           {item.imagen && !fallóImagen ? (
             <Image
-              source={{ uri: item.imagen }}
+              source={{ uri: foto(item.imagen, ANCHO.miniatura) }}
               contentFit="contain"
               style={estilos.miniaturaImagen}
               onError={() => setFallóImagen(true)}

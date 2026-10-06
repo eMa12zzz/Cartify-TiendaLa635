@@ -16,6 +16,34 @@ import './index.css'
 import App from './App.jsx'
 
 /*
+ * Una pestaña abierta antes de publicar una versión nueva.
+ *
+ * Las pantallas se descargan por partes (ver App.jsx y pantallasDiferidas), y
+ * cada parte lleva en el nombre una huella de su contenido. Al publicar, las
+ * partes viejas dejan de existir: quien tenía la tienda abierta y toca el
+ * carrito pide un archivo que ya no está. Vite avisa con este evento, y la
+ * salida es recargar una vez para traer la versión nueva.
+ *
+ * Nunca en bucle: sin conexión no se recarga (falló la red, no la versión;
+ * de eso avisa AvisoSinConexion), y como mucho una vez cada diez minutos. Si
+ * no hay dónde anotar la última vez (almacenamiento bloqueado), no se recarga
+ * sola. En esos casos el error lo atrapa LimiteDeError y se explica.
+ */
+window.addEventListener('vite:preloadError', (evento) => {
+  if (!navigator.onLine) return
+  const clave = 'la635_recarga_por_version'
+  try {
+    const ultima = Number(sessionStorage.getItem(clave)) || 0
+    if (Date.now() - ultima < 10 * 60 * 1000) return
+    sessionStorage.setItem(clave, String(Date.now()))
+  } catch {
+    return
+  }
+  evento.preventDefault()
+  window.location.reload()
+})
+
+/*
  * MotionConfig con reducedMotion="user": TODAS las animaciones de framer
  * respetan automáticamente el "menos movimiento" del sistema operativo.
  * (El CSS equivalente vive en index.css.)
