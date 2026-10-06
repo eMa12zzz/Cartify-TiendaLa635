@@ -6,7 +6,6 @@ import { useModulos } from '../../hooks/useModulos';
 import MarcaTienda from './MarcaTienda';
 import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
 import { useIdioma } from '../../hooks/useIdioma';
-import { useAjustesCtx } from '../../context/AjustesContext';
 
 /*
  * ============================================================
@@ -143,8 +142,6 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
   const { isOpen, toggle, close, ref } = useDropdown();
   const { modulos } = useModulos();
   const { t } = useIdioma();
-  const { ajustes } = useAjustesCtx();
-  const nombreTienda = `${ajustes.nombreLinea1 || ''} ${ajustes.nombreLinea2 || ''}`.trim();
   // El nombre y el logo salen de la base, no del código. Ver AjustesContext.
 
   /*
@@ -195,15 +192,15 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
   return (
     <Zona ref={ref}>
       {/*
-        El nombre accesible EMPIEZA con lo que se ve escrito ("Tienda la 635"):
-        quien maneja el teléfono por voz dice lo que lee, y con "Pasillos de la
-        tienda" a secas el botón no le respondía. Lighthouse lo marcaba.
+        Sin aria-label: el nombre del botón sale de lo que se VE ("Tienda la
+        635") más un texto oculto que solo oyen los lectores de pantalla. Con
+        un aria-label propio el nombre no empezaba con lo escrito y quien
+        maneja el teléfono por voz, que dice lo que lee, no le atinaba.
       */}
       <Boton
         onClick={toggle}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        aria-label={nombreTienda ? t('{tienda}: pasillos de la tienda', { tienda: nombreTienda }) : t('Pasillos de la tienda')}
       >
         <Hamburguesa><Menu size={20} strokeWidth={2.2} /></Hamburguesa>
         {/*
@@ -212,6 +209,7 @@ const MenuTienda = ({ moduloSeleccionado, onElegirModulo }) => {
           ahora todas piden lo mismo. Este es el tamaño de referencia.
         */}
         <MarcaTienda tamano={19} alto={38} />
+        <span className="sr-only">{' — '}{t('Pasillos de la tienda')}</span>
       </Boton>
 
       {isOpen && (

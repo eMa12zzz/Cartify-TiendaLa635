@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { ChevronLeft, ChevronRight, ShoppingBag, Package, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingBag, Package, Heart, Share2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import HeaderTienda from './HeaderTienda';
 import PieTienda from './PieTienda';
 import ProductCard from './ProductCard';
@@ -8,6 +9,8 @@ import { useDetalleProducto } from '../../hooks/useDetalleProducto';
 import { unidadDe, piezasEnTexto } from '../../utils/unidades';
 import { useIdioma } from '../../hooks/useIdioma';
 import { foto, ANCHO } from '../../utils/fotos';
+import { enlaceDeProducto, compartirEnlace } from '../../utils/compartir';
+import { useAjustesCtx } from '../../context/AjustesContext';
 
 /*
  * ============================================================
@@ -302,6 +305,20 @@ const Corazon = styled.button`
   &:active { transform: scale(0.92); }
 `;
 
+/*
+ * Compartir, debajo del corazón y con su misma forma: son las dos cosas que
+ * se hacen con un producto que todavía no se va a comprar.
+ */
+const BotonCompartir = styled(Corazon)`
+  top: 66px;
+  color: var(--tinta-tenue);
+  svg { fill: none; }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: var(--marca-texto); border-color: var(--marca-600); }
+  }
+`;
+
 /* ── La ficha de la derecha ───────────────────────────────── */
 
 const Panel = styled.div`
@@ -534,6 +551,19 @@ const ProductDetailModal = ({
     alternarFavorito,
   } = useDetalleProducto({ producto, onClose, onAgregarAlCarrito, todosLosProductos });
   const { t } = useIdioma();
+  const { ajustes } = useAjustesCtx();
+
+  const compartir = async () => {
+    const tienda = `${ajustes.nombreLinea1 || ''} ${ajustes.nombreLinea2 || ''}`.trim() || 'Tienda la 635';
+    const precio = `$${Number(producto.precio).toFixed(2)}${porLibra ? '/lb' : ''}`;
+    const resultado = await compartirEnlace({
+      titulo: `${producto.nombre} · ${tienda}`,
+      texto: t('{nombre} a {precio} en {tienda}', { nombre: producto.nombre, precio, tienda }),
+      url: enlaceDeProducto(producto),
+    });
+    if (resultado === 'copiado') toast.success(t('Copiamos el enlace: pégalo donde quieras compartirlo'), { id: 'compartir' });
+    if (resultado === 'error') toast.error(t('No se pudo copiar el enlace'), { id: 'compartir' });
+  };
 
   /*
    * A dónde cae al cerrar: el último sitio por el que pasó. Si el rastro es
@@ -610,6 +640,15 @@ const ProductDetailModal = ({
               >
                 <Heart size={19} strokeWidth={2.1} />
               </Corazon>
+
+              <BotonCompartir
+                type="button"
+                onClick={compartir}
+                title={t('Compartir este producto')}
+                aria-label={t('Compartir este producto')}
+              >
+                <Share2 size={18} strokeWidth={2.1} />
+              </BotonCompartir>
 
               {/*
                 Una sola imagen: el producto tiene UNA foto. Antes había una

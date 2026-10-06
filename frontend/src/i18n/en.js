@@ -584,7 +584,11 @@ const EN = {
   // ── Barra de categorías de la tienda ──
   'Ver las categorías anteriores': 'See previous categories',
   'Ver más categorías': 'See more categories',
-  '{tienda}: pasillos de la tienda': '{tienda}: store aisles',
+  'Ese producto ya no está en la tienda': 'That product is no longer in the store',
+  'Compartir este producto': 'Share this product',
+  '{nombre} a {precio} en {tienda}': '{nombre} for {precio} at {tienda}',
+  'Copiamos el enlace: pégalo donde quieras compartirlo': 'Link copied: paste it wherever you want to share it',
+  'No se pudo copiar el enlace': 'Couldn’t copy the link',
 
   // ── El cliente cancela su pedido ──
   'Me equivoqué en el pedido.': 'I made a mistake in my order.',
