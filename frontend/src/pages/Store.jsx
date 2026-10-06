@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
@@ -6,11 +6,9 @@ import styled from 'styled-components';
 import { useStore } from '../hooks/useStore';
 import ProductCard from '../components/Store/ProductCard';
 import EsqueletoProductos from '../components/Store/EsqueletoProductos';
-import ProductDetailModal from '../components/Store/ProductDetailModal';
-import ShoppingCart from '../components/Store/ShoppingCart';
-import AsistenteVoz from '../components/Store/AsistenteVoz';
 import PromoBanners from '../components/Store/PromoBanners';
-import PromoDetailModal from '../components/Store/PromoDetailModal';
+// El carrito, Tiqui y las fichas bajan aparte y se precargan (ver pantallasDiferidas).
+import { ShoppingCart, AsistenteVoz, ProductDetailModal, PromoDetailModal, precargarPantallas } from '../components/Store/pantallasDiferidas';
 import FilaProductos from '../components/Store/FilaProductos';
 import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
@@ -164,6 +162,17 @@ const CatBtn = styled.button`
   &:active { transform: scale(0.97); }
 
   /* 44px de alto en pantalla táctil: el pulgar no apunta, aproxima. */
+  @media (pointer: coarse), (max-width: 560px) { height: 44px; }
+`;
+
+/* Las pastillas de espera: anchos variados, como nombres de verdad. */
+const ANCHOS_CAT_CARGANDO = [112, 92, 150, 178, 166, 84, 152, 98, 150, 112, 118, 100, 104];
+
+const CatCargando = styled.span`
+  flex-shrink: 0;
+  height: 38px;
+  border-radius: var(--radio-pill);
+
   @media (pointer: coarse), (max-width: 560px) { height: 44px; }
 `;
 
@@ -470,6 +479,42 @@ const TrendingGrid = styled.div`
   }
 `;
 
+/*
+ * Una fila de la portada mientras llega el catálogo.
+ *
+ * Antes, cargando, la portada no pintaba ninguna fila: se veía solo la
+ * cuadrícula de "Todos los productos", y al llegar los datos aparecían
+ * "Más vendidos" y las demás filas ENCIMA, empujándola media pantalla hacia
+ * abajo. Lighthouse lo medía como el peor salto de la página (CLS 0.57 en
+ * teléfono, 0.82 en computadora).
+ *
+ * Usa las mismas piezas que "Más vendidos" (sección, encabezado y fila), así
+ * que mide lo mismo sin copiar números: solo se fijan el alto del encabezado
+ * (el de las flechas redondas) y el de la tarjeta.
+ */
+const TituloCargando = styled.div`
+  width: min(220px, 55%);
+  height: 40px;
+  border-radius: 10px;
+`;
+
+// El alto natural de una ProductCard: foto de 165 más marca, nombre y precio.
+const TarjetaCargando = styled.div`
+  height: 289px;
+  border-radius: 16px;
+`;
+
+const FilaCargando = () => (
+  <TrendingSection aria-hidden="true">
+    <TrendingHeader>
+      <TituloCargando className="esqueleto" />
+    </TrendingHeader>
+    <TrendingGrid>
+      {Array.from({ length: 6 }, (_, i) => <TarjetaCargando key={i} className="esqueleto" />)}
+    </TrendingGrid>
+  </TrendingSection>
+);
+
 /* ─── Products Grid ─── */
 const ProductsGrid = styled.div`
   display: grid;
@@ -604,6 +649,10 @@ const Store = () => {
   }, [engancharFilaCategorias]);
   const reducirMovimiento = useReducedMotion();
 
+  // Con la portada ya pintada, se bajan en un rato libre el carrito, Tiqui y
+  // las fichas, para que abrirlos sea instantáneo. Ver pantallasDiferidas.
+  useEffect(() => { if (!cargando) precargarPantallas(); }, [cargando]);
+
   /*
    * La categoría elegida se trae a la vista: si la eligió el asistente de voz
    * o se volvió atrás, puede estar escondida al fondo de la barra. Se corre
@@ -638,6 +687,19 @@ const Store = () => {
    * utils/portada.js y la pantalla de Personalización.
    */
   const { portadaVisible } = useAjustesCtx();
+
+  /*
+   * Qué filas guardan su lugar mientras carga el catálogo: "Más vendidos" y la
+   * primera de las que casi siempre salen. Con esas dos se llena la primera
+   * pantalla; lo que va más abajo puede acomodarse sin que nadie lo vea
+   * moverse. "Volver a comprar" no se reserva: un cliente nuevo no la tiene, y
+   * un hueco que luego se cierra también es un salto.
+   */
+  const filasQueEsperan = useMemo(() => {
+    const claves = portadaVisible.map((b) => b.clave);
+    const siguiente = claves.find((c) => ['nuevos', 'familias', 'por-acabarse'].includes(c));
+    return new Set(['mas-vendidos', siguiente].filter(Boolean));
+  }, [portadaVisible]);
 
   /*
    * Las filas automáticas, agrupadas bajo el bloque que las gobierna. Los
@@ -758,8 +820,8 @@ const Store = () => {
       {/* Overlay del Asistente por Voz (Modo Kiosco) — con entrada/salida suave */}
       <AnimatePresence>
         {mostrarAsistente && (
+          <Suspense key="asistente-voz" fallback={null}>
           <AsistenteVoz
-            key="asistente-voz"
             onClose={() => setMostrarAsistente(false)}
             productos={productos}
             agregarAlCarrito={agregarAlCarrito}
@@ -804,6 +866,7 @@ const Store = () => {
             }}
             irAPagar={irAPagar}
           />
+          </Suspense>
         )}
       </AnimatePresence>
 
@@ -846,6 +909,14 @@ const Store = () => {
             >
               {t('Todos')}
             </CatBtn>
+            {/*
+              Cargando, pastillas vacías donde van a caer las categorías: sin
+              ellas "Todos" salía solo en el centro y se corría a la orilla al
+              llegar las demás.
+            */}
+            {cargando && categorias.length === 0 && ANCHOS_CAT_CARGANDO.map((ancho, i) => (
+              <CatCargando key={i} className="esqueleto" style={{ width: ancho }} aria-hidden="true" />
+            ))}
             {categorias.map(cat => (
               <CatBtn
                 key={cat}
@@ -917,6 +988,13 @@ const Store = () => {
               // De orilla a orilla y sin carril: su carrusel asoma las
               // tarjetas de los lados y con relleno se le cortarían.
               return <PromoBanners key={bloque.clave} moduloId={moduloSeleccionado} onSelectPromo={abrirPromo} />;
+            }
+
+            // Cargando, las filas guardan su lugar (ver FilaCargando).
+            if (cargando) {
+              return filasQueEsperan.has(bloque.clave)
+                ? <Franja key={bloque.clave}><FilaCargando /></Franja>
+                : null;
             }
 
             if (bloque.clave === 'mas-vendidos') {
@@ -1115,6 +1193,7 @@ const Store = () => {
         nada sirve filtrar una lista que está tapada por la promo.
       */}
       {promoDetalle && (
+        <Suspense fallback={null}>
         <PromoDetailModal
           promo={promoDetalle}
           productos={productosDePromo}
@@ -1133,9 +1212,11 @@ const Store = () => {
             onAbrirAsistente: () => setMostrarAsistente(true),
           }}
         />
+        </Suspense>
       )}
 
       {productoSeleccionado && (
+        <Suspense fallback={null}>
         <ProductDetailModal
           producto={productoSeleccionado}
           onClose={handleCerrarDetalle}
@@ -1162,9 +1243,11 @@ const Store = () => {
             onAbrirAsistente: () => setMostrarAsistente(true),
           }}
         />
+        </Suspense>
       )}
 
       {(mostrarCarrito || abrirPagoPendiente) && (
+        <Suspense fallback={null}>
         <ShoppingCart
           items={carrito}
           total={totalCarrito}
@@ -1180,6 +1263,7 @@ const Store = () => {
             cerrarCarrito();
           }}
         />
+        </Suspense>
       )}
     </Container>
   );

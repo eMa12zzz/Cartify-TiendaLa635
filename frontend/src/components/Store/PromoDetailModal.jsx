@@ -8,6 +8,7 @@ import { coloresDePromo } from '../../utils/temasPromo';
 import { iconoDePromo } from '../../utils/iconosPromo';
 import { etiquetaPromo, textoVencimiento, promoVencida } from '../../utils/promos';
 import { useIdioma } from '../../hooks/useIdioma';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * ============================================================
@@ -419,11 +420,11 @@ const PromoDetailModal = ({
               <ChevronLeft size={17} strokeWidth={2.4} />
               {t('Volver')}
             </VolverSobreFoto>
-            <FotoASangre src={imagen} alt={promo.title || promo.promoDescription || t('Promoción')} draggable={false} />
+            <FotoASangre src={foto(imagen, ANCHO.promo)} alt={promo.title || promo.promoDescription || t('Promoción')} draggable={false} />
           </Portada>
         ) : (
           <Portada $fondo={colores.fondo} $texto={colores.texto}>
-            {acompana && <FotoAcompana src={imagen} alt="" aria-hidden="true" draggable={false} />}
+            {acompana && <FotoAcompana src={foto(imagen, ANCHO.promo)} alt="" aria-hidden="true" draggable={false} />}
             {hayIcono && !imagen && (
               <MarcaDeAgua aria-hidden="true" style={{ color: colores.acento }}>
                 <IconoPromo icono={promo.icono} size="100%" strokeWidth={1.6} />

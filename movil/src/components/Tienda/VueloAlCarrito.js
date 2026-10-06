@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { DURACION_VUELO, terminarVuelo, useVuelosAlCarrito } from '../../utils/volarAlCarrito';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * ============================================================
@@ -85,7 +86,7 @@ const Vuelo = ({ vuelo }) => {
           transform: [{ translateY: trasladoY }, { scale: escala }, { rotate: rotacion }],
         }}
       >
-        <Image source={{ uri }} contentFit="contain" style={estilos.foto} />
+        <Image source={{ uri: foto(uri, ANCHO.tarjeta) }} contentFit="contain" style={estilos.foto} />
       </Animated.View>
     </Animated.View>
   );

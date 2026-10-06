@@ -13,6 +13,7 @@ import ModalCancelarMiPedido from '../../components/Cuenta/ModalCancelarMiPedido
 import ValoracionPedido from '../../components/Store/ValoracionPedido';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * ============================================================
@@ -287,7 +288,7 @@ const EstadoPedido = () => {
                     style={{ background: c.primaryLight || 'rgba(0,0,0,0.04)' }}
                   >
                     {item.productId?.image
-                      ? <img src={item.productId.image} alt="" className="max-w-full max-h-full object-contain" />
+                      ? <img src={foto(item.productId.image, ANCHO.miniatura)} alt="" loading="lazy" className="max-w-full max-h-full object-contain" />
                       : <Package className="w-5 h-5" style={{ color: c.textMuted }} />}
                   </div>
                   <div className="flex-1 min-w-0">

@@ -43,6 +43,7 @@ import { coloresDePromo } from '../../utils/temasPromo';
 import { glifoDePromo, MaterialCommunityIcons } from '../../utils/iconosPromo';
 import { Flecha, Reloj } from '../UI/Iconos';
 import { useIdioma } from '../../context/IdiomaContext';
+import { foto, ANCHO } from '../../utils/fotos';
 
 // La misma proporción que la web (2.2:1), para que el texto respire igual.
 const PROPORCION = 2.2;
@@ -141,7 +142,7 @@ const TarjetaPromo = ({ promo, etiqueta, vencimiento, ancho }) => {
           }
         >
           <Image
-            source={{ uri: promo.image }}
+            source={{ uri: foto(promo.image, ANCHO.promo) }}
             contentFit="cover"
             style={StyleSheet.absoluteFill}
             onError={() => setFallóImagen(true)}
@@ -152,7 +153,7 @@ const TarjetaPromo = ({ promo, etiqueta, vencimiento, ancho }) => {
 
       {aSangre ? (
         <Image
-          source={{ uri: promo.image }}
+          source={{ uri: foto(promo.image, ANCHO.promo) }}
           contentFit="cover"
           style={estilos.imagenCompleta}
           onError={() => setFallóImagen(true)}

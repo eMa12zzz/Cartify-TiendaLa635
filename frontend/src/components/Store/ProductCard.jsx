@@ -5,6 +5,7 @@ import { useFavoritosCtx } from '../../context/FavoritosContext';
 import { useEdad } from '../../context/EdadContext';
 import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 import { useIdioma } from '../../hooks/useIdioma';
+import { foto, ANCHO } from '../../utils/fotos';
 
 // Paleta del diseño (WEB.pdf), medida sobre el mockup.
 const BROWN = 'var(--marca-600)';
@@ -449,8 +450,10 @@ const ProductCard = ({ producto, onVerDetalle, onAgregarAlCarrito, className, st
       <ImageWrapper ref={fotoRef}>
         {producto.imagen && !imgError ? (
           <ProductImage
-            src={producto.imagen}
+            src={foto(producto.imagen, ANCHO.tarjeta)}
             alt={producto.nombre}
+            loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
           />
         ) : (

@@ -34,6 +34,7 @@ import { useEdad } from '../../context/EdadContext';
 import { Corazon, Mas, Paquete } from '../UI/Iconos';
 import { esPorLibra, esSoloAdultos, piezasEnTexto } from '../../utils/unidades';
 import { useIdioma } from '../../context/IdiomaContext';
+import { foto, ANCHO } from '../../utils/fotos';
 
 // El rojo del corazón encendido. No sale del tema: es el rojo de "me gusta" de
 // toda la vida, y en Navidad —donde el acento YA es rojo— un corazón del color
@@ -133,7 +134,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
       <View ref={marcoRef} style={estilos.marcoImagen}>
         {producto.imagen && !fallóImagen ? (
           <Image
-            source={{ uri: producto.imagen }}
+            source={{ uri: foto(producto.imagen, ANCHO.tarjeta) }}
             /*
              * `contain` y no `cover`: con cover se recorta lo que sobra para
              * llenar la caja, y a una foto vertical le come la mitad. Las fotos
