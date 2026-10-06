@@ -20,13 +20,15 @@
  *   ELEVENLABS_VOICE_ID  la voz; por defecto la de Tiqui (ver abajo)
  *   ELEVENLABS_MODEL     por defecto eleven_flash_v2_5, el más rápido y barato
  *
- * La voz de Tiqui es una voz de la cuenta de ElevenLabs de la tienda (elegida
- * el 2026-09-23). NO es la del primer video: esa era de HeyGen, generada con
- * el plan gratis, que no permite uso comercial ni clonarla.
+ * La voz de Tiqui es una voz de la cuenta de ElevenLabs de la tienda (la
+ * actual, desde el 2026-10-04; antes era p5EUznrYaWnafKvUkNiR). Es la misma
+ * para la tienda y el panel, en la web y en la app. NO es la del primer
+ * video: esa era de HeyGen, generada con el plan gratis, que no permite uso
+ * comercial ni clonarla.
  * ============================================================
  */
 
-const VOZ_POR_DEFECTO = "p5EUznrYaWnafKvUkNiR";
+const VOZ_POR_DEFECTO = "HZX0g2vsDbKCRzHJAQ20";
 const MODELO_POR_DEFECTO = "eleven_flash_v2_5";
 
 /*
