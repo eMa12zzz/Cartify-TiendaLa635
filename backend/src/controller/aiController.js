@@ -666,8 +666,11 @@ const leerOfertas = async () => {
 };
 
 /*
- * Los datos de la tienda que Tiqui puede decir. El horario y el WhatsApp no
- * están guardados en el servidor, así que no se los inventa (ver MODO_TIQUI).
+ * Los datos de la tienda que Tiqui puede decir. El horario, el WhatsApp y el
+ * teléfono salen de los datos del negocio (Personalización → Mi negocio, los
+ * mismos del pie de la tienda). Antes no se leían y Tiqui decía que no los
+ * sabía aunque estuvieran guardados. Si están vacíos no se mencionan, y ella
+ * no se los inventa (ver MODO_TIQUI).
  */
 let tiendaEnMemoria = { en: 0, texto: "" };
 
@@ -675,12 +678,16 @@ const leerTienda = async () => {
   if (tiendaEnMemoria.texto && Date.now() - tiendaEnMemoria.en < 5 * 60 * 1000) {
     return tiendaEnMemoria.texto;
   }
-  const ajustes = (await storeSettingsModel.findOne({}, "nombreLinea1 nombreLinea2 lema direccion envioBase envioPorKm").lean()) || {};
+  const ajustes = (await storeSettingsModel.findOne({}, "nombreLinea1 nombreLinea2 lema direccion envioBase envioPorKm negocio.horario negocio.whatsapp negocio.telefono").lean()) || {};
+  const negocio = ajustes.negocio || {};
   const nombre = `${ajustes.nombreLinea1 || "Tienda"} ${ajustes.nombreLinea2 || "la 635"}`.trim();
   const texto = [
     `Se llama ${nombre}.`,
     ajustes.lema ? `Su lema: "${ajustes.lema}".` : "",
     ajustes.direccion ? `Dirección: ${ajustes.direccion}.` : "",
+    negocio.horario ? `Horario: ${negocio.horario}.` : "",
+    negocio.whatsapp ? `WhatsApp: ${negocio.whatsapp}.` : "",
+    negocio.telefono ? `Teléfono: ${negocio.telefono}.` : "",
     ajustes.envioBase != null
       ? `Envío a domicilio: ${plata(ajustes.envioBase)} base más ${plata(ajustes.envioPorKm ?? 0)} por kilómetro; también se puede retirar en la tienda.`
       : "",
@@ -928,8 +935,9 @@ const MODO_TIQUI = [
   "  quiere; no lo agregues si no te lo pidió.",
   "- Promociones: si pregunta por ofertas, cuéntale una o dos de las vigentes con su precio",
   "  de oferta. Si hoy no hay, dilo y ofrécete a recomendarle algo.",
-  "- La tienda: usa solo lo que viene en 'La tienda'. El horario y el número de WhatsApp",
-  "  no los tienes: di que pueden escribir por WhatsApp desde el botón verde de la tienda.",
+  "- La tienda: usa solo lo que viene en 'La tienda'. Si trae el horario, el WhatsApp o el",
+  "  teléfono, dilos tal cual. Si no los trae, no los sabes: di que pueden escribir por",
+  "  WhatsApp desde el botón verde de la tienda. Nunca inventes un horario ni un número.",
   "- Su nombre: si viene en 'El cliente' y te pregunta cómo se llama, contesta directo",
   "  ('Te llamas Ana'). Úsalo de vez en cuando para saludar, no en cada frase. Si no entró",
   "  con su cuenta, no lo sabes: dilo con cariño y cuéntale que, si inicia sesión, lo",
