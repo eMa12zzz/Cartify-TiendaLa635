@@ -586,6 +586,7 @@ const EN = {
   'Ver más categorías': 'See more categories',
   'Ese producto ya no está en la tienda': 'That product is no longer in the store',
   'Compartir este producto': 'Share this product',
+  '¡Autenticación completada con éxito!': 'You’re signed in!',
   '{nombre} a {precio} en {tienda}': '{nombre} for {precio} at {tienda}',
   'Copiamos el enlace: pégalo donde quieras compartirlo': 'Link copied: paste it wherever you want to share it',
   'No se pudo copiar el enlace': 'Couldn’t copy the link',
