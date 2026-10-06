@@ -1,5 +1,8 @@
 import { FunctionCallingConfigMode, Type } from "@google/genai";
+import jsonwebtoken from "jsonwebtoken";
+import { config } from "../../config.js";
 import productModel from "../models/product.js";
+import clientModel from "../models/client.js";
 // Se importan aunque no se usen por nombre: el catálogo de Tiqui hace populate
 // de la categoría y la marca, y eso exige que los modelos estén registrados.
 import "../models/productType.js";
@@ -686,6 +689,37 @@ const leerTienda = async () => {
   return texto;
 };
 
+/*
+ * ¿Con quién habla Tiqui?
+ *
+ * La ruta es pública a propósito (la usa el kiosco, que no tiene sesión), así
+ * que nadie le decía al modelo quién preguntaba: a "¿cómo me llamo?" Tiqui
+ * contestaba que no sabía, aunque el cliente estuviera con su cuenta abierta.
+ * Ahora, si la petición trae la sesión de un CLIENTE —la cookie en la web, el
+ * Bearer en la app, como en validarSesion—, se busca su primer nombre. Sin
+ * sesión, o con una vencida, se habla igual, solo que sin nombre.
+ *
+ * Sin caché a propósito: el cliente puede cambiar su nombre en Mis datos, y
+ * buscarlo por _id cuesta lo mismo que el resto de la pregunta.
+ */
+const nombreDelCliente = async (req) => {
+  const deCabecera = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.slice(7)
+    : null;
+  const token = req.cookies?.authCookieCliente || deCabecera;
+  if (!token) return "";
+  try {
+    const datos = jsonwebtoken.verify(token, config.JWT.secret);
+    // Una sesión del personal (la app en modo Reparto) no es un cliente.
+    if (datos.userType !== "Client") return "";
+    const cliente = await clientModel.findById(datos.id, "fullName userName").lean();
+    return String(cliente?.fullName || cliente?.userName || "").trim().split(/\s+/)[0] || "";
+  } catch {
+    // Vencida o manipulada: como si no hubiera sesión.
+    return "";
+  }
+};
+
 // Las secciones de la cuenta a las que Tiqui puede llevar (web y app las traducen a su ruta).
 const SECCIONES = ["pedidos", "puntos", "favoritos", "direcciones", "pagos", "recibos", "avisos", "cuenta", "carrito", "inicio"];
 
@@ -717,7 +751,7 @@ const catalogoParaTiqui = async (textoDeLaCharla) => {
   return { disponibles, agotados, categorias, ofertas };
 };
 
-const armarPreguntaDeTiqui = ({ frase, carrito, charla, disponibles, agotados, categorias, ofertas, tienda }) => {
+const armarPreguntaDeTiqui = ({ frase, carrito, charla, disponibles, agotados, categorias, ofertas, tienda, nombre }) => {
   const enCarrito = carrito.length
     ? carrito.map((i) => `${i.cantidad} ${i.nombre}`).join(", ")
     : "vacío";
@@ -744,6 +778,10 @@ const armarPreguntaDeTiqui = ({ frase, carrito, charla, disponibles, agotados, c
       : "Es lo primero que dice el cliente en esta charla.",
     "",
     `El cliente dijo ahora: "${frase}"`,
+    "",
+    nombre
+      ? `El cliente: se llama ${nombre} (entró con su cuenta).`
+      : "El cliente: no entró con su cuenta, así que no sabes su nombre.",
     "",
     `En su carrito lleva: ${enCarrito}`,
     "",
@@ -892,6 +930,12 @@ const MODO_TIQUI = [
   "  de oferta. Si hoy no hay, dilo y ofrécete a recomendarle algo.",
   "- La tienda: usa solo lo que viene en 'La tienda'. El horario y el número de WhatsApp",
   "  no los tienes: di que pueden escribir por WhatsApp desde el botón verde de la tienda.",
+  "- Su nombre: si viene en 'El cliente' y te pregunta cómo se llama, contesta directo",
+  "  ('Te llamas Ana'). Úsalo de vez en cuando para saludar, no en cada frase. Si no entró",
+  "  con su cuenta, no lo sabes: dilo con cariño y cuéntale que, si inicia sesión, lo",
+  "  sabrás. Nunca inventes un nombre. Tampoco lo ves: no comentes cómo se ve.",
+  "- Por el nombre NO supongas si es hombre o mujer: nada de adjetivos con género para",
+  "  la persona ('estás listo', 'bienvenida'). Di 'tú', 'te', 'si quieres'.",
   "",
   "REGLAS:",
   "- SOLO productos y categorías de las listas, con su nombre EXACTO en las herramientas.",
@@ -1123,13 +1167,14 @@ aiController.asistente = async (req, res) => {
     }
 
     const charla = conversacionReciente(historial);
-    const [{ disponibles, agotados, categorias, ofertas }, tienda] = await Promise.all([
+    const [{ disponibles, agotados, categorias, ofertas }, tienda, nombre] = await Promise.all([
       // Lo que se está hablando decide qué productos van arriba: la frase y lo
       // último de la charla (un "sí" solo no dice nada; lo de antes, sí).
       catalogoParaTiqui([frase, ...charla.slice(-4).map((m) => m.texto)].join(" ")),
       leerTienda(),
+      nombreDelCliente(req),
     ]);
-    const contents = armarPreguntaDeTiqui({ frase, carrito, charla, disponibles, agotados, categorias, ofertas, tienda });
+    const contents = armarPreguntaDeTiqui({ frase, carrito, charla, disponibles, agotados, categorias, ofertas, tienda, nombre });
 
     try {
       // Con cobertura: si Gemini se traba, contesta el respaldo sin esperarlo.
