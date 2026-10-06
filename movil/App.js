@@ -70,6 +70,7 @@ import { PedidoActivoProvider } from './src/context/PedidoActivoContext';
 import { navegarA } from './src/navigation/navigationRef';
 // Tocar un aviso lleva justo a lo que avisaba (el pedido, la promo…).
 import AvisosTocados from './src/components/UI/AvisosTocados';
+import EnlacesEntrantes from './src/components/UI/EnlacesEntrantes';
 import RootNavigator from './src/navigation/RootNavigator';
 import LimiteDeError from './src/components/UI/LimiteDeError';
 import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
@@ -105,6 +106,7 @@ const LaTienda = () => (
             <PedidoActivoProvider>
               <BarraDeEstado />
               <AvisosTocados />
+              <EnlacesEntrantes />
               {/* Si una pantalla se rompe, Tiqui caída en vez de la app en blanco. */}
               <LimiteDeError>
                 <RootNavigator />

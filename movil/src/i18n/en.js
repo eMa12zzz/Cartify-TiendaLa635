@@ -317,6 +317,7 @@ const EN = {
   // "Fresas agregado" no concordaba: dicho así no tiene género.
   'Agregaste {nombre} al carrito': 'Added {nombre} to your cart',
   'Compartir este producto': 'Share this product',
+  'Ese producto ya no está en la tienda': 'That product is no longer in the store',
   '{nombre} a {precio} en {tienda}': '{nombre} for {precio} at {tienda}',
   '{nombre} salió del carrito': '{nombre} removed from your cart',
   'Producto eliminado': 'Product removed',
