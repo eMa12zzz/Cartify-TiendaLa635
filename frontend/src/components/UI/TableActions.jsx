@@ -1,4 +1,3 @@
-import React from 'react';
 import styled from 'styled-components';
 import { Edit2, Trash2, Eye } from 'lucide-react';
 

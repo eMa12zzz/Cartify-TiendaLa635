@@ -71,7 +71,7 @@ export const useFavoritos = () => {
       });
       // La lista completa solo se recarga si estamos mostrándola.
       if (productos.length || !estaba) cargar();
-    } catch (error) {
+    } catch {
       // Se deshace: mejor un corazón que vuelve atrás que una mentira guardada.
       setIds((prev) => (estaba ? [...prev, id] : prev.filter((x) => x !== id)));
       toast.error('No se pudo guardar el favorito');

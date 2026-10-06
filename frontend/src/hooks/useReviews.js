@@ -56,7 +56,7 @@ export const useReviews = (productoId) => {
       toast.success(r.message);
       await cargar();
       return true;
-    } catch (error) {
+    } catch {
       // El 403 de "no lo compró" ya lo muestra el interceptor de Axios.
       return false;
     } finally {

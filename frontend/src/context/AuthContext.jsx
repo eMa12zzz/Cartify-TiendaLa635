@@ -81,7 +81,7 @@ const mudarSesionVieja = () => {
    * regala una sesión de personal. Ante la duda, la de menos alcance.
    */
   const tipo = localStorage.getItem('userType') || 'client';
-  let datos = {};
+  let datos;
   try {
     datos = JSON.parse(localStorage.getItem('userData') || '{}');
   } catch {
