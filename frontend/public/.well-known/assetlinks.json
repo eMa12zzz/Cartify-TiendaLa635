@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tiendala635.app",
+      "sha256_cert_fingerprints": [
+        "95:CD:9B:2F:35:27:0D:7D:9A:5D:34:B5:29:B1:77:16:62:5F:BD:24:4F:A1:50:EE:BF:88:32:60:B2:66:55:2E"
+      ]
+    }
+  }
+]

@@ -33,6 +33,35 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148683224510:android:81ec4b68aee49d0feb35ef",
+        "android_client_info": {
+          "package_name": "com.tiendala635.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "148683224510-htubuika332kh2ck0f7fkc0fr06gjfjp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyjBA9mEsK7E0GxTC-u6L77nS361yEaZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "148683224510-htubuika332kh2ck0f7fkc0fr06gjfjp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
