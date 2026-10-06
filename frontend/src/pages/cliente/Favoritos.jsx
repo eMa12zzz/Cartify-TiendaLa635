@@ -3,6 +3,7 @@ import { Heart, Package, Trash2 } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useFavoritosCtx } from '../../context/FavoritosContext';
 import { CargandoMascota } from '../../components/UI/Mascota';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * Favoritos — los productos que el cliente marcó con el corazón.
@@ -60,8 +61,10 @@ const Favoritos = () => {
                 >
                   {imagen ? (
                     <img
-                      src={imagen}
+                      src={foto(imagen, ANCHO.tarjeta)}
                       alt={p.name}
+                      loading="lazy"
+                      decoding="async"
                       className="max-w-full max-h-full object-contain"
                     />
                   ) : (

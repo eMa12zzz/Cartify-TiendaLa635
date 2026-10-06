@@ -1,6 +1,7 @@
 import { ArrowRight, Clock } from 'lucide-react';
 import { coloresDePromo } from '../../utils/temasPromo';
 import { iconoDePromo } from '../../utils/iconosPromo';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * PromoCard — la cara de una promoción.
@@ -106,7 +107,7 @@ const PromoCard = ({
       */}
       {acompaña && (
         <img
-          src={imagen}
+          src={foto(imagen, ANCHO.promo)}
           alt=""
           aria-hidden="true"
           draggable={false}
@@ -153,7 +154,7 @@ const PromoCard = ({
 
       {aSangre ? (
         <img
-          src={imagen}
+          src={foto(imagen, ANCHO.promo)}
           alt={title || descripcion || 'Promoción'}
           draggable={false}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}

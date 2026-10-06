@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { ArrowLeft } from 'lucide-react';
@@ -8,7 +8,8 @@ import { useVolver } from '../hooks/useVolver';
 import { useMyOrders } from '../hooks/useMyOrders';
 import { useSeccionesTienda } from '../hooks/useSeccionesTienda';
 import ProductCard from '../components/Store/ProductCard';
-import ProductDetailModal from '../components/Store/ProductDetailModal';
+// La ficha baja aparte; se precarga en un rato libre (ver pantallasDiferidas).
+import { ProductDetailModal, precargarPantallas } from '../components/Store/pantallasDiferidas';
 import HeaderTienda from '../components/Store/HeaderTienda';
 import PieTienda from '../components/Store/PieTienda';
 import EsqueletoProductos from '../components/Store/EsqueletoProductos';
@@ -150,6 +151,8 @@ const Vacio = styled.div`
 const Seccion = () => {
   const { clave } = useParams();
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  // Quien entra directo a una sección también tiene la ficha lista al tocar.
+  useEffect(() => { precargarPantallas(); }, []);
 
   const { productos, productosDelPasillo, agregarAlCarrito, cantidadItems, cargando } = useStore({});
   const { orders } = useMyOrders();
@@ -262,6 +265,7 @@ const Seccion = () => {
       <PieTienda />
 
       {productoSeleccionado && (
+        <Suspense fallback={null}>
         <ProductDetailModal
           producto={productoSeleccionado}
           onClose={() => setProductoSeleccionado(null)}
@@ -270,6 +274,7 @@ const Seccion = () => {
           todosLosProductos={productos}
           header={{ cantidadItems }}
         />
+        </Suspense>
       )}
     </Contenedor>
   );

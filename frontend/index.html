@@ -6,6 +6,15 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!--
+      Abrir la conexión con el servidor y con las fotos desde el primer
+      momento, mientras todavía se descarga el código: cuando la tienda pida
+      el catálogo y las imágenes, el saludo seguro (DNS + TLS) ya está hecho.
+      Son unos cientos de milisegundos menos en teléfono.
+    -->
+    <link rel="preconnect" href="%VITE_API_URL%" crossorigin="use-credentials" />
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+
 
     <!--
       Pinta el color de marca ANTES de que React exista.

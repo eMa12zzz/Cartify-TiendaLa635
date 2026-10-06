@@ -222,7 +222,13 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   // Arranca con lo que venga en ?q= (ver Store.jsx), o vacío.
   const [terminoBusqueda, setTerminoBusqueda] = useState(busquedaInicial);
-  const [cargando, setCargando] = useState(false);
+  /*
+   * Arranca en true porque el catálogo se pide en cuanto se monta la tienda.
+   * Arrancaba en false y el efecto lo encendía DESPUÉS del primer cuadro: ese
+   * cuadro salía sin esqueletos ni lugar reservado (la tienda "vacía") y al
+   * siguiente todo se recorría. Lighthouse lo medía como un salto de 0.55.
+   */
+  const [cargando, setCargando] = useState(true);
   /*
    * La carga falló (servidor caído, sin internet…). Antes el error se tragaba
    * y la lista quedaba vacía, así que la tienda decía "Todavía no hay

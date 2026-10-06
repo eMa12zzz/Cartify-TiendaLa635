@@ -125,9 +125,10 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
   const { t, locale } = useIdioma();
   const cabenTres = useCabenTres();
   // moduloId: si el cliente está parado en un pasillo, solo salen sus promos.
-  const { promos, activa, total, irA, siguiente, anterior, distancia, pausar, reanudar } =
+  const { promos, cargando, activa, total, irA, siguiente, anterior, distancia, pausar, reanudar } =
     usePromoCarousel({ autoplay: !reducirMovimiento, moduloId });
 
+  if (cargando) return <PromosCargando enFila={cabenTres} />;
   if (total === 0) return null;
 
   const unaSola = total === 1;
@@ -377,6 +378,51 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
           >›</button>
         </div>
       )}
+    </section>
+  );
+};
+
+/*
+ * El lugar del carrusel mientras llegan las promociones.
+ *
+ * Mide EXACTAMENTE lo mismo que el de verdad —el mismo escenario, las tarjetas
+ * en el mismo sitio y el renglón de los puntos— para que al llegar no se mueva
+ * nada: solo se rellena. Antes el carrusel aparecía de golpe y empujaba toda
+ * la tienda hacia abajo; Lighthouse lo medía como el salto más grande de la
+ * página.
+ *
+ * Se asume que hay más de una promoción (con sus puntos abajo), que es lo
+ * normal. Si resultan cero, el carrusel se va y sí se recorre: es el caso raro.
+ */
+const PromosCargando = ({ enFila }) => {
+  const L = enFila ? FILA : ANILLO;
+  const posiciones = enFila ? [-1, 0, 1] : [0];
+  return (
+    <section aria-hidden="true" style={{ padding: '22px 0 6px', overflow: 'hidden' }}>
+      <div
+        style={{
+          position: 'relative',
+          height: enFila ? `calc(${FILA.alto} + 52px)` : 'clamp(120px, 25vw, 256px)',
+        }}
+      >
+        {posiciones.map((d) => (
+          <div
+            key={d}
+            className="esqueleto"
+            style={{
+              position: 'absolute',
+              top: enFila ? 10 : 0,
+              left: '50%',
+              width: L.ancho,
+              marginLeft: L.margen,
+              aspectRatio: PROPORCION_PROMO,
+              borderRadius: 20,
+              transform: `translateX(${d * L.SEPARACION}%)`,
+            }}
+          />
+        ))}
+      </div>
+      <div style={{ height: 44, marginTop: enFila ? -20 : 14 }} />
     </section>
   );
 };

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
@@ -22,7 +23,15 @@ import AnaliticasTienda from './components/UI/AnaliticasTienda';
 import BotonWhatsApp from './components/Store/BotonWhatsApp';
 import BurbujaPedido from './components/Store/BurbujaPedido';
 import AvisoSinConexion from './components/UI/AvisoSinConexion';
-import VincularKiosco from './pages/VincularKiosco';
+import { CargandoMascota } from './components/UI/Mascota';
+const VincularKiosco = lazy(() => import('./pages/VincularKiosco'));
+
+// La espera de una pantalla que todavía se está descargando (ver <Suspense>).
+const PantallaCargando = () => (
+  <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <CargandoMascota />
+  </div>
+);
 
 /*
  * ============================================================
@@ -30,61 +39,68 @@ import VincularKiosco from './pages/VincularKiosco';
  * ============================================================
  * Aquí se importan todos los componentes de página que el
  * enrutador (React Router) necesita para renderizar.
+ *
+ * Casi todas van con lazy(): se descargan recién cuando alguien entra a
+ * ellas. Antes iban todas en un solo archivo de 2.2 MB, así que quien solo
+ * quería comprar pan bajaba también el panel de administración entero, con
+ * sus gráficas y su generador de PDF. Se cargan de una vez solo la tienda,
+ * sus secciones y el 404: lo que se ve al llegar. Mientras baja otra pantalla, React Router deja la anterior a la
+ * vista (navega con transiciones), así que no hay parpadeo.
  * ============================================================
  */
 
 // --- Autenticación ---
-import LoginClient from './pages/LoginClient';    // Login de clientes ("/")
-import LoginAdmin from './pages/LoginAdmin';      // Login de administradores ("/admin")
-import Register from './pages/Register';          // Registro de nuevos clientes
-import Verification from './pages/Verification'; // Verificación de código (registro, 2FA, recuperación)
-import CreatePassword from './pages/CreatePassword'; // Paso final de recuperación de contraseña
-import LoginPassword from './pages/LoginPassword';
-import CompletarGoogle from './pages/CompletarGoogle'; // Último paso de quien entra por primera vez con Google
-import BajaNotificaciones from './pages/BajaNotificaciones'; // Donde cae el "dejar de recibirlos" de los correos
-import ForgotPassword from './pages/ForgotPassword'; // Solicitar recuperación de contraseña
+const LoginClient = lazy(() => import('./pages/LoginClient'));    // Login de clientes ("/")
+const LoginAdmin = lazy(() => import('./pages/LoginAdmin'));      // Login de administradores ("/admin")
+const Register = lazy(() => import('./pages/Register'));          // Registro de nuevos clientes
+const Verification = lazy(() => import('./pages/Verification')); // Verificación de código (registro, 2FA, recuperación)
+const CreatePassword = lazy(() => import('./pages/CreatePassword')); // Paso final de recuperación de contraseña
+const LoginPassword = lazy(() => import('./pages/LoginPassword'));
+const CompletarGoogle = lazy(() => import('./pages/CompletarGoogle')); // Último paso de quien entra por primera vez con Google
+const BajaNotificaciones = lazy(() => import('./pages/BajaNotificaciones')); // Donde cae el "dejar de recibirlos" de los correos
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword')); // Solicitar recuperación de contraseña
 
 // --- Tienda pública ---
-import Dashboard from './pages/Dashboard';        // Panel de la tienda para clientes
+const Dashboard = lazy(() => import('./pages/Dashboard'));        // Panel de la tienda para clientes
 import Store from './pages/Store';
 import Seccion from './pages/Seccion';       // Una sección de la portada, completa
 import NoEncontrado from './pages/NoEncontrado'; // 404: cualquier dirección que no exista
-import Impresiones from './pages/impresiones';
-import Legal from './pages/Legal';               // Términos, privacidad, cookies y devoluciones
+const Impresiones = lazy(() => import('./pages/impresiones'));
+const Legal = lazy(() => import('./pages/Legal'));               // Términos, privacidad, cookies y devoluciones
 
 // --- Panel Administrativo ---
-import AdminLayout from './components/Layout/AdminLayout'; // Layout compartido del admin (sidebar + topbar)
-import Inventory from './pages/Inventory';
-import AdminDashboard from './pages/AdminDashboard';
-import Orders from './pages/Orders';
-import Modules from './pages/Modules';
-import Brands from './pages/Brands';
-import Employees from './pages/Employees';
-import Customers from './pages/Customers';
-import Suppliers from './pages/Suppliers';
-import Categories from './pages/Categories';
-import Fidelidad from './pages/Fidelidad';
-import Promociones from './pages/Promociones';
-import GiftCards from './pages/GiftCards';
-import ServiciosImpresion from './pages/ServiciosImpresion';
-import Personalizacion from './pages/Personalizacion';
-import AccountSettings from './pages/AccountSettings';
-import AyudaPanel from './pages/AyudaPanel';     // Cómo funciona cada apartado del panel
+const AdminLayout = lazy(() => import('./components/Layout/AdminLayout')); // Layout compartido del admin (sidebar + topbar)
+const Inventory = lazy(() => import('./pages/Inventory'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Modules = lazy(() => import('./pages/Modules'));
+const Brands = lazy(() => import('./pages/Brands'));
+const Employees = lazy(() => import('./pages/Employees'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Suppliers = lazy(() => import('./pages/Suppliers'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Fidelidad = lazy(() => import('./pages/Fidelidad'));
+const Promociones = lazy(() => import('./pages/Promociones'));
+const GiftCards = lazy(() => import('./pages/GiftCards'));
+const ServiciosImpresion = lazy(() => import('./pages/ServiciosImpresion'));
+const Personalizacion = lazy(() => import('./pages/Personalizacion'));
+const AccountSettings = lazy(() => import('./pages/AccountSettings'));
+const AyudaPanel = lazy(() => import('./pages/AyudaPanel'));     // Cómo funciona cada apartado del panel
 
 // --- Área "Mi Cuenta" del cliente ---
-import ClienteLayout from './components/Layout/ClienteLayout';
-import PuntosFidelidad from './pages/cliente/PuntosFidelidad';
-import MisPedidos from './pages/cliente/MisPedidos';
-import EstadoPedido from './pages/cliente/EstadoPedido';
-import Favoritos from './pages/cliente/Favoritos';
-import Bienvenida from './pages/Bienvenida';
-import Recibidos from './pages/cliente/Recibidos';
-import DetallesCuenta from './pages/cliente/DetallesCuenta';
-import Direcciones from './pages/cliente/Direcciones';
-import MetodoPago from './pages/cliente/MetodoPago';
-import Notificaciones from './pages/cliente/Notificaciones';
-import CentroAyuda from './pages/cliente/CentroAyuda';
-import Preferencias from './pages/cliente/Preferencias';
+const ClienteLayout = lazy(() => import('./components/Layout/ClienteLayout'));
+const PuntosFidelidad = lazy(() => import('./pages/cliente/PuntosFidelidad'));
+const MisPedidos = lazy(() => import('./pages/cliente/MisPedidos'));
+const EstadoPedido = lazy(() => import('./pages/cliente/EstadoPedido'));
+const Favoritos = lazy(() => import('./pages/cliente/Favoritos'));
+const Bienvenida = lazy(() => import('./pages/Bienvenida'));
+const Recibidos = lazy(() => import('./pages/cliente/Recibidos'));
+const DetallesCuenta = lazy(() => import('./pages/cliente/DetallesCuenta'));
+const Direcciones = lazy(() => import('./pages/cliente/Direcciones'));
+const MetodoPago = lazy(() => import('./pages/cliente/MetodoPago'));
+const Notificaciones = lazy(() => import('./pages/cliente/Notificaciones'));
+const CentroAyuda = lazy(() => import('./pages/cliente/CentroAyuda'));
+const Preferencias = lazy(() => import('./pages/cliente/Preferencias'));
 
 
 /*
@@ -239,6 +255,13 @@ function App() {
           pantalla: se explica y se ofrece cómo volver. Ver LimiteDeError.
         */}
         <LimiteDeError>
+        {/*
+          Lo que se ve la primera vez que se abre directo una pantalla que
+          todavía no se descargó (un enlace a /mi-cuenta, el panel). Al
+          navegar adentro de la tienda no aparece: se queda la pantalla
+          anterior mientras baja la nueva.
+        */}
+        <Suspense fallback={<PantallaCargando />}>
         <Routes>
 
           {/* ── Rutas Públicas (sin autenticación) ─────────────────── */}
@@ -365,6 +388,7 @@ function App() {
           <Route path="*" element={<NoEncontrado />} />
 
         </Routes>
+        </Suspense>
         </LimiteDeError>
         </PedidoActivoProvider>
         </DireccionProvider>

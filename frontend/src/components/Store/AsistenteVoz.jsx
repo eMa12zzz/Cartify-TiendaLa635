@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { orderService } from '../../api/orderService';
 import { primerNombre } from '../../utils/nombreTiqui';
 import MascotaAsistente from './MascotaAsistente';
+import { foto, ANCHO } from '../../utils/fotos';
 
 /*
  * AsistenteVoz — pantalla grande (kiosco) del asistente por voz.
@@ -520,7 +521,7 @@ const AsistenteVoz = ({
                       >
                         <span className="w-10 h-10 rounded-[10px] bg-white grid place-items-center overflow-hidden">
                           {item.imagen
-                            ? <img src={item.imagen} alt="" className="w-[78%] h-[78%] object-contain" />
+                            ? <img src={foto(item.imagen, ANCHO.miniatura)} alt="" className="w-[78%] h-[78%] object-contain" />
                             : <Package className="w-5 h-5" style={{ color: '#9C9691' }} />}
                         </span>
                         <span className="text-sm min-w-0 truncate">

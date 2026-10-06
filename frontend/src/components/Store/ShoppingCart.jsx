@@ -23,6 +23,7 @@ import Mascota, { EsperaMascota } from '../UI/Mascota';
 import { useAjustesCtx } from '../../context/AjustesContext';
 import { enlaceWhatsApp } from '../../utils/tienda';
 import { useIdioma } from '../../hooks/useIdioma';
+import { foto, ANCHO } from '../../utils/fotos';
 
 // Productos por página en el resumen del pedido confirmado.
 const POR_PAGINA = 4;
@@ -1440,7 +1441,7 @@ const ShoppingCart = ({
                   <CartItemRow key={item.id}>
                     <ItemImgBox>
                       {item.imagen && !imgErrors[item.id]
-                        ? <img src={item.imagen} alt={item.nombre} onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
+                        ? <img src={foto(item.imagen, ANCHO.miniatura)} alt={item.nombre} onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
                         : <span className="emoji"><Package size={26} strokeWidth={1.4} /></span>
                       }
                     </ItemImgBox>
@@ -1862,7 +1863,7 @@ const ShoppingCart = ({
                     {items.slice(0, 6).map(item => (
                       <OrderThumb key={item.id}>
                         {item.imagen && !imgErrors[item.id]
-                          ? <img src={item.imagen} alt="" onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
+                          ? <img src={foto(item.imagen, ANCHO.miniatura)} alt="" onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
                           : <Package size={24} strokeWidth={1.4} />
                         }
                       </OrderThumb>
@@ -2028,7 +2029,7 @@ const ShoppingCart = ({
                     <PTableRow key={item.id}>
                       <PImgBox>
                         {item.imagen && !imgErrors[item.id]
-                          ? <img src={item.imagen} alt="" onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
+                          ? <img src={foto(item.imagen, ANCHO.miniatura)} alt="" onError={() => setImgErrors(p => ({ ...p, [item.id]: true }))} />
                           : <Package size={24} strokeWidth={1.4} />
                         }
                       </PImgBox>
