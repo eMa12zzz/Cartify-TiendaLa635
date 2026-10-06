@@ -33,4 +33,13 @@ export default defineConfig({
     react(), // Activa el soporte React en Vite.
     tailwindcss() // Activa el procesamiento de Tailwind CSS.
   ],
+  /*
+   * Pruebas (npm test). Corren en Node; las que pintan una pantalla piden un
+   * navegador de mentira (jsdom) con un comentario arriba del archivo. Ver
+   * los *.test.js junto a lo que prueban.
+   */
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.{js,jsx}', '*.test.js'],
+  },
 })

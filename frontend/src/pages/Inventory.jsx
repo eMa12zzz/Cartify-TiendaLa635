@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInventory } from '../hooks/useInventory';
-import { Download, Plus, Search, ArrowDownUp } from 'lucide-react';
+import { Plus, Search, ArrowDownUp } from 'lucide-react';
 import FilterSelect from '../components/UI/FilterSelect';
 import CategoryPills from '../components/Inventory/CategoryPills';
 import ProductCard from '../components/Inventory/ProductCard';

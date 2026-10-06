@@ -9,7 +9,6 @@ import { foto, ANCHO } from '../../utils/fotos';
 
 // Paleta del diseño (WEB.pdf), medida sobre el mockup.
 const BROWN = 'var(--marca-600)';
-const BROWN_DARK = 'var(--marca-700)';
 
 const Card = styled.div`
   background: var(--papel);

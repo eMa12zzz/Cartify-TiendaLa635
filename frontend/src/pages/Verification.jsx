@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginStep2 } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
@@ -67,13 +67,6 @@ const InfoText = styled.p`
   color: var(--tinta-tenue);
   margin: 0 0 4px 0;
   line-height: 1.5;
-`;
-
-const InfoPhone = styled.p`
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--tinta);
-  margin: 0 0 16px 0;
 `;
 
 const CodeContainer = styled.div`
@@ -241,7 +234,7 @@ const Verification = () => {
         navigate('/dashboard');
       }
 
-    } catch (err) {
+    } catch {
       setError(t('Código incorrecto o expirado.'));
     } finally {
       setLoading(false);

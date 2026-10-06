@@ -254,7 +254,7 @@ const Bienvenida = () => {
       await clientService.updateAddresses(user.id, [...previas, nueva]);
       toast.success('Dirección guardada');
       navigate(destinoAlSalir);
-    } catch (error) {
+    } catch {
       // El interceptor ya avisa del error; aquí solo se deja seguir.
       setGuardando(false);
     }

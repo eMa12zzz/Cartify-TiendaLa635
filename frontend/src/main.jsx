@@ -14,6 +14,10 @@ import '@fontsource/poppins/latin-700.css'
 import '@fontsource/poppins/latin-800.css'
 import './index.css'
 import App from './App.jsx'
+import { escucharErroresSueltos, reportarError } from './utils/reportarError'
+
+// Lo que falla fuera de las pantallas también se anota. Ver utils/reportarError.js.
+escucharErroresSueltos()
 
 /*
  * Una pestaña abierta antes de publicar una versión nueva.
@@ -34,7 +38,12 @@ window.addEventListener('vite:preloadError', (evento) => {
   const clave = 'la635_recarga_por_version'
   try {
     const ultima = Number(sessionStorage.getItem(clave)) || 0
-    if (Date.now() - ultima < 10 * 60 * 1000) return
+    // Ya se recargó hace poco y sigue fallando: ya no es la versión vieja,
+    // es otra cosa. Se anota para que alguien lo mire.
+    if (Date.now() - ultima < 10 * 60 * 1000) {
+      reportarError(evento.payload || 'No se pudo cargar una parte de la tienda')
+      return
+    }
     sessionStorage.setItem(clave, String(Date.now()))
   } catch {
     return

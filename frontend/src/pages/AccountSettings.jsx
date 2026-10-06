@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Check, Palette, User, CheckCircle2, LogOut, Camera, Loader2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +15,7 @@ const AccountSettings = () => {
    * arma el contexto), y quien se cambiaba de paleta aquí no tenía cómo volver
    * a la de siempre.
    */
-  const { paletteId, setPaletteId, palette, palettes } = useTheme();
+  const { paletteId, setPaletteId, palettes } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [verPass, setVerPass] = useState(false);
   const { user, logoutTodo, actualizarUsuario } = useAuth();
