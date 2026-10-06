@@ -218,24 +218,24 @@ export const anotarProductoNuevo = (producto) => {
  */
 export const TEXTOS_PEDIDO = {
   preparando: {
-    titulo: "Estamos preparando su pedido",
-    cuerpo: "Ya estamos juntando sus productos.",
+    titulo: "Estamos preparando tu pedido",
+    cuerpo: "Ya estamos juntando tus productos.",
   },
   en_camino: {
-    titulo: "Su pedido va en camino",
-    cuerpo: "Ya salió de la tienda. Puede verlo en el mapa y saber cuándo salir a la puerta.",
+    titulo: "Tu pedido va en camino",
+    cuerpo: "Ya salió de la tienda. Puedes verlo en el mapa y saber cuándo salir a la puerta.",
   },
   listo: {
-    titulo: "Su pedido está listo",
-    cuerpo: "Ya puede pasar a recogerlo a la tienda.",
+    titulo: "Tu pedido está listo",
+    cuerpo: "Ya puedes pasar a recogerlo a la tienda.",
   },
   entregado: {
-    titulo: "Su pedido llegó",
-    cuerpo: "¡Que lo disfrute! Si quiere, califique la entrega desde la app.",
+    titulo: "Tu pedido llegó",
+    cuerpo: "¡Que lo disfrutes! Si quieres, califica la entrega desde la app.",
   },
   cancelado: {
-    titulo: "Su pedido fue cancelado",
-    cuerpo: "Si tiene dudas, escríbanos y lo revisamos.",
+    titulo: "Tu pedido fue cancelado",
+    cuerpo: "Si tienes dudas, escríbenos y lo revisamos.",
   },
 };
 
@@ -249,12 +249,12 @@ const cuerpoDeCancelado = (pedido) => {
   const saldo = Number(pedido?.reembolso?.saldo) || 0;
   const puntos = Number(pedido?.reembolso?.puntos) || 0;
   const devuelto = [
-    saldo > 0 ? `$${saldo.toFixed(2)} a su saldo` : "",
+    saldo > 0 ? `$${saldo.toFixed(2)} a tu saldo` : "",
     puntos > 0 ? `${puntos} puntos` : "",
   ].filter(Boolean).join(" y ");
   const partes = [
     motivo ? `Motivo: ${motivo.length > 110 ? `${motivo.slice(0, 107)}…` : motivo}` : TEXTOS_PEDIDO.cancelado.cuerpo,
-    devuelto ? `Le devolvimos ${devuelto}.` : "",
+    devuelto ? `Te devolvimos ${devuelto}.` : "",
   ].filter(Boolean);
   return partes.join(" ");
 };

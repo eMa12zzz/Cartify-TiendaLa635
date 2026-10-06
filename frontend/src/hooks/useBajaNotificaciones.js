@@ -26,7 +26,7 @@ import { clientService } from '../api/clientService';
 const NOMBRES = {
   promociones: 'las promociones',
   nuevosProductos: 'los productos nuevos',
-  pedidoCerca: 'el correo de su pedido en camino',
+  pedidoCerca: 'el correo de tu pedido en camino',
 };
 
 export const useBajaNotificaciones = () => {
@@ -39,7 +39,7 @@ export const useBajaNotificaciones = () => {
    * Además de ahorrarse un render de más, evita el parpadeo de un "un momento,
    * estamos apagando esos correos" para algo que nunca se va a intentar.
    */
-  const SIN_TOKEN = 'Este enlace está incompleto. Puede apagar los avisos desde Mi Cuenta › Notificaciones.';
+  const SIN_TOKEN = 'Este enlace está incompleto. Puedes apagar los avisos desde Mi Cuenta › Notificaciones.';
 
   const [estado, setEstado] = useState(token ? 'aplicando' : 'error'); // aplicando | listo | error
   const [mensaje, setMensaje] = useState(token ? '' : SIN_TOKEN);
@@ -66,7 +66,7 @@ export const useBajaNotificaciones = () => {
       })
       .catch((error) => {
         setEstado('error');
-        setMensaje(error?.message || 'No se pudo aplicar. Intente desde Mi Cuenta › Notificaciones.');
+        setMensaje(error?.message || 'No se pudo aplicar. Intenta desde Mi Cuenta › Notificaciones.');
       });
   }, [token]);
 

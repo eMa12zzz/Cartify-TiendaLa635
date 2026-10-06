@@ -32,7 +32,7 @@ const DE_RESPALDO = {
   nombreLinea1: NOMBRE_TIENDA.arriba,
   nombreLinea2: NOMBRE_TIENDA.abajo,
   logoUrl: '',
-  lema: 'La tienda del barrio, ahora también en línea. Pida lo de la casa y se lo llevamos.',
+  lema: 'La tienda del barrio, ahora también en línea. Pide lo de la casa y te lo llevamos.',
   direccion: DIRECCION_EN_UNA_LINEA,
   // Quién responde por la tienda y cómo se le contacta. Vacío = no se muestra.
   // Ver components/Admin/DatosNegocio.jsx y pages/legales.

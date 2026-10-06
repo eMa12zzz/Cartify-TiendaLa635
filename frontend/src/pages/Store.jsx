@@ -259,6 +259,13 @@ const SectionNav = styled.div`
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+
+  /*
+   * En pantalla táctil la fila se desliza con el dedo: las flechas sobran y
+   * en un teléfono le quitaban el lugar al título ("Más vendidos6 productos",
+   * pegados).
+   */
+  @media (hover: none), (pointer: coarse) { display: none; }
 `;
 
 const NavCircle = styled.button`
@@ -397,6 +404,9 @@ const TrendingHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  /* El alto de las flechas, aunque no estén: así mide lo mismo que FilaCargando. */
+  min-height: 40px;
   margin-bottom: 8px;
 `;
 

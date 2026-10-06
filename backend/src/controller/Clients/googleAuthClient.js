@@ -100,7 +100,7 @@ googleAuthClientController.login = async (req, res) => {
        */
       if (!esVerdadero(aceptaTerminos)) {
         return res.status(403).json({
-          message: "Para crear su cuenta hay que aceptar los términos y el aviso de privacidad",
+          message: "Para crear tu cuenta hay que aceptar los términos y el aviso de privacidad",
           // Lo lee el frontend para llevar a la pantalla de registro en vez de
           // quedarse con un error suelto que no dice qué hacer.
           requiereConsentimiento: true,

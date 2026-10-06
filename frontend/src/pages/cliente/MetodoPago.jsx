@@ -92,14 +92,14 @@ const MetodoPago = () => {
   const errores = {
     numero: !tocado.numero || !digitos ? ''
       : !numeroCompleto ? `Faltan dígitos: ${NOMBRE_MARCA[marca] === 'Tarjeta' ? 'la tarjeta' : NOMBRE_MARCA[marca]} lleva ${largoDe(marca)}.`
-      : !numeroValido ? 'Revise el número: no corresponde a una tarjeta válida.'
+      : !numeroValido ? 'Revisa el número: no corresponde a una tarjeta válida.'
       : duplicada ? 'Esa tarjeta ya está guardada.'
       : '',
     vencimiento: !tocado.vencimiento || !form.vencimiento ? ''
-      : !venc ? 'Use el formato MM/AA, con un mes entre 01 y 12.'
+      : !venc ? 'Usa el formato MM/AA, con un mes entre 01 y 12.'
       : vencida ? 'Esta tarjeta ya venció.'
       : '',
-    titular: tocado.titular && !titularValido ? 'Escriba el nombre como aparece en la tarjeta.' : '',
+    titular: tocado.titular && !titularValido ? 'Escribe el nombre como aparece en la tarjeta.' : '',
   };
 
   const listo = numeroValido && venc && !vencida && titularValido && !duplicada && !saving;
@@ -140,7 +140,7 @@ const MetodoPago = () => {
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>Métodos de pago</h1>
       <p className="text-sm mt-1" style={{ color: c.textSecondary }}>
-        Sus tarjetas guardadas y el saldo de sus tarjetas de regalo.
+        Tus tarjetas guardadas y el saldo de tus tarjetas de regalo.
       </p>
 
       {/* ── Saldo digital ── */}
@@ -153,7 +153,7 @@ const MetodoPago = () => {
             {cargandoSaldo ? '—' : `$${saldo.toFixed(2)}`}
           </div>
           <p className="text-xs mt-1" style={{ color: c.textMuted }}>
-            Puede pagar sus compras con este saldo al finalizar el pedido.
+            Puedes pagar tus compras con este saldo al finalizar el pedido.
           </p>
         </div>
 
@@ -167,7 +167,7 @@ const MetodoPago = () => {
               className="px-3 py-2.5 rounded-xl border outline-none font-mono tracking-wider w-48"
               style={campo()}
             />
-            <p className="text-xs mt-1" style={{ color: c.textMuted }}>Código de su tarjeta de regalo</p>
+            <p className="text-xs mt-1" style={{ color: c.textMuted }}>Código de tu tarjeta de regalo</p>
           </div>
           <button
             type="submit"
@@ -197,12 +197,12 @@ const MetodoPago = () => {
         </div>
 
         {loading ? (
-          <CargandoMascota texto="Cargando sus métodos…" />
+          <CargandoMascota texto="Cargando tus métodos…" />
         ) : methods.length === 0 && !agregando ? (
           <div className="flex flex-col items-center text-center py-12">
             <CreditCard className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
-            <p className="text-sm font-semibold" style={{ color: c.textPrimary }}>Todavía no tiene tarjetas guardadas</p>
-            <p className="text-sm mt-1" style={{ color: c.textSecondary }}>Guárdela una vez y la tendrá a mano en su próxima compra.</p>
+            <p className="text-sm font-semibold" style={{ color: c.textPrimary }}>Todavía no tienes tarjetas guardadas</p>
+            <p className="text-sm mt-1" style={{ color: c.textSecondary }}>Guárdala una vez y la tendrás a mano en tu próxima compra.</p>
           </div>
         ) : (
           <ul className="mt-4">

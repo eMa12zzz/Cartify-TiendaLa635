@@ -280,7 +280,7 @@ const PieTienda = () => {
             {whatsapp && (
               <BotonWhats href={whatsapp} target="_blank" rel="noopener noreferrer">
                 <MessageCircle size={15} strokeWidth={2.2} />
-                {t('Escríbanos por WhatsApp')}
+                {t('Escríbenos por WhatsApp')}
               </BotonWhats>
             )}
           </Marca>

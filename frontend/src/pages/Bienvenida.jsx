@@ -230,7 +230,7 @@ const Bienvenida = () => {
   const alGuardar = async () => {
     const limpia = direccion.trim();
     if (!limpia) {
-      toast('Escriba su dirección o toque el mapa para marcarla');
+      toast('Escribe tu dirección o toca el mapa para marcarla');
       return;
     }
 
@@ -286,7 +286,7 @@ const Bienvenida = () => {
       <Contenido>
         {/*
           "Bienvenido" tiene género y la mitad de la clientela es mujer. "Hola"
-          y "le damos la bienvenida" saludan igual de bien sin dejar a nadie
+          y "te damos la bienvenida" saludan igual de bien sin dejar a nadie
           fuera, y de paso funcionan si el nombre no está cargado.
         */}
         <Saludo>
@@ -307,13 +307,13 @@ const Bienvenida = () => {
           </Titulo>
           <Bajada>
             {esAgregar
-              ? 'Marque el punto en el mapa y póngale un nombre para reconocerla después.'
-              : 'Le damos la bienvenida. Díganos dónde le dejamos sus pedidos: toque el mapa para marcar el punto o use su ubicación.'}
+              ? 'Marca el punto en el mapa y póngale un nombre para reconocerla después.'
+              : 'Te damos la bienvenida. Dinos dónde te dejamos tus pedidos: toca el mapa para marcar el punto o usa tu ubicación.'}
           </Bajada>
         </Saludo>
 
         <Tarjeta>
-          <Etiqueta htmlFor="direccion">Su dirección de entrega</Etiqueta>
+          <Etiqueta htmlFor="direccion">Tu dirección de entrega</Etiqueta>
           <Campo>
             <MapPin size={17} color={BROWN} />
             <input

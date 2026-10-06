@@ -350,7 +350,8 @@ const PromoBanners = ({ onSelectPromo, moduloId = null }) => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   height: 44,
-                  padding: '0 5px',
+                  // 24 px de ancho para el dedo como mínimo (el punto mide 8).
+                  padding: '0 8px',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',

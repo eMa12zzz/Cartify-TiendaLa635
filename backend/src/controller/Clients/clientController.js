@@ -490,7 +490,7 @@ clientController.bajaNotificacion = async (req, res) => {
     const datos = leerTokenBaja(req.params?.token || req.body?.token);
     if (!datos) {
       return res.status(400).json({
-        message: "Este enlace ya no sirve. Puede apagar los avisos desde Mi Cuenta > Notificaciones.",
+        message: "Este enlace ya no sirve. Puedes apagar los avisos desde Mi Cuenta > Notificaciones.",
       });
     }
 
@@ -510,7 +510,7 @@ clientController.bajaNotificacion = async (req, res) => {
       return res.status(404).json({ message: "Esa cuenta ya no existe" });
     }
 
-    return res.status(200).json({ message: "Listo, ya no le llegarán esos correos", clave });
+    return res.status(200).json({ message: "Listo, ya no te llegarán esos correos", clave });
   } catch (error) {
     console.log("error bajaNotificacion: " + error);
     return res.status(500).json({ message: "Error interno del servidor" });

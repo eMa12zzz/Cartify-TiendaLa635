@@ -323,7 +323,7 @@ const Register = () => {
      * exigir por su cuenta: la casilla del navegador no le prueba nada a nadie.
      */
     if (!watch('aceptaTerminos')) {
-      toast.error(t('Marque primero que acepta los términos y la política de privacidad'));
+      toast.error(t('Marca primero que aceptas los términos y la política de privacidad'));
       return;
     }
 
@@ -407,7 +407,7 @@ const Register = () => {
                     validate: (v) => {
                       const edad = calcularEdad(v);
                       if (edad == null) return "Esa fecha no es válida";
-                      if (edad < 0 || edad > 120) return "Revise la fecha";
+                      if (edad < 0 || edad > 120) return "Revisa la fecha";
                       return true;
                     },
                   })}
@@ -567,7 +567,7 @@ const Register = () => {
                 <label htmlFor="promociones">
                   {t('Quiero recibir promociones y novedades por correo.')}
                   <Aclaracion>
-                    {t('Opcional. Puede desactivarlo cuando quiera desde Mi cuenta.')}
+                    {t('Opcional. Puedes desactivarlo cuando quieras desde Mi cuenta.')}
                   </Aclaracion>
                 </label>
               </Casilla>

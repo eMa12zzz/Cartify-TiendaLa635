@@ -128,10 +128,10 @@ const SinPermiso = () => {
       <Caja>
         <Icono><Lock size={30} strokeWidth={1.8} /></Icono>
 
-        <Titulo>Esta pantalla no es para su cuenta</Titulo>
+        <Titulo>Esta pantalla no es para tu cuenta</Titulo>
         <Texto>
           {conCuentaDeCliente
-            ? 'Está entrando con su cuenta de cliente, y esta parte es del personal de la tienda. Su sesión está bien: solo que esta puerta no es la suya.'
+            ? 'Estás entrando con tu cuenta de cliente, y esta parte es del personal de la tienda. Tu sesión está bien: solo que esta puerta no es la tuya.'
             : 'Su cuenta no tiene permiso para abrir esta pantalla. Si cree que debería tenerlo, pídaselo a quien administra la tienda.'}
         </Texto>
 

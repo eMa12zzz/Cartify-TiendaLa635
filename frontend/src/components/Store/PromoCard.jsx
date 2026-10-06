@@ -174,7 +174,7 @@ const PromoCard = ({
           }}
         >
           {(etiqueta || vencimiento) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+            <div className="promo-etiquetas" style={{ display: 'flex', alignItems: 'center' }}>
               {etiqueta && (
                 <span
                   style={{
@@ -200,6 +200,7 @@ const PromoCard = ({
               {/* La urgencia va junto al ahorro: es la mitad del argumento */}
               {vencimiento && (
                 <span
+                  className="promo-vence"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -215,28 +216,26 @@ const PromoCard = ({
                   }}
                 >
                   <Clock size={12} strokeWidth={2.4} />
-                  {vencimiento}
+                  <span className="promo-vence-texto">{vencimiento}</span>
                 </span>
               )}
             </div>
           )}
 
+          {/*
+            El tamaño de letra, el tope de dos líneas y qué se esconde en una
+            tarjeta angosta viven en index.css (.promo-titulo, .promo-descripcion):
+            dependen del ancho de la tarjeta y eso solo lo sabe una consulta
+            @container, que no se puede escribir en un style.
+          */}
           <span
+            className="promo-titulo"
             style={{
               color: colores.texto,
               fontWeight: 800,
-              fontSize: 'clamp(14px, 6cqw, 32px)',
               lineHeight: 1.12,
               letterSpacing: '-0.02em',
               maxWidth: acompaña ? '62%' : '100%',
-              /*
-               * Tope de dos líneas: un título largo empujaba la descripción
-               * fuera de la tarjeta en vez de cortarse.
-               */
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
             }}
           >
             {title || 'Su promoción se verá aquí'}
@@ -244,17 +243,13 @@ const PromoCard = ({
 
           {descripcion && (
             <span
+              className="promo-descripcion"
               style={{
                 color: colores.texto,
                 opacity: 0.85,
-                fontSize: 'clamp(9px, 3cqw, 16px)',
                 marginTop: 6,
                 lineHeight: 1.35,
                 maxWidth: acompaña ? '58%' : '78%',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
               }}
             >
               {descripcion}

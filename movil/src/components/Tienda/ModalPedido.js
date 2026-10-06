@@ -193,7 +193,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
       soltarCancelacion();
     } catch (e) {
       // Casi siempre: que la tienda ya lo empezó a preparar (lo dice el servidor).
-      setErrorCancelar(e?.message || t('No se pudo cancelar. Intente de nuevo.'));
+      setErrorCancelar(e?.message || t('No se pudo cancelar. Intenta de nuevo.'));
     } finally {
       setEnviando(false);
     }
@@ -276,7 +276,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
             {esCancelado ? (
               <View style={estilos.notaCancelado}>
                 {pedido.cancelledByClient && (
-                  <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoUsted]}>{t('Usted canceló este pedido.')}</Text>
+                  <Text style={[estilos.notaCanceladoTexto, estilos.notaCanceladoUsted]}>{t('Cancelaste este pedido.')}</Text>
                 )}
                 <Text style={estilos.notaCanceladoTexto}>
                   {pedido.cancelReason ? (
@@ -311,7 +311,7 @@ const ModalPedido = ({ pedido, alCerrar }) => {
                 </Pressable>
               ) : (
                 <View style={estilos.cancelar}>
-                  <Text style={estilos.cancelarTitulo}>{t('¿Por qué lo cancela?')}</Text>
+                  <Text style={estilos.cancelarTitulo}>{t('¿Por qué lo cancelas?')}</Text>
                   <Text style={estilos.cancelarBajada}>
                     {t('Todavía no lo empezamos a preparar, así que se puede cancelar.')}{devolveria ? ` ${devolveria}` : ''}
                   </Text>

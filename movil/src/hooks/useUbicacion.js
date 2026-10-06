@@ -76,7 +76,7 @@ export const useUbicacion = () => {
        * persona puede escribir la dirección a mano. Quedarse sin poder
        * continuar por un servicio ajeno sería peor.
        */
-      setAvisoGeocod(tAhora('No se pudo leer la dirección; puede escribirla usted'));
+      setAvisoGeocod(tAhora('No se pudo leer la dirección; puedes escribirla tú'));
     } finally {
       setBuscando(false);
     }
@@ -93,7 +93,7 @@ export const useUbicacion = () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setAvisoGeocod(tAhora('No nos dio permiso de ubicarlo. Puede marcar el pin en el mapa.'));
+        setAvisoGeocod(tAhora('No nos diste permiso de ubicarte. Puedes marcar el pin en el mapa.'));
         return;
       }
       const posicionGps = await Location.getCurrentPositionAsync({
@@ -101,7 +101,7 @@ export const useUbicacion = () => {
       });
       await marcarEn({ lat: posicionGps.coords.latitude, lng: posicionGps.coords.longitude });
     } catch {
-      setAvisoGeocod(tAhora('No pudimos ubicarlo. Pruebe marcando el pin en el mapa.'));
+      setAvisoGeocod(tAhora('No pudimos ubicarte. Prueba marcando el pin en el mapa.'));
     } finally {
       setLocalizando(false);
     }

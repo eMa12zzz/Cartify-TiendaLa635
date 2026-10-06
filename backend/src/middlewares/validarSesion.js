@@ -69,7 +69,7 @@ export const validarSesion =
     const token = candidatas.find(Boolean) || deCabecera;
 
     if (!token) {
-      return res.status(401).json({ message: "Inicie sesión para continuar" });
+      return res.status(401).json({ message: "Inicia sesión para continuar" });
     }
 
     try {
@@ -91,7 +91,7 @@ export const validarSesion =
        * interceptor del frontend ya traduce el 401 a "Sesión expirada o
        * inválida", que es exactamente lo que pasó.
        */
-      return res.status(401).json({ message: "Su sesión venció. Vuelva a iniciar sesión." });
+      return res.status(401).json({ message: "Tu sesión venció. Vuelve a iniciar sesión." });
     }
   };
 

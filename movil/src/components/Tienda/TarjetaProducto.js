@@ -126,7 +126,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
       accessibilityRole="button"
       accessibilityLabel={
         tapado
-          ? t('{nombre}, producto para mayores de edad, toque para confirmar su edad', { nombre: producto.nombre })
+          ? t('{nombre}, producto para mayores de edad, toca para confirmar tu edad', { nombre: producto.nombre })
           : `${producto.nombre}, $${Number(producto.precio).toFixed(2)}`
       }
       style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
@@ -158,7 +158,7 @@ const TarjetaProducto = ({ producto, alVerDetalle, alAgregar, indice = 0 }) => {
           <View style={estilos.coberturaEdad}>
             <Lock size={18} color="#FFFFFF" />
             <Text style={estilos.coberturaTitulo}>{t('Mayores de 18')}</Text>
-            <Text style={estilos.coberturaTexto}>{t('Toque para confirmar su edad')}</Text>
+            <Text style={estilos.coberturaTexto}>{t('Toca para confirmar tu edad')}</Text>
           </View>
         )}
       </View>

@@ -182,7 +182,7 @@ class LimiteDeError extends Component {
           <Ilustracion><Mascota pose="error" alto={180} /></Ilustracion>
           <Titulo $panel={panel}>{t('Algo se nos rompió acá')}</Titulo>
           <Texto $panel={panel}>
-            {t('No fue culpa suya. Esta pantalla no cargó bien; ya quedó anotado. Puede volver a intentarlo o regresar a la tienda.')}
+            {t('No fue tu culpa. Esta pantalla no cargó bien; ya quedó anotado. Puedes volver a intentarlo o regresar a la tienda.')}
           </Texto>
           <Botones>
             <Boton type="button" $primario $panel={panel} onClick={this.recargar}>

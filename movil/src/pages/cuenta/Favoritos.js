@@ -66,9 +66,9 @@ const Favoritos = ({ alVolver }) => {
       ) : marcados.length === 0 ? (
         <View style={estilos.centro}>
           <Heart size={38} color={COLORES.marcador} strokeWidth={1.5} />
-          <Text style={estilos.vacioTitulo}>{t('Todavía no tiene favoritos')}</Text>
+          <Text style={estilos.vacioTitulo}>{t('Todavía no tienes favoritos')}</Text>
           <Text style={estilos.vacioTexto}>
-            {t('Toque el corazón de un producto en la tienda y lo va a encontrar aquí.')}
+            {t('Toca el corazón de un producto en la tienda y lo vas a encontrar aquí.')}
           </Text>
         </View>
       ) : (

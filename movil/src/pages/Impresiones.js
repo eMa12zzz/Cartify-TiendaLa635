@@ -123,7 +123,7 @@ const Impresiones = ({ alVolver }) => {
   const elegirFoto = async () => {
     setError('');
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permiso.granted) { setError(t('No dio permiso para abrir la galería.')); return; }
+    if (!permiso.granted) { setError(t('No diste permiso para abrir la galería.')); return; }
 
     const resultado = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
     if (resultado.canceled) return;

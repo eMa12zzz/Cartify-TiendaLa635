@@ -289,20 +289,20 @@ const SelectorDireccion = () => {
 
       {isOpen && (
         <Panel role="listbox">
-          <Titulo>{t('Sus direcciones')}</Titulo>
+          <Titulo>{t('Tus direcciones')}</Titulo>
 
           {activa && sinPunto(activa) && (
             <Aviso>
               <TriangleAlert size={14} strokeWidth={2.3} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                <strong>{t('Complete los detalles de esta dirección.')}</strong>{' '}
-                {t('No tiene un punto marcado en el mapa, así que no podrá seguir su pedido en vivo.')}
+                <strong>{t('Completa los detalles de esta dirección.')}</strong>{' '}
+                {t('No tiene un punto marcado en el mapa, así que no podrás seguir tu pedido en vivo.')}
               </span>
             </Aviso>
           )}
 
           {direcciones.length === 0 ? (
-            <Vacio>{t('Todavía no tiene direcciones guardadas. Marque en el mapa dónde le dejamos sus pedidos.')}</Vacio>
+            <Vacio>{t('Todavía no tienes direcciones guardadas. Marca en el mapa dónde te dejamos tus pedidos.')}</Vacio>
           ) : (
             direcciones.map((dir, i) => (
               <Opcion
@@ -337,7 +337,7 @@ const SelectorDireccion = () => {
                       cuál conviene usar antes de tocarla */}
                   {sinPunto(dir) && (
                     <SinPunto>
-                      <TriangleAlert size={11} strokeWidth={2.4} /> {t('Complete los detalles')}
+                      <TriangleAlert size={11} strokeWidth={2.4} /> {t('Completa los detalles')}
                     </SinPunto>
                   )}
                 </span>

@@ -46,8 +46,8 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
   const Icono = esDomicilio ? Bike : StoreFront;
 
   const explicacion = esDomicilio
-    ? t('Dígaselos a quien le entregue el pedido en la puerta.')
-    : t('Dígaselos en el mostrador al recoger su pedido.');
+    ? t('Díselos a quien te entregue el pedido en la puerta.')
+    : t('Díselos en el mostrador al recoger tu pedido.');
 
   // Los dígitos, separados. Un "0451" de corrido se lee mal en un teléfono a
   // contraluz; separados se dictan de un vistazo.
@@ -87,7 +87,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
       <div className="flex items-center gap-2 mb-3">
         <ShieldCheck className="w-4 h-4" style={{ color: 'var(--marca-texto)' }} />
         <span className="text-sm font-bold" style={{ color: c.textPrimary }}>
-          {t('Su código de entrega')}
+          {t('Tu código de entrega')}
         </span>
       </div>
 
@@ -114,7 +114,7 @@ const CodigoEntrega = ({ codigo, deliveryType, estado, compacto = false, enBurbu
         <p className="text-xs leading-relaxed" style={{ color: c.textSecondary }}>
           {explicacion}{' '}
           <span style={{ color: c.textMuted }}>
-            {t('Nadie de la tienda lo ve en su pantalla: se lo tienen que pedir a usted.')}
+            {t('Nadie de la tienda lo ve en su pantalla: te lo tienen que pedir a ti.')}
           </span>
         </p>
       </div>

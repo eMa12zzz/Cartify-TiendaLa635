@@ -656,7 +656,7 @@ const ProductDetailModal = ({
               */}
               {soloAdultos && (
                 <AvisoAdultos>
-                  <strong>{t('Solo para mayores de 18 años.')}</strong> {t('Se le pedirá su documento de identidad al entregar el pedido. Sin él, este producto no se puede entregar.')}
+                  <strong>{t('Solo para mayores de 18 años.')}</strong> {t('Te pedirán tu documento de identidad al entregar el pedido. Sin él, este producto no se puede entregar.')}
                 </AvisoAdultos>
               )}
 

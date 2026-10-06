@@ -187,7 +187,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
           <Mascota pose="fiesta" alto={130} />
         </View>
 
-        <Text style={estilos.titulo}>{t('Su pedido está hecho')}</Text>
+        <Text style={estilos.titulo}>{t('Tu pedido está hecho')}</Text>
         {!!numero && <Text style={estilos.numero}>{t('Pedido #{numero}', { numero })}</Text>}
         <Text style={estilos.fecha}>{t('Recibido el {fecha}', { fecha: fechaLarga(pedido.createdAt, locale) })}</Text>
 
@@ -249,18 +249,18 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
                       { color: seguimiento.yaCasi ? COLORES.exitoTexto : COLORES.infoTexto },
                     ]}
                   >
-                    {seguimiento.yaCasi ? t('Ya casi toca su puerta') : seguimiento.espera}
+                    {seguimiento.yaCasi ? t('Ya casi toca tu puerta') : seguimiento.espera}
                     {seguimiento.distancia ? t(' · a {distancia}', { distancia: seguimiento.distancia }) : ''}
                   </Text>
                 </>
               ) : estado === 'entregado' ? (
                 <>
                   <Check size={15} color={COLORES.textoSuave} strokeWidth={2.4} />
-                  <Text style={estilos.infoMapaTexto}>{t('Entregado en su dirección')}</Text>
+                  <Text style={estilos.infoMapaTexto}>{t('Entregado en tu dirección')}</Text>
                 </>
               ) : (
                 <Text style={estilos.infoMapaTexto}>
-                  {t('Aquí le llevaremos su pedido. En cuanto el repartidor salga, verá su punto moverse.')}
+                  {t('Aquí te llevaremos tu pedido. En cuanto el repartidor salga, verás su punto moverse.')}
                 </Text>
               )}
             </View>

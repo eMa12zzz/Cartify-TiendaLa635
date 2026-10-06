@@ -52,10 +52,10 @@ const ModalCancelarMiPedido = ({ pedido, onClose, alCancelar }) => {
   const saldo = pedido?.paymentMethod === 'saldo' ? Number(pedido.total) || 0 : 0;
   const puntos = Number(pedido?.pointsRedeemed) || 0;
   const partes = [
-    saldo > 0 ? t('{monto} a su saldo', { monto: `$${saldo.toFixed(2)}` }) : '',
+    saldo > 0 ? t('{monto} a tu saldo', { monto: `$${saldo.toFixed(2)}` }) : '',
     puntos > 0 ? t('{n} puntos', { n: puntos }) : '',
   ].filter(Boolean);
-  const devolvera = partes.length ? t('Le devolvemos {que}.', { que: partes.join(` ${t('y')} `) }) : '';
+  const devolvera = partes.length ? t('Te devolvemos {que}.', { que: partes.join(` ${t('y')} `) }) : '';
 
   const confirmar = async () => {
     if (!motivo || enviando) return;
@@ -63,7 +63,7 @@ const ModalCancelarMiPedido = ({ pedido, onClose, alCancelar }) => {
     try {
       // En español aunque la tienda esté en inglés: lo lee el personal en el panel.
       const r = await orderService.cancelarPorCliente(pedido._id, motivo);
-      toast.success(t('Su pedido quedó cancelado.'));
+      toast.success(t('Tu pedido quedó cancelado.'));
       // La burbuja de seguimiento se va sola: ya no hay pedido en curso.
       refrescarPedidoActivo();
       alCancelar?.(r?.order);
@@ -119,8 +119,8 @@ const ModalCancelarMiPedido = ({ pedido, onClose, alCancelar }) => {
               {devolvera ? ` ${devolvera}` : ''}
             </p>
 
-            <p className="mb-2 text-sm font-semibold">{t('¿Por qué lo cancela?')}</p>
-            <div className="mb-5 flex flex-col gap-2" role="radiogroup" aria-label={t('¿Por qué lo cancela?')}>
+            <p className="mb-2 text-sm font-semibold">{t('¿Por qué lo cancelas?')}</p>
+            <div className="mb-5 flex flex-col gap-2" role="radiogroup" aria-label={t('¿Por qué lo cancelas?')}>
               {MOTIVOS.map((m) => {
                 const elegido = motivo === m;
                 return (

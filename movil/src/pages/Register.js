@@ -127,7 +127,7 @@ const validarFechaNacimiento = (valor) => {
       : tAhora('La fecha de nacimiento es obligatoria');
   }
   const edad = calcularEdad(iso);
-  if (edad < 0 || edad > 120) return tAhora('Revise la fecha');
+  if (edad < 0 || edad > 120) return tAhora('Revisa la fecha');
   return null;
 };
 
@@ -198,7 +198,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
     setErrorFoto('');
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permiso.granted) {
-      setErrorFoto(t('No dio permiso para abrir la galería.'));
+      setErrorFoto(t('No diste permiso para abrir la galería.'));
       return;
     }
 
@@ -277,7 +277,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
    */
   const conGoogle = async () => {
     if (!aceptaTerminos) {
-      setErrorTerminos(t('Marque primero que acepta los términos y la política de privacidad'));
+      setErrorTerminos(t('Marca primero que aceptas los términos y la política de privacidad'));
       return;
     }
 
@@ -472,7 +472,7 @@ const Register = ({ irALogin, alPedirCodigo }) => {
             ) : (
               <>
                 <Camera size={28} color={COLORES.iconoCampo} />
-                <Text style={estilos.textoFoto}>{t('Toque para elegir su foto')}</Text>
+                <Text style={estilos.textoFoto}>{t('Toca para elegir tu foto')}</Text>
                 <Text style={estilos.ayudaFoto}>{t('JPG o PNG, hasta 8 MB')}</Text>
               </>
             )}
