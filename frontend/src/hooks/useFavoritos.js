@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { tAhora } from '../utils/idioma';
 import { ICONOS } from '../utils/iconosAviso';
 import { clientService } from '../api/clientService';
 import { useAuth } from './useAuth';
@@ -48,9 +49,9 @@ export const useFavoritos = () => {
 
   const esFavorito = useCallback((productoId) => ids.includes(String(productoId)), [ids]);
 
-  const alternar = async (productoId, nombre = 'El producto') => {
+  const alternar = async (productoId, nombre = tAhora('El producto')) => {
     if (!esCliente) {
-      toast('Inicia sesión para guardar tus favoritos');
+      toast(tAhora('Inicia sesión para guardar tus favoritos'));
       // Se le devuelve a la tienda después de entrar: estaba viendo un
       // producto, no buscando su cuenta.
       navigate('/iniciar-sesion?volver=/');
@@ -65,7 +66,7 @@ export const useFavoritos = () => {
 
     try {
       await clientService.toggleFavorite(user.id, id);
-      toast.success(estaba ? `${nombre} salió de favoritos` : `${nombre} guardado en favoritos`, {
+      toast.success(estaba ? tAhora('{nombre} salió de favoritos', { nombre }) : tAhora('{nombre} guardado en favoritos', { nombre }), {
         id: 'favorito',
         icon: estaba ? ICONOS.sinFavorito : ICONOS.favorito,
       });
@@ -74,7 +75,7 @@ export const useFavoritos = () => {
     } catch {
       // Se deshace: mejor un corazón que vuelve atrás que una mentira guardada.
       setIds((prev) => (estaba ? [...prev, id] : prev.filter((x) => x !== id)));
-      toast.error('No se pudo guardar el favorito');
+      toast.error(tAhora('No se pudo guardar el favorito'));
     }
   };
 

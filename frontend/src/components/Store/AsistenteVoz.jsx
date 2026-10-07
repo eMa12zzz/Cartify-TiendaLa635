@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Mic, X, ShoppingCart, Volume2, VolumeX, Minimize2, QrCode, UserCheck, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ import { orderService } from '../../api/orderService';
 import { primerNombre } from '../../utils/nombreTiqui';
 import MascotaAsistente from './MascotaAsistente';
 import { foto, ANCHO } from '../../utils/fotos';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * AsistenteVoz — pantalla grande (kiosco) del asistente por voz.
@@ -37,12 +38,6 @@ const FONDO =
  * ya se nota en la tienda.
  */
 const ORBE = 'radial-gradient(circle at 34% 28%, #29a3e6, #003049 68%)';
-
-/*
- * Lo que dice la mascota antes de que le hablen. Va escrito y NO hablado: al
- * abrir, el asistente espera a que la persona toque (ver más abajo).
- */
-const SALUDO = '¡Hola! Soy Tiqui. Toca el botón y dime qué necesitas. Por ejemplo: “quiero dos manzanas y una leche” o “¿qué ofertas hay?”.';
 
 /*
  * La cara que pone la mascota según lo último que dijo.
@@ -81,6 +76,7 @@ const AsistenteVoz = ({
   const reduce = useReducedMotion();
   const [minimizado, setMinimizado] = useState(false); // asistente en segundo plano
   const { esCliente, user } = useAuth();
+  const { t } = useIdioma();
 
   /*
    * El nombre, para que Tiqui lo use de vez en cuando (ver nombreTiqui.js).
@@ -89,7 +85,15 @@ const AsistenteVoz = ({
    */
   const nombreCliente = esCliente ? primerNombre(user?.fullName) : '';
   const [saludaConNombre] = useState(() => Math.random() < 0.5);
-  const saludo = saludaConNombre && nombreCliente ? SALUDO.replace('¡Hola!', `¡Hola, ${nombreCliente}!`) : SALUDO;
+  /*
+   * Lo que dice la mascota antes de que le hablen. Va escrito y NO hablado: al
+   * abrir, el asistente espera a que la persona toque (ver más abajo). En
+   * inglés avisa que por ahora entiende y habla español, y deja los ejemplos
+   * en español: son justo lo que hay que decirle.
+   */
+  const saludo = saludaConNombre && nombreCliente
+    ? t('¡Hola, {nombre}! Soy Tiqui. Toca el botón y dime qué necesitas. Por ejemplo: “quiero dos manzanas y una leche” o “¿qué ofertas hay?”.', { nombre: nombreCliente })
+    : t('¡Hola! Soy Tiqui. Toca el botón y dime qué necesitas. Por ejemplo: “quiero dos manzanas y una leche” o “¿qué ofertas hay?”.');
 
   /*
    * "Ya confirmó, falta abrir el pago". Se espera a que Tiqui termine la
@@ -136,7 +140,7 @@ const AsistenteVoz = ({
     alConfirmarCompra: () => cerrarCompra(),
   });
 
-  hablarRef.current = hablar;
+  useLayoutEffect(() => { hablarRef.current = hablar; });
 
   /*
    * Abre el pago apenas Tiqui termina de decir que lo va a abrir (o de una, si
@@ -252,10 +256,10 @@ const AsistenteVoz = ({
    * se colgó. Decirlo convierte la espera en algo que está pasando.
    */
   const estadoTexto = pensando
-    ? 'Pensando…'
-    : hablando ? 'Toca para interrumpirme'
-    : !activo ? 'Toca para hablarme'
-    : escuchando ? 'Te escucho…' : 'Un momento…';
+    ? t('Pensando…')
+    : hablando ? t('Toca para interrumpirme')
+    : !activo ? t('Toca para hablarme')
+    : escuchando ? t('Te escucho…') : t('Un momento…');
 
   // Qué hace la mascota, con el mismo orden que el texto de arriba.
   const estadoMascota = pensando ? 'pensando'
@@ -279,7 +283,7 @@ const AsistenteVoz = ({
    * aguantarse la frase completa aunque uno ya sepa qué decir.
    */
   const alTocar = hablando ? interrumpir : activo ? detener : iniciar;
-  const etiquetaToque = hablando ? 'Interrumpir y hablar' : activo ? 'Detener' : 'Empezar a hablar';
+  const etiquetaToque = hablando ? t('Interrumpir y hablar') : activo ? t('Detener') : t('Empezar a hablar');
 
   const brilloOrbe = escuchando
     ? 'inset 0 0 0 1px rgba(255,255,255,0.35), 0 0 0 10px rgba(0,154,235,0.18), 0 24px 90px 0 rgba(0,154,235,0.75)'
@@ -290,7 +294,7 @@ const AsistenteVoz = ({
     return (
       <motion.button
         onClick={() => setMinimizado(false)}
-        aria-label="Volver a la pantalla del asistente"
+        aria-label={t('Volver a la pantalla del asistente')}
         className="fixed bottom-6 right-6 flex items-center gap-3 pl-3 pr-5 py-2.5 rounded-full text-white"
         style={{
           background: 'rgba(6, 18, 26, 0.92)',
@@ -307,7 +311,7 @@ const AsistenteVoz = ({
           <MascotaAsistente compacta estado={estadoMascota} animo={animo} latido={transcripcion} vozReal={sonandoTiqui} className="h-11 w-auto" />
         </span>
         <span className="text-sm font-semibold whitespace-nowrap">
-          Tiqui {escuchando ? 'te escucha…' : 'está contigo'}
+          {escuchando ? t('Tiqui te escucha…') : t('Tiqui está contigo')}
         </span>
         {items > 0 && (
           <span className="min-w-[24px] h-6 px-1.5 rounded-full text-xs font-bold flex items-center justify-center" style={{ backgroundColor: '#8ecbe8', color: '#001a29' }}>
@@ -330,30 +334,31 @@ const AsistenteVoz = ({
       {/* Silenciar / activar la voz */}
       <button
         onClick={toggleMute}
-        aria-label={muteado ? 'Activar voz' : 'Silenciar voz'}
+        aria-label={muteado ? t('Activar voz') : t('Silenciar voz')}
         className="absolute top-5 left-5 z-[60] flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm md:text-base transition-colors hover:bg-white/10"
         style={VIDRIO}
       >
         {muteado ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-        {muteado ? 'Sin voz' : 'Con voz'}
+        {muteado ? t('Sin voz') : t('Con voz')}
       </button>
 
       {/* Segundo plano + Salir */}
       <div className="absolute top-5 right-5 z-[60] flex items-center gap-2">
         <button
           onClick={() => setMinimizado(true)}
-          aria-label="Poner el asistente en segundo plano"
+          aria-label={t('Poner el asistente en segundo plano')}
           className="flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm md:text-base transition-colors hover:bg-white/10"
           style={VIDRIO}
         >
-          <Minimize2 className="w-5 h-5" /> <span className="hidden sm:inline">Segundo plano</span>
+          <Minimize2 className="w-5 h-5" /> <span className="hidden sm:inline">{t('Segundo plano')}</span>
         </button>
         <button
           onClick={onClose}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm md:text-base bg-white transition-transform active:scale-95"
           style={{ color: '#001a29' }}
         >
-          <X className="w-5 h-5" /> Salir
+          {/* "Cerrar" y no "Salir": en el menú, "Salir" es cerrar la sesión (Sign out). */}
+          <X className="w-5 h-5" /> {t('Cerrar')}
         </button>
       </div>
 
@@ -365,7 +370,7 @@ const AsistenteVoz = ({
           transition={{ duration: 0.22, ease: EASE_OUT }}
         >
           <p className="text-xs font-semibold tracking-[0.14em] uppercase" style={{ color: '#6fb3d9' }}>
-            Asistente de voz
+            {t('Asistente de voz')}
           </p>
 
           {/*
@@ -407,7 +412,7 @@ const AsistenteVoz = ({
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
                 {pensando
-                  ? <span className="masc-puntos" aria-label="Tiqui está pensando"><i /><i /><i /></span>
+                  ? <span className="masc-puntos" aria-label={t('Tiqui está pensando')}><i /><i /><i /></span>
                   : (ultimoBot?.texto || saludo)}
               </motion.div>
             </div>
@@ -465,7 +470,7 @@ const AsistenteVoz = ({
             {!vozTiqui && voces.length > 1 && (
               <label className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full text-sm cursor-pointer" style={VIDRIO}>
                 <Volume2 className="w-4 h-4" style={{ color: '#6fb3d9' }} />
-                <span className="sr-only">Voz del asistente</span>
+                <span className="sr-only">{t('Voz del asistente')}</span>
                 <select
                   value={vozActual}
                   onChange={(e) => cambiarVoz(e.target.value)}
@@ -483,7 +488,7 @@ const AsistenteVoz = ({
 
             {!soportado && (
               <p className="mt-3 text-sm" style={{ color: '#fca5a5' }}>
-                Tu navegador no reconoce la voz. Usa Chrome o Edge.
+                {t('Tu navegador no reconoce la voz. Usa Chrome o Edge.')}
               </p>
             )}
 
@@ -494,7 +499,7 @@ const AsistenteVoz = ({
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="flex items-center gap-2 text-sm md:text-base" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                  <ShoppingCart className="w-5 h-5" /> Tu carrito ({items})
+                  <ShoppingCart className="w-5 h-5" /> {t('Tu carrito ({n})', { n: items })}
                 </span>
                 <span className="text-xl font-bold tabular-nums" style={{ color: '#8ecbe8' }}>
                   ${totalCarrito.toFixed(2)}
@@ -503,7 +508,7 @@ const AsistenteVoz = ({
 
               {carrito.length === 0 ? (
                 <p className="text-sm py-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  Todavía no hay nada. Dime qué quieres llevar.
+                  {t('Todavía no hay nada. Dime qué quieres llevar.')}
                 </p>
               ) : (
                 <div ref={carritoRef} className="flex flex-col max-h-48 overflow-y-auto">
@@ -536,7 +541,7 @@ const AsistenteVoz = ({
               )}
 
               <p className="text-xs mt-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                Di <span className="text-white font-semibold">“comprar”</span> cuando termines — alguien de la tienda te ayuda a pagar.
+                {t('Di')} <span className="text-white font-semibold">“comprar”</span> {t('cuando termines — alguien de la tienda te ayuda a pagar.')}
               </p>
             </div>
           </div>
@@ -563,22 +568,22 @@ const AsistenteVoz = ({
             <div className="text-left">
               <div className="text-sm font-bold">{kiosco.cliente.nombre}</div>
               <div className="text-xs opacity-80">
-                Tus puntos se suman solos · {kiosco.cliente.puntos} pts
+                {t('Tus puntos se suman solos · {n} pts', { n: kiosco.cliente.puntos })}
               </div>
             </div>
             <button
               onClick={kiosco.desvincular}
               className="ml-1 text-xs underline opacity-80"
-              aria-label="Quitar la cuenta de esta compra"
+              aria-label={t('Quitar la cuenta de esta compra')}
             >
-              Quitar
+              {t('Quitar')}
             </button>
           </div>
         ) : kiosco.imagenQR ? (
           <div className="p-3 rounded-2xl bg-white shadow-lg text-center" style={{ width: 190 }}>
-            <img src={kiosco.imagenQR} alt={`Código ${kiosco.codigo}`} className="w-full rounded-lg" />
+            <img src={kiosco.imagenQR} alt={t('Código {codigo}', { codigo: kiosco.codigo })} className="w-full rounded-lg" />
             <p className="text-[11px] mt-1.5 font-semibold" style={{ color: '#1C1614' }}>
-              Escanea para sumar tus puntos
+              {t('Escanea para sumar tus puntos')}
             </p>
             {/* El código escrito es el plan B: si la cámara no agarra, se
                 puede teclear en el teléfono. */}
@@ -594,7 +599,7 @@ const AsistenteVoz = ({
             style={VIDRIO}
           >
             <QrCode className="w-5 h-5" style={{ color: '#6fb3d9' }} />
-            {kiosco.abriendo ? 'Generando…' : '¿Tienes cuenta? Suma tus puntos'}
+            {kiosco.abriendo ? t('Generando…') : t('¿Tienes cuenta? Suma tus puntos')}
           </button>
         )}
       </div>

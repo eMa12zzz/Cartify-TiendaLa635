@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, Package, Trash2 } from 'lucide-react';
+import { Package, Trash2 } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useFavoritosCtx } from '../../context/FavoritosContext';
-import { CargandoMascota } from '../../components/UI/Mascota';
+import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
+import { useIdioma } from '../../hooks/useIdioma';
 import { foto, ANCHO } from '../../utils/fotos';
 
 /*
@@ -20,28 +21,29 @@ const Favoritos = () => {
   const c = palette.colors;
   const navigate = useNavigate();
   const { productos, cargando, alternar } = useFavoritosCtx();
+  const { t } = useIdioma();
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Mis favoritos</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>{t('Mis favoritos')}</h1>
 
       {cargando ? (
-        <CargandoMascota texto="Cargando tus favoritos…" />
+        <CargandoMascota texto={t('Cargando tus favoritos…')} />
       ) : productos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Heart className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
+          <div className="mb-4"><Mascota pose="sin-favoritos" alto={120} /></div>
           <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>
-            Todavía no tienes favoritos
+            {t('Todavía no tienes favoritos')}
           </p>
           <p className="text-sm mb-5" style={{ color: c.textSecondary }}>
-            Toque el corazón de un producto en la tienda y aparecerá aquí.
+            {t('Toca el corazón de un producto en la tienda y aparecerá aquí.')}
           </p>
           <button
             onClick={() => navigate('/store')}
             className="press px-5 py-2 rounded-full text-sm font-semibold"
             style={{ backgroundColor: c.primary, color: c.buttonText }}
           >
-            Ir a la tienda
+            {t('Ir a la tienda')}
           </button>
         </div>
       ) : (
@@ -87,12 +89,12 @@ const Favoritos = () => {
                       className="press flex-1 py-2 rounded-full text-xs font-semibold"
                       style={{ backgroundColor: c.primary, color: c.buttonText }}
                     >
-                      Ver en la tienda
+                      {t('Ver en la tienda')}
                     </button>
                     <button
                       onClick={() => alternar(p._id, p.name)}
-                      title="Quitar de favoritos"
-                      aria-label={`Quitar ${p.name} de favoritos`}
+                      title={t('Quitar de favoritos')}
+                      aria-label={t('Quitar {nombre} de favoritos', { nombre: p.name })}
                       className="press p-2 rounded-full"
                       style={{ border: `1px solid ${c.cardBorder}`, color: 'var(--peligro)' }}
                     >
