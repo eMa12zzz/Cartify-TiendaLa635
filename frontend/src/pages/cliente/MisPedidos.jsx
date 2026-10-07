@@ -10,6 +10,7 @@ import SeguimientoCompacto from '../../components/Store/SeguimientoCompacto';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
 import { textoDevuelto, sellosDeCancelacion } from '../../utils/pasosPedido';
 import ModalCancelarMiPedido from '../../components/Cuenta/ModalCancelarMiPedido';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * MisPedidos — historial de pedidos del cliente (área "Mi Cuenta").
@@ -23,6 +24,7 @@ import ModalCancelarMiPedido from '../../components/Cuenta/ModalCancelarMiPedido
  * juzgar. Una vez enviada, se muestra de solo lectura.
  */
 const ValoracionServicio = ({ order, c }) => {
+  const { t } = useIdioma();
   const [sel, setSel] = useState(order.serviceRating?.rating || 0);
   const [hover, setHover] = useState(0);
   const [comentario, setComentario] = useState(order.serviceRating?.comment || '');
@@ -32,12 +34,12 @@ const ValoracionServicio = ({ order, c }) => {
   const mostradas = guardado ? sel : (hover || sel);
 
   const enviar = async () => {
-    if (!sel) { toast('Elegí de 1 a 5 estrellas'); return; }
+    if (!sel) { toast(t('Elige de 1 a 5 estrellas')); return; }
     setEnviando(true);
     try {
       await orderService.rateService(order._id, { rating: sel, comment: comentario });
       setGuardado(true);
-      toast.success('¡Gracias por valorar el servicio!');
+      toast.success(t('¡Gracias por valorar el servicio!'));
     } catch {
       // El aviso de error ya lo pinta el interceptor de axios.
     } finally {
@@ -48,7 +50,7 @@ const ValoracionServicio = ({ order, c }) => {
   return (
     <div style={{ borderTop: `1px solid ${c.cardBorder}`, paddingTop: 12, marginTop: 12 }}>
       <div className="text-xs font-bold mb-1.5" style={{ color: c.textPrimary }}>
-        {guardado ? 'Valoraste el servicio de entrega' : '¿Qué tal estuvo la entrega?'}
+        {guardado ? t('Valoraste el servicio de entrega') : t('¿Qué tal estuvo la entrega?')}
       </div>
 
       <div className="flex items-center gap-1 mb-2">
@@ -62,7 +64,7 @@ const ValoracionServicio = ({ order, c }) => {
               onMouseEnter={() => { if (!guardado) setHover(n); }}
               onMouseLeave={() => setHover(0)}
               onClick={() => setSel(n)}
-              aria-label={`${n} de 5`}
+              aria-label={t('{n} de 5', { n })}
               style={{ background: 'none', border: 'none', padding: 2, cursor: guardado ? 'default' : 'pointer' }}
             >
               <Star className="w-5 h-5" style={{ color: activa ? '#f5a623' : c.textMuted, fill: activa ? '#f5a623' : 'none' }} />
@@ -77,7 +79,7 @@ const ValoracionServicio = ({ order, c }) => {
             rows={2}
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
-            placeholder="¿Algo que contar del reparto? (opcional)"
+            placeholder={t('¿Algo que contar del reparto? (opcional)')}
             className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none mb-2"
             style={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }}
           />
@@ -88,7 +90,7 @@ const ValoracionServicio = ({ order, c }) => {
             className="px-5 py-2 rounded-full text-sm font-bold transition-colors disabled:opacity-60"
             style={{ backgroundColor: c.primary, color: c.buttonText }}
           >
-            {enviando ? 'Enviando…' : 'Enviar valoración'}
+            {enviando ? t('Enviando…') : t('Enviar valoración')}
           </button>
         </>
       ) : (
@@ -116,9 +118,9 @@ const estadoInfo = {
   cancelado:  { label: 'Cancelado',  color: 'var(--peligro)', bg: 'rgba(220,38,38,.12)' },
 };
 
-const formatFecha = (iso) => {
+const formatFecha = (iso, locale) => {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('es-SV', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 const MisPedidos = () => {
@@ -126,6 +128,7 @@ const MisPedidos = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { orders, loading } = useMyOrders();
+  const { t, locale } = useIdioma();
   /*
    * Cancelar un pedido por preparar. `cambios` guarda lo que devolvió el
    * servidor por id, y se pinta encima de la lista: así la tarjeta cambia al
@@ -136,16 +139,16 @@ const MisPedidos = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Mis pedidos</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>{t('Mis pedidos')}</h1>
 
       {loading ? (
-        <CargandoMascota texto="Cargando tus pedidos…" />
+        <CargandoMascota texto={t('Cargando tus pedidos…')} />
       ) : orders.length === 0 ? (
         // Estado vacío: una invitación, no una disculpa.
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="mb-4"><Mascota pose="vacio" alto={120} /></div>
-          <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>Aún no tienes pedidos</p>
-          <p className="text-sm" style={{ color: c.textSecondary }}>Cuando compres en la tienda, tus pedidos aparecerán aquí.</p>
+          <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>{t('Aún no tienes pedidos')}</p>
+          <p className="text-sm" style={{ color: c.textSecondary }}>{t('Cuando compres en la tienda, tus pedidos aparecerán aquí.')}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -162,15 +165,15 @@ const MisPedidos = () => {
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
                   <div>
                     <div className="text-sm font-bold" style={{ color: c.textPrimary }}>
-                      Pedido #{String(order._id).slice(-6).toUpperCase()}
+                      {t('Pedido #{numero}', { numero: String(order._id).slice(-6).toUpperCase() })}
                     </div>
-                    <div className="text-xs" style={{ color: c.textMuted }}>{formatFecha(order.createdAt)}</div>
+                    <div className="text-xs" style={{ color: c.textMuted }}>{formatFecha(order.createdAt, locale)}</div>
                   </div>
                   <span
                     className="text-xs font-semibold px-3 py-1 rounded-full"
                     style={{ color: estado.color, backgroundColor: estado.bg }}
                   >
-                    {estado.label}
+                    {t(estado.label)}
                   </span>
                 </div>
 
@@ -189,11 +192,11 @@ const MisPedidos = () => {
                     style={{ backgroundColor: 'rgba(220,38,38,.08)', color: c.textSecondary }}
                   >
                     {order.cancelledByClient && (
-                      <p className="font-semibold" style={{ color: c.textPrimary }}>Lo cancelaste.</p>
+                      <p className="font-semibold" style={{ color: c.textPrimary }}>{t('Lo cancelaste.')}</p>
                     )}
                     {order.cancelReason && (
                       <p>
-                        <span className="font-semibold" style={{ color: 'var(--peligro)' }}>Motivo: </span>
+                        <span className="font-semibold" style={{ color: 'var(--peligro)' }}>{t('Motivo:')} </span>
                         {order.cancelReason}
                       </p>
                     )}
@@ -224,7 +227,7 @@ const MisPedidos = () => {
                   {order.items?.map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-sm">
                       <span style={{ color: c.textSecondary }}>
-                        {item.amount}× {item.name || item.productId?.name || 'Producto'}
+                        {item.amount}× {item.name || item.productId?.name || t('Producto')}
                       </span>
                       <span style={{ color: c.textSecondary }}>
                         ${(item.price * item.amount).toFixed(2)}
@@ -241,11 +244,11 @@ const MisPedidos = () => {
                   {/* Un cancelado ya no da puntos: se retiraron al cancelarlo. */}
                   {order.pointsEarned > 0 && order.status !== 'cancelado' ? (
                     <span className="flex items-center gap-1 text-xs font-medium" style={{ color: c.accent }}>
-                      <Star className="w-3.5 h-3.5" /> +{order.pointsEarned} puntos
+                      <Star className="w-3.5 h-3.5" /> {t('+{n} puntos', { n: order.pointsEarned })}
                     </span>
                   ) : <span />}
                   <span className="text-base font-bold" style={{ color: c.textPrimary }}>
-                    Total: ${Number(order.total).toFixed(2)}
+                    {t('Total: {monto}', { monto: `$${Number(order.total).toFixed(2)}` })}
                   </span>
                 </div>
 
@@ -257,7 +260,7 @@ const MisPedidos = () => {
                   className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-full text-sm font-semibold transition-colors"
                   style={{ border: `1px solid ${c.cardBorder}`, color: c.primary, background: 'transparent' }}
                 >
-                  Ver estado del pedido <ChevronRight className="w-4 h-4" />
+                  {t('Ver estado del pedido')} <ChevronRight className="w-4 h-4" />
                 </button>
 
                 {/* Cancelar, solo mientras está por preparar. */}
@@ -268,7 +271,7 @@ const MisPedidos = () => {
                     className="mt-2 w-full py-2 rounded-full text-sm font-semibold transition-colors"
                     style={{ color: 'var(--peligro)', background: 'transparent' }}
                   >
-                    Cancelar pedido
+                    {t('Cancelar pedido')}
                   </button>
                 )}
 

@@ -8,6 +8,7 @@ import { useUbicacion, CENTRO_POR_DEFECTO } from '../hooks/useUbicacion';
 import { clientService } from '../api/clientService';
 import { useAjustesCtx } from '../context/AjustesContext';
 import Mapa from '../components/Mapa/Mapa';
+import { useIdioma } from '../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -213,6 +214,7 @@ const Bienvenida = () => {
   const [nombre, setNombre] = useState('');
   const [referencia, setReferencia] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const { t } = useIdioma();
 
   const primerNombre = (user?.fullName || '').split(' ')[0];
 
@@ -230,7 +232,7 @@ const Bienvenida = () => {
   const alGuardar = async () => {
     const limpia = direccion.trim();
     if (!limpia) {
-      toast('Escribe tu dirección o toca el mapa para marcarla');
+      toast(t('Escribe tu dirección o toca el mapa para marcarla'));
       return;
     }
 
@@ -245,6 +247,7 @@ const Bienvenida = () => {
       const previas = Array.isArray(cliente?.clientAddress) ? cliente.clientAddress : [];
       const nueva = {
         // Sin nombre puesto, se usa uno según cuántas lleve: "Dirección 2".
+        // Va en español, como todo lo que se guarda: lo lee también el repartidor.
         nombre: nombre.trim() || `Dirección ${previas.length + 1}`,
         direccion: limpia,
         referencia: referencia.trim(),
@@ -252,7 +255,7 @@ const Bienvenida = () => {
         lng: posicion?.lng ?? null,
       };
       await clientService.updateAddresses(user.id, [...previas, nueva]);
-      toast.success('Dirección guardada');
+      toast.success(t('Dirección guardada'));
       navigate(destinoAlSalir);
     } catch {
       // El interceptor ya avisa del error; aquí solo se deja seguir.
@@ -302,32 +305,32 @@ const Bienvenida = () => {
           <Marca>{[ajustes.nombreLinea1, ajustes.nombreLinea2].filter(Boolean).join(" ")}</Marca>
           <Titulo>
             {esAgregar
-              ? 'Nueva dirección'
-              : primerNombre ? `¡Hola, ${primerNombre}!` : '¡Hola!'}
+              ? t('Nueva dirección')
+              : primerNombre ? t('¡Hola, {nombre}!', { nombre: primerNombre }) : t('¡Hola!')}
           </Titulo>
           <Bajada>
             {esAgregar
-              ? 'Marca el punto en el mapa y póngale un nombre para reconocerla después.'
-              : 'Te damos la bienvenida. Dinos dónde te dejamos tus pedidos: toca el mapa para marcar el punto o usa tu ubicación.'}
+              ? t('Marca el punto en el mapa y ponle un nombre para reconocerla después.')
+              : t('Te damos la bienvenida. Dinos dónde te dejamos tus pedidos: toca el mapa para marcar el punto o usa tu ubicación.')}
           </Bajada>
         </Saludo>
 
         <Tarjeta>
-          <Etiqueta htmlFor="direccion">Tu dirección de entrega</Etiqueta>
+          <Etiqueta htmlFor="direccion">{t('Tu dirección de entrega')}</Etiqueta>
           <Campo>
             <MapPin size={17} color={BROWN} />
             <input
               id="direccion"
               value={direccion}
               onChange={(e) => setDireccion(e.target.value)}
-              placeholder={buscando ? 'Buscando la dirección…' : 'Ej. Calle Los Almendros #12, San Salvador'}
+              placeholder={buscando ? t('Buscando la dirección…') : t('Ej. Calle Los Almendros #12, San Salvador')}
             />
             {buscando && <Loader2 size={16} className="animate-spin" color={BROWN} />}
           </Campo>
 
           <Ubicarme type="button" onClick={localizarme} disabled={localizando}>
             {localizando ? <Loader2 size={15} className="animate-spin" /> : <LocateFixed size={15} />}
-            {localizando ? 'Ubicándolo…' : 'Usar mi ubicación'}
+            {localizando ? t('Ubicándote…') : t('Usar mi ubicación')}
           </Ubicarme>
 
           {/*
@@ -338,7 +341,7 @@ const Bienvenida = () => {
           */}
           <Dos>
             <div>
-              <Etiqueta htmlFor="nombre">Nombre de la dirección</Etiqueta>
+              <Etiqueta htmlFor="nombre">{t('Nombre de la dirección')}</Etiqueta>
               <Campo>
                 <Home size={16} color={BROWN} />
                 <input
@@ -346,12 +349,12 @@ const Bienvenida = () => {
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   maxLength={30}
-                  placeholder="Casa, Trabajo…"
+                  placeholder={t('Casa, Trabajo…')}
                 />
               </Campo>
             </div>
             <div>
-              <Etiqueta htmlFor="referencia">Punto de referencia</Etiqueta>
+              <Etiqueta htmlFor="referencia">{t('Punto de referencia')}</Etiqueta>
               <Campo>
                 <Signpost size={16} color={BROWN} />
                 <input
@@ -359,7 +362,7 @@ const Bienvenida = () => {
                   value={referencia}
                   onChange={(e) => setReferencia(e.target.value)}
                   maxLength={80}
-                  placeholder="Frente a la cancha, portón verde…"
+                  placeholder={t('Frente a la cancha, portón verde…')}
                 />
               </Campo>
             </div>
@@ -367,16 +370,16 @@ const Bienvenida = () => {
 
           <Fila>
             <Boton type="button" onClick={alOmitir}>
-              {esAgregar ? 'Cancelar' : 'Omitir por ahora'}
+              {esAgregar ? t('Cancelar') : t('Omitir por ahora')}
             </Boton>
             <Boton type="button" $primario onClick={alGuardar} disabled={guardando || buscando}>
-              {guardando ? 'Guardando…' : esAgregar ? 'Guardar dirección' : 'Guardar y entrar'}
+              {guardando ? t('Guardando…') : esAgregar ? t('Guardar dirección') : t('Guardar y entrar')}
             </Boton>
           </Fila>
 
           {!esAgregar && (
             <Ayuda>
-              Si la omite, puede agregarla después desde <b>Mi Cuenta → Direcciones</b>.
+              {t('Si la omites, puedes agregarla después desde')} <b>{t('Mi Cuenta')} → {t('Direcciones')}</b>.
             </Ayuda>
           )}
         </Tarjeta>

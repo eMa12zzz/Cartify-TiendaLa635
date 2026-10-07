@@ -6,6 +6,7 @@ import { useClientProfile } from '../../hooks/useClientProfile';
 import { formatearDui, formatearTelefono, LARGO_TELEFONO, LARGO_DUI } from '../../utils/mascaras';
 import { EDAD_MINIMA, esMayorDeEdad } from '../../utils/edad';
 import BotonCerrarSesion from '../../components/Cuenta/BotonCerrarSesion';
+import { useIdioma } from '../../hooks/useIdioma';
 
 // Fecha (Date/ISO) → valor de un <input type="date"> ("YYYY-MM-DD").
 const aInputDate = (valor) => {
@@ -22,6 +23,7 @@ const DetallesCuenta = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { profile, loading, saving, subiendoFoto, guardar, subirFoto } = useClientProfile();
+  const { t } = useIdioma();
 
   // La foto: el input real vive escondido y lo dispara el avatar.
   const fotoInputRef = useRef(null);
@@ -71,10 +73,10 @@ const DetallesCuenta = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Detalles de la Cuenta</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>{t('Detalles de la Cuenta')}</h1>
 
       {loading ? (
-        <CargandoMascota texto="Cargando tu perfil…" />
+        <CargandoMascota texto={t('Cargando tu perfil…')} />
       ) : (
         <div className="flex flex-col md:flex-row gap-8">
           {/* Avatar: se toca para subir/cambiar la foto. */}
@@ -90,12 +92,12 @@ const DetallesCuenta = () => {
               type="button"
               onClick={() => !subiendoFoto && fotoInputRef.current?.click()}
               disabled={subiendoFoto}
-              aria-label={profile?.image ? 'Cambiar la foto de perfil' : 'Subir una foto de perfil'}
+              aria-label={profile?.image ? t('Cambiar la foto de perfil') : t('Subir una foto de perfil')}
               className="group relative w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold transition-transform hover:scale-[1.02]"
               style={{ backgroundColor: c.primary, color: c.buttonText }}
             >
               {profile?.image ? (
-                <img src={profile.image} alt="Foto de perfil" className="w-full h-full object-cover" />
+                <img src={profile.image} alt={t('Foto de perfil')} className="w-full h-full object-cover" />
               ) : (
                 initials
               )}
@@ -109,7 +111,7 @@ const DetallesCuenta = () => {
               </span>
             </button>
             <p className="text-xs mt-2" style={{ color: c.textMuted }}>
-              {profile?.image ? 'Toca para cambiarla' : 'Toca para subir tu foto'}
+              {profile?.image ? t('Toca para cambiarla') : t('Toca para subir tu foto')}
             </p>
             {/* Sin DUI no se muestra el renglón: el DUI es opcional y una
                 etiqueta vacía solo hace ruido. */}
@@ -121,7 +123,7 @@ const DetallesCuenta = () => {
           {/* Formulario */}
           <form onSubmit={onSubmit} className="flex-1 max-w-lg space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold" style={labelStyle}>Nombre completo</label>
+              <label className="block text-sm font-bold" style={labelStyle}>{t('Nombre completo')}</label>
               <input
                 name="fullName" value={form.fullName} onChange={onChange}
                 className="w-full px-4 py-2.5 rounded-xl border outline-none transition-colors"
@@ -130,7 +132,7 @@ const DetallesCuenta = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold" style={labelStyle}>Nombre de usuario</label>
+              <label className="block text-sm font-bold" style={labelStyle}>{t('Nombre de usuario')}</label>
               <input
                 name="userName" value={form.userName} onChange={onChange}
                 className="w-full px-4 py-2.5 rounded-xl border outline-none transition-colors"
@@ -139,7 +141,7 @@ const DetallesCuenta = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold" style={labelStyle}>Correo electrónico</label>
+              <label className="block text-sm font-bold" style={labelStyle}>{t('Correo electrónico')}</label>
               <input
                 type="email" name="email" value={form.email} onChange={onChange}
                 className="w-full px-4 py-2.5 rounded-xl border outline-none transition-colors"
@@ -148,7 +150,7 @@ const DetallesCuenta = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold" style={labelStyle}>Teléfono</label>
+              <label className="block text-sm font-bold" style={labelStyle}>{t('Teléfono')}</label>
               {/* El guion lo pone la máscara y el campo topa en 8 dígitos: así
                   el teléfono queda guardado igual para todos. */}
               <input
@@ -162,7 +164,7 @@ const DetallesCuenta = () => {
 
             {/* Fecha de nacimiento: habilita los productos +18. */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold" style={labelStyle}>Fecha de nacimiento</label>
+              <label className="block text-sm font-bold" style={labelStyle}>{t('Fecha de nacimiento')}</label>
               <input
                 type="date" name="fechaNacimiento"
                 value={form.fechaNacimiento}
@@ -172,15 +174,14 @@ const DetallesCuenta = () => {
                 style={inputStyle}
               />
               <p className="text-xs" style={{ color: c.textMuted }}>
-                Con ella se habilitan los productos para mayores de {EDAD_MINIMA}. El documento se
-                revisa igual al entregar el pedido.
+                {t('Con ella se habilitan los productos para mayores de {edad}. El documento se revisa igual al entregar el pedido.', { edad: EDAD_MINIMA })}
               </p>
             </div>
 
             {/* DUI: solo se habilita si la fecha indica 18 años o más. */}
             <div className="space-y-1.5">
               <label className="block text-sm font-bold" style={labelStyle}>
-                DUI <span className="font-normal" style={{ color: c.textMuted }}>(opcional)</span>
+                DUI <span className="font-normal" style={{ color: c.textMuted }}>{t('(opcional)')}</span>
               </label>
               <input
                 type="text" name="dui" inputMode="numeric" maxLength={LARGO_DUI}
@@ -189,11 +190,11 @@ const DetallesCuenta = () => {
                 onChange={(e) => onChange({ target: { name: 'dui', value: formatearDui(e.target.value) } })}
                 className="w-full px-4 py-2.5 rounded-xl border outline-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 style={inputStyle}
-                placeholder={mayorDeEdad ? '00000000-0' : 'Se habilita al indicar 18 años o más'}
+                placeholder={mayorDeEdad ? '00000000-0' : t('Se habilita al indicar {edad} años o más', { edad: EDAD_MINIMA })}
               />
               {!mayorDeEdad && (
                 <p className="text-xs" style={{ color: c.textMuted }}>
-                  El DUI se habilita cuando tu fecha de nacimiento indica {EDAD_MINIMA} años o más.
+                  {t('El DUI se habilita cuando tu fecha de nacimiento indica {edad} años o más.', { edad: EDAD_MINIMA })}
                 </p>
               )}
             </div>
@@ -205,7 +206,7 @@ const DetallesCuenta = () => {
                 className="px-8 py-2.5 rounded-full font-bold shadow-sm transition-colors disabled:opacity-60"
                 style={{ backgroundColor: c.primary, color: c.buttonText }}
               >
-                {saving ? 'Guardando…' : 'Guardar cambios'}
+                {saving ? t('Guardando…') : t('Guardar cambios')}
               </button>
               <BotonCerrarSesion />
             </div>

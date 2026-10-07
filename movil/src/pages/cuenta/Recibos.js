@@ -23,8 +23,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { CargandoMascota } from '../../components/Tiqui/Mascota';
-import { CircleCheck, Receipt } from 'lucide-react-native';
+import Mascota, { CargandoMascota } from '../../components/Tiqui/Mascota';
+import { CircleCheck } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useAuth } from '../../hooks/useAuth';
@@ -108,7 +108,6 @@ const Recibos = ({ alVolver }) => {
   const aireAbajo = useAireBarraFlotante();
   const { user } = useAuth();
   const { colores } = useTema();
-  const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
 
   const [recibos, setRecibos] = useState([]);
@@ -156,7 +155,7 @@ const Recibos = ({ alVolver }) => {
         </View>
       ) : recibos.length === 0 ? (
         <View style={estilos.centro}>
-          <Receipt size={38} color={COLORES.marcador} strokeWidth={1.5} />
+          <Mascota pose="sin-recibos" alto={120} />
           <Text style={estilos.vacioTitulo}>{t('Sin recibos todavía')}</Text>
           <Text style={estilos.vacioTexto}>
             {t('Cuando te entreguen un pedido, tu recibo va a aparecer aquí.')}

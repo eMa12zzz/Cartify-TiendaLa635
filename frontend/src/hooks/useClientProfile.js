@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { tAhora } from '../utils/idioma';
 import { clientService } from '../api/clientService';
 import { useAuth } from './useAuth';
 
@@ -41,7 +42,7 @@ export const useClientProfile = () => {
       setSaving(true);
       const res = await clientService.updateProfile(user.id, campos);
       setProfile(res.client || { ...profile, ...campos });
-      toast.success('Datos actualizados');
+      toast.success(tAhora('Datos actualizados'));
     } catch (error) {
       console.error('Error guardando perfil:', error);
     } finally {
@@ -59,11 +60,11 @@ export const useClientProfile = () => {
     if (!esCliente || !profile || !archivo) return;
 
     if (!archivo.type?.startsWith('image/')) {
-      toast.error('Ese archivo no es una imagen. Usa JPG, PNG o WEBP.');
+      toast.error(tAhora('Ese archivo no es una imagen. Usa JPG, PNG o WEBP.'));
       return;
     }
     if (archivo.size > 8 * 1024 * 1024) {
-      toast.error('La imagen pesa demasiado. Usa una de menos de 8 MB.');
+      toast.error(tAhora('La imagen pesa demasiado. Usa una de menos de 8 MB.'));
       return;
     }
 
@@ -80,9 +81,9 @@ export const useClientProfile = () => {
       if (res.client) setProfile(res.client);
       // El avatar del encabezado del cliente lee de la sesión: se refresca aquí.
       actualizarUsuario({ image: res.client?.image });
-      toast.success('Foto de perfil actualizada');
+      toast.success(tAhora('Foto de perfil actualizada'));
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'No se pudo subir la foto');
+      toast.error(tAhora(error?.response?.data?.message || 'No se pudo subir la foto'));
     } finally {
       setSubiendoFoto(false);
     }

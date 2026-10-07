@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { CreditCard, Wallet, Trash2, Plus, Gift, Lock, CircleAlert } from 'lucide-react';
+import { useIdioma } from '../../hooks/useIdioma';
 import { useTheme } from '../../hooks/useClientTheme';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
 import { useSaldo } from '../../hooks/useSaldo';
 import MarcaTarjeta from '../../components/Cuenta/MarcaTarjeta';
 import VistaTarjeta from '../../components/Cuenta/VistaTarjeta';
-import { CargandoMascota } from '../../components/UI/Mascota';
+import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
 import {
   NOMBRE_MARCA,
   detectarMarca,
@@ -36,9 +37,13 @@ import {
  * formulario van directo sobre el fondo, separados con aire y líneas finas.
  */
 
-// "Visa crédito", "Mastercard débito"... o "Tarjeta" para las guardadas antes de conocer la marca.
-const nombreMarcaTipo = (m) =>
-  `${NOMBRE_MARCA[m.brand] && m.brand !== 'otra' ? NOMBRE_MARCA[m.brand] : 'Tarjeta'}${m.cardType ? ` ${m.cardType === 'debito' ? 'débito' : 'crédito'}` : ''}`;
+/*
+ * "Visa crédito", "Mastercard débito"... o "Tarjeta" para las guardadas antes de
+ * conocer la marca. Sin `t`, en español: así es como se guarda el nombre que
+ * se pone solo, y con `t` se muestra en el idioma elegido.
+ */
+const nombreMarcaTipo = (m, t = (x) => x) =>
+  `${NOMBRE_MARCA[m.brand] && m.brand !== 'otra' ? NOMBRE_MARCA[m.brand] : t('Tarjeta')}${m.cardType ? ` ${m.cardType === 'debito' ? t('débito') : t('crédito')}` : ''}`;
 
 const FORM_VACIO = { tipo: 'credito', numero: '', titular: '', vencimiento: '', alias: '' };
 
@@ -58,6 +63,7 @@ const MetodoPago = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const reducir = useReducedMotion();
+  const { t } = useIdioma();
   const { methods, loading, saving, agregar, eliminar } = usePaymentMethods();
 
   // Saldo digital cargado con tarjetas de regalo.
@@ -91,15 +97,15 @@ const MetodoPago = () => {
 
   const errores = {
     numero: !tocado.numero || !digitos ? ''
-      : !numeroCompleto ? `Faltan dígitos: ${NOMBRE_MARCA[marca] === 'Tarjeta' ? 'la tarjeta' : NOMBRE_MARCA[marca]} lleva ${largoDe(marca)}.`
-      : !numeroValido ? 'Revisa el número: no corresponde a una tarjeta válida.'
-      : duplicada ? 'Esa tarjeta ya está guardada.'
+      : !numeroCompleto ? t('Faltan dígitos: {marca} lleva {n}.', { marca: marca === 'otra' ? t('la tarjeta') : NOMBRE_MARCA[marca], n: largoDe(marca) })
+      : !numeroValido ? t('Revisa el número: no corresponde a una tarjeta válida.')
+      : duplicada ? t('Esa tarjeta ya está guardada.')
       : '',
     vencimiento: !tocado.vencimiento || !form.vencimiento ? ''
-      : !venc ? 'Usa el formato MM/AA, con un mes entre 01 y 12.'
-      : vencida ? 'Esta tarjeta ya venció.'
+      : !venc ? t('Usa el formato MM/AA, con un mes entre 01 y 12.')
+      : vencida ? t('Esta tarjeta ya venció.')
       : '',
-    titular: tocado.titular && !titularValido ? 'Escribe el nombre como aparece en la tarjeta.' : '',
+    titular: tocado.titular && !titularValido ? t('Escribe el nombre como aparece en la tarjeta.') : '',
   };
 
   const listo = numeroValido && venc && !vencida && titularValido && !duplicada && !saving;
@@ -130,6 +136,12 @@ const MetodoPago = () => {
     if (ok) cerrar();
   };
 
+  // Lo que se ve de cada método: su alias, o el nombre que se puso solo, ya traducido.
+  const aliasDe = (m) => {
+    if (!m.alias) return m.type === 'efectivo' ? t('Efectivo') : t('Tarjeta');
+    return m.alias === nombreMarcaTipo(m) ? nombreMarcaTipo(m, t) : m.alias;
+  };
+
   const campo = (error) => ({
     backgroundColor: c.cardBg,
     borderColor: error ? 'var(--peligro)' : c.cardBorder,
@@ -138,22 +150,22 @@ const MetodoPago = () => {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>Métodos de pago</h1>
+      <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>{t('Métodos de pago')}</h1>
       <p className="text-sm mt-1" style={{ color: c.textSecondary }}>
-        Tus tarjetas guardadas y el saldo de tus tarjetas de regalo.
+        {t('Tus tarjetas guardadas y el saldo de tus tarjetas de regalo.')}
       </p>
 
       {/* ── Saldo digital ── */}
       <section className="mt-8 pb-8 flex items-end justify-between gap-6 flex-wrap" style={{ borderBottom: `1px solid ${c.cardBorder}` }}>
         <div>
           <div className="flex items-center gap-2 text-sm font-medium" style={{ color: c.textSecondary }}>
-            <Gift className="w-4 h-4" /> Saldo disponible
+            <Gift className="w-4 h-4" /> {t('Saldo disponible')}
           </div>
           <div className="text-4xl font-extrabold tracking-tight mt-1 tabular-nums" style={{ color: c.primary }}>
             {cargandoSaldo ? '—' : `$${saldo.toFixed(2)}`}
           </div>
           <p className="text-xs mt-1" style={{ color: c.textMuted }}>
-            Puedes pagar tus compras con este saldo al finalizar el pedido.
+            {t('Puedes pagar tus compras con este saldo al finalizar el pedido.')}
           </p>
         </div>
 
@@ -163,11 +175,11 @@ const MetodoPago = () => {
               value={codigo}
               onChange={(e) => setCodigo(e.target.value.toUpperCase())}
               placeholder="635-XXXX-XXXX"
-              aria-label="Código de la tarjeta de regalo"
+              aria-label={t('Código de la tarjeta de regalo')}
               className="px-3 py-2.5 rounded-xl border outline-none font-mono tracking-wider w-48"
               style={campo()}
             />
-            <p className="text-xs mt-1" style={{ color: c.textMuted }}>Código de tu tarjeta de regalo</p>
+            <p className="text-xs mt-1" style={{ color: c.textMuted }}>{t('Código de tu tarjeta de regalo')}</p>
           </div>
           <button
             type="submit"
@@ -175,7 +187,7 @@ const MetodoPago = () => {
             className="press px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
             style={{ backgroundColor: c.primary }}
           >
-            {canjeando ? 'Canjeando…' : 'Canjear'}
+            {canjeando ? t('Canjeando…') : t('Canjear')}
           </button>
         </form>
       </section>
@@ -183,7 +195,7 @@ const MetodoPago = () => {
       {/* ── Tarjetas guardadas ── */}
       <section className="mt-8">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-bold" style={{ color: c.textPrimary }}>Tarjetas</h2>
+          <h2 className="text-lg font-bold" style={{ color: c.textPrimary }}>{t('Tarjetas')}</h2>
           {!agregando && (
             <button
               type="button"
@@ -191,18 +203,18 @@ const MetodoPago = () => {
               className="press inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
               style={{ backgroundColor: c.primary, color: c.buttonText }}
             >
-              <Plus className="w-4 h-4" /> Agregar tarjeta
+              <Plus className="w-4 h-4" /> {t('Agregar tarjeta')}
             </button>
           )}
         </div>
 
         {loading ? (
-          <CargandoMascota texto="Cargando tus métodos…" />
+          <CargandoMascota texto={t('Cargando tus métodos…')} />
         ) : methods.length === 0 && !agregando ? (
           <div className="flex flex-col items-center text-center py-12">
-            <CreditCard className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
-            <p className="text-sm font-semibold" style={{ color: c.textPrimary }}>Todavía no tienes tarjetas guardadas</p>
-            <p className="text-sm mt-1" style={{ color: c.textSecondary }}>Guárdala una vez y la tendrás a mano en tu próxima compra.</p>
+            <div className="mb-4"><Mascota pose="sin-tarjetas" alto={120} /></div>
+            <p className="text-sm font-semibold" style={{ color: c.textPrimary }}>{t('Todavía no tienes tarjetas guardadas')}</p>
+            <p className="text-sm mt-1" style={{ color: c.textSecondary }}>{t('Guárdala una vez y la tendrás a mano en tu próxima compra.')}</p>
           </div>
         ) : (
           <ul className="mt-4">
@@ -210,12 +222,12 @@ const MetodoPago = () => {
               const esEfectivo = m.type === 'efectivo';
               const vencidaGuardada = !esEfectivo && estaVencida(Number(m.expMonth), Number(m.expYear));
               const detalle = esEfectivo
-                ? 'Efectivo'
+                ? t('Efectivo')
                 : [
                   // El nombre de la marca solo si el alias no lo dice ya ("Mastercard débito" dos veces se lee como error).
-                  nombreMarcaTipo(m) !== m.alias && nombreMarcaTipo(m),
+                  nombreMarcaTipo(m) !== m.alias && nombreMarcaTipo(m, t),
                   `•••• ${m.last4 || '••••'}`,
-                  vencimientoEnTexto(m.expMonth, m.expYear) && `Vence ${vencimientoEnTexto(m.expMonth, m.expYear)}`,
+                  vencimientoEnTexto(m.expMonth, m.expYear) && t('Vence {fecha}', { fecha: vencimientoEnTexto(m.expMonth, m.expYear) }),
                 ].filter(Boolean).join(' · ');
 
               return (
@@ -229,13 +241,13 @@ const MetodoPago = () => {
                     : <MarcaTarjeta marca={m.brand || 'otra'} />}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold truncate" style={{ color: c.textPrimary }}>
-                      {m.alias || (esEfectivo ? 'Efectivo' : 'Tarjeta')}
+                      {aliasDe(m)}
                     </div>
                     <div className="text-xs mt-0.5 truncate" style={{ color: c.textMuted }}>{detalle}</div>
                   </div>
                   {vencidaGuardada && (
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ color: 'var(--peligro)', backgroundColor: 'var(--peligro-fondo)' }}>
-                      Vencida
+                      {t('Vencida')}
                     </span>
                   )}
                   {porQuitar === i ? (
@@ -247,10 +259,10 @@ const MetodoPago = () => {
                         className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-60"
                         style={{ backgroundColor: '#dc2626' }}
                       >
-                        Quitar
+                        {t('Quitar')}
                       </button>
                       <button type="button" onClick={() => setPorQuitar(null)} className="text-xs font-semibold px-2 py-1.5" style={{ color: c.textSecondary }}>
-                        Cancelar
+                        {t('Cancelar')}
                       </button>
                     </span>
                   ) : (
@@ -258,7 +270,7 @@ const MetodoPago = () => {
                       type="button"
                       onClick={() => setPorQuitar(i)}
                       disabled={saving}
-                      aria-label={`Quitar ${m.alias || 'método de pago'}`}
+                      aria-label={t('Quitar {nombre}', { nombre: m.alias ? aliasDe(m) : t('método de pago') })}
                       className="p-2 rounded-lg transition-colors disabled:opacity-60 hover:bg-[var(--peligro-fondo)]"
                       style={{ color: 'var(--peligro)' }}
                     >
@@ -289,15 +301,14 @@ const MetodoPago = () => {
                   <VistaTarjeta numero={digitos} titular={form.titular} vencimiento={form.vencimiento} tipo={form.tipo} />
                   <p className="flex items-start gap-2 text-xs max-w-[340px]" style={{ color: c.textMuted }}>
                     <Lock className="w-3.5 h-3.5 flex-none mt-0.5" />
-                    Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El número
-                    completo no sale de este formulario, y el código de seguridad se pide solo al pagar.
+                    {t('Solo guardamos la marca, los últimos 4 dígitos, el titular y el vencimiento. El número completo no sale de este formulario, y el código de seguridad se pide solo al pagar.')}
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-5">
                   {/* Crédito o débito */}
-                  <div role="radiogroup" aria-label="Tipo de tarjeta" className="inline-flex self-start p-1 rounded-full" style={{ backgroundColor: c.primaryLight }}>
-                    {[['credito', 'Crédito'], ['debito', 'Débito']].map(([valor, texto]) => {
+                  <div role="radiogroup" aria-label={t('Tipo de tarjeta')} className="inline-flex self-start p-1 rounded-full" style={{ backgroundColor: c.primaryLight }}>
+                    {[['credito', t('Crédito')], ['debito', t('Débito')]].map(([valor, texto]) => {
                       const elegido = form.tipo === valor;
                       return (
                         <button
@@ -320,7 +331,7 @@ const MetodoPago = () => {
                   </div>
 
                   <div>
-                    <Etiqueta htmlFor="tarjeta-numero" color={c.textPrimary}>Número de tarjeta</Etiqueta>
+                    <Etiqueta htmlFor="tarjeta-numero" color={c.textPrimary}>{t('Número de tarjeta')}</Etiqueta>
                     <div className="relative">
                       <input
                         id="tarjeta-numero"
@@ -347,12 +358,12 @@ const MetodoPago = () => {
                   </div>
 
                   <div>
-                    <Etiqueta htmlFor="tarjeta-titular" color={c.textPrimary}>Nombre del titular</Etiqueta>
+                    <Etiqueta htmlFor="tarjeta-titular" color={c.textPrimary}>{t('Nombre del titular')}</Etiqueta>
                     <input
                       id="tarjeta-titular"
                       name="cc-name"
                       autoComplete="cc-name"
-                      placeholder="Como aparece en la tarjeta"
+                      placeholder={t('Como aparece en la tarjeta')}
                       value={form.titular}
                       maxLength={40}
                       onChange={(e) => cambiar('titular', e.target.value)}
@@ -366,13 +377,13 @@ const MetodoPago = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                      <Etiqueta htmlFor="tarjeta-vencimiento" color={c.textPrimary}>Vencimiento</Etiqueta>
+                      <Etiqueta htmlFor="tarjeta-vencimiento" color={c.textPrimary}>{t('Vencimiento')}</Etiqueta>
                       <input
                         id="tarjeta-vencimiento"
                         name="cc-exp"
                         autoComplete="cc-exp"
                         inputMode="numeric"
-                        placeholder="MM/AA"
+                        placeholder={t('MM/AA')}
                         value={form.vencimiento}
                         onChange={(e) => cambiar('vencimiento', formatearVencimiento(e.target.value))}
                         onBlur={() => tocar('vencimiento')}
@@ -384,11 +395,11 @@ const MetodoPago = () => {
                     </div>
                     <div>
                       <Etiqueta htmlFor="tarjeta-alias" color={c.textPrimary}>
-                        Nombre para reconocerla <span className="font-normal" style={{ color: c.textMuted }}>(opcional)</span>
+                        {t('Nombre para reconocerla')} <span className="font-normal" style={{ color: c.textMuted }}>{t('(opcional)')}</span>
                       </Etiqueta>
                       <input
                         id="tarjeta-alias"
-                        placeholder={digitos ? `${NOMBRE_MARCA[marca]} ${form.tipo === 'debito' ? 'débito' : 'crédito'}` : 'Ej. Tarjeta del trabajo'}
+                        placeholder={digitos ? nombreMarcaTipo({ brand: marca, cardType: form.tipo }, t) : t('Ej. Tarjeta del trabajo')}
                         value={form.alias}
                         maxLength={40}
                         onChange={(e) => cambiar('alias', e.target.value)}
@@ -405,7 +416,7 @@ const MetodoPago = () => {
                       className="press inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-bold disabled:opacity-60"
                       style={{ backgroundColor: listo ? c.primary : c.cardBorder, color: listo ? c.buttonText : c.textMuted }}
                     >
-                      <Lock className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar tarjeta'}
+                      <Lock className="w-4 h-4" /> {saving ? t('Guardando…') : t('Guardar tarjeta')}
                     </button>
                     <button
                       type="button"
@@ -413,7 +424,7 @@ const MetodoPago = () => {
                       className="px-5 py-3 rounded-full text-sm font-semibold"
                       style={{ color: c.textSecondary }}
                     >
-                      Cancelar
+                      {t('Cancelar')}
                     </button>
                   </div>
                 </div>

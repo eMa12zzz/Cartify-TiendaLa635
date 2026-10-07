@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { tAhora } from '../utils/idioma';
 
 /*
  * ============================================================
@@ -60,7 +61,7 @@ export const useUbicacion = () => {
        * persona puede escribir la dirección a mano. Quedarse sin poder
        * continuar por un servicio ajeno sería peor.
        */
-      toast('No se pudo leer la dirección; puedes escribirla tú');
+      toast(tAhora('No se pudo leer la dirección; puedes escribirla tú'));
     } finally {
       setBuscando(false);
     }
@@ -72,7 +73,7 @@ export const useUbicacion = () => {
    */
   const localizarme = () => {
     if (!navigator.geolocation) {
-      toast.error('Tu navegador no permite ubicarte automáticamente');
+      toast.error(tAhora('Tu navegador no permite ubicarte automáticamente'));
       return;
     }
 
@@ -85,11 +86,11 @@ export const useUbicacion = () => {
       (error) => {
         setLocalizando(false);
         const mensajes = {
-          1: 'No nos diste permiso de ubicarte. Puedes mover el pin en el mapa.',
-          2: 'No pudimos ubicarte. Prueba moviendo el pin en el mapa.',
-          3: 'La ubicación tardó demasiado. Prueba moviendo el pin en el mapa.',
+          1: tAhora('No nos diste permiso de ubicarte. Puedes mover el pin en el mapa.'),
+          2: tAhora('No pudimos ubicarte. Prueba moviendo el pin en el mapa.'),
+          3: tAhora('La ubicación tardó demasiado. Prueba moviendo el pin en el mapa.'),
         };
-        toast(mensajes[error.code] || 'No pudimos ubicarlo', { duration: 5000 });
+        toast(mensajes[error.code] || tAhora('No pudimos ubicarte'), { duration: 5000 });
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );

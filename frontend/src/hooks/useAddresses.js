@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { tAhora } from '../utils/idioma';
 import { clientService } from '../api/clientService';
 import { useAuth } from './useAuth';
 
@@ -62,7 +63,7 @@ export const useAddresses = () => {
       setSaving(true);
       await clientService.updateAddresses(user.id, nuevas);
       setAddresses(nuevas);
-      toast.success('Direcciones actualizadas');
+      toast.success(tAhora('Direcciones actualizadas'));
     } catch (error) {
       console.error('Error guardando direcciones:', error);
     } finally {

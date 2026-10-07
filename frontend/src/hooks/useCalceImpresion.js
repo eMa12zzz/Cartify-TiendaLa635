@@ -13,8 +13,14 @@ import { evaluarCalce } from '../utils/calceImpresion';
 export const useCalceImpresion = (archivo, servicio) => {
   const [advertencia, setAdvertencia] = useState('');
 
-  useEffect(() => {
+  // Otro archivo u otro formato: el aviso anterior ya no aplica.
+  const [medido, setMedido] = useState({ archivo, servicio });
+  if (medido.archivo !== archivo || medido.servicio !== servicio) {
+    setMedido({ archivo, servicio });
     setAdvertencia('');
+  }
+
+  useEffect(() => {
     if (!archivo || !servicio?.widthCm || !servicio?.heightCm) return;
     if (!archivo.type?.startsWith('image/')) return;
 

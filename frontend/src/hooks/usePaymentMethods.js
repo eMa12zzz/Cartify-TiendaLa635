@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { tAhora } from '../utils/idioma';
 import { clientService } from '../api/clientService';
 import { useAuth } from './useAuth';
 
@@ -41,7 +42,7 @@ export const usePaymentMethods = () => {
       setSaving(true);
       await clientService.updatePaymentMethods(user.id, nuevos);
       setMethods(nuevos);
-      toast.success('Métodos de pago actualizados');
+      toast.success(tAhora('Métodos de pago actualizados'));
       return true;
     } catch (error) {
       console.error('Error guardando métodos de pago:', error);

@@ -1,4 +1,5 @@
 import { CreditCard } from 'lucide-react';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * El logo de la red de la tarjeta, dibujado aquí mismo (sin imágenes que
@@ -6,6 +7,7 @@ import { CreditCard } from 'lucide-react';
  * de la vista previa: ahí va en blanco.
  */
 const MarcaTarjeta = ({ marca = 'otra', sobreColor = false, alto = 30 }) => {
+  const { t } = useIdioma();
   const ancho = Math.round(alto * 1.5);
   const caja = {
     width: ancho,
@@ -73,7 +75,7 @@ const MarcaTarjeta = ({ marca = 'otra', sobreColor = false, alto = 30 }) => {
   }
 
   return (
-    <span aria-label="Tarjeta" style={{ ...caja, background: sobreColor ? 'transparent' : 'var(--marca-50)' }}>
+    <span aria-label={t('Tarjeta')} style={{ ...caja, background: sobreColor ? 'transparent' : 'var(--marca-50)' }}>
       <CreditCard size={alto * 0.6} color={sobreColor ? '#fff' : 'var(--marca-600)'} />
     </span>
   );

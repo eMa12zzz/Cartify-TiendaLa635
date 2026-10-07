@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Package,
@@ -110,7 +110,11 @@ export const useSidebarNav = () => {
    * cerró a mano seguiría cerrado al entrar a una de sus pantallas, y el menú
    * mentiría sobre dónde está uno parado.
    */
-  useEffect(() => { setForzados({}); }, [pathname]);
+  const [rutaVista, setRutaVista] = useState(pathname);
+  if (rutaVista !== pathname) {
+    setRutaVista(pathname);
+    setForzados({});
+  }
 
   const esActivo = (path) => pathname.includes(path);
   const tieneActivo = (grupo) => grupo.items.some((i) => esActivo(i.path));

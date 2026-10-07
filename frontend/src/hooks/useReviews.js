@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { tAhora } from '../utils/idioma';
 import { reviewService } from '../api/reviewService';
 import { useAuth } from './useAuth';
 
@@ -44,7 +45,7 @@ export const useReviews = (productoId) => {
 
   const guardar = async ({ rating, comment }) => {
     if (!esCliente) {
-      toast('Inicia sesión para dejar tu opinión');
+      toast(tAhora('Inicia sesión para dejar tu opinión'));
       return false;
     }
 
@@ -53,7 +54,7 @@ export const useReviews = (productoId) => {
       const r = await reviewService.guardar({
         productId: productoId, clientId: user.id, rating, comment,
       });
-      toast.success(r.message);
+      toast.success(tAhora(r.message));
       await cargar();
       return true;
     } catch {
@@ -68,7 +69,7 @@ export const useReviews = (productoId) => {
     if (!esCliente) return;
     try {
       await reviewService.eliminar(productoId, user.id);
-      toast.success('Se quitó tu valoración');
+      toast.success(tAhora('Se quitó tu valoración'));
       await cargar();
     } catch (error) {
       console.error(error);

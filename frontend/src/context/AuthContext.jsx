@@ -98,15 +98,19 @@ const mudarSesionVieja = () => {
   localStorage.removeItem('userData');
 };
 
-export const AuthProvider = ({ children }) => {
-  const { pathname } = useLocation();
-
-  const [sesiones, setSesiones] = useState({ personal: null, cliente: null });
-  const [loading, setLoading] = useState(true);
-
-  // 1- Al abrir la app se levantan los dos cajones de una vez, después de
-  //    mudar lo que hubiera guardado el sistema anterior.
-  useEffect(() => {
+/*
+ * Los dos cajones, leídos al crear el estado: así la sesión ya está en el
+ * PRIMER pintado. Antes se leían en un efecto y la app pintaba primero un
+ * cuadro vacío para no mostrar "no ha entrado" de pasada.
+ *
+ * La mudanza y la limpieza escriben en localStorage, así que van una sola vez
+ * por carga de la página (React puede llamar dos veces a esta función en
+ * desarrollo para comprobar que sea pura).
+ */
+let yaSeAcomodo = false;
+const levantarSesiones = () => {
+  if (!yaSeAcomodo) {
+    yaSeAcomodo = true;
     mudarSesionVieja();
     /*
      * El "Estoy trabajando" de antes ya no existe (ver ClienteLayout). Quien lo
@@ -114,9 +118,16 @@ export const AuthProvider = ({ children }) => {
      * atrapado en un modo que ya no tiene botón para apagarse.
      */
     try { localStorage.removeItem(LLAVE_MODO_TRABAJO); } catch { /* sin localStorage no hay nada que borrar */ }
-    setSesiones({ personal: leerCajon('personal'), cliente: leerCajon('cliente') });
-    setLoading(false);
-  }, []);
+  }
+  return { personal: leerCajon('personal'), cliente: leerCajon('cliente') };
+};
+
+export const AuthProvider = ({ children }) => {
+  const { pathname } = useLocation();
+
+  // 1- Al abrir la app se levantan los dos cajones de una vez, después de
+  //    mudar lo que hubiera guardado el sistema anterior.
+  const [sesiones, setSesiones] = useState(levantarSesiones);
 
   /*
    * 2- La sesión que manda AQUÍ, en la pantalla donde está parada la persona.
@@ -260,7 +271,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       logoutTodo,
       actualizarUsuario,
-      loading,
+      // Ya no hay espera: la sesión se lee antes del primer pintado.
+      loading: false,
       isAuthenticated: !!activa?.token,
       /*
        * Para el guardia de rutas: le deja distinguir "no ha entrado" de
@@ -270,14 +282,14 @@ export const AuthProvider = ({ children }) => {
       haySesionDePersonal: !!sesiones.personal,
       haySesionDeCliente: !!sesiones.cliente,
     }),
-    [activa, login, logout, logoutTodo, actualizarUsuario, loading, sesiones.personal, sesiones.cliente]
+    [activa, login, logout, logoutTodo, actualizarUsuario, sesiones.personal, sesiones.cliente]
   );
 
-  // 5- No se pintan los hijos hasta saber si hay sesión, para evitar el
-  //    parpadeo de "no ha entrado" seguido de la pantalla real.
+  // 5- La sesión ya se sabe desde el primer pintado (ver levantarSesiones):
+  //    no hay parpadeo de "no ha entrado" seguido de la pantalla real.
   return (
     <AuthContext.Provider value={valor}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

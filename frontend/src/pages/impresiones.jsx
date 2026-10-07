@@ -103,13 +103,9 @@ const Impresiones = () => {
    * imprime lo último mientras alguien arma su pedido—, se suelta la selección
    * en vez de dejarlo pagar algo que ya no se puede hacer.
    */
-  useEffect(() => {
-    if (servicio && !disponibilidadDeFormato(servicio).disponible) setServicioId(null);
-  }, [servicio, disponibilidadDeFormato]);
-
-  useEffect(() => {
-    if (!puedeColor && color) setColor(false);
-  }, [puedeColor, color]);
+  // Se corrige en el mismo pintado: cada condición deja de cumplirse apenas se aplica.
+  if (servicio && !disponibilidadDeFormato(servicio).disponible) setServicioId(null);
+  if (!puedeColor && color) setColor(false);
 
   // El editor usa las medidas reales de la plantilla elegida.
   const composer = usePrintComposer({
