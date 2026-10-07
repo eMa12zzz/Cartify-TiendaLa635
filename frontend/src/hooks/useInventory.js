@@ -29,7 +29,7 @@ export const useInventory = () => {
         suppliersRes,
         modulesRes
       ] = await Promise.all([
-        productService.getProducts(),
+        productService.getInventario(),
         productTypeService.getProductTypes(),
         brandService.getBrands(),
         supplierService.getSuppliers(),

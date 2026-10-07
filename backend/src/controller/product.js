@@ -2,11 +2,48 @@ import productModel from "../models/product.js";
 import { anotarProductoNuevo } from "../utils/avisosCliente.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
+import { CAMPOS_PUBLICOS_PRODUCTO } from "../utils/productoPublico.js";
 
 const productController = {};
 
-// SELECT
+/*
+ * SELECT — el catálogo de la tienda, público.
+ *
+ * Lo piden la tienda web, el kiosco y la app (también la que ya está
+ * instalada), así que va solo lo que ve un cliente; ver utils/productoPublico.js.
+ * De categoría, marca y pasillo, apenas el nombre: es lo único que se pinta.
+ */
 productController.getProduct = async (req, res) => {
+
+  try {
+
+    const products = await productModel.find({}, CAMPOS_PUBLICOS_PRODUCTO)
+      .populate("typeId", "type")
+      .populate("brandId", "name")
+      .populate("moduleId", "name")
+      .lean();
+
+    return res.status(200).json(products);
+
+  } catch (error) {
+
+    console.log("error " + error);
+
+    return res.status(500).json({
+      message: "Error interno del servidor"
+    });
+  }
+};
+
+/*
+ * SELECT — el inventario completo, para el panel.
+ *
+ * Lo que la tienda no enseña: costo, proveedor poblado, código de barras,
+ * vencimiento. Lo usan el inventario, el aviso de promo bajo costo y el PDF
+ * "Inventario completo" del dashboard. Este último lo descarga también el
+ * empleado, por eso la ruta pide personal y no solo admin.
+ */
+productController.getInventario = async (req, res) => {
 
   try {
 
@@ -36,15 +73,13 @@ productController.getProduct = async (req, res) => {
  * la vista previa al compartir un enlace (frontend/middleware.js), que no
  * tiene por qué saber el costo ni el proveedor.
  */
-const CAMPOS_PUBLICOS = "name image salePrice unidadVenta piezas description soloAdultos isActive typeId brandId";
-
 productController.getProductById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "Ese producto no existe" });
   }
   try {
-    const producto = await productModel.findById(id, CAMPOS_PUBLICOS)
+    const producto = await productModel.findById(id, CAMPOS_PUBLICOS_PRODUCTO)
       .populate("typeId", "type")
       .populate("brandId", "name")
       .lean();

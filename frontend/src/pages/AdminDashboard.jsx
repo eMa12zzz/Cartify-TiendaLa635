@@ -246,7 +246,7 @@ const AdminDashboard = () => {
   const handleDescargarInventario = async () => {
     setDescargandoInventario(true);
     try {
-      const productos = await productService.getProducts();
+      const productos = await productService.getInventario();
       const doc = new jsPDF({ orientation: 'landscape' });
       const { brownDark } = coloresDeMarca();
       pintarEncabezado(doc, brownDark, `Inventario — ${productos.length} productos`);
