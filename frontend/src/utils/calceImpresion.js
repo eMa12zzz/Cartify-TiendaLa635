@@ -1,3 +1,5 @@
+import { tAhora } from './idioma';
+
 /*
  * ============================================================
  * CALCE DE UNA IMAGEN CONTRA EL FORMATO — calceImpresion.js
@@ -39,14 +41,14 @@ export const evaluarCalce = ({ anchoPx, altoPx, widthCm, heightCm }) => {
   const diferencia = Math.abs(proporcionImagen - proporcionHoja) / proporcionHoja;
 
   if (diferencia > TOLERANCIA_PROPORCION) {
-    return `La proporción de tu imagen no coincide con la hoja de ${widthCm}×${heightCm} cm — puede salir recortada o con márgenes en blanco al imprimirse.`;
+    return tAhora('La proporción de tu imagen no coincide con la hoja de {ancho}×{alto} cm — puede salir recortada o con márgenes en blanco al imprimirse.', { ancho: widthCm, alto: heightCm });
   }
 
   const anchoMinimo = Math.round((widthCm / CM_POR_PULGADA) * DPI_MINIMO);
   const altoMinimo = Math.round((heightCm / CM_POR_PULGADA) * DPI_MINIMO);
 
   if (anchoPx < anchoMinimo || altoPx < altoMinimo) {
-    return `Tu imagen tiene poca resolución para imprimirse a ${widthCm}×${heightCm} cm — puede salir borrosa o pixelada.`;
+    return tAhora('Tu imagen tiene poca resolución para imprimirse a {ancho}×{alto} cm — puede salir borrosa o pixelada.', { ancho: widthCm, alto: heightCm });
   }
 
   return null;

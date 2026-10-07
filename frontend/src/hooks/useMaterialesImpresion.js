@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { printMaterialService } from '../api/printMaterialService';
 import { numeroEnRango } from '../utils/validaciones';
+import { tAhora } from '../utils/idioma';
 
 /*
  * ============================================================
@@ -93,7 +94,7 @@ export const useMaterialesImpresion = () => {
     if (!material) return { disponible: true, motivo: '', poco: false };
 
     if (!hayMaterial(material)) {
-      return { disponible: false, motivo: `Sin ${material.name.toLowerCase()}`, poco: false };
+      return { disponible: false, motivo: tAhora('Sin {material}', { material: material.name.toLowerCase() }), poco: false };
     }
     return { disponible: true, motivo: '', poco: vaQuedandoPoco(material) };
   }, [porId]);

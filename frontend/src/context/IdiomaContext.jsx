@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { IdiomaContexto } from '../hooks/useIdioma';
 import {
   LLAVE_IDIOMA, guardarIdioma, leerIdiomaGuardado, localeDe, traducir, esIdiomaValido,
 } from '../utils/idioma';
+import { areaDeRuta } from '../utils/sesion';
 
 /*
  * IdiomaProvider — el idioma elegido, para toda la tienda. Ver utils/idioma.js.
@@ -10,9 +12,19 @@ import {
  * Además de dar `t`, pone el idioma en <html lang>: el lector de pantalla lee
  * con la voz de ese idioma, y el navegador no ofrece "traducir esta página"
  * sobre una página que ya está en inglés.
+ *
+ * En el panel del personal todo sale en español aunque en ese navegador se
+ * haya elegido inglés para la tienda: hay piezas compartidas (el subidor de
+ * archivos, el campo de contraseña, la tarjeta de una promo) que ya hablan
+ * los dos idiomas, y en el panel tienen que hablar el del equipo. Es la misma
+ * frontera que usa tAhora (utils/idioma.js).
  */
 export const IdiomaProvider = ({ children }) => {
   const [idioma, setIdiomaEstado] = useState(leerIdiomaGuardado);
+  const { pathname } = useLocation();
+  const enPanel = areaDeRuta(pathname) === 'personal';
+  // El que se ve: el elegido en la tienda, español en el panel.
+  const visible = enPanel ? 'es' : idioma;
 
   const setIdioma = useCallback((nuevo) => {
     if (!esIdiomaValido(nuevo)) return;
@@ -21,8 +33,8 @@ export const IdiomaProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = idioma;
-  }, [idioma]);
+    document.documentElement.lang = visible;
+  }, [visible]);
 
   // Otra pestaña cambió el idioma: esta lo sigue.
   useEffect(() => {
@@ -33,8 +45,8 @@ export const IdiomaProvider = ({ children }) => {
     return () => window.removeEventListener('storage', alCambiar);
   }, []);
 
-  const t = useCallback((texto, vars) => traducir(idioma, texto, vars), [idioma]);
-  const valor = useMemo(() => ({ idioma, setIdioma, t, locale: localeDe(idioma) }), [idioma, setIdioma, t]);
+  const t = useCallback((texto, vars) => traducir(visible, texto, vars), [visible]);
+  const valor = useMemo(() => ({ idioma, setIdioma, t, locale: localeDe(visible) }), [idioma, setIdioma, t, visible]);
 
   return <IdiomaContexto.Provider value={valor}>{children}</IdiomaContexto.Provider>;
 };
