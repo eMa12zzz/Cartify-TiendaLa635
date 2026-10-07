@@ -61,6 +61,8 @@ const PromoCard = ({
   // letra oscura para que se lea (y al revés en el tema claro).
   const textoSobreAcento = colores.texto === '#FFFFFF' ? '#101820' : colores.texto;
 
+  // El icono sale de una lista fija (iconosPromo.js): se elige, no se crea al pintar.
+  // Por eso las dos líneas que lo dibujan callan el aviso de static-components.
   const Icono = iconoDePromo(icono);
   /*
    * La marca de agua se dibuja siempre que haya icono y no haya foto: son
@@ -148,6 +150,7 @@ const PromoCard = ({
             zIndex: 0,
           }}
         >
+          {/* eslint-disable-next-line react-hooks/static-components -- ver arriba, junto a Icono */}
           <Icono size="100%" strokeWidth={1.6} />
         </span>
       )}
@@ -192,6 +195,7 @@ const PromoCard = ({
                   }}
                 >
                   {/* El mismo icono, en chiquito: acompaña al ahorro */}
+                  {/* eslint-disable-next-line react-hooks/static-components -- ver arriba, junto a Icono */}
                   {Icono && <Icono size="1em" strokeWidth={2.6} />}
                   {etiqueta}
                 </span>

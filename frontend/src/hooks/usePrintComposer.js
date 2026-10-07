@@ -58,7 +58,7 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
 
   // Cada página es un arreglo de `celdasPorHoja` casillas: null (vacía) o
   // { id, src }. El índice EN el arreglo es la posición en la cuadrícula.
-  const celdaVacia = () => Array(celdasPorHoja).fill(null);
+  const celdaVacia = useCallback(() => Array(celdasPorHoja).fill(null), [celdasPorHoja]);
   const [paginas, setPaginas] = useState([{ id: 'pagina-0', celdas: celdaVacia() }]);
   const [paginaActiva, setPaginaActiva] = useState(0);
   const [seleccionado, setSeleccionado] = useState(null); // { pagina, celda } o null
@@ -76,9 +76,9 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
    * nuevo: la hoja 1 tenía una sola celda y la 2 en adelante tenían cuatro,
    * así que las fotos se repartían torcido y sobraban páginas.
    */
-  const celdasPorHojaAnterior = useRef(celdasPorHoja);
-  if (celdasPorHojaAnterior.current !== celdasPorHoja) {
-    celdasPorHojaAnterior.current = celdasPorHoja;
+  const [celdasPorHojaAnterior, setCeldasPorHojaAnterior] = useState(celdasPorHoja);
+  if (celdasPorHojaAnterior !== celdasPorHoja) {
+    setCeldasPorHojaAnterior(celdasPorHoja);
     setPaginas([{ id: 'pagina-0', celdas: celdaVacia() }]);
     setPaginaActiva(0);
     setSeleccionado(null);
@@ -133,7 +133,7 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
     // página nueva, quien sube las fotos quiere verla, no seguir mirando la
     // que ya se llenó.
     setPaginaActiva(paginaDestino.current);
-  }, [paginaActiva, celdasPorHoja]);
+  }, [paginaActiva, celdaVacia]);
 
   // Quita la foto de una celda (la celda queda vacía, no desaparece de la cuadrícula).
   const eliminar = useCallback((paginaIdx, celdaIdx) => {
@@ -164,7 +164,7 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
       }
       return copia;
     });
-  }, [paginas]);
+  }, [paginas, celdaVacia]);
 
   const agregarPagina = useCallback(() => {
     setPaginas((prev) => {
@@ -173,7 +173,7 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
     });
     setPaginaActiva(paginaDestino.current);
     setSeleccionado(null);
-  }, [celdasPorHoja]);
+  }, [celdaVacia]);
 
   const eliminarPagina = useCallback((indice) => {
     setPaginas((prev) => {
@@ -191,7 +191,7 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
    * celda se llena a lo "cubrir" (como object-fit: cover): se recorta lo que
    * sobre del lado más largo, nunca queda un borde en blanco.
    */
-  const renderPagina = async (pagina) => {
+  const renderPagina = useCallback(async (pagina) => {
     const pxPorCm = DPI / 2.54;
     let W = Math.round(hojaAnchoCm * pxPorCm);
     let H = Math.round(hojaAltoCm * pxPorCm);
@@ -244,7 +244,7 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
       ctx.restore();
     }
     return canvas;
-  };
+  }, [hojaAnchoCm, hojaAltoCm, widthCm, heightCm, columnas]);
 
   // Exporta el trabajo listo para mandar a imprimir.
   const exportar = useCallback(async () => {
@@ -261,7 +261,7 @@ export const usePrintComposer = ({ widthCm = 21.6, heightCm = 27.9 } = {}) => {
     });
     const blob = doc.output('blob');
     return new File([blob], 'impresion.pdf', { type: 'application/pdf' });
-  }, [paginas, hojaAnchoCm, hojaAltoCm, widthCm, heightCm, columnas, filas]);
+  }, [paginas, renderPagina, hojaAnchoCm, hojaAltoCm]);
 
   const totalItems = paginas.reduce((a, p) => a + p.celdas.filter(Boolean).length, 0);
 

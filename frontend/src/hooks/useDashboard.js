@@ -18,10 +18,17 @@ export const useDashboard = () => {
   // Nos sirve para no pedir la gráfica dos veces en el primer render.
   const yaCargoResumen = useRef(false);
 
-  const cargarResumen = useCallback(async () => {
+  /*
+   * El periodo elegido, para "recargar". El resumen se arma una sola vez, así
+   * que su función no depende del periodo; antes lo leía de cuando se abrió
+   * la pantalla y recargar con "Semana" puesta traía la gráfica del mes.
+   */
+  const periodoRef = useRef(periodo);
+  useEffect(() => { periodoRef.current = periodo; }, [periodo]);
+
+  const pedirResumen = useCallback(async () => {
     try {
-      setLoading(true);
-      const res = await dashboardService.getSummary(periodo);
+      const res = await dashboardService.getSummary(periodoRef.current);
       setData(res);
       setGrafica(res.grafica || []);
       yaCargoResumen.current = true;
@@ -30,9 +37,15 @@ export const useDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // solo al montar
+  }, []);
 
-  useEffect(() => { cargarResumen(); }, [cargarResumen]);
+  // Al entrar ya arranca "cargando": no hace falta prenderlo aquí.
+  useEffect(() => { pedirResumen(); }, [pedirResumen]);
+
+  const recargar = useCallback(() => {
+    setLoading(true);
+    return pedirResumen();
+  }, [pedirResumen]);
 
   // Cambio de periodo → solo la gráfica.
   useEffect(() => {
@@ -53,5 +66,5 @@ export const useDashboard = () => {
     return () => { cancelado = true; }; // si cambian de periodo rápido, ignoramos la respuesta vieja
   }, [periodo]);
 
-  return { data, grafica, loading, loadingGrafica, periodo, setPeriodo, recargar: cargarResumen };
+  return { data, grafica, loading, loadingGrafica, periodo, setPeriodo, recargar };
 };
