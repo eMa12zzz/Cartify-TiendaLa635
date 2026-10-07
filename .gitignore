@@ -28,3 +28,19 @@ Thumbs.db
 
 # Herramientas de asistencia (Impeccable): configuración local, no del proyecto.
 .impeccable/
+
+# Los videos (tráileres, presentación de Tiqui, tutoriales) y la defensa se
+# trabajan aparte y no van al repositorio. Ignorarlos aquí también los saca de
+# lo que sube EAS al compilar la app: EAS sube todo lo que git no ignora, y
+# eran casi 200 MB de video en cada compilación.
+/trailer/
+/trailer-tiqui/
+/video-tiqui/
+/videos-tutoriales/
+/Defensa-Cartify.pdf
+
+# Lo nativo de la app que se genera al compilar en esta computadora. Ya está
+# en movil/.gitignore, pero EAS solo hace caso al de la raíz: sin esto subía
+# casi 400 MB de compilaciones viejas que en la nube se vuelven a generar.
+/movil/android/
+/movil/ios/
