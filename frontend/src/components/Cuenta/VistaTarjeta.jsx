@@ -1,6 +1,7 @@
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Nfc } from 'lucide-react';
 import MarcaTarjeta from './MarcaTarjeta';
+import { useIdioma } from '../../hooks/useIdioma';
 import { detectarMarca, formatearNumero, largoDe, soloDigitos } from '../../utils/tarjetas';
 
 /*
@@ -33,6 +34,7 @@ const numeroParaMostrar = (numero) => {
 
 const VistaTarjeta = ({ numero = '', titular = '', vencimiento = '', tipo = '' }) => {
   const reducir = useReducedMotion();
+  const { t } = useIdioma();
   const marca = detectarMarca(numero);
 
   return (
@@ -72,7 +74,7 @@ const VistaTarjeta = ({ numero = '', titular = '', vencimiento = '', tipo = '' }
             <Nfc size={20} style={{ opacity: 0.85 }} />
           </div>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
-            {tipo === 'debito' ? 'Débito' : tipo === 'credito' ? 'Crédito' : ''}
+            {tipo === 'debito' ? t('Débito') : tipo === 'credito' ? t('Crédito') : ''}
           </span>
         </div>
 
@@ -82,15 +84,15 @@ const VistaTarjeta = ({ numero = '', titular = '', vencimiento = '', tipo = '' }
 
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.7 }}>Titular</div>
+            <div style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.7 }}>{t('Titular')}</div>
             <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {titular.trim() || 'Nombre en la tarjeta'}
+              {titular.trim() || t('Nombre en la tarjeta')}
             </div>
           </div>
           <div style={{ flex: 'none' }}>
-            <div style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.7 }}>Vence</div>
+            <div style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.7 }}>{t('Vence')}</div>
             <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'ui-monospace, "Cascadia Mono", Consolas, monospace' }}>
-              {vencimiento || 'MM/AA'}
+              {vencimiento || t('MM/AA')}
             </div>
           </div>
           <MarcaTarjeta marca={marca} sobreColor alto={34} />

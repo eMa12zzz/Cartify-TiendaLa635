@@ -92,7 +92,11 @@ export const usePromoCarousel = ({ autoplay = true, moduloId = null } = {}) => {
 
   // Al cambiar de pasillo se vuelve al principio del carrusel, para no quedar
   // apuntando a una tarjeta que en el pasillo nuevo ya no está.
-  useEffect(() => { setActiva(0); }, [moduloId]);
+  const [moduloVisto, setModuloVisto] = useState(moduloId);
+  if (moduloVisto !== moduloId) {
+    setModuloVisto(moduloId);
+    setActiva(0);
+  }
 
   const total = promos.length;
 

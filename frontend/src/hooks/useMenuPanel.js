@@ -55,13 +55,16 @@ export const useMenuPanel = () => {
    * donde ya no hay nada que bloquear, y al volver a angostarla el menú
    * aparecería abierto sin que nadie lo pidiera.
    */
-  useEffect(() => {
-    if (esEscritorio) setAbierto(false);
-  }, [esEscritorio]);
-
-  // Al navegar, el cajón se va. Si no, uno toca "Inventario" y se queda
-  // mirando el menú encima de lo que acaba de pedir.
-  useEffect(() => { setAbierto(false); }, [pathname]);
+  // Al navegar, el cajón también se va. Si no, uno toca "Inventario" y se
+  // queda mirando el menú encima de lo que acaba de pedir.
+  //
+  // Se ajusta en el mismo pintado y no en un efecto: con el efecto salía un
+  // cuadro con el cajón todavía abierto sobre la pantalla nueva.
+  const [visto, setVisto] = useState({ esEscritorio, pathname });
+  if (visto.esEscritorio !== esEscritorio || visto.pathname !== pathname) {
+    setVisto({ esEscritorio, pathname });
+    if (esEscritorio || visto.pathname !== pathname) setAbierto(false);
+  }
 
   /*
    * Escape. Solo se escucha mientras está abierto: dejar el listener puesto

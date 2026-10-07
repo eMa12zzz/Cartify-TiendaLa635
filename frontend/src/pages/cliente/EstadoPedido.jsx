@@ -14,6 +14,7 @@ import ValoracionPedido from '../../components/Store/ValoracionPedido';
 import CodigoEntrega from '../../components/Store/CodigoEntrega';
 import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
 import { foto, ANCHO } from '../../utils/fotos';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -48,9 +49,9 @@ const PAGO = {
 // Los pines y el encuadre del mapa se mudaron a MapaSeguimiento.jsx: estaban
 // copiados en tres pantallas y esta era una de las copias.
 
-const formatFechaLarga = (iso) => {
+const formatFechaLarga = (iso, locale) => {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('es-SV', {
+  return new Date(iso).toLocaleString(locale, {
     day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 };
@@ -60,6 +61,7 @@ const EstadoPedido = () => {
   const navigate = useNavigate();
   const { palette } = useTheme();
   const c = palette.colors;
+  const { t, locale } = useIdioma();
 
   const [pedido, setPedido] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -87,20 +89,20 @@ const EstadoPedido = () => {
   const seguimiento = useSeguimientoEnVivo(pedido?._id, !!enCurso);
 
   if (cargando) {
-    return <CargandoMascota texto="Cargando tu pedido…" />;
+    return <CargandoMascota texto={t('Cargando tu pedido…')} />;
   }
   if (error || !pedido) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="mb-4"><Mascota pose="buscando" alto={130} /></div>
-        <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>No encontramos ese pedido</p>
+        <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>{t('No encontramos ese pedido')}</p>
         <button
           type="button"
           onClick={() => navigate('/mi-cuenta/pedidos')}
           className="mt-3 px-5 py-2 rounded-full text-sm font-bold"
           style={{ backgroundColor: c.primary, color: c.buttonText }}
         >
-          Ver mis pedidos
+          {t('Ver mis pedidos')}
         </button>
       </div>
     );
@@ -137,7 +139,7 @@ const EstadoPedido = () => {
         className="inline-flex items-center gap-1 text-sm font-semibold mb-4"
         style={{ color: c.textSecondary }}
       >
-        <ChevronLeft className="w-4 h-4" /> Mis pedidos
+        <ChevronLeft className="w-4 h-4" /> {t('Mis pedidos')}
       </button>
 
       <div className="grid gap-5" style={{ gridTemplateColumns: 'minmax(0,1fr) 320px' }}>
@@ -156,14 +158,14 @@ const EstadoPedido = () => {
                 width: 7, height: 7, borderRadius: '50%',
                 background: cancelado ? '#dc2626' : '#16a34a',
               }} />
-              {cancelado ? 'Cancelado' : estado === 'entregado' ? 'Entregado' : 'En proceso'}
+              {cancelado ? t('Cancelado') : estado === 'entregado' ? t('Entregado') : t('En proceso')}
             </span>
 
             <h1 className="text-xl font-extrabold" style={{ color: c.textPrimary }}>
-              {cancelado ? 'Pedido cancelado' : estado === 'entregado' ? 'Pedido entregado' : 'Orden en curso'}
+              {cancelado ? t('Pedido cancelado') : estado === 'entregado' ? t('Pedido entregado') : t('Orden en curso')}
             </h1>
             <p className="text-sm mt-0.5" style={{ color: c.textMuted }}>
-              Pedido recibido el {formatFechaLarga(pedido.createdAt)}
+              {t('Pedido recibido el {fecha}', { fecha: formatFechaLarga(pedido.createdAt, locale) })}
             </p>
 
             {/*
@@ -177,10 +179,10 @@ const EstadoPedido = () => {
               </div>
               <div className="text-base font-bold text-center" style={{ color: c.textPrimary }}>
                 {cancelado
-                  ? (pedido.cancelledByClient ? 'Cancelaste este pedido' : 'Este pedido se canceló')
+                  ? (pedido.cancelledByClient ? t('Cancelaste este pedido') : t('Este pedido se canceló'))
                   : enCamino
-                    ? (seguimiento.yaCasi ? 'Ya casi llega a tu puerta' : seguimiento.espera)
-                    : (PASOS[pasoActual] || PASOS[0]).detalle}
+                    ? (seguimiento.yaCasi ? t('Ya casi llega a tu puerta') : seguimiento.espera)
+                    : t((PASOS[pasoActual] || PASOS[0]).detalle)}
               </div>
 
               {/*
@@ -192,12 +194,12 @@ const EstadoPedido = () => {
                 <div className="mt-3 max-w-md text-center text-sm" style={{ color: c.textSecondary }}>
                   {pedido.cancelReason && (
                     <p>
-                      <span className="font-semibold" style={{ color: c.textPrimary }}>Motivo: </span>
+                      <span className="font-semibold" style={{ color: c.textPrimary }}>{t('Motivo:')} </span>
                       {pedido.cancelReason}
                     </p>
                   )}
                   {textoDevuelto(pedido) && <p className="mt-1">{textoDevuelto(pedido)}</p>}
-                  <p className="mt-1" style={{ color: c.textMuted }}>Si tienes dudas, escríbenos y lo revisamos.</p>
+                  <p className="mt-1" style={{ color: c.textMuted }}>{t('Si tienes dudas, escríbenos y lo revisamos.')}</p>
                 </div>
               )}
             </div>
@@ -228,7 +230,7 @@ const EstadoPedido = () => {
                           className="text-xs text-center"
                           style={{ color: activo ? BROWN : c.textMuted, fontWeight: activo ? 600 : 400 }}
                         >
-                          {p.label}
+                          {t(p.label)}
                         </div>
                       </div>
                     );
@@ -263,8 +265,8 @@ const EstadoPedido = () => {
                 <div className="px-4 py-3 flex items-center gap-2 text-sm font-semibold"
                      style={{ color: seguimiento.yaCasi ? 'var(--exito-texto)' : 'var(--info-texto)', background: c.cardBg }}>
                   <Bike className="w-4 h-4" />
-                  {seguimiento.yaCasi ? 'Ya casi toca tu puerta' : seguimiento.espera}
-                  {seguimiento.distancia ? ` · a ${seguimiento.distancia}` : ''}
+                  {seguimiento.yaCasi ? t('Ya casi toca tu puerta') : seguimiento.espera}
+                  {seguimiento.distancia ? ` · ${t('a {distancia}', { distancia: seguimiento.distancia })}` : ''}
                 </div>
               </div>
             )}
@@ -273,8 +275,8 @@ const EstadoPedido = () => {
           {/* Productos */}
           <div style={tarjeta} className="p-6">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wide" style={{ color: c.textMuted }}>Productos</span>
-              <span className="text-xs font-bold uppercase tracking-wide" style={{ color: c.textMuted }}>N.º ítems</span>
+              <span className="text-xs font-bold uppercase tracking-wide" style={{ color: c.textMuted }}>{t('Productos')}</span>
+              <span className="text-xs font-bold uppercase tracking-wide" style={{ color: c.textMuted }}>{t('N.º ítems')}</span>
             </div>
             <div className="flex flex-col">
               {pedido.items?.map((item, i) => (
@@ -293,13 +295,13 @@ const EstadoPedido = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate" style={{ color: c.textPrimary }}>
-                      {item.name || item.productId?.name || 'Producto'}
+                      {item.name || item.productId?.name || t('Producto')}
                     </div>
                     <div className="text-sm font-bold" style={{ color: c.textPrimary }}>
                       ${(Number(item.price) * Number(item.amount)).toFixed(2)}
                     </div>
                   </div>
-                  <div className="text-sm" style={{ color: c.textMuted }}>{item.amount} u</div>
+                  <div className="text-sm" style={{ color: c.textMuted }}>{t('{n} u', { n: item.amount })}</div>
                 </div>
               ))}
             </div>
@@ -311,39 +313,39 @@ const EstadoPedido = () => {
 
         {/* ── Columna derecha: resumen ── */}
         <div style={tarjeta} className="p-6 h-fit">
-          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>Resumen del pedido</div>
+          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>{t('Resumen del pedido')}</div>
           <div className="flex items-center gap-1 text-xs font-semibold mb-4" style={{ color: c.primary }}>
             <Hash className="w-3.5 h-3.5" /> {numero}
           </div>
 
           <div className="flex justify-between text-sm mb-2" style={{ color: c.textSecondary }}>
-            <span>Productos</span><span style={{ color: c.textPrimary }}>${subtotal.toFixed(2)}</span>
+            <span>{t('Productos')}</span><span style={{ color: c.textPrimary }}>${subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm mb-2" style={{ color: c.textSecondary }}>
-            <span>Gastos de envío</span>
-            <span style={{ color: c.textPrimary }}>{envio > 0 ? `$${envio.toFixed(2)}` : 'Gratis'}</span>
+            <span>{t('Gastos de envío')}</span>
+            <span style={{ color: c.textPrimary }}>{envio > 0 ? `$${envio.toFixed(2)}` : t('Gratis')}</span>
           </div>
           {servicio > 0 && (
             <div className="flex justify-between text-sm mb-2" style={{ color: c.textSecondary }}>
-              <span>Tarifa de servicio</span>
+              <span>{t('Tarifa de servicio')}</span>
               <span style={{ color: c.textPrimary }}>${servicio.toFixed(2)}</span>
             </div>
           )}
           {descuento > 0 && (
             <div className="flex justify-between text-sm mb-2" style={{ color: c.textSecondary }}>
-              <span>Descuento por puntos</span><span style={{ color: 'var(--exito-vivo)' }}>−${descuento.toFixed(2)}</span>
+              <span>{t('Descuento por puntos')}</span><span style={{ color: 'var(--exito-vivo)' }}>−${descuento.toFixed(2)}</span>
             </div>
           )}
 
           <div className="flex justify-between items-center pt-3 mt-1" style={{ borderTop: `1px solid ${c.cardBorder}` }}>
-            <span className="text-base font-bold" style={{ color: c.textPrimary }}>Total</span>
+            <span className="text-base font-bold" style={{ color: c.textPrimary }}>{t('Total')}</span>
             <span className="text-lg font-extrabold" style={{ color: c.textPrimary }}>${total.toFixed(2)}</span>
           </div>
 
           {/* Método de pago real */}
           <div className="flex items-center gap-2 text-sm mt-4 pt-4" style={{ borderTop: `1px solid ${c.cardBorder}`, color: c.textPrimary }}>
             <infoPago.Icono className="w-5 h-5" style={{ color: c.primary }} />
-            {infoPago.label}
+            {t(infoPago.label)}
           </div>
 
           {/* Entrega real */}
@@ -352,10 +354,10 @@ const EstadoPedido = () => {
               ? <MapPin className="w-5 h-5 flex-shrink-0" style={{ color: c.primary }} />
               : <StoreFront className="w-5 h-5 flex-shrink-0" style={{ color: c.primary }} />}
             <div className="min-w-0">
-              <div className="font-semibold">{esDomicilio ? 'Dirección de entrega' : 'Retiro en el local'}</div>
+              <div className="font-semibold">{esDomicilio ? t('Dirección de entrega') : t('Retiro en el local')}</div>
               {esDomicilio && (
                 <div style={{ color: c.textSecondary }}>
-                  {pedido.deliveryAddress || 'Sin dirección'}
+                  {pedido.deliveryAddress || t('Sin dirección')}
                   {pedido.deliveryReference ? ` (${pedido.deliveryReference})` : ''}
                 </div>
               )}
@@ -368,7 +370,7 @@ const EstadoPedido = () => {
             className="w-full mt-5 py-3 rounded-xl font-bold"
             style={{ backgroundColor: c.primary, color: c.buttonText }}
           >
-            Volver a la tienda
+            {t('Volver a la tienda')}
           </button>
 
           {/*
@@ -383,7 +385,7 @@ const EstadoPedido = () => {
               className="w-full mt-2 py-2.5 rounded-xl text-sm font-semibold"
               style={{ color: 'var(--peligro)', background: 'transparent', border: `1px solid ${c.cardBorder}` }}
             >
-              Cancelar pedido
+              {t('Cancelar pedido')}
             </button>
           )}
         </div>

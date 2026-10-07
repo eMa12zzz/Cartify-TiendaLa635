@@ -1,6 +1,7 @@
 import { useTheme } from '../../hooks/useClientTheme';
 import { useNotifications } from '../../hooks/useNotifications';
 import { CargandoMascota } from '../../components/UI/Mascota';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * Notificaciones — el cliente activa/desactiva sus avisos (área "Mi Cuenta").
@@ -27,24 +28,25 @@ const Toggle = ({ on, onClick, colors }) => (
   </button>
 );
 
-const opciones = [
-  { clave: 'promociones',     titulo: 'Promociones nuevas',        sub: 'Avísame de ofertas y descuentos.' },
-  { clave: 'nuevosProductos', titulo: 'Productos nuevos',          sub: 'Avísame cuando lleguen productos.' },
-  // Solo el correo: en la app los avisos del pedido llegan siempre (son de servicio).
-  { clave: 'pedidoCerca',     titulo: 'Correo cuando mi pedido sale', sub: 'Te mandamos un correo cuando salga de la tienda.' },
-];
-
 const Notificaciones = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { prefs, loading, toggle } = useNotifications();
+  const { t } = useIdioma();
+
+  const opciones = [
+    { clave: 'promociones',     titulo: t('Promociones nuevas'),        sub: t('Avísame de ofertas y descuentos.') },
+    { clave: 'nuevosProductos', titulo: t('Productos nuevos'),          sub: t('Avísame cuando lleguen productos.') },
+    // Solo el correo: en la app los avisos del pedido llegan siempre (son de servicio).
+    { clave: 'pedidoCerca',     titulo: t('Correo cuando mi pedido sale'), sub: t('Te mandamos un correo cuando salga de la tienda.') },
+  ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Notificaciones</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>{t('Notificaciones')}</h1>
 
       {loading ? (
-        <CargandoMascota texto="Cargando tus preferencias…" />
+        <CargandoMascota texto={t('Cargando tus preferencias…')} />
       ) : (
         <div className="flex flex-col gap-2">
           {opciones.map((op) => (

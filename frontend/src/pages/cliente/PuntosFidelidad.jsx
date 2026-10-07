@@ -3,6 +3,7 @@ import { useTheme } from '../../hooks/useClientTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoyalty } from '../../hooks/useLoyalty';
 import { useAjustesCtx } from '../../context/AjustesContext';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * PuntosFidelidad — tarjeta de fidelidad del cliente (área "Mi Cuenta").
@@ -15,19 +16,20 @@ const PuntosFidelidad = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { user } = useAuth();
+  const { t, locale } = useIdioma();
   const { points, pointsPerDollar, expiryMonths, nextExpiry, expiringSoon, loading,
           redeemRate, minRedeem, valorEnDinero } = useLoyalty();
 
   // Próximo vencimiento REAL (del lote que vence primero). Si no hay puntos, "—".
   const venceStr = nextExpiry
-    ? new Date(nextExpiry).toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    ? new Date(nextExpiry).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
     : '—';
 
-  const plural = pointsPerDollar === 1 ? '' : 's';
+  const puntosPorDolar = pointsPerDollar === 1 ? t('punto') : t('puntos');
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Puntos de fidelidad</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>{t('Puntos de fidelidad')}</h1>
 
       {/* ── Tarjeta de fidelidad ── */}
       <div
@@ -47,22 +49,22 @@ const PuntosFidelidad = () => {
         </div>
 
         <div className="relative z-10">
-          <div className="text-xl font-bold">{user?.fullName || 'Cliente'}</div>
+          <div className="text-xl font-bold">{user?.fullName || t('Cliente')}</div>
           <div className="text-sm opacity-80 mt-1 flex items-center gap-1">
-            <Star className="w-4 h-4" /> {loading ? '…' : points} puntos disponibles
+            <Star className="w-4 h-4" /> {t('{n} puntos disponibles', { n: loading ? '…' : points })}
           </div>
         </div>
 
         <div className="relative z-10 mt-6">
           {/* Lo que de verdad le importa al cliente: cuánto valen sus puntos */}
           <div className="text-lg font-bold">
-            Valen ${valorEnDinero.toFixed(2)} en tu próxima compra
+            {t('Valen {monto} en tu próxima compra', { monto: `$${valorEnDinero.toFixed(2)}` })}
           </div>
           <div className="text-sm opacity-90 mt-1">
-            Ganas {pointsPerDollar} punto{plural} por cada $1 que gastas.
+            {t('Ganas {n} {puntos} por cada $1 que gastas.', { n: pointsPerDollar, puntos: puntosPorDolar })}
           </div>
           <div className="text-sm opacity-80 mt-1">
-            Próximo vencimiento: <strong>{venceStr}</strong>
+            {t('Próximo vencimiento:')} <strong>{venceStr}</strong>
           </div>
         </div>
       </div>
@@ -74,31 +76,28 @@ const PuntosFidelidad = () => {
           style={{ backgroundColor: 'rgba(217,119,6,.12)', color: 'var(--aviso-vivo)' }}
         >
           <AlertTriangle className="w-4 h-4 flex-none" />
-          <span>Tienes <strong>{expiringSoon} puntos</strong> que vencen en los próximos 30 días. ¡Aprovéchalos!</span>
+          <span>{t('Tienes')} <strong>{t('{n} puntos', { n: expiringSoon })}</strong> {t('que vencen en los próximos 30 días. ¡Aprovéchalos!')}</span>
         </div>
       )}
 
       {/* ── Preguntas frecuentes (reflejan la config real) ── */}
       <div className="flex flex-col gap-5">
         <div>
-          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>¿Cómo consigo puntos?</div>
+          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>{t('¿Cómo consigo puntos?')}</div>
           <div className="text-sm leading-relaxed" style={{ color: c.textSecondary }}>
-            Por cada $1 que gastas en la tienda ganas {pointsPerDollar} punto{plural}. Se acumulan
-            automáticamente con cada compra que realizas.
+            {t('Por cada $1 que gastas en la tienda ganas {n} {puntos}. Se acumulan automáticamente con cada compra que haces.', { n: pointsPerDollar, puntos: puntosPorDolar })}
           </div>
         </div>
         <div>
-          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>¿Cómo los uso?</div>
+          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>{t('¿Cómo los uso?')}</div>
           <div className="text-sm leading-relaxed" style={{ color: c.textSecondary }}>
-            Cada {redeemRate} puntos equivalen a $1 de descuento. Al pagar tu compra en la tienda
-            podrás elegir usarlos (necesitas al menos {minRedeem} puntos).
+            {t('Cada {n} puntos equivalen a $1 de descuento. Al pagar tu compra en la tienda podrás elegir usarlos (necesitas al menos {minimo} puntos).', { n: redeemRate, minimo: minRedeem })}
           </div>
         </div>
         <div>
-          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>¿Cuándo vencen?</div>
+          <div className="text-sm font-bold mb-1" style={{ color: c.textPrimary }}>{t('¿Cuándo vencen?')}</div>
           <div className="text-sm leading-relaxed" style={{ color: c.textSecondary }}>
-            Los puntos de cada compra vencen a los {expiryMonths} meses de haberlos ganado. Arriba ves
-            la fecha del lote que vence primero.
+            {t('Los puntos de cada compra vencen a los {n} meses de haberlos ganado. Arriba ves la fecha del lote que vence primero.', { n: expiryMonths })}
           </div>
         </div>
       </div>

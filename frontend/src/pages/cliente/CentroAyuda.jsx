@@ -1,6 +1,7 @@
 import { HelpCircle, MapPin, MessageCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useCentroAyuda } from '../../hooks/useCentroAyuda';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * CentroAyuda — preguntas frecuentes y los canales REALES de la tienda.
@@ -14,10 +15,11 @@ const CentroAyuda = () => {
   const { palette } = useTheme();
   const c = palette.colors;
   const { faqs, canales } = useCentroAyuda();
+  const { t } = useIdioma();
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>Centro de ayuda</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: c.textPrimary }}>{t('Centro de ayuda')}</h1>
 
       {/*
         Canales de contacto. Si no hay ninguno configurado no se pinta nada:
@@ -65,7 +67,7 @@ const CentroAyuda = () => {
       {/* Preguntas frecuentes */}
       <div className="flex items-center gap-2 mb-3">
         <HelpCircle className="w-5 h-5" style={{ color: c.primary }} />
-        <h2 className="text-base font-bold" style={{ color: c.textPrimary }}>Preguntas frecuentes</h2>
+        <h2 className="text-base font-bold" style={{ color: c.textPrimary }}>{t('Preguntas frecuentes')}</h2>
       </div>
       <div className="flex flex-col gap-5">
         {faqs.map((faq, i) => (

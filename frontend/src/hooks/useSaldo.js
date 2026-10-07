@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { tAhora } from '../utils/idioma';
 import { giftCardService } from '../api/giftCardService';
 import { useAuth } from './useAuth';
 
@@ -38,18 +39,18 @@ export const useSaldo = () => {
 
   const canjear = async (codigo) => {
     const limpio = String(codigo || '').trim().toUpperCase();
-    if (!limpio) { toast.error('Escribe el código de tu tarjeta'); return false; }
-    if (!esCliente) { toast.error('Inicia sesión con tu cuenta de cliente para canjear'); return false; }
+    if (!limpio) { toast.error(tAhora('Escribe el código de tu tarjeta')); return false; }
+    if (!esCliente) { toast.error(tAhora('Inicia sesión con tu cuenta de cliente para canjear')); return false; }
 
     setCanjeando(true);
     try {
       const r = await giftCardService.redeem(limpio, user.id);
       // El saldo que devuelve el servidor manda sobre cualquier cuenta local.
       setSaldo(Number(r.balance) || 0);
-      toast.success(r.message);
+      toast.success(tAhora(r.message));
       return true;
     } catch (e) {
-      toast.error(e?.response?.data?.message || 'No se pudo canjear la tarjeta');
+      toast.error(tAhora(e?.response?.data?.message || 'No se pudo canjear la tarjeta'));
       return false;
     } finally {
       setCanjeando(false);

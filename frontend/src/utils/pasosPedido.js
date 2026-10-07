@@ -1,4 +1,5 @@
 import { Package, ChefHat, Bike, Check, Store } from 'lucide-react';
+import { tAhora } from './idioma';
 
 /*
  * ============================================================
@@ -71,7 +72,7 @@ export const indiceDePaso = (pasos, estado) => {
 
 /*
  * Lo que se le devolvió al cliente al cancelar su pedido, dicho en una frase:
- * "Le devolvimos $4.50 a su saldo y 200 puntos." Vacío si no hubo nada que
+ * "Te devolvimos $4.50 a tu saldo y 200 puntos." Vacío si no hubo nada que
  * devolver (pagó en efectivo sin canjear puntos). Lo anota el servidor en
  * `reembolso` al cancelar; ver backend/src/utils/devolverPedido.js.
  */
@@ -92,7 +93,9 @@ export const sellosDeCancelacion = (pedido) => {
 export const textoDevuelto = (pedido) => {
   const saldo = Number(pedido?.reembolso?.saldo) || 0;
   const puntos = Number(pedido?.reembolso?.puntos) || 0;
-  const partes = [saldo > 0 ? `$${saldo.toFixed(2)} a tu saldo` : '', puntos > 0 ? `${puntos} puntos` : '']
-    .filter(Boolean);
-  return partes.length ? `Te devolvimos ${partes.join(' y ')}.` : '';
+  const partes = [
+    saldo > 0 ? tAhora('{monto} a tu saldo', { monto: `$${saldo.toFixed(2)}` }) : '',
+    puntos > 0 ? tAhora('{n} puntos', { n: puntos }) : '',
+  ].filter(Boolean);
+  return partes.length ? tAhora('Te devolvimos {que}.', { que: partes.join(` ${tAhora('y')} `) }) : '';
 };

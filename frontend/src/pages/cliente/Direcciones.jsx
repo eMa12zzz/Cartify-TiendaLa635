@@ -3,7 +3,8 @@ import { MapPin, Trash2, Plus, Signpost } from 'lucide-react';
 import { useTheme } from '../../hooks/useClientTheme';
 import { useAddresses } from '../../hooks/useAddresses';
 import MapaDireccion from '../../components/Store/MapaDireccion';
-import { CargandoMascota } from '../../components/UI/Mascota';
+import Mascota, { CargandoMascota } from '../../components/UI/Mascota';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * Direcciones — el cliente gestiona sus direcciones de entrega (área "Mi Cuenta").
@@ -22,6 +23,7 @@ const Direcciones = () => {
   const c = palette.colors;
   const { addresses, loading, saving, agregar, eliminar } = useAddresses();
   const [agregando, setAgregando] = useState(false);
+  const { t } = useIdioma();
 
   const abrirMapa = () => setAgregando(true);
 
@@ -33,13 +35,13 @@ const Direcciones = () => {
   return (
     <div>
       <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>Direcciones</h1>
+        <h1 className="text-2xl font-bold" style={{ color: c.textPrimary }}>{t('Direcciones')}</h1>
         <button
           onClick={abrirMapa}
           className="press flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold shadow-sm"
           style={{ backgroundColor: c.primary, color: c.buttonText }}
         >
-          <Plus className="w-4 h-4" /> Agregar en el mapa
+          <Plus className="w-4 h-4" /> {t('Agregar en el mapa')}
         </button>
       </div>
 
@@ -62,20 +64,20 @@ const Direcciones = () => {
       )}
 
       {loading ? (
-        <CargandoMascota texto="Cargando tus direcciones…" />
+        <CargandoMascota texto={t('Cargando tus direcciones…')} />
       ) : addresses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <MapPin className="w-10 h-10 mb-3" style={{ color: c.textMuted }} />
-          <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>Sin direcciones guardadas</p>
+          <div className="mb-4"><Mascota pose="sin-direcciones" alto={120} /></div>
+          <p className="text-sm font-semibold mb-1" style={{ color: c.textPrimary }}>{t('Sin direcciones guardadas')}</p>
           <p className="text-sm mb-5" style={{ color: c.textSecondary }}>
-            Marca en el mapa dónde te dejamos tus pedidos.
+            {t('Marca en el mapa dónde te dejamos tus pedidos.')}
           </p>
           <button
             onClick={abrirMapa}
             className="press px-5 py-2 rounded-full text-sm font-semibold"
             style={{ backgroundColor: c.primary, color: c.buttonText }}
           >
-            Abrir el mapa
+            {t('Abrir el mapa')}
           </button>
         </div>
       ) : (
@@ -104,7 +106,7 @@ const Direcciones = () => {
               <button
                 onClick={() => eliminar(i)}
                 disabled={saving}
-                aria-label={`Eliminar ${dir.nombre || 'dirección'}`}
+                aria-label={t('Eliminar {nombre}', { nombre: dir.nombre || t('dirección') })}
                 className="p-1.5 rounded-lg transition-colors disabled:opacity-60"
                 style={{ color: 'var(--peligro)' }}
               >

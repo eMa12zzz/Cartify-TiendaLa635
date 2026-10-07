@@ -287,13 +287,12 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
    * Si la promo ya venció o la borraron, no pasa nada: se queda en la portada,
    * que es mejor que un error por algo que ya no existe.
    */
-  const promoDelEnlaceAbierta = useRef(false);
-  useEffect(() => {
-    if (!promoInicial || promoDelEnlaceAbierta.current || !promociones.length) return;
+  const [promoDelEnlaceAbierta, setPromoDelEnlaceAbierta] = useState(false);
+  if (promoInicial && !promoDelEnlaceAbierta && promociones.length) {
+    setPromoDelEnlaceAbierta(true);
     const promo = promociones.find((p) => String(p._id) === String(promoInicial));
-    promoDelEnlaceAbierta.current = true;
     if (promo) setPromoDetalle(promo);
-  }, [promoInicial, promociones]);
+  }
 
   /*
    * Escape cierra el detalle de la promo. El listener vive acá y no en el
@@ -320,7 +319,11 @@ export const useStore = ({ moduloInicial = null, busquedaInicial = '', promoInic
 
   // Al cambiar de pasillo se suelta la categoría: la de la panadería no existe
   // en abarrotes, y la lista quedaría vacía sin explicación.
-  useEffect(() => { setCategoriaSeleccionada(null); }, [moduloSeleccionado]);
+  const [pasilloVisto, setPasilloVisto] = useState(moduloSeleccionado);
+  if (pasilloVisto !== moduloSeleccionado) {
+    setPasilloVisto(moduloSeleccionado);
+    setCategoriaSeleccionada(null);
+  }
 
   const categorias = useMemo(() => {
     const cats = new Set(productosDelPasillo.map((p) => p.categoria).filter(Boolean));

@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useRef, useState, useCallback, useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
 import { aiService } from '../api/aiService';
 import { decirConTiqui, callarTiqui, paraDecir } from '../utils/vozTiqui';
 import { cantidadParaDecir } from '../utils/unidades';
@@ -326,6 +326,60 @@ const PIDE_COMPRAR = (t) =>
   /\b(comprar|pagar|finalizar|terminar|es todo|eso es todo)\b/.test(t) ||
   (/^(ya\s+)?listo\b/.test(t) && t.split(' ').length <= 3);
 
+/*
+ * Cuánto se parece lo que dijo la persona al nombre de ESTE producto.
+ *
+ * Antes esto era un .find() que se quedaba con el PRIMER producto que
+ * cumpliera cualquier coincidencia, sin comparar contra los demás. Con
+ * "fresa", la fruta ("Fresas") nunca calificaba —el chequeo pedía que lo
+ * dicho CONTUVIERA el nombre completo, y "fresa" es más corto que
+ * "fresas", así que nunca lo contiene— pero "Jarritos de fresa" sí
+ * colaba, porque una de sus palabras ("fresa") aparecía adentro de lo
+ * dicho. Ganaba lo que sonaba parecido en cualquier rincón del nombre,
+ * no lo que la persona de verdad pidió.
+ *
+ * Ahora se puntúa y se compara contra TODOS los productos, de más a menos
+ * exacto:
+ *   100 — dijo el nombre completo, tal cual.
+ *    90 — el nombre completo aparece dentro de lo que dijo
+ *         ("quiero ver las fresas" trae "fresas" adentro).
+ *    80 — lo que dijo es la palabra que manda en el nombre, en singular
+ *         o en plural ("fresa" ~ "Fresas": la fruta se llama por su
+ *         primera palabra, y ahí es donde importa el singular/plural).
+ *    70 — esa palabra aparece COMPLETA en una frase más larga
+ *         ("una fresa por favor" trae la palabra "fresa" suelta).
+ *    20 — alguna palabra del nombre aparece en cualquier lado, aunque no
+ *         sea la que manda. Es el único nivel que hacía colar a
+ *         "Jarritos de fresa" antes, y ahora es el más débil de todos:
+ *         pierde contra la fruta en el nivel 80.
+ */
+const puntuarCoincidencia = (nombreProducto, t) => {
+  const nombre = normalizar(nombreProducto);
+  const palabras = nombre.split(' ').filter((w) => w.length > 2);
+  const principal = palabras[0] || nombre;
+  // Quita una "s" del final para comparar singular con plural sin
+  // depender de un diccionario: alcanza para "fresa"/"fresas",
+  // "galleta"/"galletas", que es como la gente pide en la tienda.
+  const singular = (s) => s.replace(/s$/, '');
+
+  if (t === nombre) return 100;
+  if (t.includes(nombre)) return 90;
+  if (singular(t) === singular(principal)) return 80;
+  if (
+    new RegExp(`\\b${principal}\\b`).test(t) ||
+    new RegExp(`\\b${singular(principal)}\\b`).test(t)
+  ) return 70;
+  if (palabras.some((w) => t.includes(w))) return 20;
+  return 0;
+};
+
+/*
+ * En un empate gana el que TIENE existencias. Con "leche" y dos leches igual
+ * de parecidas, se quedaba con la primera de la lista aunque estuviera
+ * agotada, y Tiqui decía "se nos acabó" teniendo la otra en el estante.
+ */
+const conStock = (p) => (Number(p?.stock) || 0) > 0;
+
 export const useVoiceAssistant = ({
   productos = [], carrito = [], totalCarrito = 0,
   agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
@@ -372,21 +426,16 @@ export const useVoiceAssistant = ({
   const [sonandoTiqui, setSonandoTiqui] = useState(false);
 
   const dataRef = useRef({ productos, carrito, totalCarrito, categorias });
-  dataRef.current = { productos, carrito, totalCarrito, categorias };
   const fnRef = useRef({});
-  fnRef.current = {
-    agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
-    irAProducto, irACategoria, irARuta, irAPromociones, alConfirmarCompra,
-  };
 
   const recognitionRef = useRef(null);
   const activoRef = useRef(false);
   const hablandoRef = useRef(false);
-  const muteRef = useRef(false); muteRef.current = muteado;
-  const rateRef = useRef(0.95); rateRef.current = VELOCIDADES[velIndex].v;
+  const muteRef = useRef(false);
+  const rateRef = useRef(0.95);
   // El que habla se lee por ref: quien pronuncia se decide al momento de
   // hablar, no cuando se registró la función.
-  const vozRef = useRef(''); vozRef.current = vozElegida;
+  const vozRef = useRef('');
   const vozTiquiRef = useRef(false);
   // Fallas seguidas de la voz de Tiqui: con dos, se deja de intentar en esta
   // charla para no hacer esperar cuatro segundos cada vez.
@@ -394,6 +443,7 @@ export const useVoiceAssistant = ({
   const ultimaRespuestaRef = useRef('');
   const procesarRef = useRef(null);
   const hablarRef = useRef(null);
+  const arrancarRef = useRef(null);
   const confirmandoRef = useRef(false); // esperando "sí" para comprar
   const silencioRef = useRef(0);
   const sugeridoRef = useRef(false);     // ya hicimos upsell esta sesión
@@ -405,6 +455,23 @@ export const useVoiceAssistant = ({
    * "mejor dos" que dependen de lo anterior.
    */
   const memoriaRef = useRef([]);
+
+  /*
+   * Lo último de cada render, para lo que se llama después: el reconocimiento
+   * de voz, la respuesta de la IA, un temporizador. Se copia apenas React
+   * confirma el render; escribirlo DURANTE el render podía dejar los valores
+   * de uno que React descartó.
+   */
+  useLayoutEffect(() => {
+    dataRef.current = { productos, carrito, totalCarrito, categorias };
+    fnRef.current = {
+      agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
+      irAProducto, irACategoria, irARuta, irAPromociones, alConfirmarCompra,
+    };
+    muteRef.current = muteado;
+    rateRef.current = VELOCIDADES[velIndex].v;
+    vozRef.current = vozElegida;
+  });
 
   const soportado =
     typeof window !== 'undefined' &&
@@ -495,7 +562,7 @@ export const useVoiceAssistant = ({
           activoRef.current = false;
           setActivo(false);
         } else {
-          setTimeout(() => arrancarReconocimiento(), REINTENTO_SILENCIO_MS);
+          setTimeout(() => arrancarRef.current?.(), REINTENTO_SILENCIO_MS);
         }
       }
     };
@@ -590,60 +657,7 @@ export const useVoiceAssistant = ({
     decirConElSistema(dicho, continuar);
   }, [arrancarReconocimiento]);
 
-  /*
-   * Cuánto se parece lo que dijo la persona al nombre de ESTE producto.
-   *
-   * Antes esto era un .find() que se quedaba con el PRIMER producto que
-   * cumpliera cualquier coincidencia, sin comparar contra los demás. Con
-   * "fresa", la fruta ("Fresas") nunca calificaba —el chequeo pedía que lo
-   * dicho CONTUVIERA el nombre completo, y "fresa" es más corto que
-   * "fresas", así que nunca lo contiene— pero "Jarritos de fresa" sí
-   * colaba, porque una de sus palabras ("fresa") aparecía adentro de lo
-   * dicho. Ganaba lo que sonaba parecido en cualquier rincón del nombre,
-   * no lo que la persona de verdad pidió.
-   *
-   * Ahora se puntúa y se compara contra TODOS los productos, de más a menos
-   * exacto:
-   *   100 — dijo el nombre completo, tal cual.
-   *    90 — el nombre completo aparece dentro de lo que dijo
-   *         ("quiero ver las fresas" trae "fresas" adentro).
-   *    80 — lo que dijo es la palabra que manda en el nombre, en singular
-   *         o en plural ("fresa" ~ "Fresas": la fruta se llama por su
-   *         primera palabra, y ahí es donde importa el singular/plural).
-   *    70 — esa palabra aparece COMPLETA en una frase más larga
-   *         ("una fresa por favor" trae la palabra "fresa" suelta).
-   *    20 — alguna palabra del nombre aparece en cualquier lado, aunque no
-   *         sea la que manda. Es el único nivel que hacía colar a
-   *         "Jarritos de fresa" antes, y ahora es el más débil de todos:
-   *         pierde contra la fruta en el nivel 80.
-   */
-  const puntuarCoincidencia = (nombreProducto, t) => {
-    const nombre = normalizar(nombreProducto);
-    const palabras = nombre.split(' ').filter((w) => w.length > 2);
-    const principal = palabras[0] || nombre;
-    // Quita una "s" del final para comparar singular con plural sin
-    // depender de un diccionario: alcanza para "fresa"/"fresas",
-    // "galleta"/"galletas", que es como la gente pide en la tienda.
-    const singular = (s) => s.replace(/s$/, '');
-
-    if (t === nombre) return 100;
-    if (t.includes(nombre)) return 90;
-    if (singular(t) === singular(principal)) return 80;
-    if (
-      new RegExp(`\\b${principal}\\b`).test(t) ||
-      new RegExp(`\\b${singular(principal)}\\b`).test(t)
-    ) return 70;
-    if (palabras.some((w) => t.includes(w))) return 20;
-    return 0;
-  };
-
-  /*
-   * En un empate gana el que TIENE existencias. Con "leche" y dos leches igual
-   * de parecidas, se quedaba con la primera de la lista aunque estuviera
-   * agotada, y Tiqui decía "se nos acabó" teniendo la otra en el estante.
-   */
-  const conStock = (p) => (Number(p?.stock) || 0) > 0;
-  const buscarProducto = (texto) => {
+  const buscarProducto = useCallback((texto) => {
     const t = expandirSinonimos(normalizar(texto));
     let mejor = null;
     let mejorPuntaje = 0;
@@ -655,7 +669,7 @@ export const useVoiceAssistant = ({
       }
     }
     return mejor;
-  };
+  }, []);
 
   /*
    * Lo que no entienden las reglas rápidas se lo pregunta a Tiqui (la IA).
@@ -1044,10 +1058,14 @@ export const useVoiceAssistant = ({
     }
 
     hablar(mensaje);
-  }, [hablar, preguntarALaIA]);
+  }, [hablar, preguntarALaIA, buscarProducto]);
 
-  procesarRef.current = procesar;
-  hablarRef.current = hablar;
+  // Como el useLayoutEffect de arriba: lo último, apenas se confirma el render.
+  useLayoutEffect(() => {
+    procesarRef.current = procesar;
+    hablarRef.current = hablar;
+    arrancarRef.current = arrancarReconocimiento;
+  });
 
   const iniciar = useCallback(() => {
     if (!soportado) { hablar('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.'); return; }
