@@ -26,7 +26,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { CargandoMascota } from '../../components/Tiqui/Mascota';
+import Mascota, { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { MapPin, Signpost, Trash2 } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
@@ -156,7 +156,7 @@ const Direcciones = ({ alVolver }) => {
           contentContainerStyle={[estilos.lista, { paddingBottom: aireAbajo }]}
           ListEmptyComponent={
             <View style={estilos.vacio}>
-              <MapPin size={38} color={COLORES.marcador} strokeWidth={1.5} />
+              <Mascota pose="sin-direcciones" alto={120} />
               <Text style={estilos.vacioTitulo}>{t('Sin direcciones guardadas')}</Text>
               <Text style={estilos.vacioTexto}>{t('Agrega la primera abajo.')}</Text>
             </View>

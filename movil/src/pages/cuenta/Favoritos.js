@@ -27,9 +27,8 @@
 
 import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { CargandoMascota } from '../../components/Tiqui/Mascota';
-import { Heart } from 'lucide-react-native';
-import { useColores, useEstilos } from '../../context/ModoContext';
+import Mascota, { CargandoMascota } from '../../components/Tiqui/Mascota';
+import { useEstilos } from '../../context/ModoContext';
 import { useAireBarraFlotante } from '../../components/UI/BarraInferior';
 import { useTienda } from '../../context/TiendaContext';
 import { useFavoritos } from '../../context/FavoritosContext';
@@ -43,7 +42,6 @@ const Favoritos = ({ alVolver }) => {
   const { t } = useIdioma();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
-  const COLORES = useColores();
   const estilos = useEstilos(crearEstilos);
   const { productos, cargando, agregarAlCarrito } = useTienda();
   const { esFavorito } = useFavoritos();
@@ -65,7 +63,7 @@ const Favoritos = ({ alVolver }) => {
         </View>
       ) : marcados.length === 0 ? (
         <View style={estilos.centro}>
-          <Heart size={38} color={COLORES.marcador} strokeWidth={1.5} />
+          <Mascota pose="sin-favoritos" alto={120} />
           <Text style={estilos.vacioTitulo}>{t('Todavía no tienes favoritos')}</Text>
           <Text style={estilos.vacioTexto}>
             {t('Toca el corazón de un producto en la tienda y lo vas a encontrar aquí.')}

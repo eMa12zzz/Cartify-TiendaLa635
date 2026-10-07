@@ -45,6 +45,11 @@ const POSES = {
   'en-camino': { vista: [20, 20, 350, 434], inclinada: true, mira: [8, -1], cordon: 'viento', todo: 'traqueteo', detras: 'velocidad', aparte: 'patineta' },
   entregado: { vista: [100, 20, 270, 410], ojos: 'feliz', boca: 'abierta', mov: 'respira', aparte: 'entrega' },
   cancelado: { vista: [104, 30, 200, 360], mira: [0, 5], cejas: 'preocupado', boca: 'triste', cordon: 'caido' },
+  // Las secciones de Mi Cuenta que todavía no tienen nada: ella se corre y mira lo que falta.
+  'sin-favoritos': { vista: [56, 26, 344, 370], correr: -46, mira: [7, -5], mov: 'respira', aparte: 'corazon-vacio' },
+  'sin-recibos': { vista: [56, 26, 344, 370], correr: -46, mira: [7, 1], cejas: 'una', boca: 'lado', mov: 'respira', aparte: 'recibo-vacio' },
+  'sin-direcciones': { vista: [56, 26, 344, 370], correr: -46, mira: [7, -1], mov: 'respira', aparte: 'pin' },
+  'sin-tarjetas': { vista: [56, 26, 344, 370], correr: -46, mira: [7, 1], mov: 'respira', aparte: 'tarjeta' },
 };
 
 // En los botones va solo la etiqueta colgando, sin aire alrededor.
@@ -245,6 +250,42 @@ const Aparte = ({ tipo, c }) => {
           <Path d="M332,336 L338,342 L349,330" stroke={c.rasgo} strokeWidth={4.5} {...TRAZO} />
           <Path d="M322,196 c-8,-12 -26,-4 -18,10 l18,16 l18,-16 c8,-14 -10,-22 -18,-10 z" fill={RUBOR} />
         </>
+      );
+    case 'corazon-vacio':
+      return (
+        <Path
+          transform="translate(322 256) scale(1.2) translate(-322 -256)"
+          d="M322,300 C276,268 266,236 286,216 C302,202 322,212 322,230 C322,212 342,202 358,216 C378,236 368,268 322,300 Z"
+          fill={RUBOR} fillOpacity={0.12} stroke={RUBOR} strokeWidth={9} strokeLinejoin="round"
+        />
+      );
+    case 'recibo-vacio':
+      return (
+        <G transform="translate(312 278) rotate(8) scale(1.3) translate(-312 -278)">
+          <Path
+            d="M276,226 L348,226 L348,330 L336,320 L324,330 L312,320 L300,330 L288,320 L276,330 Z"
+            fill={c.fondo} stroke={c.cuerpo} strokeWidth={6} strokeLinejoin="round"
+          />
+          <Path d="M290,254 L334,254 M290,276 L334,276 M290,298 L318,298" stroke={c.cuerpo} strokeWidth={5} strokeDasharray="1 11" opacity={0.45} {...TRAZO} />
+        </G>
+      );
+    case 'pin':
+      return (
+        <>
+          <Ellipse cx={322} cy={374} rx={30} ry={7} fill={c.linea} />
+          <G transform="translate(322 340) scale(1.3) translate(-322 -332)">
+            <Path d="M322,332 C300,302 286,284 286,264 A36,36 0 0 1 358,264 C358,284 344,302 322,332 Z" fill={c.cordon} />
+            <Circle cx={322} cy={264} r={13} fill={c.fondo} />
+          </G>
+        </>
+      );
+    case 'tarjeta':
+      return (
+        <G transform="translate(322 270) rotate(-10) scale(1.3) translate(-322 -270)">
+          <Rect x={272} y={238} width={100} height={64} rx={10} fill={c.cordon} />
+          <Rect x={272} y={252} width={100} height={12} fill="#000000" opacity={0.18} />
+          <Rect x={284} y={274} width={18} height={13} rx={3} fill={AMARILLO} />
+        </G>
       );
     default:
       return null;
