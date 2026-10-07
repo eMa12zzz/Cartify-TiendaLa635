@@ -16,9 +16,17 @@ import api from './api';
  * ============================================================
  */
 export const productService = {
-  // 1- Obtener todos los productos (SELECT)
+  // 1- Obtener el catálogo de la tienda (SELECT). Público: viene sin costo,
+  //    proveedor ni código de barras. El panel usa getInventario.
   getProducts: async () => {
     const response = await api.get('/product');
+    return response.data;
+  },
+
+  // 1b- Obtener el inventario completo, con costo y proveedor. Pide sesión de
+  //     personal: es lo que la tienda no le enseña a un cliente.
+  getInventario: async () => {
+    const response = await api.get('/product/inventario');
     return response.data;
   },
 

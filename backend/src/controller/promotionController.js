@@ -1,6 +1,7 @@
 import promotionModel from "../models/promotion.js";
 import { v2 as cloudinary } from "cloudinary";
 import { avisarPromoNuevaEnSegundoPlano } from "../utils/avisoPromo.js";
+import { CAMPOS_PUBLICOS_PRODUCTO } from "../utils/productoPublico.js";
 
 const promotionController = {};
 
@@ -58,7 +59,12 @@ const desactivarVencidas = async () => {
 promotionController.getPromotions = async (req, res) => {
   try {
     await desactivarVencidas();
-    const promotions = await promotionModel.find().populate("items.productId");
+    /*
+     * Esta lista es pública (la pide la portada), así que el producto de cada
+     * promo va con lo que ve un cliente. Poblado entero dejaba ver el costo
+     * de todo lo que estuviera en oferta. Ver utils/productoPublico.js.
+     */
+    const promotions = await promotionModel.find().populate("items.productId", CAMPOS_PUBLICOS_PRODUCTO);
     return res.status(200).json(promotions);
   } catch (error) {
     console.log("error " + error);

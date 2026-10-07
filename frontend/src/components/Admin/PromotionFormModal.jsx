@@ -143,7 +143,7 @@ const PromotionFormModal = ({ isOpen, onClose, promoData, onSave }) => {
 
   useEffect(() => {
     if (!isOpen) return;
-    productService.getProducts()
+    productService.getInventario()
       .then((d) => setProductos(Array.isArray(d) ? d.filter((p) => p.isActive !== false) : []))
       .catch(() => {});
 

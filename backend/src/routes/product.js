@@ -3,7 +3,7 @@ import productController from '../controller/product.js';
 import upload from '../utils/cloudinaryConfig.js';
 
 
-import { soloAdmin } from '../middlewares/validarSesion.js';
+import { soloAdmin, soloPersonal } from '../middlewares/validarSesion.js';
 
 /*
  * ── Documentación de la API (Swagger) ──
@@ -24,11 +24,12 @@ import { soloAdmin } from '../middlewares/validarSesion.js';
  * @swagger
  * /product:
  *   get:
- *     summary: Lista todos los productos
+ *     summary: Lista el catálogo con lo que ve un cliente (público)
+ *     description: Sin costo, proveedor, código de barras ni vencimiento. typeId, brandId y moduleId vienen poblados solo con su nombre. Ver src/utils/productoPublico.js.
  *     tags: [Products]
  *     responses:
  *       200:
- *         description: Arreglo de productos con typeId, brandId, moduleId y supplierId poblados.
+ *         description: Arreglo de productos con los campos públicos.
  *         content:
  *           application/json:
  *             schema:
@@ -57,9 +58,31 @@ import { soloAdmin } from '../middlewares/validarSesion.js';
 
 /**
  * @swagger
+ * /product/inventario:
+ *   get:
+ *     summary: Lista el inventario completo (personal)
+ *     description: Todos los campos, con typeId, brandId, moduleId y supplierId poblados. Lo usa el panel.
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Arreglo de productos completos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Product'
+ *       401:
+ *         description: Sin sesión de personal.
+ *       500:
+ *         description: Error interno del servidor.
+ */
+
+/**
+ * @swagger
  * /product/{id}:
  *   get:
- *     summary: Obtiene un producto (usa el mismo listado que GET /product)
+ *     summary: Obtiene un producto con sus campos públicos
  *     tags: [Products]
  *     parameters:
  *       - in: path
@@ -135,6 +158,13 @@ const router = express.Router();
 router.route("/")
     .get(productController.getProduct)
     .post(soloAdmin, upload.single('image'), productController.insertProduct);
+
+/*
+ * El catálogo de arriba es el que ve un cliente: sin costo ni proveedor. El
+ * panel necesita todo y lo pide aquí, con sesión de personal. Va antes de
+ * "/:id" para que "inventario" no se lea como el id de un producto.
+ */
+router.get("/inventario", soloPersonal, productController.getInventario);
 
 router.route("/:id")
     .put(soloAdmin, upload.single('image'), productController.updateProduct)
