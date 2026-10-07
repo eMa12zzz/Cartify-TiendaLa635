@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { tAhora } from '../utils/idioma';
 
 /*
  * ============================================================
@@ -82,20 +83,27 @@ const describirAceptados = (reglas) => {
   const nombres = [];
   reglas.forEach((regla) => {
     let etiqueta;
-    if (regla === 'image/*') etiqueta = 'imágenes';
+    if (regla === 'image/*') etiqueta = tAhora('imágenes');
     else if (regla === 'application/pdf') etiqueta = 'PDF';
     else if (regla.startsWith('.')) etiqueta = regla.slice(1).toUpperCase();
     else etiqueta = regla.split('/').pop().toUpperCase();
     if (etiqueta === 'JPEG') etiqueta = 'JPG';
     if (!nombres.includes(etiqueta)) nombres.push(etiqueta);
   });
-  if (nombres.length === 0) return 'archivos';
+  if (nombres.length === 0) return tAhora('archivos');
   if (nombres.length === 1) return nombres[0];
-  return `${nombres.slice(0, -1).join(', ')} o ${nombres[nombres.length - 1]}`;
+  return `${nombres.slice(0, -1).join(', ')} ${tAhora('o')} ${nombres[nombres.length - 1]}`;
 };
 
-// Para que el error hable del archivo que la persona acaba de soltar.
-const COMO_LLAMARLO = { imagen: 'Esa imagen', pdf: 'Ese PDF', otro: 'Ese archivo' };
+/*
+ * Para que el error hable del archivo que la persona acaba de soltar. Frases
+ * enteras y no "{como} pesa…": en inglés el orden de las palabras cambia.
+ */
+const errorDePeso = (tipo, vars) => {
+  if (tipo === 'imagen') return tAhora('Esa imagen pesa {peso} y el máximo son {max} MB.', vars);
+  if (tipo === 'pdf') return tAhora('Ese PDF pesa {peso} y el máximo son {max} MB.', vars);
+  return tAhora('Ese archivo pesa {peso} y el máximo son {max} MB.', vars);
+};
 
 /*
  * Parámetros:
@@ -155,15 +163,15 @@ export const useSubidaArchivo = ({
 
     if (!cumpleAccept(file, reglas)) {
       const ext = extensionDe(file.name);
-      setError(
-        `${ext ? `Un archivo .${ext}` : 'Ese archivo'} no se puede usar aquí: solo entran ${describirAceptados(reglas)}.`
-      );
+      const aceptados = describirAceptados(reglas);
+      setError(ext
+        ? tAhora('Un archivo .{ext} no se puede usar aquí: solo entran {aceptados}.', { ext, aceptados })
+        : tAhora('Ese archivo no se puede usar aquí: solo entran {aceptados}.', { aceptados }));
       return false;
     }
 
     if (maxMB > 0 && file.size > maxMB * 1024 * 1024) {
-      const como = COMO_LLAMARLO[tipoDeArchivo(file.name, file.type)];
-      setError(`${como} pesa ${pesoLegible(file.size)} y el máximo son ${maxMB} MB.`);
+      setError(errorDePeso(tipoDeArchivo(file.name, file.type), { peso: pesoLegible(file.size), max: maxMB }));
       return false;
     }
 
@@ -267,7 +275,7 @@ export const useSubidaArchivo = ({
     tipo,
     // Sin archivo propio no sabemos ni el nombre ni el peso de lo guardado, y
     // no se inventan: se dice lo único cierto, que ya hay una imagen.
-    nombre: archivo?.name || (mostrandoGuardada ? 'Imagen guardada' : ''),
+    nombre: archivo?.name || (mostrandoGuardada ? tAhora('Imagen guardada') : ''),
     peso: archivo ? pesoLegible(archivo.size) : '',
     extension: archivo ? extensionDe(archivo.name) : extensionDe(valorInicial || ''),
     hayAlgo: !!url,
