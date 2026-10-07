@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { QrCode, Check, Store, Loader2, TriangleAlert } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { kioscoService } from '../api/kioscoService';
+import { useIdioma } from '../hooks/useIdioma';
 
 /*
  * ============================================================
@@ -24,6 +25,7 @@ const VincularKiosco = () => {
   const { codigo } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useIdioma();
 
   const [estado, setEstado] = useState('preguntando'); // preguntando | vinculando | listo | error
   const [mensaje, setMensaje] = useState('');
@@ -36,7 +38,7 @@ const VincularKiosco = () => {
       await kioscoService.vincular(codigo, user.id);
       setEstado('listo');
     } catch (e) {
-      setMensaje(e?.response?.data?.message || 'No se pudo vincular. Pide un código nuevo en el kiosco.');
+      setMensaje(e?.response?.data?.message || t('No se pudo vincular. Pide un código nuevo en el kiosco.'));
       setEstado('error');
     }
   };
@@ -51,15 +53,15 @@ const VincularKiosco = () => {
         {/* Sin sesión no hay a qué cuenta pegarle la compra */}
         {!esCliente ? (
           <>
-            <h1 style={titulo}>Inicia sesión para continuar</h1>
+            <h1 style={titulo}>{t('Inicia sesión para continuar')}</h1>
             <p style={bajada}>
-              Necesitamos saber a qué cuenta cargarle esta compra y sus puntos.
+              {t('Necesitamos saber a qué cuenta cargarle esta compra y sus puntos.')}
             </p>
             <button
               style={botonPrincipal}
               onClick={() => navigate(`/iniciar-sesion?volver=/vincular/${codigo}`)}
             >
-              Iniciar sesión
+              {t('Iniciar sesión')}
             </button>
           </>
         ) : estado === 'listo' ? (
@@ -67,13 +69,12 @@ const VincularKiosco = () => {
             <div style={{ ...sello, background: 'var(--exito-fondo)' }}>
               <Check size={26} strokeWidth={2.6} color="var(--exito-texto)" />
             </div>
-            <h1 style={titulo}>¡Listo, {user.userName || user.fullName}!</h1>
+            <h1 style={titulo}>{t('¡Listo, {nombre}!', { nombre: user.userName || user.fullName })}</h1>
             <p style={bajada}>
-              Tu compra quedará a tu nombre y los puntos te caen solos al pagar.
-              Ya puedes volver a la pantalla de la tienda.
+              {t('Tu compra quedará a tu nombre y los puntos te caen solos al pagar. Ya puedes volver a la pantalla de la tienda.')}
             </p>
             <button style={botonSuave} onClick={() => navigate('/')}>
-              <Store size={16} /> Ir a la tienda
+              <Store size={16} /> {t('Ir a la tienda')}
             </button>
           </>
         ) : estado === 'error' ? (
@@ -81,26 +82,25 @@ const VincularKiosco = () => {
             <div style={{ ...sello, background: 'var(--aviso-fondo)' }}>
               <TriangleAlert size={24} strokeWidth={2.3} color="var(--aviso-vivo)" />
             </div>
-            <h1 style={titulo}>No se pudo vincular</h1>
+            <h1 style={titulo}>{t('No se pudo vincular')}</h1>
             <p style={bajada}>{mensaje}</p>
-            <button style={botonSuave} onClick={() => navigate('/')}>Volver a la tienda</button>
+            <button style={botonSuave} onClick={() => navigate('/')}>{t('Volver a la tienda')}</button>
           </>
         ) : (
           <>
-            <h1 style={titulo}>¿Es tuya esta compra?</h1>
+            <h1 style={titulo}>{t('¿Es tuya esta compra?')}</h1>
             <p style={bajada}>
-              La compra del kiosco quedará a nombre de <strong>{user.userName || user.fullName}</strong>,
-              con sus puntos de fidelidad.
+              {t('La compra del kiosco quedará a nombre de')} <strong>{user.userName || user.fullName}</strong>{t(', con sus puntos de fidelidad.')}
             </p>
             <p style={codigoChip}>{codigo}</p>
 
             <button style={botonPrincipal} onClick={vincular} disabled={estado === 'vinculando'}>
               {estado === 'vinculando'
-                ? <><Loader2 size={17} className="animate-spin" /> Vinculando…</>
-                : 'Sí, es mía'}
+                ? <><Loader2 size={17} className="animate-spin" /> {t('Vinculando…')}</>
+                : t('Sí, es mía')}
             </button>
             <button style={botonTexto} onClick={() => navigate('/')}>
-              No fui yo
+              {t('No fui yo')}
             </button>
           </>
         )}

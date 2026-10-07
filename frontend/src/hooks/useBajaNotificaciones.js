@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { clientService } from '../api/clientService';
+import { useIdioma } from './useIdioma';
 
 /*
  * ============================================================
@@ -23,13 +24,13 @@ import { clientService } from '../api/clientService';
  * ============================================================
  */
 
-const NOMBRES = {
-  promociones: 'las promociones',
-  nuevosProductos: 'los productos nuevos',
-  pedidoCerca: 'el correo de tu pedido en camino',
-};
-
 export const useBajaNotificaciones = () => {
+  const { t } = useIdioma();
+  const NOMBRES = {
+    promociones: t('las promociones'),
+    nuevosProductos: t('los productos nuevos'),
+    pedidoCerca: t('el correo de tu pedido en camino'),
+  };
   const [params] = useSearchParams();
   const token = params.get('t');
 
@@ -39,7 +40,7 @@ export const useBajaNotificaciones = () => {
    * Además de ahorrarse un render de más, evita el parpadeo de un "un momento,
    * estamos apagando esos correos" para algo que nunca se va a intentar.
    */
-  const SIN_TOKEN = 'Este enlace está incompleto. Puedes apagar los avisos desde Mi Cuenta › Notificaciones.';
+  const SIN_TOKEN = t('Este enlace está incompleto. Puedes apagar los avisos desde Mi Cuenta › Notificaciones.');
 
   const [estado, setEstado] = useState(token ? 'aplicando' : 'error'); // aplicando | listo | error
   const [mensaje, setMensaje] = useState(token ? '' : SIN_TOKEN);
@@ -66,15 +67,15 @@ export const useBajaNotificaciones = () => {
       })
       .catch((error) => {
         setEstado('error');
-        setMensaje(error?.message || 'No se pudo aplicar. Intenta desde Mi Cuenta › Notificaciones.');
+        setMensaje(error?.message || t('No se pudo aplicar. Intenta desde Mi Cuenta › Notificaciones.'));
       });
-  }, [token]);
+  }, [token, t]);
 
   return {
     estado,
     mensaje,
     // "las promociones", para poder decir de qué exactamente se dio de baja en
     // vez de un "listo" que no aclara qué se apagó.
-    queSeApago: NOMBRES[clave] || 'esos correos',
+    queSeApago: NOMBRES[clave] || t('esos correos'),
   };
 };

@@ -14,6 +14,7 @@ import PieTienda from '../components/Store/PieTienda';
 import SubidorArchivo from '../components/UI/SubidorArchivo';
 import { calcularPrecioImpresion } from '../utils/precioImpresion';
 import { pxDesdeCm } from '../utils/pxImpresion';
+import { useIdioma } from '../hooks/useIdioma';
 
 const BROWN = 'var(--marca-600)';
 const BROWN_DARK = 'var(--marca-700)';
@@ -64,6 +65,7 @@ const Bloque = styled.div`margin-bottom: 32px;`;
 
 const Impresiones = () => {
   const { user } = useAuth();
+  const { t } = useIdioma();
 
   const [servicios, setServicios] = useState([]);
   const [servicioId, setServicioId] = useState(null);
@@ -77,6 +79,7 @@ const Impresiones = () => {
   const [color, setColor] = useState(false);
   const [copias, setCopias] = useState(1);
   const [dobleCara, setDobleCara] = useState(false);
+  // El papel viaja en español: lo lee el empleado que imprime. Solo se MUESTRA traducido.
   const [papel, setPapel] = useState('Normal');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
@@ -137,10 +140,10 @@ const Impresiones = () => {
   const advertenciaCalce = useCalceImpresion(modo === 'archivo' ? archivo : null, servicio);
 
   const enviar = async () => {
-    if (!servicioId) { setError('Selecciona un formato de impresión.'); return; }
-    if (!user?.id) { setError('Inicia sesión como cliente para enviar tu impresión.'); return; }
-    if (modo === 'archivo' && !archivo) { setError('Sube un archivo antes de continuar.'); return; }
-    if (modo === 'editor' && composer.totalItems === 0) { setError('Agrega al menos una imagen a tu hoja.'); return; }
+    if (!servicioId) { setError(t('Selecciona un formato de impresión.')); return; }
+    if (!user?.id) { setError(t('Inicia sesión como cliente para enviar tu impresión.')); return; }
+    if (modo === 'archivo' && !archivo) { setError(t('Sube un archivo antes de continuar.')); return; }
+    if (modo === 'editor' && composer.totalItems === 0) { setError(t('Agrega al menos una imagen a tu hoja.')); return; }
     setError('');
 
     setEnviando(true);
@@ -159,7 +162,7 @@ const Impresiones = () => {
       fd.append('paper', papel);
 
       const r = await orderService.createPrintOrder(fd);
-      toast.success(r?.emailedToPrinter ? '¡Enviado a la impresora!' : '¡Pedido de impresión creado! Un empleado lo preparará.');
+      toast.success(r?.emailedToPrinter ? t('¡Enviado a la impresora!') : t('¡Pedido de impresión creado! Un empleado lo preparará.'));
       setArchivo(null); setEnviosHechos((n) => n + 1);
       setCopias(1); setColor(false); setDobleCara(false); setPapel('Normal');
     } catch (e) {
@@ -181,9 +184,9 @@ const Impresiones = () => {
       <HeaderTienda />
 
       <Content>
-        <StepTitle>1. Elige el formato</StepTitle>
+        <StepTitle>{t('1. Elige el formato')}</StepTitle>
         {servicios.length === 0 ? (
-          <p style={{ color: 'var(--tinta-tenue)', fontSize: 14, marginBottom: 32 }}>No hay formatos disponibles. El admin los agrega en "Impresiones".</p>
+          <p style={{ color: 'var(--tinta-tenue)', fontSize: 14, marginBottom: 32 }}>{t('Todavía no hay formatos para imprimir.')}</p>
         ) : (
           <SizesGrid>
             {servicios.map((s) => {
@@ -198,24 +201,24 @@ const Impresiones = () => {
               >
                 <span>{s.name}</span>
                 <span style={{ fontSize: 11, color: 'var(--tinta-tenue)', fontWeight: 500 }}>{pxDesdeCm(s.widthCm)} × {pxDesdeCm(s.heightCm)} px</span>
-                <span style={{ fontSize: 12, color: 'var(--tinta-tenue)', fontWeight: 500 }}>${Number(s.pricePerCopy).toFixed(2)}/copia</span>
+                <span style={{ fontSize: 12, color: 'var(--tinta-tenue)', fontWeight: 500 }}>${Number(s.pricePerCopy).toFixed(2)}/{t('copia')}</span>
                 {/* El motivo va DENTRO de la tarjeta, no en un aviso aparte:
                     se lee justo donde la persona está mirando y decidiendo. */}
                 {!disponible && <SinMaterial>{motivo}</SinMaterial>}
-                {disponible && poco && <QuedaPoco>Quedan pocas</QuedaPoco>}
+                {disponible && poco && <QuedaPoco>{t('Quedan pocas')}</QuedaPoco>}
               </SizeCard>
               );
             })}
           </SizesGrid>
         )}
 
-        <StepTitle>2. ¿Cómo quieres imprimir?</StepTitle>
+        <StepTitle>{t('2. ¿Cómo quieres imprimir?')}</StepTitle>
         <Tabs>
           <Tab type="button" $active={modo === 'archivo'} onClick={() => setModo('archivo')}>
-            <FileUp size={18} /> Ya tengo mi archivo
+            <FileUp size={18} /> {t('Ya tengo mi archivo')}
           </Tab>
           <Tab type="button" $active={modo === 'editor'} onClick={() => setModo('editor')}>
-            <LayoutGrid size={18} /> Armar mi impresión
+            <LayoutGrid size={18} /> {t('Armar mi impresión')}
           </Tab>
         </Tabs>
 
@@ -235,9 +238,9 @@ const Impresiones = () => {
                 alto={150}
                 altoPreview={340}
                 ajuste="contain"
-                titulo="Arrastra tu archivo o haz clic para elegirlo"
-                ayuda="PDF, JPG o PNG"
-                etiquetaAria="Subir el archivo a imprimir"
+                titulo={t('Arrastra tu archivo o haz clic para elegirlo')}
+                ayuda={t('PDF, JPG o PNG')}
+                etiquetaAria={t('Subir el archivo a imprimir')}
               />
               {advertenciaCalce && (
                 <Advertencia role="status">
@@ -247,17 +250,17 @@ const Impresiones = () => {
               )}
             </>
           ) : !servicio ? (
-            <p style={{ color: 'var(--tinta-tenue)', fontSize: 14 }}>Primero elige un formato para armar tu hoja.</p>
+            <p style={{ color: 'var(--tinta-tenue)', fontSize: 14 }}>{t('Primero elige un formato para armar tu hoja.')}</p>
           ) : (
             <PrintComposer composer={composer} />
           )}
         </Bloque>
 
-        <StepTitle>3. Opciones</StepTitle>
+        <StepTitle>{t('3. Opciones')}</StepTitle>
         <OptionsCard>
           <Row>
             <Label>
-              Color
+              {t('Color')}
               {/*
                 Dos razones distintas para no poder elegir color, y la persona
                 merece saber cuál le tocó: el formato no lo admite (nunca va a
@@ -265,21 +268,21 @@ const Impresiones = () => {
               */}
               {servicio && !servicio.allowsColor && (
                 <span style={{ display: 'block', fontSize: 11, color: 'var(--tinta-tenue)', fontWeight: 400 }}>
-                  Este formato es solo en blanco y negro
+                  {t('Este formato es solo en blanco y negro')}
                 </span>
               )}
               {servicio?.allowsColor && !hayTintaDeColor && (
                 <span style={{ display: 'block', fontSize: 11, color: 'var(--peligro)', fontWeight: 600 }}>
-                  Hoy no hay tinta de color
+                  {t('Hoy no hay tinta de color')}
                 </span>
               )}
             </Label>
-            <Toggle $on={color} disabled={!puedeColor} onClick={() => puedeColor && setColor((v) => !v)} role="switch" aria-checked={color} aria-label="Imprimir a color">
+            <Toggle $on={color} disabled={!puedeColor} onClick={() => puedeColor && setColor((v) => !v)} role="switch" aria-checked={color} aria-label={t('Imprimir a color')}>
               <span />
             </Toggle>
           </Row>
           <Row>
-            <Label id="etiqueta-copias">Copias</Label>
+            <Label id="etiqueta-copias">{t('Copias')}</Label>
             {/*
               Entero entre 1 y MAX_COPIAS. Un <input type="number"> deja escribir
               "1e258", y así llegaron pedidos con un total de 10^256. El servidor
@@ -297,16 +300,16 @@ const Impresiones = () => {
             />
           </Row>
           <Row>
-            <Label>Doble cara</Label>
-            <Toggle $on={dobleCara} onClick={() => setDobleCara((v) => !v)} role="switch" aria-checked={dobleCara} aria-label="Imprimir a doble cara"><span /></Toggle>
+            <Label>{t('Doble cara')}</Label>
+            <Toggle $on={dobleCara} onClick={() => setDobleCara((v) => !v)} role="switch" aria-checked={dobleCara} aria-label={t('Imprimir a doble cara')}><span /></Toggle>
           </Row>
           <Row>
-            <Label id="etiqueta-papel">Tipo de papel</Label>
+            <Label id="etiqueta-papel">{t('Tipo de papel')}</Label>
             <Select aria-labelledby="etiqueta-papel" value={papel} onChange={(e) => setPapel(e.target.value)}>
-              <option>Normal</option>
-              <option>Fotográfico</option>
-              <option>Cartulina</option>
-              <option>Reciclado</option>
+              <option value="Normal">{t('Normal')}</option>
+              <option value="Fotográfico">{t('Fotográfico')}</option>
+              <option value="Cartulina">{t('Cartulina')}</option>
+              <option value="Reciclado">{t('Reciclado')}</option>
             </Select>
           </Row>
         </OptionsCard>
@@ -315,12 +318,12 @@ const Impresiones = () => {
           {/* Desglose explícito: así el cliente ve por qué doble cara le sale
               más barato y cuánto le suma el color. */}
           <PriceLabel>
-            Total
+            {t('Total')}
             {servicio && (
               <span style={{ display: 'block', fontSize: 11, opacity: 0.75, fontWeight: 400, marginTop: 2 }}>
-                {copias} × {hojas} hoja{hojas > 1 ? 's' : ''} × ${precioPorHoja.toFixed(2)}
-                {dobleCara && paginas > 1 ? ` · ${paginas} págs a doble cara` : ''}
-                {color && servicio.allowsColor ? ` · color +$${Number(servicio.colorSurcharge || 0).toFixed(2)}/hoja` : ''}
+                {copias} × {hojas} {hojas > 1 ? t('hojas') : t('hoja')} × ${precioPorHoja.toFixed(2)}
+                {dobleCara && paginas > 1 ? ` · ${t('{n} págs a doble cara', { n: paginas })}` : ''}
+                {color && servicio.allowsColor ? ` · ${t('color +{monto}/hoja', { monto: `$${Number(servicio.colorSurcharge || 0).toFixed(2)}` })}` : ''}
               </span>
             )}
           </PriceLabel>
@@ -330,7 +333,7 @@ const Impresiones = () => {
         {error && <ErrorMsg>{error}</ErrorMsg>}
 
         <ContinueBtn onClick={enviar} disabled={enviando}>
-          {enviando ? 'Preparando…' : 'Enviar a imprimir'}
+          {enviando ? t('Preparando…') : t('Enviar a imprimir')}
         </ContinueBtn>
       </Content>
 

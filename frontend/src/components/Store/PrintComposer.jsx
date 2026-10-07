@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { ImagePlus, Copy, Trash2, Plus, X } from 'lucide-react';
 import { pxDesdeCm } from '../../utils/pxImpresion';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * PrintComposer — el editor visual de la hoja de impresión.
@@ -31,6 +32,7 @@ const PrintComposer = ({ composer }) => {
   } = composer;
 
   const inputRef = useRef(null);
+  const { t } = useIdioma();
   const pagina = paginas[paginaActiva] || { celdas: [] };
 
   const btn = {
@@ -48,12 +50,12 @@ const PrintComposer = ({ composer }) => {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
         <button type="button" onClick={() => inputRef.current?.click()}
           style={{ ...btn, background: BROWN, color: '#fff', border: 'none', padding: '10px 16px' }}>
-          <ImagePlus size={18} /> Agregar imágenes
+          <ImagePlus size={18} /> {t('Agregar imágenes')}
         </button>
         <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
           onChange={(e) => { agregarImagenes(e.target.files); e.target.value = ''; }} />
         <span style={{ fontSize: 12, color: 'var(--tinta-tenue)', alignSelf: 'center' }}>
-          Celda {pxDesdeCm(celdaAnchoCm)} × {pxDesdeCm(celdaAltoCm)} px — hasta {columnas * filas} por hoja
+          {t('Celda {ancho} × {alto} px — hasta {n} por hoja', { ancho: pxDesdeCm(celdaAnchoCm), alto: pxDesdeCm(celdaAltoCm), n: columnas * filas })}
         </span>
       </div>
 
@@ -68,10 +70,10 @@ const PrintComposer = ({ composer }) => {
                 borderColor: i === paginaActiva ? BROWN : 'var(--linea-fuerte)',
                 color: i === paginaActiva ? BROWN : 'var(--tinta-suave)',
               }}>
-              Página {i + 1}
+              {t('Página {n}', { n: i + 1 })}
             </button>
             {paginas.length > 1 && (
-              <button type="button" onClick={() => eliminarPagina(i)} title="Eliminar página"
+              <button type="button" onClick={() => eliminarPagina(i)} title={t('Eliminar página')}
                 style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--peligro)', padding: '0 4px' }}>
                 <X size={14} />
               </button>
@@ -79,7 +81,7 @@ const PrintComposer = ({ composer }) => {
           </div>
         ))}
         <button type="button" onClick={agregarPagina} style={{ ...btn, padding: '6px 12px', fontSize: 12 }}>
-          <Plus size={14} /> Agregar página
+          <Plus size={14} /> {t('Agregar página')}
         </button>
       </div>
 
@@ -167,14 +169,14 @@ const PrintComposer = ({ composer }) => {
       {/* Toolbar de la celda seleccionada */}
       {celdaSeleccionada && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-          <button type="button" style={btn} onClick={() => duplicar(seleccionado.pagina, seleccionado.celda)}><Copy size={16} /> Duplicar</button>
+          <button type="button" style={btn} onClick={() => duplicar(seleccionado.pagina, seleccionado.celda)}><Copy size={16} /> {t('Duplicar')}</button>
           <button type="button" style={{ ...btn, color: 'var(--peligro)', borderColor: 'var(--peligro-borde)' }} onClick={() => eliminar(seleccionado.pagina, seleccionado.celda)}>
-            <Trash2 size={16} /> Quitar
+            <Trash2 size={16} /> {t('Quitar')}
           </button>
         </div>
       )}
       {!celdaSeleccionada && pagina.celdas.some(Boolean) && (
-        <p style={{ fontSize: 12, color: 'var(--tinta-tenue)', margin: 0 }}>Toca una foto para duplicarla o quitarla.</p>
+        <p style={{ fontSize: 12, color: 'var(--tinta-tenue)', margin: 0 }}>{t('Toca una foto para duplicarla o quitarla.')}</p>
       )}
     </div>
   );

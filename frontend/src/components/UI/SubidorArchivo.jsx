@@ -4,6 +4,7 @@ import {
   FileArchive, FileVideo, FileAudio, FileCode,
 } from 'lucide-react';
 import { useSubidaArchivo } from '../../hooks/useSubidaArchivo';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * SubidorArchivo — la misma zona de subida para toda la app.
@@ -306,9 +307,9 @@ const SubidorArchivo = ({
   altoPreview,               // alto cuando ya hay algo (por defecto, el mismo)
   crecer = false,            // ocupar el alto que sobre en vez de medir fijo
   radio = 14,
-  titulo = 'Arrastra el archivo o haz clic para elegirlo',
+  titulo,
   ayuda = '',
-  etiquetaAria = 'Subir archivo',
+  etiquetaAria,
   className = '',
 }) => {
   const {
@@ -316,6 +317,11 @@ const SubidorArchivo = ({
     inputRef, quitar, abrirSelector, alTeclado, alCambiarInput,
     alArrastrarEncima, alSalirArrastre, alSoltar,
   } = useSubidaArchivo({ valorInicial, accept, maxMB, alElegir: onArchivo, reinicio });
+
+  const { t } = useIdioma();
+  // Los textos de siempre, en el idioma de la pantalla (en el panel, español).
+  const tituloVisible = titulo ?? t('Arrastra el archivo o haz clic para elegirlo');
+  const etiqueta = etiquetaAria ?? t('Subir archivo');
 
   const c = PALETAS[variante] || PALETAS.claro;
   const IconoGenerico = ICONOS[extension] || Archivo;
@@ -330,7 +336,7 @@ const SubidorArchivo = ({
         $arrastrando={arrastrando}
         role="button"
         tabIndex={0}
-        aria-label={hayAlgo ? `${etiquetaAria}. Hay uno elegido: ${nombre}. Se puede cambiar` : etiquetaAria}
+        aria-label={hayAlgo ? t('{etiqueta}. Hay uno elegido: {nombre}. Se puede cambiar', { etiqueta, nombre }) : etiqueta}
         onClick={abrirSelector}
         onKeyDown={alTeclado}
         onDragOver={alArrastrarEncima}
@@ -346,7 +352,7 @@ const SubidorArchivo = ({
             */}
             <Capa key={url}>
               {tipo === 'imagen' && (
-                <Miniatura src={url} alt={`Vista previa de ${nombre}`} $ajuste={ajuste} />
+                <Miniatura src={url} alt={t('Vista previa de {nombre}', { nombre })} $ajuste={ajuste} />
               )}
 
               {tipo === 'pdf' && (
@@ -370,8 +376,8 @@ const SubidorArchivo = ({
             <BotonQuitar
               type="button"
               $c={c}
-              aria-label={`Quitar ${nombre}`}
-              title="Quitar"
+              aria-label={t('Quitar {nombre}', { nombre })}
+              title={t('Quitar')}
               onClick={(e) => { e.stopPropagation(); quitar(); }}
               // Sin esto, el Enter del botón sube y también abre el selector.
               onKeyDown={(e) => e.stopPropagation()}
@@ -382,7 +388,7 @@ const SubidorArchivo = ({
         ) : (
           <>
             <UploadCloud size={26} strokeWidth={1.7} />
-            <TextoVacio>{titulo}</TextoVacio>
+            <TextoVacio>{tituloVisible}</TextoVacio>
             {/* Más chica que el título, pero sin transparencia: con opacidad
                 el gris bajaba a 2,9:1 y a 11,5px ya no se leía. */}
             {ayuda && <TextoVacio style={{ fontSize: 11.5 }}>{ayuda}</TextoVacio>}

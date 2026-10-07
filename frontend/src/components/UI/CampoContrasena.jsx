@@ -1,5 +1,6 @@
 import { forwardRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useIdioma } from '../../hooks/useIdioma';
 
 /*
  * CampoContrasena — input de contraseña con el ojo para verla.
@@ -17,13 +18,15 @@ import { Eye, EyeOff } from 'lucide-react';
  * ya tienen su propio envoltorio posicionado. Estilos en línea a propósito:
  * así funciona igual dentro de Tailwind que dentro de styled-components.
  */
-export const BotonOjo = ({ visible, onToggle, derecha = 14 }) => (
+export const BotonOjo = ({ visible, onToggle, derecha = 14 }) => {
+  const { t } = useIdioma();
+  return (
   <button
     type="button"
     onClick={onToggle}
     tabIndex={-1}
-    aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-    title={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+    aria-label={visible ? t('Ocultar contraseña') : t('Mostrar contraseña')}
+    title={visible ? t('Ocultar contraseña') : t('Mostrar contraseña')}
     style={{
       position: 'absolute',
       right: derecha,
@@ -40,10 +43,12 @@ export const BotonOjo = ({ visible, onToggle, derecha = 14 }) => (
   >
     {visible ? <EyeOff size={17} /> : <Eye size={17} />}
   </button>
-);
+  );
+};
 
 const CampoContrasena = forwardRef(({ className = '', ...props }, ref) => {
   const [visible, setVisible] = useState(false);
+  const { t } = useIdioma();
 
   return (
     <div className="relative w-full">
@@ -62,8 +67,8 @@ const CampoContrasena = forwardRef(({ className = '', ...props }, ref) => {
          * campo al botón de entrar, no a un interruptor visual.
          */
         tabIndex={-1}
-        aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-        title={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        aria-label={visible ? t('Ocultar contraseña') : t('Mostrar contraseña')}
+        title={visible ? t('Ocultar contraseña') : t('Mostrar contraseña')}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tinta-tenue)] hover:text-[var(--tinta-suave)] transition-colors"
       >
         {visible ? <EyeOff size={17} /> : <Eye size={17} />}
