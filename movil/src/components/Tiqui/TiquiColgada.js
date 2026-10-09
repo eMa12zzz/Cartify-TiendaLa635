@@ -178,8 +178,10 @@ const Zetas = ({ color, tam }) => {
 /*
  * `largo`: cuánto cordón hay entre el broche y la etiqueta (en unidades del
  * dibujo). `alto`: el alto total en pantalla, cordón incluido.
+ * `broche` y `meciendo`: apagados cuando otro dibuja el broche y el cordón
+ * tenso que la sostiene (JalarParaRecargar).
  */
-const TiquiColgada = ({ cara = 'normal', alto = 240, largo = 150, conDisfraz = true, style }) => {
+const TiquiColgada = ({ cara = 'normal', alto = 240, largo = 150, conDisfraz = true, broche = true, meciendo = true, style }) => {
   const c = useColoresTiqui();
   const disfraz = useDisfrazTiqui();
   const reducido = useMovimientoReducido();
@@ -198,7 +200,7 @@ const TiquiColgada = ({ cara = 'normal', alto = 240, largo = 150, conDisfraz = t
   const vaiven = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     vaiven.setValue(0);
-    if (reducido) return undefined;
+    if (reducido || !meciendo) return undefined;
     const ms = dormida ? 3800 : 2600;
     const bucle = Animated.loop(
       Animated.sequence([
@@ -208,7 +210,7 @@ const TiquiColgada = ({ cara = 'normal', alto = 240, largo = 150, conDisfraz = t
     );
     bucle.start();
     return () => bucle.stop();
-  }, [dormida, reducido, vaiven]);
+  }, [dormida, reducido, meciendo, vaiven]);
   const giro = dormida ? 2 : 3.5;
 
   // Al despertar, un saltito: se sacude el sueño.
@@ -268,9 +270,9 @@ const TiquiColgada = ({ cara = 'normal', alto = 240, largo = 150, conDisfraz = t
       </Animated.View>
 
       {/* El broche que la sujeta al borde. No se mece. */}
-      <Svg width={ancho} height={alto} viewBox={`${vx} ${vy} ${vw} ${vh}`} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
+      {broche && <Svg width={ancho} height={alto} viewBox={`${vx} ${vy} ${vw} ${vh}`} style={{ position: 'absolute', left: 0, top: 0 }} pointerEvents="none">
         <Rect x={188} y={-6} width={24} height={12} rx={4} fill={c.cuerpo} />
-      </Svg>
+      </Svg>}
 
       {dormida && !reducido && (
         <View pointerEvents="none" style={{ position: 'absolute', left: ancho * 0.68, top: alto * (largo / vh) + alto * 0.1 }}>

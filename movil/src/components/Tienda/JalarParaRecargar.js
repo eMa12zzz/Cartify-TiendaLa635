@@ -6,7 +6,8 @@
  * que gira, baja Tiqui colgada de su cordón:
  *
  *   · mientras se jala, baja con el dedo y pone cara de sorpresa (la están
- *     jalando);
+ *     jalando). Cuelga de un broche FIJO en el borde de arriba: lo que se
+ *     estira es el cordón, como una etiqueta de verdad;
  *   · al soltar pasado el punto, pone cara de contenta, sube y desaparece,
  *     y la lista se recarga detrás;
  *   · si se suelta antes, vuelve a subir y no pasa nada.
@@ -29,22 +30,48 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import TiquiColgada from '../Tiqui/TiquiColgada';
+import { useColoresTiqui } from '../Tiqui/piezas';
 import { useIdioma } from '../../context/IdiomaContext';
 
 // Cuánto hay que jalar (ya con la resistencia) para que recargue.
-const PUNTO = 88;
-// Hasta dónde baja como mucho.
-const TOPE = 140;
+const PUNTO = 96;
+// Hasta dónde baja como mucho la lista.
+const TOPE = 160;
 // El alto de Tiqui colgada, cordón incluido, y cuánto cordón lleva: poco,
 // para que al llegar al punto ya se vea entera, sombrero incluido.
 const ALTO_TIQUI = 112;
 const LARGO_CORDON = 40;
+/*
+ * Tiqui baja más rápido que el dedo: a mitad del jalón ya asoma entera,
+ * colgando justo del broche, y desde ahí lo que crece es el cordón.
+ */
+const VELOCIDAD_TIQUI = 1.5;
+// El cordón que se estira, en píxeles: un tope holgado (nunca pasa de
+// TOPE × VELOCIDAD − ALTO) y su grosor, el mismo del cordón dibujado
+// (7 unidades del dibujo).
+const CORDON_MAX = TOPE * VELOCIDAD_TIQUI;
+const GROSOR = (7 * ALTO_TIQUI) / (398 + LARGO_CORDON + 6);
 
 const JalarParaRecargar = ({ alRecargar, children }) => {
   const { t } = useIdioma();
+  const c = useColoresTiqui();
   // Cuánto se jaló (lo que baja la lista) y dónde va Tiqui.
   const jalon = useRef(new Animated.Value(0)).current;
   const tiquiY = useRef(new Animated.Value(-ALTO_TIQUI)).current;
+  /*
+   * El cordón tenso, del broche a donde empieza Tiqui: crece con ella al
+   * bajar y se recoge al subir. Mientras Tiqui todavía está arriba del borde
+   * no hay cordón que mostrar. (+3: tapa la juntura con su propio cordón.)
+   */
+  const estirado = useMemo(
+    () => Animated.add(tiquiY, 3).interpolate({
+      inputRange: [0, CORDON_MAX],
+      // Nunca 0 del todo: una escala en cero da problemas en Android.
+      outputRange: [0.001, 1],
+      extrapolate: 'clamp',
+    }),
+    [tiquiY]
+  );
   const [cara, setCara] = useState('jalada');
   const [visible, setVisible] = useState(false);
 
@@ -111,7 +138,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
         const baja = Math.min(TOPE, d * 0.6);
         ultimo.current = baja;
         jalon.setValue(baja);
-        tiquiY.setValue(baja - ALTO_TIQUI);
+        tiquiY.setValue(baja * VELOCIDAD_TIQUI - ALTO_TIQUI);
       })
       .onEnd(() => {
         if (!empezoArriba.current) return;
@@ -137,12 +164,25 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
         onAccessibilityAction={(e) => e.nativeEvent.actionName === 'recargar' && recargar()}
       >
         {visible && (
-          <Animated.View
+          <View
             pointerEvents="none"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', zIndex: 2, elevation: 2, transform: [{ translateY: tiquiY }] }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: CORDON_MAX + ALTO_TIQUI, alignItems: 'center', zIndex: 2, elevation: 2 }}
           >
-            <TiquiColgada cara={cara} alto={ALTO_TIQUI} largo={LARGO_CORDON} />
-          </Animated.View>
+            {/* El cordón que se estira desde el broche. Se escala desde arriba: con la palabra, no en píxeles. */}
+            <Animated.View
+              style={{
+                position: 'absolute', top: 0, left: '50%', marginLeft: -GROSOR / 2,
+                width: GROSOR, height: CORDON_MAX, borderRadius: GROSOR / 2, backgroundColor: c.cordon,
+                transformOrigin: 'top', transform: [{ scaleY: estirado }],
+              }}
+            />
+            {/* Tiqui, sin broche ni vaivén propios: la sostiene el cordón tenso. */}
+            <Animated.View style={{ transform: [{ translateY: tiquiY }] }}>
+              <TiquiColgada cara={cara} alto={ALTO_TIQUI} largo={LARGO_CORDON} broche={false} meciendo={false} />
+            </Animated.View>
+            {/* El broche, fijo en el borde de arriba. */}
+            <View style={{ position: 'absolute', top: 0, left: '50%', marginLeft: -6, width: 12, height: 6, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: c.cuerpo }} />
+          </View>
         )}
         <Animated.View style={{ flex: 1, transform: [{ translateY: jalon }] }}>
           <GestureDetector gesture={gestoNativo}>

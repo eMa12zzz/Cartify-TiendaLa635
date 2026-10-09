@@ -18,7 +18,9 @@
  * Variables:
  *   ELEVENLABS_API_KEY   la llave (solo con permiso de Text to Speech)
  *   ELEVENLABS_VOICE_ID  la voz; por defecto la de Tiqui (ver abajo)
- *   ELEVENLABS_MODEL     por defecto eleven_flash_v2_5, el más rápido y barato
+ *   ELEVENLABS_MODEL     por defecto eleven_flash_v2_5, el más rápido y barato.
+ *                        Con eleven_v4_turbo (o eleven_v3_conversational)
+ *                        Tiqui habla con emoción: ver conEmocion, abajo.
  *
  * La voz de Tiqui es una voz de la cuenta de ElevenLabs de la tienda (la
  * actual, desde el 2026-10-04; antes era p5EUznrYaWnafKvUkNiR). Es la misma
@@ -30,6 +32,41 @@
 
 const VOZ_POR_DEFECTO = "HZX0g2vsDbKCRzHJAQ20";
 const MODELO_POR_DEFECTO = "eleven_flash_v2_5";
+
+export const modeloDeVoz = () => process.env.ELEVENLABS_MODEL || MODELO_POR_DEFECTO;
+
+/*
+ * ── El ánimo de cada frase ──
+ * Tiqui no dice todo igual: se alegra al agregar algo, se emociona al cerrar
+ * la compra, se asombra con una oferta, se apena si no hay lo que pidieron,
+ * duda si no entendió y, muy de vez en cuando, se ríe. El ánimo lo elige la
+ * IA (o, en las frases fijas de la web y la app, utils/animoTiqui.js) y aquí
+ * se vuelve una etiqueta de ElevenLabs al principio de la frase.
+ *
+ * Solo con los modelos que las entienden. Flash (el de siempre) leería
+ * "[laughs]" en voz alta, así que con él la frase va tal cual: cambiar de
+ * modelo en Render (ELEVENLABS_MODEL) prende o apaga las emociones sin tocar
+ * el código.
+ */
+const ETIQUETAS = {
+  alegre: "[cheerfully]",
+  emocionada: "[excited]",
+  asombrada: "[surprised]",
+  rie: "[laughs]",
+  apenada: "[sad]",
+  dudosa: "[curious]",
+  // Recién la despertaron (la app, al tocarla dormida): bosteza.
+  despertando: "[yawns]",
+};
+export const ANIMOS = ["normal", ...Object.keys(ETIQUETAS)];
+// Los que puede elegir la IA. "despertando" lo pone la app, no la charla.
+export const ANIMOS_IA = ANIMOS.filter((a) => a !== "despertando");
+const MODELOS_CON_EMOCION = ["eleven_v4_turbo", "eleven_v3_conversational", "eleven_v3"];
+
+export const animoValido = (animo) => (ANIMOS.includes(animo) ? animo : "normal");
+
+export const conEmocion = (texto, animo, modelo = modeloDeVoz()) =>
+  ETIQUETAS[animo] && MODELOS_CON_EMOCION.includes(modelo) ? `${ETIQUETAS[animo]} ${texto}` : texto;
 
 /*
  * ── ¿De verdad hay voz? ──
@@ -129,7 +166,7 @@ export const pedirVoz = async (texto, { signal } = {}) => {
     },
     body: JSON.stringify({
       text: texto,
-      model_id: process.env.ELEVENLABS_MODEL || MODELO_POR_DEFECTO,
+      model_id: modeloDeVoz(),
       language_code: "es",
     }),
     signal,

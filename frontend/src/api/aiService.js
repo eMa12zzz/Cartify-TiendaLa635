@@ -78,5 +78,7 @@ export const aiService = {
   },
 
   // Dónde está el audio de una frase dicha por Tiqui (ver backend utils/vozTiqui.js).
-  urlVoz: (texto) => `${api.defaults.baseURL}/ai/voz?t=${encodeURIComponent(texto)}`,
+  // `animo`: cómo suena la frase (ver utils/animoTiqui.js). Lo normal no viaja.
+  urlVoz: (texto, animo) =>
+    `${api.defaults.baseURL}/ai/voz?t=${encodeURIComponent(texto)}${animo && animo !== 'normal' ? `&a=${animo}` : ''}`,
 };
