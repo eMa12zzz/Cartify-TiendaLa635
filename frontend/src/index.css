@@ -1195,3 +1195,111 @@ html[data-panel-foco] .admin-theme main a {
     @apply bg-transparent!;
   }
 }
+
+/*
+  ==========================================
+  EL RETO DE TIQUI — el juego del stand (pages/JuegoTiqui.jsx)
+  ==========================================
+  Todo con prefijo juego-. Las animaciones van con la misma vara que el
+  asistente (ease-out fuerte) y se apagan con movimiento reducido, salvo las
+  que dicen cuánto falta (el tiempo y el botón que se llena).
+*/
+
+/* El globo de Tiqui: la cola abajo, hacia ella; con .juego-globo-lado, a la izquierda. */
+.juego-globo { position: relative; background: #fff; color: #001a29; border-radius: 26px; }
+.juego-globo::before {
+  content: ''; position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%);
+  border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 15px solid #fff;
+}
+@media (min-width: 768px) {
+  .juego-globo-lado::before {
+    left: -13px; bottom: auto; top: 50%; transform: translateY(-50%);
+    border: 0; border-top: 11px solid transparent; border-bottom: 11px solid transparent; border-right: 15px solid #fff;
+  }
+}
+
+/* Lo que aparece sube un poco y se enciende. */
+@keyframes juegoEntra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.juego-entra { animation: juegoEntra 380ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+
+/* El tiempo de cada pregunta: se vacía y en los últimos segundos se pone naranja. */
+@keyframes juegoTiempo { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.juego-tiempo { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.juego-tiempo > i {
+  display: block; height: 100%; border-radius: inherit; background: #009aeb;
+  transform-origin: left; animation: juegoTiempo linear both; transition: background-color 300ms;
+}
+.juego-tiempo-apurado > i { background: #ff8a3d; }
+.juego-tiempo-quieto > i { animation-play-state: paused; }
+
+/* Las opciones: se corren al pasar encima; la buena late y la mala tiembla. */
+.juego-opcion { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 200ms, border-color 200ms, opacity 200ms; }
+.juego-opcion:not(:disabled):hover { transform: translateX(6px); background-color: rgba(255, 255, 255, 0.12) !important; }
+.juego-opcion:not(:disabled):active { transform: scale(0.98); }
+@keyframes juegoBien { 0% { transform: scale(1); } 40% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes juegoMal {
+  0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); }
+  40% { transform: translateX(9px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(4px); }
+}
+.juego-bien { animation: juegoBien 420ms cubic-bezier(0.23, 1, 0.32, 1); }
+.juego-mal { animation: juegoMal 420ms ease-out; }
+
+/* Una ficha nueva en el marcador salta al llenarse. */
+@keyframes juegoFicha { 0% { transform: scale(0.4); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.juego-ficha { animation: juegoFicha 420ms cubic-bezier(0.23, 1, 0.32, 1); }
+
+/* El botón que sigue solo se va llenando. */
+@keyframes juegoRelleno { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.juego-seguir-relleno { position: absolute; inset: 0; background: rgba(0, 154, 235, 0.22); transform-origin: left; animation: juegoRelleno linear both; }
+
+/* Jugar y Girar laten para llamar. */
+@keyframes juegoLatido {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 154, 235, 0.55), 0 20px 60px -12px rgba(0, 154, 235, 0.7); }
+  50% { box-shadow: 0 0 0 18px rgba(0, 154, 235, 0), 0 20px 60px -12px rgba(0, 154, 235, 0.7); }
+}
+.juego-latido { animation: juegoLatido 1.8s ease-out infinite; }
+
+/* La ruleta: focos que se turnan (más rápido mientras gira), la flecha que
+   salta con cada porción, la porción ganadora que brilla y la estrella del secreto. */
+@keyframes juegoFoco { 0% { fill: #ffe7a6; } 50% { fill: #3c5568; } }
+.juego-foco { fill: #ffe7a6; animation: juegoFoco 1.2s steps(1) infinite; }
+.juego-foco-b { animation-delay: 0.6s; }
+.juego-ruleta-girando .juego-foco { animation-duration: 0.3s; }
+.juego-ruleta-girando .juego-foco-b { animation-delay: 0.15s; }
+.juego-flecha { transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes juegoFlecha { 0% { transform: rotate(0); } 30% { transform: rotate(-16deg); } 100% { transform: rotate(0); } }
+.juego-flecha-tic { animation: juegoFlecha 140ms ease-out; }
+@keyframes juegoGanadora { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: 0.25; } }
+.juego-ganadora { animation: juegoGanadora 0.7s ease-in-out infinite; }
+@keyframes juegoEstrella { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.15) rotate(12deg); } }
+.juego-estrella { transform-box: fill-box; transform-origin: center; animation: juegoEstrella 1.6s ease-in-out infinite; }
+
+/* El premio: entra de golpe; el secreto, dorado y con un brillo que corre. */
+@keyframes juegoPremio { 0% { transform: scale(0.3); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+.juego-premio { animation: juegoPremio 600ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+@keyframes juegoBrillo { from { background-position: 200% 0; } to { background-position: 0 0; } }
+.juego-dorado {
+  background: linear-gradient(90deg, #ffc23d, #fff1c4, #ffc23d); background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: juegoBrillo 2.2s linear infinite;
+}
+
+/* Los números del panel del operador, sin las flechitas del navegador (ya tienen − y +). */
+.juego-numero { -moz-appearance: textfield; appearance: textfield; }
+.juego-numero::-webkit-outer-spin-button,
+.juego-numero::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Confeti que cae mientras se muestra el premio. */
+.juego-confeti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 30; }
+.juego-confeti i { position: absolute; top: -40px; border-radius: 3px; animation: juegoCae linear infinite; }
+@keyframes juegoCae {
+  from { transform: translateY(0) rotate(var(--giro)); }
+  to { transform: translateY(115vh) rotate(calc(var(--giro) + 720deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .juego-entra, .juego-bien, .juego-mal, .juego-ficha, .juego-latido, .juego-foco,
+  .juego-flecha-tic, .juego-ganadora, .juego-estrella, .juego-premio, .juego-dorado { animation: none !important; }
+  .juego-opcion { transition: none; }
+  .juego-confeti { display: none; }
+}

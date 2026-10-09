@@ -7,7 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist']),
   {
-    files: ['**/*.{js,jsx}'],
+    files: ['**/*.{js,jsx,mjs}'],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,
@@ -71,9 +71,9 @@ export default defineConfig([
     },
   },
   {
-    // Lo que corre en Node y no en el navegador: la vista previa de Vercel y
-    // la configuración. Las pruebas, con lo que traen las de Vitest.
-    files: ['middleware.js', 'vite.config.js', '**/*.test.{js,jsx}'],
+    // Lo que corre en Node y no en el navegador: la vista previa de Vercel, la
+    // configuración y los scripts. Las pruebas, con lo que traen las de Vitest.
+    files: ['middleware.js', 'vite.config.js', 'scripts/**/*.{js,mjs}', '**/*.test.{js,jsx}'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
 ])
