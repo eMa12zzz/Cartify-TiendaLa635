@@ -1,0 +1,9 @@
+# Los archivos de texto de la app, siempre con saltos de línea LF, también en
+# Windows.
+#
+# La "huella" de la app (runtimeVersion "fingerprint" de expo-updates) incluye
+# algunos archivos de texto tal cual, como movil/.gitignore. En Windows, Git
+# los dejaba con saltos CRLF y en GitHub (Linux) quedan con LF: la misma app
+# daba dos huellas distintas, y las actualizaciones que publica GitHub
+# (actualizar-app.yml) no les llegaban a las APK compiladas en la compu.
+movil/** text=auto eol=lf
