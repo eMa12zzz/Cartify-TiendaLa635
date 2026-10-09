@@ -425,6 +425,12 @@ export const useVoiceAssistant = ({
    */
   const [vozTiqui, setVozTiqui] = useState(false);
   const [sonandoTiqui, setSonandoTiqui] = useState(false);
+  /*
+   * Ya hay respuesta, pero su voz todavía viene en camino (entre medio
+   * segundo y uno). Mientras tanto la pantalla sigue en "pensando": antes
+   * salía el texto y la boca se movía, y el sonido llegaba después.
+   */
+  const [esperandoVoz, setEsperandoVoz] = useState(false);
 
   const dataRef = useRef({ productos, carrito, totalCarrito, categorias });
   const fnRef = useRef({});
@@ -512,6 +518,7 @@ export const useVoiceAssistant = ({
   const callarTodo = () => {
     callarTiqui();
     setSonandoTiqui(false);
+    setEsperandoVoz(false);
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
   };
 
@@ -639,16 +646,22 @@ export const useVoiceAssistant = ({
 
     // Con la voz de Tiqui, si el servidor la tiene. Si no arranca, la del sistema.
     if (vozTiquiRef.current) {
+      setEsperandoVoz(true);
       decirConTiqui(aiService.urlVoz(dicho, tono), {
         // 0,95 es la velocidad "Normal" de la voz del sistema; el audio va a 1.
         velocidad: rateRef.current / 0.95,
-        alEmpezar: () => setSonandoTiqui(true),
+        alEmpezar: () => {
+          setEsperandoVoz(false);
+          setSonandoTiqui(true);
+        },
         alTerminar: () => {
           fallasVozRef.current = 0;
+          setEsperandoVoz(false);
           setSonandoTiqui(false);
           continuar();
         },
         alFallar: () => {
+          setEsperandoVoz(false);
           setSonandoTiqui(false);
           fallasVozRef.current += 1;
           if (fallasVozRef.current >= 2) {
@@ -1177,6 +1190,6 @@ export const useVoiceAssistant = ({
     iniciar, detener, toggleMute, cambiarVelocidad, hablar, soportado, interrumpir,
     voces, vozActual, cambiarVoz,
     // La voz de Tiqui: si el servidor la tiene, y si está sonando ahora.
-    vozTiqui, sonandoTiqui,
+    vozTiqui, sonandoTiqui, esperandoVoz,
   };
 };
