@@ -1314,7 +1314,8 @@ const ShoppingCart = ({
                   <StoreIcon><StoreFront size={19} strokeWidth={1.8} /></StoreIcon>
                   <StoreInfo>
                     <div className="name">{`${ajustes.nombreLinea1} ${ajustes.nombreLinea2}`.trim()}</div>
-                    <div className="sub">Mejicanos, San Salvador</div>
+                    {/* La misma dirección del pie (Personalización → Datos del negocio). */}
+                    {ajustes.direccion && <div className="sub">{ajustes.direccion}</div>}
                   </StoreInfo>
                 </StoreName>
 

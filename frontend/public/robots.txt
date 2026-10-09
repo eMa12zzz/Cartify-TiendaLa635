@@ -31,6 +31,7 @@ Disallow: /create-password
 Disallow: /login-password
 Disallow: /completar-registro
 Disallow: /forgot-password
+Disallow: /juego
 
 # Si la tienda estrena dominio propio, cambiarlo aquí y en index.html.
 Sitemap: https://cartify-tienda-la635.vercel.app/sitemap.xml

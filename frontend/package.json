@@ -8,7 +8,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "voz-juego": "node scripts/voz-juego.mjs",
+    "voz-juego:grabar": "node scripts/voz-juego.mjs --grabar",
+    "voz-juego:limpiar": "node scripts/voz-juego.mjs --limpiar"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.3.0",

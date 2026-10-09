@@ -50,6 +50,7 @@ import { iconoDeModulo } from '../utils/modulos';
 import { avisarActividad } from '../utils/actividadUsuario';
 import { useIdioma } from '../context/IdiomaContext';
 import { foto, ANCHO } from '../utils/fotos';
+import { DIRECCION_EN_UNA_LINEA } from '../utils/tienda';
 
 const LineaCarrito = ({ item, pasillos, alActualizar, alEliminar, alAbrir, colores }) => {
   const { t } = useIdioma();
@@ -233,7 +234,8 @@ const Carrito = ({ irAInicio, irAPagar }) => {
                   </View>
                   <View>
                     <Text style={estilos.tiendaNombre}>Tienda la 635</Text>
-                    <Text style={estilos.tiendaLugar}>Mejicanos, San Salvador</Text>
+                    {/* La misma dirección que Ayuda y el pie de la web. */}
+                    <Text style={estilos.tiendaLugar}>{DIRECCION_EN_UNA_LINEA}</Text>
                   </View>
                 </View>
                 <Text style={estilos.etiquetaProductos}>{t('Productos')}</Text>

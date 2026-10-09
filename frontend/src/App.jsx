@@ -67,6 +67,7 @@ import Seccion from './pages/Seccion';       // Una sección de la portada, comp
 import NoEncontrado from './pages/NoEncontrado'; // 404: cualquier dirección que no exista
 const Impresiones = lazy(() => import('./pages/impresiones'));
 const Legal = lazy(() => import('./pages/Legal'));               // Términos, privacidad, cookies y devoluciones
+const JuegoTiqui = lazy(() => import('./pages/JuegoTiqui'));     // El reto de Tiqui: el juego del stand de la Expo
 
 // --- Panel Administrativo ---
 const AdminLayout = lazy(() => import('./components/Layout/AdminLayout')); // Layout compartido del admin (sidebar + topbar)
@@ -308,6 +309,11 @@ function App() {
           {/* "Ver todos" de una fila de la portada: /seccion/familia-quesos */}
           <Route path="/seccion/:clave"  element={<Seccion />} />
           <Route path="/impresiones"     element={<Impresiones />} />
+          {/*
+            El juego del stand de la Expo, para la laptop. Pública porque no
+            toca datos de nadie; los buscadores no la ven (robots.txt).
+          */}
+          <Route path="/juego"           element={<JuegoTiqui />} />
           {/*
            * Términos y privacidad. Es PÚBLICA a propósito: hay que poder leerla
            * ANTES de registrarse —que es justo cuando se decide si uno entrega
