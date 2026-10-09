@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { paraDecir } from "./vozTiqui.js";
+import { paraDecir, conEmocion, animoValido, ANIMOS_IA } from "./vozTiqui.js";
 import { calcularEnvio, RADIO_MAXIMO_KM } from "./envio.js";
 
 /*
@@ -21,6 +21,32 @@ describe("lo que Tiqui dice en voz alta", () => {
 
   it("las promos 2x1 se dicen 2 por 1", () => {
     expect(paraDecir("Llévate 3x2 en churritos")).toBe("Llévate 3 por 2 en churritos");
+  });
+});
+
+/*
+ * Sin llamar a ElevenLabs: solo se revisa el texto que se le mandaría.
+ */
+describe("el ánimo con que habla Tiqui", () => {
+  it("con un modelo que entiende emociones, la frase lleva su etiqueta", () => {
+    expect(conEmocion("¡Me encanta!", "rie", "eleven_v4_turbo")).toBe("[laughs] ¡Me encanta!");
+    expect(conEmocion("¡Mira nada más!", "asombrada", "eleven_v3_conversational")).toBe("[surprised] ¡Mira nada más!");
+  });
+
+  it("con Flash va tal cual: leería la etiqueta en voz alta", () => {
+    expect(conEmocion("¡Me encanta!", "rie", "eleven_flash_v2_5")).toBe("¡Me encanta!");
+  });
+
+  it("lo normal, o un ánimo que no existe, no lleva etiqueta", () => {
+    expect(conEmocion("Hola", "normal", "eleven_v4_turbo")).toBe("Hola");
+    expect(conEmocion("Hola", animoValido("enojada"), "eleven_v4_turbo")).toBe("Hola");
+    expect(animoValido(undefined)).toBe("normal");
+  });
+
+  it("recién despertada bosteza, pero ese ánimo lo pone la app y no la IA", () => {
+    expect(conEmocion("Uy, ya desperté.", "despertando", "eleven_v4_turbo")).toBe("[yawns] Uy, ya desperté.");
+    expect(ANIMOS_IA).not.toContain("despertando");
+    expect(ANIMOS_IA).toContain("rie");
   });
 });
 

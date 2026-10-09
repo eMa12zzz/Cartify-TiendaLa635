@@ -10,7 +10,10 @@ import "../models/brand.js";
 import promotionModel from "../models/promotion.js";
 import storeSettingsModel from "../models/storeSettings.js";
 import { getIA, generarConIA, generarConCobertura } from "../utils/iaClient.js";
-import { vozDisponible, comprobarVoz, paraDecir, frasePrevia, guardarFrase, pedirVoz } from "../utils/vozTiqui.js";
+import {
+  vozDisponible, comprobarVoz, paraDecir, frasePrevia, guardarFrase, pedirVoz,
+  ANIMOS_IA, animoValido, conEmocion, modeloDeVoz,
+} from "../utils/vozTiqui.js";
 import { generarCopyPlantilla } from "../utils/plantillasPromo.js";
 import { esFamiliaValida, LISTA_PARA_IA } from "../utils/familias.js";
 
@@ -894,8 +897,9 @@ const HERRAMIENTAS_TIQUI = [
           type: Type.OBJECT,
           properties: {
             texto: { type: Type.STRING, description: "Una o dos frases cortas, máximo 160 caracteres. Se escucha, no se lee." },
+            animo: { type: Type.STRING, enum: ANIMOS_IA, description: "Cómo suena tu voz al decirlo. Ver CÓMO HABLAS." },
           },
-          required: ["texto"],
+          required: ["texto", "animo"],
         },
       },
     ],
@@ -919,6 +923,11 @@ const MODO_TIQUI = [
   "- Español claro y neutro, que se entienda a la primera, también para personas mayores.",
   "  Nada de diminutivos ni jerga.",
   "- Los precios, con signo de dólar y dos decimales: $2.50.",
+  "- En 'responder' eliges también tu 'animo', que es CÓMO suena tu voz: 'alegre' cuando",
+  "  agregas algo o lo encuentras; 'emocionada' cuando lleva a pagar o cierra la compra;",
+  "  'asombrada' cuando cuentas una oferta buena; 'apenada' si no hay lo que pide o algo",
+  "  salió mal; 'dudosa' si no entendiste bien; 'rie' SOLO si te dijeron algo de verdad",
+  "  gracioso (casi nunca); 'normal' para todo lo demás.",
   "- Pregunta '¿algo más?' SOLO cuando acabas de agregar, quitar o cambiar algo del",
   "  carrito: ahí sí se está armando un pedido. En una charla normal (te saluda, pregunta",
   "  por ofertas, pide una recomendación, pregunta por la tienda) NO cierres con '¿algo",
@@ -1208,6 +1217,7 @@ aiController.asistente = async (req, res) => {
 
       const acciones = [];
       let dice = "";
+      let animo = "normal";
       /*
        * Lo que el modelo quiso agregar sin que nadie lo pidiera. Ver ¿DE
        * VERDAD PIDIÓ ESTE PRODUCTO? Los que parecen un reemplazo se ofrecen;
@@ -1278,6 +1288,7 @@ aiController.asistente = async (req, res) => {
             break;
           case "responder":
             dice = String(args.texto || "").trim();
+            animo = animoValido(args.animo);
             break;
           default:
             break;
@@ -1296,6 +1307,7 @@ aiController.asistente = async (req, res) => {
           ? `Lo más parecido es ${enLista(sustitutos, "o")}, ¿${sustitutos.length === 1 ? "te lo agrego" : "quieres alguno"}?`
           : "¿Te busco otra cosa?";
         dice = [hecho, noHay, siguiente].filter(Boolean).join(" ");
+        animo = "apenada";
       }
 
       /*
@@ -1303,14 +1315,17 @@ aiController.asistente = async (req, res) => {
        * Antes eso tiraba todo, acción incluida. Ahora se dice lo que se hizo
        * con una frase armada aquí. Sin acciones ni frase, sí: no se entendió.
        */
-      if (!dice) dice = fraseDeRespaldo(acciones);
+      if (!dice) {
+        dice = fraseDeRespaldo(acciones);
+        animo = acciones.length ? "alegre" : "normal";
+      }
       if (!dice) {
         return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "vacia" });
       }
       // Sin tocar el carrito, sin "¿algo más?" al final. Ver sinCierreDeVenta.
       dice = sinCierreDeVenta(dice, acciones);
 
-      return res.status(200).json({ acciones, respuesta: dice, entendido: true, origen: "ia" });
+      return res.status(200).json({ acciones, respuesta: dice, animo, entendido: true, origen: "ia" });
     } catch (errorIA) {
       console.log("IA no disponible para Tiqui: " + errorIA.message);
       return res.status(200).json({ acciones: [], respuesta: "", entendido: false, origen: "error" });
@@ -1322,8 +1337,9 @@ aiController.asistente = async (req, res) => {
 };
 
 /*
- * GET /api/ai/voz?t=<texto>
- * La voz de Tiqui (ver utils/vozTiqui.js). Va por GET a propósito: así el
+ * GET /api/ai/voz?t=<texto>&a=<ánimo>
+ * La voz de Tiqui (ver utils/vozTiqui.js). `a` es el ánimo de la frase
+ * (alegre, asombrada…); sin él, o con uno que no existe, suena normal. Va por GET a propósito: así el
  * navegador la pone directo en un <audio> y empieza a sonar con los primeros
  * pedazos, sin esperar el archivo entero. Lo mismo la app.
  */
@@ -1332,7 +1348,9 @@ aiController.voz = async (req, res) => {
   if (!texto) return res.status(400).json({ message: "Hace falta el texto" });
   if (!vozDisponible()) return res.status(503).json({ message: "sin-voz" });
 
-  const clave = `${process.env.ELEVENLABS_VOICE_ID || ""}|${texto}`;
+  // Lo que se le manda a ElevenLabs: la frase, con la etiqueta del ánimo si el modelo la entiende.
+  const dicho = conEmocion(texto, animoValido(req.query.a));
+  const clave = `${process.env.ELEVENLABS_VOICE_ID || ""}|${modeloDeVoz()}|${dicho}`;
   res.setHeader("Content-Type", "audio/mpeg");
   // El mismo texto suena igual siempre: el navegador puede guardarlo.
   res.setHeader("Cache-Control", "public, max-age=86400");
@@ -1351,7 +1369,7 @@ aiController.voz = async (req, res) => {
   });
 
   try {
-    const respuesta = await pedirVoz(texto, { signal: corte.signal });
+    const respuesta = await pedirVoz(dicho, { signal: corte.signal });
     const partes = [];
     for await (const parte of respuesta.body) {
       partes.push(parte);

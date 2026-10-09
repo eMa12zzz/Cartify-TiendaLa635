@@ -64,7 +64,9 @@ export const asistenteApi = {
   },
 
   // Dónde está el audio de una frase dicha por Tiqui (ver backend utils/vozTiqui.js).
-  urlVoz: (texto) => `${URL_API}/ai/voz?t=${encodeURIComponent(texto)}`,
+  // `animo`: cómo suena la frase (ver utils/animoTiqui.js). Lo normal no viaja.
+  urlVoz: (texto, animo) =>
+    `${URL_API}/ai/voz?t=${encodeURIComponent(texto)}${animo && animo !== 'normal' ? `&a=${animo}` : ''}`,
 };
 
 export default asistenteApi;
