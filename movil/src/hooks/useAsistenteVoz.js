@@ -34,6 +34,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import * as Speech from 'expo-speech';
 import {
   ExpoSpeechRecognitionModule,
@@ -46,6 +47,7 @@ import { cantidadParaDecir, esSoloAdultos } from '../utils/unidades';
 import { navegarA } from '../navigation/navigationRef';
 import { decirConTiqui, callarTiqui, vozTiquiPosible, paraDecir } from '../utils/vozTiqui';
 import { primerNombre, conNombreAVeces } from '../utils/nombreTiqui';
+import { animoDeFrase } from '../utils/animoTiqui';
 
 const NUMEROS = {
   un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
@@ -67,9 +69,20 @@ const VELOCIDADES = [
   { v: 1.15, label: 'Rápida' },
 ];
 
-// Mismos tiempos que la web: tras unos silencios seguidos, deja de escuchar.
-const SILENCIOS_ANTES_DE_DESCANSAR = 3;
+// Tras un silencio vuelve a escuchar a este ritmo. Ya no se duerme sola por
+// callar: solo cuando la app se va a segundo plano (ver abajo).
 const REINTENTO_SILENCIO_MS = 900;
+
+/*
+ * Lo primero que dice cuando la acaban de despertar, antes de contestar. Va
+ * con el ánimo "despertando": con la voz de Tiqui, bosteza (ver
+ * backend/src/utils/vozTiqui.js). Tiqui es ELLA: "despierta", no "despierto".
+ */
+const AL_DESPERTAR = [
+  'Mmm… ya estoy despierta.',
+  '¡Ay! Me quedé dormida. Ya estoy aquí.',
+  'Uy, ya desperté.',
+];
 
 // A dónde puede llevar por voz. Solo lo que móvil de verdad tiene como ruta.
 const DESTINOS = [
@@ -257,7 +270,8 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const hablarRef = useRef(null);
   const arrancarRef = useRef(null);
   const confirmandoRef = useRef(false);
-  const silencioRef = useRef(0);
+  // La acaban de despertar: lo próximo que diga sale recién despertada.
+  const recienDespiertaRef = useRef(false);
   const finalTextoRef = useRef('');
   const idRef = useRef(0);
   // La voz de Tiqui: si el servidor la tiene (y esta compilación trae
@@ -278,9 +292,9 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
    * (Tiqui con el nombre del cliente). La memoria, que viaja a la IA, guarda
    * siempre `texto`: el nombre no le llega a la IA. Ver nombreTiqui.js.
    */
-  const registrar = (tipo, texto, visible = texto) => {
+  const registrar = (tipo, texto, visible = texto, animo) => {
     memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
-    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto: visible }]);
+    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto: visible, animo }]);
   };
 
   // El primer nombre, si hay sesión de cliente; y cuándo lo usó Tiqui en esta charla.
@@ -316,7 +330,19 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   }, []);
   arrancarRef.current = arrancarReconocimiento;
 
-  const hablar = useCallback((texto) => {
+  /*
+   * `animo`: el que eligió la IA. Las frases fijas no lo traen y sale de cómo
+   * empiezan (utils/animoTiqui.js). Viaja a la voz de Tiqui; la del teléfono
+   * habla igual que siempre.
+   */
+  const hablar = useCallback((dichoPorElla, animo) => {
+    let texto = dichoPorElla;
+    let tono = animo || animoDeFrase(texto);
+    if (recienDespiertaRef.current) {
+      recienDespiertaRef.current = false;
+      texto = `${AL_DESPERTAR[Math.floor(Math.random() * AL_DESPERTAR.length)]} ${texto}`;
+      tono = 'despertando';
+    }
     ultimaRespuestaRef.current = texto;
     /*
      * A veces, con el nombre del cliente: se ve y se escucha así. La memoria
@@ -324,7 +350,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
      * nombreTiqui.js).
      */
     const dicho = conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current);
-    registrar('bot', texto, dicho);
+    registrar('bot', texto, dicho, tono);
 
     const continuar = () => {
       hablandoRef.current = false;
@@ -359,7 +385,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       conElTelefono();
       return;
     }
-    decirConTiqui(asistenteApi.urlVoz(dicho), {
+    decirConTiqui(asistenteApi.urlVoz(dicho, tono), {
       // 0,95 es la velocidad "Normal" de la voz del teléfono; el audio va a 1.
       velocidad: rateRef.current / 0.95,
       alTerminar: () => {
@@ -540,6 +566,8 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
         // confirmar es lo más urgente de decir, y comprar/total con el monto
         // real pesa más que la frase suelta que haya dicho la IA.
         let dice = idea.respuesta;
+        // El ánimo que eligió la IA vale para SU frase; si se reemplaza, el de la nueva sale de animoTiqui.
+        let animo = idea.animo;
         /*
          * Si algo no entró completo, lo que dijo la IA ya no es verdad ("te
          * agregué 74"): se dice lo que se hizo de verdad. La IA ve cuántas
@@ -547,13 +575,16 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
          */
         if (topados.length || resultados.some((r) => r.entro < r.pedido)) {
           dice = `${[fraseDeLoAgregado(resultados), ...topados].filter(Boolean).join(' ')} ¿Algo más?`;
+          animo = undefined;
         }
 
         if (bloqueados.length) {
           const lista = bloqueados.join(' y ');
           const verbo = bloqueados.length === 1 ? 'es' : 'son';
           dice = `${lista} ${verbo} para mayores de edad. Ábrelo desde la tienda para confirmar tu identificación.`;
+          animo = undefined;
         } else if (pideComprar) {
+          animo = undefined;
           const { carrito, totalCarrito } = dataRef.current;
           if (!carrito.length) {
             dice = 'Tu carrito está vacío. ¿Qué te gustaría llevar?';
@@ -564,9 +595,10 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
         } else if (pideTotal) {
           const { carrito, totalCarrito } = dataRef.current;
           dice = fraseLlevas(carrito, totalCarrito);
+          animo = undefined;
         }
 
-        hablarRef.current?.(dice);
+        hablarRef.current?.(dice, animo);
       }, 0);
     } finally {
       setPensando(false);
@@ -578,7 +610,6 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     const { carrito, totalCarrito } = dataRef.current;
     const fns = fnRef.current;
 
-    silencioRef.current = 0;
     registrar('user', texto);
 
     // ── Esperando "sí" o "no" para confirmar la compra ──
@@ -795,22 +826,14 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     }
 
     /*
-     * Silencio: vuelve a escuchar calladita un par de veces y, si nadie
-     * contesta, deja de escuchar sin decir nada. Su última respuesta se queda
-     * en pantalla. Antes soltaba "Aquí sigo cuando me necesites…" y eso
-     * tapaba lo que acababa de responder (igual que en la web, ver
-     * useVoiceAssistant.js allá).
+     * Silencio: vuelve a escuchar calladita, sin decir nada, todas las veces
+     * que haga falta. Antes se dormía sola después de tres silencios, y cada
+     * vez había que volver a despertarla. Ahora se duerme solo si la app se va
+     * a segundo plano, si la duermen tocándola o al ir a pagar. Escuchar es del
+     * teléfono y no gasta créditos de la voz.
      */
     if (!activoRef.current || hablandoRef.current) return;
-
-    silencioRef.current += 1;
-    if (silencioRef.current >= SILENCIOS_ANTES_DE_DESCANSAR) {
-      silencioRef.current = 0;
-      activoRef.current = false;
-      setActivo(false);
-    } else {
-      setTimeout(() => arrancarRef.current?.(), REINTENTO_SILENCIO_MS);
-    }
+    setTimeout(() => arrancarRef.current?.(), REINTENTO_SILENCIO_MS);
   });
 
   const iniciar = useCallback(async () => {
@@ -826,6 +849,8 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
       hablar('El reconocimiento de voz no está disponible en esta compilación de la app.');
       return;
     }
+    // Estaba dormida: lo próximo que diga, lo dice recién despertada.
+    recienDespiertaRef.current = true;
     activoRef.current = true;
     setActivo(true);
     arrancarReconocimiento();
@@ -849,6 +874,18 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     callarTiqui();
     Speech.stop();
   }, []);
+
+  /*
+   * Se duerme cuando la app se va a segundo plano (otra app, el inicio del
+   * teléfono, la pantalla apagada): ahí nadie le está hablando, y seguir con
+   * el micrófono abierto gasta batería.
+   */
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (estado) => {
+      if (estado === 'background' && activoRef.current) detener();
+    });
+    return () => sub.remove();
+  }, [detener]);
 
   const toggleMute = useCallback(() => {
     setMuteado((m) => !m);

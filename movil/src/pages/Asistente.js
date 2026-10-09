@@ -93,8 +93,9 @@ const Asistente = () => {
   /*
    * Tiqui ES el botón. Ya no hay micrófono: se le habla a ella. Mientras nadie
    * le habla, duerme colgada de su cordón; tocarla la despierta y se pone a
-   * escuchar. Cuando la charla se apaga (nadie contestó o se detuvo), vuelve
-   * a dormirse, y su última respuesta se queda en el chat.
+   * escuchar, y lo próximo que dice lo dice recién despertada. Se queda
+   * despierta aunque nadie hable: se duerme si la tocan, al ir a pagar o si
+   * la app se va a segundo plano. Su última respuesta se queda en el chat.
    */
   const dormida = !activo && !pensando && !hablando;
   const estadoTexto = pensando

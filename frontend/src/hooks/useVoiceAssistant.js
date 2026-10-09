@@ -3,6 +3,7 @@ import { aiService } from '../api/aiService';
 import { decirConTiqui, callarTiqui, paraDecir } from '../utils/vozTiqui';
 import { cantidadParaDecir } from '../utils/unidades';
 import { conNombreAVeces } from '../utils/nombreTiqui';
+import { animoDeFrase } from '../utils/animoTiqui';
 
 /*
  * useVoiceAssistant — el "cerebro" de Tiqui, el asistente por voz (Modo Kiosco).
@@ -483,9 +484,9 @@ export const useVoiceAssistant = ({
    * (Tiqui con el nombre del cliente). La memoria, que viaja a la IA, guarda
    * siempre `texto`: el nombre no le llega a la IA. Ver nombreTiqui.js.
    */
-  const registrar = (tipo, texto, visible = texto) => {
+  const registrar = (tipo, texto, visible = texto, animo) => {
     memoriaRef.current = [...memoriaRef.current.slice(-7), { tipo, texto }];
-    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto: visible }]);
+    setHistorial((h) => [...h.slice(-7), { id: idRef.current++, tipo, texto: visible, animo }]);
   };
 
   // Cuántas veces ha contestado Tiqui en esta charla y cuándo usó el nombre.
@@ -605,15 +606,21 @@ export const useVoiceAssistant = ({
     window.speechSynthesis.speak(u);
   };
 
-  const hablar = useCallback((texto) => {
+  /*
+   * `animo`: el que eligió la IA. Las frases fijas no lo traen y sale de cómo
+   * empiezan (utils/animoTiqui.js). Viaja a la voz y queda en el historial
+   * para la cara de la mascota.
+   */
+  const hablar = useCallback((texto, animo) => {
     ultimaRespuestaRef.current = texto;
+    const tono = animo || animoDeFrase(texto);
     /*
      * A veces, con el nombre del cliente: se ve y se escucha así. La memoria
      * que viaja a la IA se queda con `texto`, sin el nombre (ver registrar y
      * nombreTiqui.js).
      */
     const dicho = conNombreAVeces(texto, nombreRef.current, usoDelNombreRef.current);
-    registrar('bot', texto, dicho);
+    registrar('bot', texto, dicho, tono);
 
     const continuar = () => {
       hablandoRef.current = false;
@@ -632,7 +639,7 @@ export const useVoiceAssistant = ({
 
     // Con la voz de Tiqui, si el servidor la tiene. Si no arranca, la del sistema.
     if (vozTiquiRef.current) {
-      decirConTiqui(aiService.urlVoz(dicho), {
+      decirConTiqui(aiService.urlVoz(dicho, tono), {
         // 0,95 es la velocidad "Normal" de la voz del sistema; el audio va a 1.
         velocidad: rateRef.current / 0.95,
         alEmpezar: () => setSonandoTiqui(true),
@@ -810,6 +817,8 @@ export const useVoiceAssistant = ({
       setTimeout(() => {
         const { carrito: ahora, totalCarrito } = dataRef.current;
         let dice = idea.respuesta;
+        // El ánimo que eligió la IA vale para SU frase; si se reemplaza, el de la nueva sale de animoTiqui.
+        let animo = idea.animo;
         /*
          * Si algo no entró completo, lo que dijo la IA ya no es verdad
          * ("te agregué 74"): se dice lo que se hizo de verdad. La IA ve
@@ -817,6 +826,7 @@ export const useVoiceAssistant = ({
          */
         if (topados.length || resultados.some((r) => r.entro < r.pedido)) {
           dice = `${[fraseDeLoAgregado(resultados), ...topados].filter(Boolean).join(' ')} ¿Algo más?`;
+          animo = undefined;
         }
         if (pideComprar) {
           if (!ahora.length) {
@@ -825,10 +835,12 @@ export const useVoiceAssistant = ({
             confirmandoRef.current = true;
             dice = fraseConfirmar(ahora, totalCarrito);
           }
+          animo = undefined;
         } else if (pideTotal) {
           dice = fraseLlevas(ahora, totalCarrito);
+          animo = undefined;
         }
-        hablarRef.current?.(dice);
+        hablarRef.current?.(dice, animo);
       }, 0);
     } finally {
       setPensando(false);

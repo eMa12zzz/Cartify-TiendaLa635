@@ -10,6 +10,7 @@ import { primerNombre } from '../../utils/nombreTiqui';
 import MascotaAsistente from './MascotaAsistente';
 import { foto, ANCHO } from '../../utils/fotos';
 import { useIdioma } from '../../hooks/useIdioma';
+import { animoDeFrase, caraDeAnimo } from '../../utils/animoTiqui';
 
 /*
  * AsistenteVoz — pantalla grande (kiosco) del asistente por voz.
@@ -38,21 +39,6 @@ const FONDO =
  * ya se nota en la tienda.
  */
 const ORBE = 'radial-gradient(circle at 34% 28%, #29a3e6, #003049 68%)';
-
-/*
- * La cara que pone la mascota según lo último que dijo.
- *
- * Sale del texto porque el hook no avisa aparte si entendió o no. Si cambian
- * estas frases en useVoiceAssistant (o en cerrarCompra, aquí abajo), hay que
- * mirar aquí también; lo peor que pasa si no coinciden es que la mascota
- * ponga cara normal.
- */
-const animoDe = (texto = '') => {
-  if (/(Pasa a caja|Lleva tu carrito a caja|Te abro el pago)/.test(texto)) return 'feliz'; // la compra quedó cerrada
-  if (/^(Agregué|Te agregué|¡Listo|Listo)/.test(texto)) return 'contento';
-  if (/^(No te entendí|No encontré|No tienes|No pude|Tu navegador no|Perdón, se me cortó|Uy, me distraje)/.test(texto)) return 'confundido';
-  return 'normal';
-};
 
 // Botones de vidrio de las esquinas.
 const VIDRIO = {
@@ -271,7 +257,12 @@ const AsistenteVoz = ({
   const ultimoUser = [...historial].reverse().find((m) => m.tipo === 'user');
 
   // Mientras la escucha o piensa, cara neutra: la de antes era de otra frase.
-  const animo = escuchando || pensando ? 'normal' : animoDe(ultimoBot?.texto);
+  /*
+   * La cara va con el ánimo con que habló (el mismo de su voz, ver
+   * utils/animoTiqui.js). Mientras la escucha o piensa, neutra: la de antes
+   * era de otra frase.
+   */
+  const animo = escuchando || pensando ? 'normal' : caraDeAnimo(ultimoBot?.animo || animoDeFrase(ultimoBot?.texto));
 
   // Lo de la persona: en vivo mientras habla, y si no, lo último que dijo.
   const enVivo = escuchando && !!transcripcion;
