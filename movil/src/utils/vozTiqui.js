@@ -75,9 +75,10 @@ const soltar = () => {
 /*
  * Dice `url` (de asistenteApi.urlVoz). Devuelve una función para callarla.
  *   velocidad: 1 es normal.
- *   alTerminar: terminó bien.   alFallar: no se pudo (hablar con el teléfono).
+ *   alEmpezar: ya se oye.   alTerminar: terminó bien.
+ *   alFallar: no se pudo (hablar con el teléfono).
  */
-export const decirConTiqui = async (url, { velocidad = 1, alTerminar, alFallar } = {}) => {
+export const decirConTiqui = async (url, { velocidad = 1, alEmpezar, alTerminar, alFallar } = {}) => {
   const miTurno = ++turno;
   const vigente = () => miTurno === turno;
 
@@ -115,6 +116,7 @@ export const decirConTiqui = async (url, { velocidad = 1, alTerminar, alFallar }
       if (estado?.playing && !empezo) {
         empezo = true;
         clearTimeout(espera);
+        alEmpezar?.();
       }
       if (estado?.didJustFinish) {
         clearTimeout(espera);

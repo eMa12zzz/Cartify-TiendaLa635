@@ -255,6 +255,12 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const [pensando, setPensando] = useState(false);
   const [hablando, setHablando] = useState(false);
   const [historial, setHistorial] = useState([]);
+  /*
+   * Ya hay respuesta, pero su voz todavía viene en camino. Mientras tanto la
+   * pantalla sigue en "piensa" y el mensaje no se muestra: antes salía el
+   * texto y la boca se movía, y el sonido llegaba después.
+   */
+  const [esperandoVoz, setEsperandoVoz] = useState(false);
 
   const dataRef = useRef({ productos, carrito, totalCarrito });
   dataRef.current = { productos, carrito, totalCarrito };
@@ -365,31 +371,38 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
 
     callarTiqui();
     Speech.stop();
+    setEsperandoVoz(false);
     hablandoRef.current = true;
     setHablando(true);
 
     // La voz del teléfono: el respaldo de la de Tiqui, y la única sin ella.
     // "$12.50" se dice "12 dólares con 50 centavos", no "doce pesos". Ver paraDecir.
-    const conElTelefono = () => Speech.speak(paraDecir(dicho), {
-      // "es-419" (español latinoamericano neutro) en vez de es-SV: no todos
-      // los teléfonos traen una voz de El Salvador instalada, y esta es la
-      // que con más frecuencia sí encuentra una voz decente del sistema.
-      language: 'es-419',
-      rate: rateRef.current,
-      onDone: continuar,
-      onStopped: continuar,
-      onError: continuar,
-    });
+    const conElTelefono = () => {
+      setEsperandoVoz(false);
+      Speech.speak(paraDecir(dicho), {
+        // "es-419" (español latinoamericano neutro) en vez de es-SV: no todos
+        // los teléfonos traen una voz de El Salvador instalada, y esta es la
+        // que con más frecuencia sí encuentra una voz decente del sistema.
+        language: 'es-419',
+        rate: rateRef.current,
+        onDone: continuar,
+        onStopped: continuar,
+        onError: continuar,
+      });
+    };
 
     if (!vozTiquiRef.current) {
       conElTelefono();
       return;
     }
+    setEsperandoVoz(true);
     decirConTiqui(asistenteApi.urlVoz(dicho, tono), {
       // 0,95 es la velocidad "Normal" de la voz del teléfono; el audio va a 1.
       velocidad: rateRef.current / 0.95,
+      alEmpezar: () => setEsperandoVoz(false),
       alTerminar: () => {
         fallasVozRef.current = 0;
+        setEsperandoVoz(false);
         continuar();
       },
       alFallar: () => {
@@ -859,6 +872,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   const interrumpir = useCallback(() => {
     callarTiqui();
     Speech.stop();
+    setEsperandoVoz(false);
     hablandoRef.current = false;
     setHablando(false);
     activoRef.current = true;
@@ -870,6 +884,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     activoRef.current = false;
     setActivo(false);
     setEscuchando(false);
+    setEsperandoVoz(false);
     try { ExpoSpeechRecognitionModule.stop(); } catch { /* no estaba escuchando */ }
     callarTiqui();
     Speech.stop();
@@ -891,6 +906,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
     setMuteado((m) => !m);
     callarTiqui();
     Speech.stop();
+    setEsperandoVoz(false);
   }, []);
 
   const cambiarVelocidad = useCallback(() => {
@@ -912,7 +928,7 @@ export const useAsistenteVoz = ({ productos = [], carrito = [], totalCarrito = 0
   }, []);
 
   return {
-    activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
+    activo, escuchando, muteado, transcripcion, historial, pensando, hablando, esperandoVoz,
     velLabel: VELOCIDADES[velIndex].label,
     iniciar, detener, toggleMute, cambiarVelocidad, hablar, interrumpir,
   };

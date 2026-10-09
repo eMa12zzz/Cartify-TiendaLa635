@@ -49,7 +49,7 @@ const Asistente = () => {
   const [saludaConNombre] = useState(() => Math.random() < 0.5);
 
   const {
-    activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
+    activo, escuchando, muteado, transcripcion, historial, pensando, hablando, esperandoVoz,
     iniciar, detener, toggleMute, interrumpir,
   } = useAsistenteVoz({
     productos, carrito, totalCarrito, agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
@@ -98,7 +98,10 @@ const Asistente = () => {
    * la app se va a segundo plano. Su última respuesta se queda en el chat.
    */
   const dormida = !activo && !pensando && !hablando;
-  const estadoTexto = pensando
+  // Con la respuesta lista pero su voz en camino, todavía piensa: el mensaje
+  // y la boca arrancan junto con el sonido.
+  const piensa = pensando || esperandoVoz;
+  const estadoTexto = piensa
     ? t('Pensando…')
     : hablando ? t('Tócala para interrumpirla')
     : dormida ? t('Despierta a Tiqui para empezar a hablar con ella')
@@ -111,7 +114,9 @@ const Asistente = () => {
   const alTocarTiqui = hablando ? interrumpir : activo ? detener : iniciar;
 
   // Su cara dice lo mismo que el texto de estado, sin tener que leerlo.
-  const cara = dormida ? 'dormida' : escuchando ? 'escucha' : pensando ? 'piensa' : hablando ? 'habla' : 'normal';
+  const cara = dormida ? 'dormida' : escuchando ? 'escucha' : piensa ? 'piensa' : hablando ? 'habla' : 'normal';
+  // El mensaje que espera su voz no se muestra todavía (ver esperandoVoz).
+  const mensajes = esperandoVoz && historial[historial.length - 1]?.tipo === 'bot' ? historial.slice(0, -1) : historial;
 
   return (
     <View style={estilos.pantalla}>
@@ -174,7 +179,7 @@ const Asistente = () => {
           </Text>
         ) : (
           <ScrollView ref={chatRef} style={estilos.chat} contentContainerStyle={estilos.chatContenido}>
-            {historial.map((m) => (
+            {mensajes.map((m) => (
               <View
                 key={m.id}
                 style={[
