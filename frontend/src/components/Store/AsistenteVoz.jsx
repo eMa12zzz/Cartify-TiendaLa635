@@ -107,7 +107,7 @@ const AsistenteVoz = ({
   const {
     activo, escuchando, muteado, transcripcion, historial, pensando, hablando,
     iniciar, detener, toggleMute, hablar, soportado, interrumpir,
-    voces, vozActual, cambiarVoz, vozTiqui, sonandoTiqui,
+    voces, vozActual, cambiarVoz, vozTiqui, sonandoTiqui, esperandoVoz,
   } = useVoiceAssistant({
     productos, carrito, totalCarrito,
     agregarAlCarrito, eliminarDelCarrito, actualizarCantidad, limpiarCarrito,
@@ -241,14 +241,18 @@ const AsistenteVoz = ({
    * de un segundo en silencio, y sin avisar eso se lee como que el asistente
    * se colgó. Decirlo convierte la espera en algo que está pasando.
    */
-  const estadoTexto = pensando
+  // Con la respuesta lista pero su voz en camino, todavía "piensa": así el
+  // texto y la boca arrancan junto con el sonido.
+  const piensa = pensando || esperandoVoz;
+
+  const estadoTexto = piensa
     ? t('Pensando…')
     : hablando ? t('Toca para interrumpirme')
     : !activo ? t('Toca para hablarme')
     : escuchando ? t('Te escucho…') : t('Un momento…');
 
   // Qué hace la mascota, con el mismo orden que el texto de arriba.
-  const estadoMascota = pensando ? 'pensando'
+  const estadoMascota = piensa ? 'pensando'
     : hablando ? 'hablando'
     : escuchando ? 'escuchando' : 'reposo';
 
@@ -256,13 +260,12 @@ const AsistenteVoz = ({
   const ultimoBot = [...historial].reverse().find((m) => m.tipo !== 'user');
   const ultimoUser = [...historial].reverse().find((m) => m.tipo === 'user');
 
-  // Mientras la escucha o piensa, cara neutra: la de antes era de otra frase.
   /*
    * La cara va con el ánimo con que habló (el mismo de su voz, ver
    * utils/animoTiqui.js). Mientras la escucha o piensa, neutra: la de antes
    * era de otra frase.
    */
-  const animo = escuchando || pensando ? 'normal' : caraDeAnimo(ultimoBot?.animo || animoDeFrase(ultimoBot?.texto));
+  const animo = escuchando || piensa ? 'normal' : caraDeAnimo(ultimoBot?.animo || animoDeFrase(ultimoBot?.texto));
 
   // Lo de la persona: en vivo mientras habla, y si no, lo último que dijo.
   const enVivo = escuchando && !!transcripcion;
@@ -394,7 +397,7 @@ const AsistenteVoz = ({
               </button>
 
               <motion.div
-                key={pensando ? 'pensando' : (ultimoBot?.id ?? 'saludo')}
+                key={piensa ? 'pensando' : (ultimoBot?.id ?? 'saludo')}
                 className="masc-globo relative w-full max-w-[420px] md:w-auto md:flex-1 md:max-w-[340px] px-[22px] py-[18px] rounded-3xl text-left text-lg md:text-xl font-medium leading-snug"
                 style={{ backgroundColor: '#fff', color: '#001a29' }}
                 initial={{ opacity: 0, scale: reduce ? 1 : 0.96 }}
@@ -402,7 +405,7 @@ const AsistenteVoz = ({
                 animate={{ opacity: escuchando ? 0.38 : 1, scale: 1 }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
-                {pensando
+                {piensa
                   ? <span className="masc-puntos" aria-label={t('Tiqui está pensando')}><i /><i /><i /></span>
                   : (ultimoBot?.texto || saludo)}
               </motion.div>
