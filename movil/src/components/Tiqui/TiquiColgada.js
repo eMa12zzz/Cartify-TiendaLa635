@@ -15,7 +15,12 @@
  *   'normal'    despierta y sonriendo.
  *   'escucha'   ojos grandes, cejas arriba, boca en "o", y las ondas llegando.
  *   'piensa'    mira hacia arriba, una ceja arriba.
- *   'habla'     la boca se abre y se cierra.
+ *   'habla'     la boca se abre y se cierra. Con `animo` (el de su voz, ver
+ *               utils/animoTiqui.js) los ojos y las cejas lo acompañan:
+ *               alegre, emocionada o se ríe con ojos felices y cachetes;
+ *               asombrada con los ojos grandes; apenada con las cejas
+ *               caídas; dudosa con una ceja arriba; despertando con los
+ *               ojos a medio abrir.
  *   'feliz'     ojos felices y cachetes.
  *   'tapada'    no mira: ojos cerrados y colorada (la contraseña del login).
  *   'jalada'    la están jalando: sorprendida, estirada.
@@ -38,7 +43,17 @@ const MIRADA = { piensa: [7, -8], escucha: [0, 3], jalada: [0, -4] };
 const cerrado = ([x, y]) => `M${x - 12},${y - 2} Q${x},${y + 9} ${x + 12},${y - 2}`;
 const feliz = ([x, y]) => `M${x - 12},${y + 5} Q${x},${y - 13} ${x + 12},${y + 5}`;
 
-const Cara = ({ cara, rasgo, parpadeo, bocaAbierta }) => {
+// Las cejas de cada ánimo (las mismas formas que Mascota.js).
+const CEJAS_ANIMO = {
+  apenada: 'M162,231 L186,222 M214,222 L238,231',
+  dudosa: 'M162,229 L186,229 M214,223 Q226,211 238,221',
+  asombrada: 'M160,219 Q174,206 188,219 M212,219 Q226,206 240,219',
+};
+
+// Ojos a medio abrir: los de recién despertada.
+const entrecerrado = ([x, y]) => `M${x - 12},${y} Q${x},${y + 7} ${x + 12},${y} M${x - 11},${y - 3} L${x + 11},${y - 3}`;
+
+const Cara = ({ cara, rasgo, parpadeo, bocaAbierta, animo }) => {
   const [mx, my] = MIRADA[cara] || [0, 0];
   const abierto = ([x, y], k = 1) => (
     <Ellipse cx={x + mx} cy={y + my} rx={10 * k} ry={(parpadeo ? 2 : 14) * k} fill={rasgo} />
@@ -79,16 +94,24 @@ const Cara = ({ cara, rasgo, parpadeo, bocaAbierta }) => {
           {linea('M188,292 Q204,297 214,286', 7.5)}
         </>
       );
-    case 'habla':
+    case 'habla': {
+      const contenta = ['alegre', 'emocionada', 'rie'].includes(animo);
+      const ojos = contenta
+        ? linea(`${feliz(I)} ${feliz(D)}`)
+        : animo === 'despertando'
+          ? linea(`${entrecerrado(I)} ${entrecerrado(D)}`, 6)
+          : <>{abierto(I, animo === 'asombrada' ? 1.25 : 1)}{abierto(D, animo === 'asombrada' ? 1.25 : 1)}</>;
       return (
         <>
-          {abierto(I)}
-          {abierto(D)}
+          {CEJAS_ANIMO[animo] && linea(CEJAS_ANIMO[animo], 6.5)}
+          {ojos}
+          {contenta && cachetes()}
           {bocaAbierta
             ? <Ellipse cx={200} cy={290} rx={11} ry={12} fill={rasgo} />
             : linea('M186,288 Q200,298 214,288', 7.5)}
         </>
       );
+    }
     case 'tapada':
       return (
         <>
@@ -181,7 +204,7 @@ const Zetas = ({ color, tam }) => {
  * `broche` y `meciendo`: apagados cuando otro dibuja el broche y el cordón
  * tenso que la sostiene (JalarParaRecargar).
  */
-const TiquiColgada = ({ cara = 'normal', alto = 240, largo = 150, conDisfraz = true, broche = true, meciendo = true, style }) => {
+const TiquiColgada = ({ cara = 'normal', animo, alto = 240, largo = 150, conDisfraz = true, broche = true, meciendo = true, style }) => {
   const c = useColoresTiqui();
   const disfraz = useDisfrazTiqui();
   const reducido = useMovimientoReducido();
@@ -261,7 +284,7 @@ const TiquiColgada = ({ cara = 'normal', alto = 240, largo = 150, conDisfraz = t
             {/* Dormida respira: un poquito más ancha y bajita. */}
             <G transform={dormida ? 'translate(200 382) scale(1.02 0.985) translate(-200 -382)' : undefined}>
               <Cuerpo color={c.cuerpo} />
-              <Cara cara={cara} rasgo={c.rasgo} parpadeo={parpadeo} bocaAbierta={bocaAbierta} />
+              <Cara cara={cara} rasgo={c.rasgo} parpadeo={parpadeo} bocaAbierta={bocaAbierta} animo={animo} />
               {conDisfraz && <Disfraz disfraz={disfraz} contorno={c.rasgo} />}
               {cara === 'escucha' && <Ondas color={c.cordon} />}
             </G>
