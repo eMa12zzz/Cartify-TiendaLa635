@@ -7,13 +7,16 @@
  * Este script la graba UNA vez, con la misma voz y los mismos ánimos que el
  * asistente (GET /api/ai/voz del servidor en producción).
  *
- *   npm run voz-juego                  cuenta qué falta y cuántos caracteres
- *                                      costaría. NO graba ni gasta nada.
- *   npm run voz-juego -- --grabar      graba lo que falta (gasta créditos de
- *                                      ElevenLabs: la llave tiene que estar
- *                                      encendida en Render).
- *   npm run voz-juego -- --limpiar     borra audios viejos que ya no usa
- *                                      ninguna frase.
+ *   npm run voz-juego              cuenta qué falta y cuántos caracteres
+ *                                  costaría. NO graba ni gasta nada.
+ *   npm run voz-juego:grabar       graba lo que falta (gasta créditos de
+ *                                  ElevenLabs: la llave tiene que estar
+ *                                  encendida en Render).
+ *   npm run voz-juego:limpiar      borra audios viejos que ya no usa ninguna
+ *                                  frase.
+ *
+ * Son comandos aparte y no "npm run voz-juego -- --grabar" a propósito: en
+ * PowerShell el "--" se pierde y el script nunca recibía --grabar.
  *
  * Solo pide lo que falta: correrlo dos veces no gasta dos veces. Si se
  * cambia el texto de una frase, su archivo cambia de nombre (lleva una huella
@@ -53,12 +56,12 @@ if (viejos.length) {
     for (const f of viejos) fs.unlinkSync(path.join(CARPETA, f));
     console.log(`Borrados ${viejos.length} audios viejos.`);
   } else {
-    console.log(`Hay ${viejos.length} audios viejos que ya no usa ninguna frase (se borran con --limpiar).`);
+    console.log(`Hay ${viejos.length} audios viejos que ya no usa ninguna frase (se borran con npm run voz-juego:limpiar).`);
   }
 }
 
 if (!opciones.has('--grabar')) {
-  if (faltan.length) console.log('\nNo se grabó nada. Para grabar: npm run voz-juego -- --grabar');
+  if (faltan.length) console.log('\nNo se grabó nada. Para grabar: npm run voz-juego:grabar');
   process.exit(0);
 }
 if (!faltan.length) process.exit(0);
