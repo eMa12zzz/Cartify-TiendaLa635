@@ -115,6 +115,8 @@ const Asistente = () => {
 
   // Su cara dice lo mismo que el texto de estado, sin tener que leerlo.
   const cara = dormida ? 'dormida' : escuchando ? 'escucha' : piensa ? 'piensa' : hablando ? 'habla' : 'normal';
+  // Mientras habla, su cara va con el ánimo de lo que dice (el mismo de su voz).
+  const animoHablando = hablando ? [...historial].reverse().find((m) => m.tipo === 'bot')?.animo : undefined;
   // El mensaje que espera su voz no se muestra todavía (ver esperandoVoz).
   const mensajes = esperandoVoz && historial[historial.length - 1]?.tipo === 'bot' ? historial.slice(0, -1) : historial;
 
@@ -158,7 +160,7 @@ const Asistente = () => {
           hitSlop={12}
           style={({ pressed }) => [estilos.tiqui, pressed && { opacity: 0.85 }]}
         >
-          <TiquiColgada cara={cara} alto={historial.length === 0 ? 250 : 170} largo={historial.length === 0 ? 170 : 110} />
+          <TiquiColgada cara={cara} animo={animoHablando} alto={historial.length === 0 ? 250 : 170} largo={historial.length === 0 ? 170 : 110} />
         </Pressable>
 
         <Text

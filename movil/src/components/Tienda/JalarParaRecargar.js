@@ -8,6 +8,8 @@
  *   · mientras se jala, baja con el dedo y pone cara de sorpresa (la están
  *     jalando). Cuelga de un broche FIJO en el borde de arriba: lo que se
  *     estira es el cordón, como una etiqueta de verdad;
+ *   · la lista NO se mueve: Tiqui baja por encima de la tienda. Antes la
+ *     lista bajaba con el dedo y dejaba un hueco blanco arriba, y no gustó;
  *   · al soltar pasado el punto, pone cara de contenta, sube y desaparece,
  *     y la lista se recarga detrás;
  *   · si se suelta antes, vuelve a subir y no pasa nada.
@@ -35,7 +37,7 @@ import { useIdioma } from '../../context/IdiomaContext';
 
 // Cuánto hay que jalar (ya con la resistencia) para que recargue.
 const PUNTO = 96;
-// Hasta dónde baja como mucho la lista.
+// Hasta dónde cuenta el jalón como mucho.
 const TOPE = 160;
 // El alto de Tiqui colgada, cordón incluido, y cuánto cordón lleva: poco,
 // para que al llegar al punto ya se vea entera, sombrero incluido.
@@ -55,8 +57,7 @@ const GROSOR = (7 * ALTO_TIQUI) / (398 + LARGO_CORDON + 6);
 const JalarParaRecargar = ({ alRecargar, children }) => {
   const { t } = useIdioma();
   const c = useColoresTiqui();
-  // Cuánto se jaló (lo que baja la lista) y dónde va Tiqui.
-  const jalon = useRef(new Animated.Value(0)).current;
+  // Dónde va Tiqui (la lista se queda quieta).
   const tiquiY = useRef(new Animated.Value(-ALTO_TIQUI)).current;
   /*
    * El cordón tenso, del broche a donde empieza Tiqui: crece con ella al
@@ -94,25 +95,22 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
     }
   }, [alRecargar]);
 
-  // La lista vuelve a su lugar y Tiqui sube hasta perderse arriba.
+  // Tiqui sube hasta perderse arriba, recogiendo el cordón.
   const soltar = useCallback((alcanzo) => {
     setCara(alcanzo ? 'soltada' : 'normal');
-    Animated.parallel([
-      Animated.spring(jalon, { toValue: 0, friction: 7, tension: 70, useNativeDriver: true }),
-      Animated.timing(tiquiY, {
-        toValue: -ALTO_TIQUI - 30,
-        // La soltaron contenta: se queda un instante para que se le vea la cara.
-        duration: alcanzo ? 560 : 300,
-        delay: alcanzo ? 260 : 0,
-        easing: Easing.in(Easing.back(1.4)),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    Animated.timing(tiquiY, {
+      toValue: -ALTO_TIQUI - 30,
+      // La soltaron contenta: se queda un instante para que se le vea la cara.
+      duration: alcanzo ? 560 : 300,
+      delay: alcanzo ? 260 : 0,
+      easing: Easing.in(Easing.back(1.4)),
+      useNativeDriver: true,
+    }).start(() => {
       setVisible(false);
       setCara('jalada');
     });
     if (alcanzo) recargar();
-  }, [jalon, tiquiY, recargar]);
+  }, [tiquiY, recargar]);
 
   const gestoNativo = useMemo(() => Gesture.Native(), []);
   const gesto = useMemo(
@@ -137,7 +135,6 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
         const d = Math.max(0, e.translationY);
         const baja = Math.min(TOPE, d * 0.6);
         ultimo.current = baja;
-        jalon.setValue(baja);
         tiquiY.setValue(baja * VELOCIDAD_TIQUI - ALTO_TIQUI);
       })
       .onEnd(() => {
@@ -152,7 +149,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
           soltar(false);
         }
       }),
-    [gestoNativo, jalon, tiquiY, soltar]
+    [gestoNativo, tiquiY, soltar]
   );
 
   return (
@@ -184,7 +181,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
             <View style={{ position: 'absolute', top: 0, left: '50%', marginLeft: -6, width: 12, height: 6, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: c.cuerpo }} />
           </View>
         )}
-        <Animated.View style={{ flex: 1, transform: [{ translateY: jalon }] }}>
+        <View style={{ flex: 1 }}>
           <GestureDetector gesture={gestoNativo}>
             {children({
               alDesplazar,
@@ -192,7 +189,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
               propsLista: { bounces: false, overScrollMode: Platform.OS === 'android' ? 'never' : undefined, scrollEventThrottle: 16 },
             })}
           </GestureDetector>
-        </Animated.View>
+        </View>
       </View>
     </GestureDetector>
   );
