@@ -47,8 +47,9 @@ export const PREGUNTAS = [
   {
     id: 'donde-esta', tema: 'La tienda',
     pregunta: '¿Dónde está Tienda la 635?',
-    opciones: ['En Mejicanos', 'En Soyapango', 'En Apopa'],
-    dato: 'Es una tienda de barrio de Mejicanos que ahora también vende por internet.',
+    // La dirección es la del pie de la web (utils/tienda.js). Si cambia, cambiar aquí también.
+    opciones: ['En Calle Sevilla, colonia Providencia', 'En Calle Madrid, colonia Escalón', 'En Calle Toledo, colonia Flor Blanca'],
+    dato: 'En Calle Sevilla 635, colonia Providencia: el mismo número de su nombre. Es una tienda de barrio que ahora también vende por internet.',
   },
   {
     id: 'cartify', tema: 'La tienda',
