@@ -1,142 +1,240 @@
-# 🛒 Cartify - Tienda La 635 (E-commerce & POS System)
+# Cartify · Tienda la 635
 
-**Cartify** es una plataforma moderna de E-commerce y Punto de Venta (POS) diseñada a la medida para "Tienda La 635". Este proyecto está construido con el stack MERN (MongoDB, Express, React, Node.js) y se enfoca en ofrecer una experiencia de usuario sumamente pulida, dinámica y segura.
+**Cartify** es el sistema de **Tienda la 635**, una tienda de barrio en Calle Sevilla 635, Col. Providencia, que ahora también vende por internet. *El súper de la esquina, a un toque.*
 
-El sistema administra dos grandes áreas (Módulos): **Tienda** (productos físicos) e **Impresiones** (servicios o productos digitales), con lógicas de negocio diferentes que se adaptan en tiempo real.
+Son tres partes que comparten el mismo servidor y la misma base de datos:
 
----
+- **La tienda web**: para comprar desde el navegador.
+- **La app Android**: la misma tienda en el teléfono, más el modo del personal para repartir pedidos.
+- **El panel del negocio**: inventario, pedidos, clientes, promociones y la configuración de la tienda.
 
-## Características Principales
+Y en las tres está **Tiqui**, la mascota de la tienda: una etiqueta de precio con cara que también es la asistente de voz. Arma tu pedido si le hablas, cuenta las ofertas y te acompaña en las pantallas de carga, los errores y las listas vacías.
 
-### Gestión de Inventario Dinámico (Cascada)
-- **Módulos**: Clasificación principal (Tienda vs. Impresiones) que cambia el comportamiento del sistema.
-- **Categorías (Product Types)**: Dependientes directamente del módulo seleccionado.
-- **Proveedores y Marcas**: Los proveedores distribuyen marcas específicas. Al seleccionar un proveedor, solo se muestran sus marcas.
-- **Formulario Inteligente**: El formulario de creación/edición de productos se adapta; por ejemplo, la asignación de Proveedor es obligatoria para "Tienda", pero opcional para "Impresiones".
-
-### Productos
-- Control completo del **Stock** y cálculo automático de `maxQuantity` como límite inicial.
-- Generación automática de **Códigos de Barras**.
-- Integración con **Cloudinary** para subir y gestionar las imágenes de los productos en la nube de forma optimizada.
-- Previsualizaciones en vivo de la imagen cargada y validación de campos obligatorios.
-
-### Administración Completa (CRUD)
-- Gestión de **Proveedores** (Suppliers) con múltiples marcas asociadas.
-- Gestión de **Marcas** (Brands).
-- Gestión de **Categorías** (Product Types) asignadas a módulos específicos.
-- Gestión de **Empleados** y **Clientes**.
-- Generación de **Reportes PDF** profesionales del Dashboard usando `jsPDF` y `jspdf-autotable`.
-- Notificaciones en tiempo real en operaciones CRUD mediante `react-hot-toast`.
-- Validaciones en backend (duplicidad, correos, etc.) y manejo de errores visible para el usuario.
-- Opción universal de activación/inactivación (`isActive`) en todos los catálogos.
-
-### Autenticación y Seguridad
-- Inicio de sesión con validación de roles (**Admin** vs **Employee**).
-- Persistencia de sesión segura y lógica de cierre de sesión global.
-- Diseño preparado para **Autenticación en Dos Pasos (2FA)** mediante envío de códigos por correo electrónico.
-- Diferenciación clara entre accesos de **Administración / Empleados** y el E-commerce para **Clientes**.
+| | |
+|---|---|
+| Tienda | https://cartify-tienda-la635.vercel.app |
+| Servidor (API) | https://cartify-tiendala635.onrender.com/api |
+| Documentación de la API | https://cartify-tiendala635.onrender.com/api-docs |
+| Página de presentación | https://cartify-tienda-la635-landingpage.vercel.app |
+| Juego del stand | https://cartify-tienda-la635.vercel.app/juego |
 
 ---
 
-## Tecnologías Utilizadas
+## Qué hace
 
-### Frontend (Cliente)
-- **React.js**: Biblioteca principal para la construcción de interfaces interactivas.
-- **Vite**: Entorno de desarrollo ultrarrápido y empaquetador.
-- **Tailwind CSS**: Framework de utilidad para un diseño visual completamente a medida y responsivo.
-- **Framer Motion**: Biblioteca de animaciones para transiciones fluidas de páginas, animaciones de entrada/salida en modales y microinteracciones.
-- **React Router DOM**: Enrutamiento para crear una Single Page Application (SPA).
-- **React Hook Form**: Manejo eficiente y optimizado de formularios complejos.
-- **Axios**: Para la comunicación HTTP con el backend.
-- **jsPDF & AutoTable**: Para la generación dinámica de reportes en PDF.
-- **Lucide React**: Biblioteca de iconos consistentes y modernos.
-- **React Hot Toast**: Notificaciones amigables y no intrusivas en pantalla.
+### Para quien compra (web y app)
 
-### Backend (Servidor)
-- **Node.js + Express**: Servidor rápido y escalable.
-- **MongoDB + Mongoose**: Base de datos NoSQL y ODM para modelar relaciones y referencias (ObjectId) entre colecciones.
-- **Cloudinary (SDK)**: Carga y almacenamiento en la nube de imágenes para ahorrar espacio y ancho de banda en el servidor local.
-- **Multer**: Middleware para el manejo de archivos `multipart/form-data` (subida de imágenes).
-- **Nodemon**: Para el reinicio automático del servidor en desarrollo.
+- **Se compra sin cuenta**: la sesión se pide recién al pagar, para entrar a Mi Cuenta o para guardar favoritos. El carrito se queda guardado aunque se vaya el internet.
+- **Tiqui, la asistente de voz**: "quiero dos manzanas y una leche" y las pone en el carrito; también cuenta las ofertas, abre secciones y lleva al pago. Entiende con inteligencia artificial (Google Gemini, con Gemma de respaldo) y habla con una voz de ElevenLabs que cambia de ánimo: alegre, asombrada, apenada… En la app se despierta tocándola.
+- **Retiro en la tienda o envío a domicilio**, con costo por zonas. El pedido se sigue en vivo, con el repartidor en el mapa, y se entrega con un **código de 4 dígitos** que solo ve el cliente.
+- **Pagos**: efectivo o tarjeta al recibir o en la tienda, o con el **saldo** de las tarjetas de regalo. Todavía no se cobra en línea (con Wompi solo está la conexión inicial).
+- **Puntos de fidelidad** en cada compra, que se canjean como descuento. En el **kiosco** de la tienda se suman escaneando un QR con el teléfono, sin escribir la contraseña en una pantalla pública.
+- **Impresiones**: subes tu archivo, eliges el papel y la tienda lo imprime.
+- **Mi Cuenta**: pedidos, recibos, favoritos, direcciones, tarjetas (solo se guardan los últimos 4 dígitos), notificaciones, puntos, centro de ayuda y preferencias.
+- **Preferencias**: modo claro, oscuro o automático, y español o inglés (el panel del negocio se queda en español).
+- **Avisos** del pedido por correo y, en la app, notificaciones push. Cada correo trae su enlace para darse de baja.
+- Inicio de sesión con **Google**, confirmación de edad para productos +18, **reseñas**, botón de **WhatsApp** y enlaces de productos que se pueden compartir (con vista previa en WhatsApp y que abren la app si está instalada).
+- **Temporadas**: en Navidad, Halloween, la Independencia o San Valentín la tienda cambia de color y Tiqui se disfraza.
+- Las visitas se cuentan de forma anónima y sin cookies, solo si se acepta en el aviso.
 
----
+### Para el negocio (panel en `/admin`)
 
-## Arquitectura de la Base de Datos
+- Entrada del personal con **verificación en dos pasos** (código de 6 dígitos por correo) y dos roles: **administrador** y **empleado**.
+- **Dashboard** con gráficas y reportes en PDF, y **pedidos** con sus estados (pagado, preparando, en camino, listo, entregado, cancelado).
+- **Inventario**: los módulos Tienda e Impresiones, categorías, marcas, proveedores con su cuenta de crédito, códigos de barras, fechas de vencimiento y fotos en Cloudinary.
+- **Clientes, empleados, promociones, puntos de fidelidad, tarjetas de regalo y servicios de impresión**.
+- **Personalización**: nombre y logo, orden de la portada, temporada, datos del negocio y zonas de envío.
+- **Errores**: lo que falla en la web, la app o el servidor llega al panel y por correo.
+- **Paletas para cuidar la vista**: Mi marca, Lectura, Contraste reforzado, Modo oscuro, Calma y Calma noche, más opciones de lectura.
+- **Tiqui del panel**: la asistente del equipo, aparte de la de los clientes. Responde sobre el negocio y avisa de promociones con pérdida o productos por vencer. Cambia datos **solo con confirmación**.
+- **En la app**, el personal entra en modo personal: el **Reparto** (pedidos a domicilio, ubicación compartida y entrega con código) y, para el administrador, la Tiqui del panel.
 
-El proyecto se sustenta en un esquema relacional dentro de un entorno NoSQL para permitir consultas avanzadas:
+### El reto de Tiqui (stand de la Expo 2026)
 
-1. **Modules**: Configuración principal de la interfaz (`Tienda`, `Impresiones`).
-2. **ProductTypes (Categorías)**: Contienen la referencia a `moduleId` y a los `supplierIds` que las surten.
-3. **Brands (Marcas)**: Marcas existentes en el sistema.
-4. **Suppliers (Proveedores)**: Contienen su información de contacto y referencias múltiples a `brandIds` (las marcas que distribuyen).
-5. **Products**: Unifica todas las entidades y contiene campos como `stock`, `maxQuantity`, `barCode`, `priceCost`, `salePrice`, `expirationDate`, y URLs de imagen.
+En `/juego`, pensado para una laptop a pantalla completa:
 
----
-
-## Convenciones de Nomenclatura
-
-Para mantener la consistencia y legibilidad del código a lo largo del proyecto, se han establecido las siguientes convenciones de nomenclatura:
-
-### Frontend (React)
-- **Archivos de Componentes y Páginas**: Se utiliza **PascalCase** (ej. `TopBar.jsx`, `AdminDashboard.jsx`). Esto aplica a cualquier archivo que exporte un componente de React.
-- **Funciones y Variables**: Se utiliza **camelCase** (ej. `handleOpenModal`, `fetchProducts`, `productData`).
-- **Hooks Personalizados**: Se utiliza **camelCase** iniciando con `use` (ej. `useAuth`, `useFetch`).
-
-### Backend (Node.js)
-- **Archivos y Carpetas**: Se utiliza **camelCase** (ej. `productType.js`, `routes/`, `models/`).
-- **Controladores, Modelos y Rutas**: Las funciones y variables internas utilizan **camelCase** (ej. `createProduct`, `getAllProducts`).
-- **Modelos de Mongoose**: La definición del modelo suele utilizar **PascalCase** internamente (ej. `const Product = mongoose.model(...)`).
-- **Variables de Entorno**: Se utiliza **UPPER_SNAKE_CASE** (ej. `MONGODB_URI`, `CLOUDINARY_API_KEY`).
+- Tiqui hace preguntas sobre la tienda. Con **3 aciertos antes de 2 errores** se gira una ruleta que da dulce o premio secreto.
+- La porción del premio secreto mide exactamente su probabilidad.
+- **Panel oculto** para quien atiende el stand: se abre tocando 5 veces "El reto de Tiqui". Ahí se ponen los premios secretos y los dulces que quedan (la probabilidad puede salir sola de esos números), el tiempo por pregunta, la voz, la música y los contadores del día.
+- La voz de Tiqui está **grabada** en `frontend/public/juego/voz/`, y la música y los efectos se generan en el navegador: funciona sin internet una vez abierto.
 
 ---
 
-## Instalación y Configuración Local
+## Cómo está hecho
 
-Si deseas correr este proyecto en tu entorno local, sigue estos pasos:
+| Parte | Carpeta | Tecnología | Dónde vive |
+|---|---|---|---|
+| Web | `frontend/` | React 19 + Vite 8, Tailwind CSS 4, Framer Motion, React Router 7, MapLibre, Recharts, jsPDF | Vercel |
+| Servidor | `backend/` | Node.js + Express 5, MongoDB (Mongoose 9) en Atlas, sesiones JWT en cookies, bcryptjs, Cloudinary, Mailjet, Google Gemini, ElevenLabs, Swagger | Render |
+| App | `movil/` | Expo SDK 54 (React Native 0.81), React Navigation, expo-updates, notificaciones con Firebase Cloud Messaging, EAS Build | APK de Android (`com.tiendala635.app`) |
 
-### 1. Clonar o descargar el repositorio
-Asegúrate de tener ambas carpetas: `frontend/` y `backend/`.
+```
+backend/     servidor: index.js, app.js, config.js y src/ (controller, models, routes, middlewares, utils, docs)
+frontend/    web: src/ (pages, components, hooks, context, api, utils, i18n), public/ y scripts/
+movil/       app: src/ (pages, components, navigation, context, hooks, api, utils, i18n, theme)
+.github/     revisiones automáticas y publicación de la app
+```
 
-### 2. Configurar el Backend
+- La web y la app hablan con el mismo servidor. En producción, la web le pasa a Render todo lo que va a `/api` (ver `frontend/vercel.json`).
+- La sesión de los clientes y la del personal van por separado: en una misma computadora se puede tener abierta la tienda con una cuenta y el panel con otra.
+- El servidor documenta sus rutas con Swagger en `/api-docs`.
+
+---
+
+## Correrlo en tu computadora
+
+Hace falta **Node.js 22** y npm.
+
+> **Ojo:** si en `DB_URI` pones la base de Atlas que usa la tienda publicada, todo lo que hagas en local (pedidos, cambios en el inventario) le pasa a la tienda real.
+
+### 1. Servidor
+
 ```bash
 cd backend
 npm install
-```
-Crea un archivo `.env` en la carpeta raíz del backend con las siguientes variables (ajusta los valores según tus credenciales):
-```env
-PORT=4000
-MONGODB_URI=tu_cadena_de_conexion_mongodb
-CLOUDINARY_CLOUD_NAME=tu_cloud_name
-CLOUDINARY_API_KEY=tu_api_key
-CLOUDINARY_API_SECRET=tu_api_secret
-```
-Inicia el servidor backend:
-```bash
 npm run dev
 ```
 
-### 3. Configurar el Frontend
-Abre una nueva terminal:
+Queda en `http://localhost:4000/api`, con la documentación en `http://localhost:4000/api-docs`. Necesita un archivo `backend/.env` con estas variables (los valores no van en el repositorio):
+
+| Variable | Para qué |
+|---|---|
+| `DB_URI` | La base de datos MongoDB |
+| `JWT_secret_key` | Firmar las sesiones |
+| `PORT` | El puerto (4000 si no está) |
+| `CORS_ORIGINS` | Desde qué páginas se puede llamar al servidor, separadas por coma (en local, `http://localhost:5173`) |
+| `COOKIES_ENTRE_DOMINIOS` | `true` cuando la web y el servidor están en dominios distintos (en producción) |
+| `TIENDA_URL`, `TIENDA_NOMBRE` | La dirección y el nombre de la tienda en los correos |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Las fotos de productos y logos |
+| `apikeymail`, `apisecretmail`, `MAILJET_FROM_EMAIL`, `MAILJET_FROM_NAME` | Mandar correos con Mailjet |
+| `CORREO_ALERTAS` | Quién recibe por correo los avisos de errores |
+| `PRINTER_EMAIL` | El correo de la impresora, para las impresiones |
+| `GOOGLE_CLIENT_ID` | Inicio de sesión con Google (el mismo de la web) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_MODEL_RESPALDO`, `GEMINI_MODEL_ASISTENTE_RESPALDO` | La inteligencia artificial de Tiqui |
+| `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `ELEVENLABS_MODEL` | La voz de Tiqui (sin ellas, Tiqui habla con la voz del navegador o del teléfono) |
+| `GRANT_TYPE`, `AUDIENCE`, `CLIENT_ID`, `CLIENT_SECRET` | La conexión con Wompi |
+
+Las de IA, voz y Wompi son opcionales: sin ellas el resto funciona y solo esa parte no.
+
+### 2. Web
+
 ```bash
 cd frontend
 npm install
-```
-Asegúrate de que tus peticiones en Axios apunten a `http://localhost:4000/api` (o al puerto configurado en el backend).
-Inicia el frontend:
-```bash
 npm run dev
 ```
 
-### 4. Acceder
-Abre tu navegador e ingresa a `http://localhost:5173` (o el puerto que te indique Vite).
+Queda en `http://localhost:5173`. Las variables van en `frontend/.env` (ver `frontend/.env.example`):
+
+| Variable | Para qué |
+|---|---|
+| `VITE_API_URL` | El servidor (si no está, `http://localhost:4000/api`) |
+| `VITE_GOOGLE_CLIENT_ID` | El botón de Google |
+| `VITE_WHATSAPP` | El botón de WhatsApp (503 + los 8 dígitos) |
+| `VITE_LANDING_URL` | El enlace a la página de presentación |
+
+### 3. App
+
+```bash
+cd movil
+npm install
+npx expo start
+```
+
+- Las variables van en `movil/.env` (ver `movil/.env.example`): `EXPO_PUBLIC_WHATSAPP` y `EXPO_PUBLIC_EAS_PROJECT_ID`, que hace falta para las notificaciones.
+- La app usa el servidor de Render. Para usar uno local, pon su dirección en `HOST_MANUAL` (`movil/src/api/api.js`). En el emulador de Android, `localhost` es `10.0.2.2`.
+- Usa módulos nativos (Google, reconocimiento de voz, notificaciones), así que en el teléfono se prueba con una compilación propia y no con Expo Go: `npx expo run:android` o la APK de EAS.
 
 ---
 
-## Decisiones de Diseño (UI/UX)
-- Se optó por una paleta de colores rica, basada en tonos tierra (Marrón, Naranja oscuro, Blanco, y colores madera) para dar un toque Premium y "Artesanal".
-- Bordes redondeados (`rounded-xl`, `rounded-2xl`, `rounded-full`) en tarjetas, botones y modales para un aspecto amigable y moderno.
-- Animaciones fluidas utilizando **Framer Motion** para transiciones y elevación de tarjetas, combinadas con efectos sutiles (`transition-colors`, `backdrop-blur-[1px]`) para retroalimentación visual sin saturar el rendimiento del navegador.
+## Pruebas y revisión automática
+
+Cada parte tiene sus pruebas con Vitest:
+
+```bash
+npm test
+```
+
+En la web, además, el linter tiene que quedar en 0 avisos:
+
+```bash
+npm run lint
+```
+
+En GitHub (`.github/workflows/`) hay tres flujos:
+
+- **Pruebas** (`pruebas.yml`): en cada pull request y al llegar a `develop` o `main`, prueba las tres partes por separado.
+  - Web: linter, pruebas y construcción.
+  - Servidor: pruebas.
+  - App: pruebas y revisión de Expo.
+- **Actualizar la app** (`actualizar-app.yml`): cuando a `main` llega un cambio en `movil/`, corre las pruebas y publica la actualización con `eas update`. Las APK instaladas la bajan solas al abrirse. Necesita el secreto `EXPO_TOKEN` en GitHub.
+- **Despertar servidor** (`despertar-servidor.yml`): cada 10 minutos le toca la puerta al servidor, porque Render, en el plan gratis, lo duerme tras 15 minutos sin visitas.
 
 ---
 
-*Desarrollado con amor para Tienda La 635*
+## Publicar
+
+- **Web**: Vercel publica sola lo que llega a `main`.
+- **Servidor**: en Render, revisa que el último despliegue sea el de `main`. Si no, usa "Manual Deploy" con el último commit.
+- **App**: lo que es solo código llega por `eas update` (el flujo de GitHub). Un cambio nativo, como una librería nueva con código nativo o un cambio de permisos o de `app.json`, cambia la "huella" de la app y necesita una APK nueva:
+
+  ```bash
+  cd movil
+  npx eas-cli build -p android --profile preview
+  ```
+
+- **Voz del juego del stand**: solo si cambia alguna frase. Graba únicamente lo que falta y gasta créditos de ElevenLabs:
+
+  ```bash
+  cd frontend
+  npm run voz-juego:grabar
+  ```
+
+  Sin `:grabar` (`npm run voz-juego`) solo cuenta lo que falta, sin gastar nada.
+
+---
+
+## Cómo trabajamos
+
+### Ramas
+
+- Cada cambio sale de `develop` en su propia rama, con un nombre que diga qué se hizo: `feat/juego-tiqui-stand`, `fix/huella-app-saltos-de-linea`, `hotfix/...`.
+- Vuelve a `develop` por pull request.
+- `main` recibe a `develop` cuando está listo para publicarse.
+
+### Commits
+
+Un título `Tipo(ambito): descripcion` y un `-m` por cada punto, sin tildes:
+
+```bash
+git commit -m "Fix(web,movil): la direccion de la tienda en el carrito" -m "- El carrito decia Mejicanos; ahora muestra Calle Sevilla 635" -m "- Web: sale de los datos del negocio, la misma del pie"
+```
+
+### Código
+
+- El código nuevo se escribe en español: nombres, comentarios y mensajes.
+- Los comentarios explican el porqué, no solo el qué.
+- **Componentes y páginas de React**: PascalCase (`ShoppingCart.jsx`, `JuegoTiqui.jsx`).
+- **Hooks**: camelCase con `use` (`useJuegoTiqui`).
+- **Funciones y variables**: camelCase.
+- **Servidor**: archivos y funciones en camelCase. Los modelos de Mongoose se nombran en PascalCase.
+- **Variables de entorno**: MAYÚSCULAS_CON_GUION_BAJO. Quedan algunas viejas con otro formato, como `JWT_secret_key` y `apikeymail`.
+
+### Textos
+
+- Todo lo que lee el cliente va en **tú y sin género** ("Te agregué 2 manzanas", nunca "usted" ni "listo/lista"), en la web, la app, los avisos y los correos.
+- **Tiqui es ella**: habla en primera persona y tutea.
+- El nombre de la tienda en voz alta es "la seis tres cinco".
+- El panel y los documentos legales quedan en español.
+- Todo texto nuevo de la tienda pasa por `t()` y lleva su entrada en `i18n/en.js`. Una prueba avisa si falta.
+
+### Diseño
+
+- Los colores de la casa son el azul marino `#003049` y el celeste `#009AEB`. Las temporadas cambian los colores de la tienda, nunca los de Tiqui.
+- La letra es Poppins.
+- **Sin recuadros decorativos**: el contenido va sobre el fondo, separado con aire y líneas finas.
+- Todo tiene que verse bien también en **modo oscuro**, y las animaciones respetan a quien pide movimiento reducido.
+
+---
+
+Proyecto de la Expo 2026 · Instituto Ricaldone
