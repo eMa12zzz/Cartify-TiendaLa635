@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Vibration } from 'react-native';
 import { getCourierPosition } from '../api/pedidosApi';
 import { useAviso } from '../context/AvisoContext';
@@ -81,6 +81,8 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
           destino: data?.destino || null,
           courier,
           velocidad,
+          // La ruta por las calles que le falta (backend/src/utils/rutaReparto.js), o null.
+          ruta: data?.ruta?.puntos?.length > 1 ? data.ruta : null,
         });
       } catch {
         // Un fallo de red no borra lo que ya se sabía.
@@ -112,16 +114,30 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
 
   const senalFria = desdeUltimoDato != null && desdeUltimoDato > SENAL_FRIA_MS;
 
-  const metrosFaltantes = punto && actual?.destino
-    ? distanciaMetros(punto, actual.destino)
-    : null;
-  const minutos = minutosDeViaje(metrosFaltantes, actual?.velocidad);
+  /*
+   * Con la ruta por las calles, lo que falta es lo que mide esa línea y la
+   * espera sale de su tiempo; sin ella, la línea recta de siempre. Con la
+   * señal fría no se muestra: sería un camino desde donde ya no está.
+   */
+  const ruta = punto && !senalFria ? actual?.ruta : null;
+  const lineaDeRuta = useMemo(
+    () => (ruta ? ruta.puntos.map(([lng, lat]) => ({ lat, lng })) : null),
+    [ruta]
+  );
+
+  const metrosFaltantes = ruta?.metros
+    ?? (punto && actual?.destino ? distanciaMetros(punto, actual.destino) : null);
+  const minutos = ruta?.segundos != null
+    ? Math.max(1, Math.round(ruta.segundos / 60))
+    : minutosDeViaje(metrosFaltantes, actual?.velocidad);
 
   return {
     enVivo: !!punto && !senalFria,
     estado: actual?.status || null,
     punto,
     destino: actual?.destino || null,
+    // La línea por las calles que le falta, como [{lat,lng}…], o null.
+    ruta: lineaDeRuta,
     repartidor: courier?.name || '',
     senalFria,
     minutosDesdeUltimoDato: desdeUltimoDato != null ? Math.floor(desdeUltimoDato / 60000) : null,

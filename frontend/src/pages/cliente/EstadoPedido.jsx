@@ -259,6 +259,7 @@ const EstadoPedido = () => {
                 <MapaSeguimiento
                   punto={seguimiento.punto}
                   destino={seguimiento.destino}
+                  ruta={seguimiento.ruta}
                   alto={200}
                   borde="transparent"
                 />

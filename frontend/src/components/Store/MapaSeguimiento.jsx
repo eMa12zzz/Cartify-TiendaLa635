@@ -31,6 +31,9 @@ import Mapa from '../Mapa/Mapa';
 /*
  * @param punto   - dónde va el repartidor ahora ({lat,lng}), o null.
  * @param destino - la casa del cliente ({lat,lng}), o null.
+ * @param ruta    - la línea por las calles que le falta ([{lat,lng}…]), o null.
+ *                  Con ella, el encuadre abarca la ruta entera: puede dar la
+ *                  vuelta por fuera del rectángulo entre los dos puntos.
  * @param alto    - alto del mapa en px.
  * @param borde   - color del borde; 'transparent' cuando ya lo pone el padre.
  * @param interactivo - si se puede arrastrar y hacer zoom.
@@ -40,7 +43,7 @@ import Mapa from '../Mapa/Mapa';
  * intentar desplazar la página con el dedo se moviera el mapa en su lugar y la
  * página se quedara quieta. En un mapa de ese tamaño no hay nada que explorar.
  */
-const MapaSeguimiento = ({ punto, destino, alto = 200, borde, interactivo = true }) => {
+const MapaSeguimiento = ({ punto, destino, ruta, alto = 200, borde, interactivo = true }) => {
   // Sin ningún punto no hay mapa que valga la pena: ver el encabezado.
   if (!punto && !destino) return null;
 
@@ -65,7 +68,8 @@ const MapaSeguimiento = ({ punto, destino, alto = 200, borde, interactivo = true
           centro={centro}
           zoom={15}
           pines={pines}
-          encuadrar={[punto, destino]}
+          ruta={ruta}
+          encuadrar={ruta?.length > 1 ? [punto, destino, ...ruta] : [punto, destino]}
           interactivo={interactivo}
         />
       </div>

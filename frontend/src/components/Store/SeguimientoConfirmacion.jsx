@@ -69,6 +69,7 @@ const SeguimientoConfirmacion = ({ orderId, esDomicilio }) => {
           <MapaSeguimiento
             punto={enCamino ? seg.punto : null}
             destino={seg.destino}
+            ruta={enCamino ? seg.ruta : null}
             alto={200}
             borde="transparent"
           />

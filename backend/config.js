@@ -69,5 +69,13 @@ export const config = {
   tienda: {
     url: urlDeLaTienda.replace(/\/+$/, ""),
     nombre: process.env.TIENDA_NOMBRE || "Tienda la 635"
+  },
+  /*
+   * La ruta por las calles que ve el cliente mientras le llevan su pedido
+   * (OpenRouteService, plan gratis). Sin llave no se dibuja la línea y el
+   * mapa queda con sus dos puntos, como antes. Ver src/utils/rutaReparto.js.
+   */
+  rutas: {
+    llave: process.env.OPENROUTESERVICE_API_KEY || ""
   }
 };
