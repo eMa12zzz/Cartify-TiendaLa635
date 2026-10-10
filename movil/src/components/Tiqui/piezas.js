@@ -16,7 +16,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { useColores } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
-import { disfrazDeTema } from '../../utils/disfracesTiqui';
+import { disfrazDeTema, normalizarDisfraz } from '../../utils/disfracesTiqui';
+import { PIEZAS_DISFRAZ, RUBOR as RUBOR_DISFRAZ } from '../../utils/piezasDisfraz';
 
 export const CUERPO =
   'M183,127 Q200,110 217,127 L261.6,171.6 Q280,190 280,216 C284,258 284,302 280,344 ' +
@@ -62,10 +63,11 @@ export const useColoresTiqui = (sobre) => {
   }, [COLORES, colores.marca, sobre]);
 };
 
-// Lo que lleva puesto según la temporada de la tienda (o nada).
+// Lo que lleva puesto según la temporada de la tienda (o nada): el que le
+// armó el dueño en el panel, o el de fábrica de la temporada.
 export const useDisfrazTiqui = () => {
-  const { tema, decoracion } = useTema();
-  return useMemo(() => (tema && decoracion ? disfrazDeTema(tema) : null), [tema, decoracion]);
+  const { tema, decoracion, disfraces } = useTema();
+  return useMemo(() => (tema && decoracion ? disfrazDeTema(tema, disfraces) : null), [tema, decoracion, disfraces]);
 };
 
 // Quien pidió menos movimiento en su teléfono la ve quieta. El gancho vive en
@@ -90,86 +92,85 @@ export const useParpadeo = (activo = true) => {
   return cerrado;
 };
 
-const ESTRELLA_GORRO =
-  'M170,29 L174.1,40.3 L186.2,40.8 L176.7,48.2 L180,59.8 L170,53 L160,59.8 L163.3,48.2 L153.8,40.8 L165.9,40.3 Z';
-
 /*
- * Los disfraces (DisfrazTiqui.jsx). Cada pieza lleva un borde del color de
- * los rasgos, así se despega del cuerpo en claro y en oscuro.
+ * Los disfraces. Las piezas son datos (utils/piezasDisfraz.js, el mismo
+ * archivo que usa la web); aquí solo se dibujan con react-native-svg, igual
+ * que DisfrazTiqui.jsx en la web. Cada pieza lleva un borde del color de los
+ * rasgos, así se despega del cuerpo en claro y en oscuro.
+ *
+ * En dos pasadas: primero la silueta de la pieza entera con el borde y
+ * encima las formas con sus colores. Así el borde rodea la pieza y no cruza
+ * por dentro donde una forma se encima a otra.
  */
-const PIEZAS = {
-  'gorro-navidad': ({ principal }) => (
-    <>
-      <Path d="M132,188 C134,146 162,110 206,98 C242,88 280,102 294,138 C300,158 300,194 296,222 L280,224 C279,208 274,196 270,188 Z" fill={principal} />
-      <Path d="M252,112 C272,128 280,160 282,190" stroke="#000000" strokeOpacity={0.22} strokeWidth={5} strokeLinecap="round" fill="none" />
-      <Rect x={114} y={172} width={172} height={28} rx={14} fill="#FFFFFF" />
-      <Circle cx={288} cy={228} r={15} fill="#FFFFFF" />
-    </>
-  ),
-  'sombrero-bruja': ({ principal, acento }) => (
-    <>
-      <Path d="M124,190 L166,86 C170,74 162,62 146,58 L130,56 C148,50 170,52 184,66 C192,74 196,86 198,96 L280,190 Z" fill={principal} />
-      <Path d="M128,180 L136.1,160 L253.8,160 L271.3,180 Z" fill={acento} />
-      <Path d="M183,158 L207,158 L207,182 L183,182 Z M190,165 L200,165 L200,175 L190,175 Z" fillRule="evenodd" fill={AMARILLO} />
-      <Ellipse cx={200} cy={190} rx={114} ry={17} fill={principal} />
-    </>
-  ),
-  corbatin: ({ principal, acento }) => (
-    <>
-      <Path d="M200,338 L162,318 Q154,338 162,358 Z" fill={principal} />
-      <Path d="M200,338 L238,318 Q246,338 238,358 Z" fill={principal} />
-      <Rect x={189} y={327} width={22} height={22} rx={6} fill={acento || '#FFFFFF'} />
-    </>
-  ),
-  mono: ({ principal, acento }) => (
-    <G transform="rotate(-38 160 150)">
-      <Path d="M160,150 C144,128 118,134 122,152 C124,168 146,166 160,150 Z" fill={principal} />
-      <Path d="M160,150 C176,128 202,134 198,152 C196,168 174,166 160,150 Z" fill={principal} />
-      <Circle cx={160} cy={150} r={9} fill={acento} />
-    </G>
-  ),
-  'gorro-fiesta': ({ principal, acento }) => (
-    <>
-      <Path d="M122,196 L170,44 L278,196 Z" fill={principal} />
-      <Path d="M140.9,136 L146,120 L224,120 L235.4,136 Z" fill={acento} />
-      <Rect x={116} y={182} width={168} height={20} rx={10} fill={acento} />
-      <Circle cx={170} cy={42} r={14} fill={acento} />
-    </>
-  ),
-  'gorro-estrella': ({ principal, acento }) => (
-    <>
-      <Path d="M122,196 L170,52 L278,196 Z" fill={principal} />
-      <Path d="M140.9,136 L146,120 L224,120 L235.4,136 Z" fill={acento} />
-      <Rect x={116} y={182} width={168} height={20} rx={10} fill={acento} />
-      <Path d={ESTRELLA_GORRO} fill={acento} />
-    </>
-  ),
-  bufanda: ({ principal, acento }) => (
-    <>
-      <Path d="M226,338 L256,334 L266,414 L236,418 Z" fill={principal} />
-      <Path d="M231,366 L261,362 L263,376 L233,380 Z M234,392 L264,388 L265,398 L235,402 Z" fill={acento} stroke="none" />
-      <Path d="M112,316 Q200,346 288,316 L288,346 Q200,376 112,346 Z" fill={principal} />
-      <Path d="M146,328 L146,358 M254,328 L254,358" stroke={acento} strokeWidth={10} fill="none" />
-      <Path d="M214,334 Q232,328 244,340 Q246,358 228,362 Q212,358 214,334 Z" fill={principal} />
-    </>
-  ),
+const ELEMENTOS = { path: Path, rect: Rect, circle: Circle, ellipse: Ellipse };
+const MEDIDAS = ['d', 'x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r'];
+// Primero el cuello, después la cara y arriba de todo el sombrero.
+const ORDEN = ['cuello', 'cara', 'cabeza'];
+
+const colorDe = (valor, pieza) =>
+  valor === 'principal' ? pieza.principal : valor === 'acento' ? pieza.acento : valor;
+
+const medidasDe = (forma) => {
+  const props = {};
+  MEDIDAS.forEach((m) => { if (forma[m] !== undefined) props[m] = forma[m]; });
+  if (forma.evenodd) props.fillRule = 'evenodd';
+  return props;
+};
+
+// Las formas que arman la silueta: las que tienen relleno y cuentan para el borde.
+const enLaSilueta = (forma) => forma.relleno !== 'none' && !forma.trazo && !forma.sinContorno;
+
+// 1.ª pasada: la silueta, toda del color del borde y con el borde alrededor.
+const Silueta = ({ forma, contorno }) => {
+  const El = ELEMENTOS[forma.el];
+  if (!El) return null;
+  return <El {...medidasDe(forma)} fill={contorno} stroke={contorno} strokeWidth={4} strokeLinejoin="round" />;
+};
+
+// 2.ª pasada: la forma con sus colores.
+const Forma = ({ forma, pieza, contorno }) => {
+  const El = ELEMENTOS[forma.el];
+  if (!El) return null;
+  const props = medidasDe(forma);
+  props.fill = colorDe(forma.relleno, pieza);
+  if (forma.trazo) {
+    props.stroke = colorDe(forma.trazo, pieza);
+    props.strokeWidth = forma.anchoTrazo;
+    if (forma.opacidadTrazo !== undefined) props.strokeOpacity = forma.opacidadTrazo;
+    if (forma.redondo) props.strokeLinecap = 'round';
+  } else if (forma.separar) {
+    props.stroke = contorno;
+    props.strokeWidth = 4;
+    props.strokeLinejoin = 'round';
+  }
+  if (forma.opacidad !== undefined) props.opacity = forma.opacidad;
+  return <El {...props} />;
 };
 
 // Lo que Tiqui lleva puesto. Va encima del cuerpo y del cordón.
 export const Disfraz = ({ disfraz, contorno }) => {
-  const dibujar = disfraz && PIEZAS[disfraz.tipo];
-  if (!dibujar) return null;
+  const puesto = normalizarDisfraz(disfraz);
+  if (!puesto) return null;
   return (
     <G>
-      {disfraz.rubor && (
-        <G opacity={0.55}>
-          <Ellipse cx={150} cy={284} rx={13} ry={8} fill={RUBOR} />
-          <Ellipse cx={250} cy={284} rx={13} ry={8} fill={RUBOR} />
+      {puesto.rubor && (
+        <G opacity={RUBOR_DISFRAZ.opacidad}>
+          {RUBOR_DISFRAZ.formas.map((f) => (
+            <Ellipse key={f.cx} cx={f.cx} cy={f.cy} rx={f.rx} ry={f.ry} fill={RUBOR_DISFRAZ.color} />
+          ))}
         </G>
       )}
-      <G stroke={contorno} strokeWidth={4} strokeLinejoin="round">
-        {dibujar(disfraz)}
-      </G>
+      {ORDEN.map((ranura) => {
+        const pieza = puesto[ranura];
+        const def = pieza && PIEZAS_DISFRAZ[pieza.tipo];
+        if (!def) return null;
+        return (
+          <G key={ranura} transform={def.giro}>
+            {def.formas.filter(enLaSilueta).map((forma, i) => <Silueta key={i} forma={forma} contorno={contorno} />)}
+            {def.formas.map((forma, i) => <Forma key={i} forma={forma} pieza={pieza} contorno={contorno} />)}
+          </G>
+        );
+      })}
     </G>
   );
 };

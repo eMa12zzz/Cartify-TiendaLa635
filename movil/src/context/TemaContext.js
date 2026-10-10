@@ -131,6 +131,8 @@ export const TemaProvider = ({ children }) => {
       decoracion: tema && decoracionEncendida ? tema.decoracion : null,
       // El saludo de los días sin temporada. En blanco no sale cinta.
       saludoNormal: (temporada?.saludoNormal || '').trim(),
+      // Los disfraces que el dueño le armó a Tiqui en el panel, por temporada.
+      disfraces: temporada?.disfraces || null,
       // Para jalar para recargar: vuelve a traer la temporada.
       recargarAjustes,
     };

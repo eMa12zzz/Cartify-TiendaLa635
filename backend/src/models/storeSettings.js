@@ -111,6 +111,13 @@ const temporadaSchema = new Schema(
      * automático, o a mano. Ver temporadaPropiaSchema.
      */
     personalizados: { type: [temporadaPropiaSchema], default: [] },
+    /*
+     * El disfraz que el dueño le armó a Tiqui para cada temporada, por la
+     * clave de la temporada: { navidad: { cabeza, cara, cuello, rubor } }. Una
+     * temporada sin entrada aquí usa el disfraz de fábrica. Lo revisa
+     * utils/disfracesTiqui.js antes de guardarlo.
+     */
+    disfraces: { type: Schema.Types.Mixed, default: {} },
   },
   { _id: false }
 );
