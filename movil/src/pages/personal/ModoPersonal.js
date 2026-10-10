@@ -4,15 +4,22 @@
  * ============================================================
  * Lo que ve quien entró por "¿Trabajas en la tienda?". Depende de su cuenta:
  *
- *   - El ADMINISTRADOR tiene dos secciones: Tiqui del panel (le pregunta cómo
- *     va el negocio y le pide cambios) y el Reparto (lo que antes era "Estoy
- *     trabajando" en la web). Cambia entre las dos arriba.
+ *   - El ADMINISTRADOR tiene tres secciones: Tiqui del panel (le pregunta cómo
+ *     va el negocio y le pide cambios), el Reparto (lo que antes era "Estoy
+ *     trabajando" en la web) y el Panel, el mismo de la web dentro de la app
+ *     (PanelWeb.js). Cambia entre ellas arriba.
  *   - El EMPLEADO ve solo el Reparto.
  *
- * Las dos secciones se quedan montadas aunque no se vean: cambiar a Reparto no
+ * Las secciones se quedan montadas aunque no se vean: cambiar a Reparto no
  * borra la charla con Tiqui, y cambiar a Tiqui no corta la ubicación que se
  * está compartiendo con un cliente (el reparto vive aquí arriba, en
- * useRepartoPersonal, y no dentro de su pantalla).
+ * useRepartoPersonal, y no dentro de su pantalla). El Panel se monta la
+ * primera vez que se abre y desde ahí también se queda.
+ *
+ * EL AVISO DEL PANEL. En el teléfono el panel funciona, pero tiene tablas y
+ * formularios pensados para pantallas amplias: la primera vez que se abre en
+ * la sesión se le avisa y se le recomienda una tablet o una computadora. En
+ * la tablet no hace falta avisar.
  *
  * La tienda no está: para comprar se sale del modo personal.
  * ============================================================
@@ -20,20 +27,23 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Bike, LogOut, Sparkles } from 'lucide-react-native';
+import { Bike, LayoutDashboard, LogOut, RotateCw, Sparkles } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { usePersonal } from '../../context/PersonalContext';
 import { useRepartoPersonal } from '../../hooks/useRepartoPersonal';
 import { useMovimientoReducido } from '../../hooks/useMovimientoReducido';
+import { useDisposicion } from '../../hooks/useDisposicion';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import ModalConfirmar from '../../components/UI/ModalConfirmar';
 import TiquiAdmin from './TiquiAdmin';
 import Reparto from './Reparto';
+import PanelWeb from './PanelWeb';
 
 const SECCIONES = [
   { clave: 'tiqui', nombre: 'Tiqui', Icono: Sparkles },
   { clave: 'reparto', nombre: 'Reparto', Icono: Bike },
+  { clave: 'panel', nombre: 'Panel', Icono: LayoutDashboard },
 ];
 
 // El relleno del selector y el aire entre opciones: la píldora los necesita
@@ -57,6 +67,27 @@ const ModoPersonal = () => {
   const [seccion, setSeccion] = useState(esAdmin ? 'tiqui' : 'reparto');
   const actual = esAdmin ? seccion : 'reparto';
   const indiceActivo = SECCIONES.findIndex((s) => s.clave === actual);
+
+  // El Panel se monta la primera vez que se abre; en el teléfono, después del aviso.
+  const { esTablet } = useDisposicion();
+  const [panelAbierto, setPanelAbierto] = useState(false);
+  const [avisoPanel, setAvisoPanel] = useState(false);
+  const panel = useRef(null);
+
+  const elegir = (clave) => {
+    if (clave === 'panel' && !panelAbierto && !esTablet) {
+      setAvisoPanel(true);
+      return;
+    }
+    if (clave === 'panel') setPanelAbierto(true);
+    setSeccion(clave);
+  };
+
+  const abrirPanel = () => {
+    setAvisoPanel(false);
+    setPanelAbierto(true);
+    setSeccion('panel');
+  };
 
   /*
    * La píldora del selector: UNA sola vista que viaja de una opción a la otra,
@@ -116,6 +147,17 @@ const ModoPersonal = () => {
             </Text>
             <Text style={estilos.subtitulo}>{esAdmin ? 'Administración' : 'Equipo de la tienda'}</Text>
           </View>
+          {actual === 'panel' && (
+            <TouchableOpacity
+              onPress={() => panel.current?.recargar()}
+              accessibilityRole="button"
+              accessibilityLabel="Recargar el panel"
+              hitSlop={8}
+              style={estilos.accion}
+            >
+              <RotateCw size={20} color={COLORES.textoSuave} strokeWidth={1.8} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => setConfirmarSalida(true)}
             accessibilityRole="button"
@@ -141,7 +183,7 @@ const ModoPersonal = () => {
             {SECCIONES.map(({ clave, nombre, Icono }) => (
               <Pressable
                 key={clave}
-                onPress={() => setSeccion(clave)}
+                onPress={() => elegir(clave)}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: actual === clave }}
                 style={estilos.opcion}
@@ -194,6 +236,22 @@ const ModoPersonal = () => {
       <View style={actual === 'reparto' ? estilos.flexible : estilos.oculta}>
         <Reparto reparto={reparto} />
       </View>
+      {esAdmin && panelAbierto && (
+        <View style={actual === 'panel' ? estilos.flexible : estilos.oculta}>
+          <PanelWeb ref={panel} activo={actual === 'panel'} />
+        </View>
+      )}
+
+      {avisoPanel && (
+        <ModalConfirmar
+          titulo="El panel se trabaja mejor en pantalla grande"
+          mensaje="Puede usarlo desde el teléfono, pero tiene tablas y formularios pensados para pantallas amplias. Para trabajar con más comodidad, le recomendamos una tablet o una computadora."
+          textoConfirmar="Abrir el panel"
+          textoCancelar="Ahora no"
+          alConfirmar={abrirPanel}
+          alCerrar={() => setAvisoPanel(false)}
+        />
+      )}
 
       {confirmarSalida && (
         <ModalConfirmar

@@ -1,5 +1,6 @@
 import express from "express";
 import loginAdminController from "../controller/Admin/loginAdmin.js";
+import { soloAdmin } from "../middlewares/validarSesion.js";
 
 /*
  * ── Documentación de la API (Swagger) ──
@@ -78,6 +79,38 @@ import loginAdminController from "../controller/Admin/loginAdmin.js";
  *         description: El código venció o no se escribió.
  *       401:
  *         description: El código no es correcto.
+ *
+ * /loginAdmin/pase-app:
+ *   post:
+ *     summary: Un pase de un solo uso para abrir el panel web dentro de la app
+ *     description: Solo el administrador, con la sesión de la app (Authorization Bearer). El pase vence en un minuto.
+ *     tags: [Admin Auth]
+ *     responses:
+ *       200:
+ *         description: "{ pase }"
+ *       401:
+ *         description: Sin sesión.
+ *       403:
+ *         description: La sesión no es de administrador.
+ *
+ * /loginAdmin/pase-app/canjear:
+ *   post:
+ *     summary: El panel web canjea el pase y queda con la sesión abierta
+ *     tags: [Admin Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [pase]
+ *             properties:
+ *               pase: { type: string }
+ *     responses:
+ *       200:
+ *         description: "Sesión abierta: cookie authCookie (12 horas) y { token, tipo: admin, admin }."
+ *       400:
+ *         description: El pase no existe, ya se usó o venció.
  */
 
 
@@ -85,5 +118,8 @@ const router = express.Router();
 
 router.post("/login", loginAdminController.login);
 router.post("/verify-2fa", loginAdminController.verify2FA);
+// El panel dentro de la app: ver utils/pasesPanel.js.
+router.post("/pase-app", soloAdmin, loginAdminController.paseApp);
+router.post("/pase-app/canjear", loginAdminController.canjearPaseApp);
 
 export default router;

@@ -97,6 +97,15 @@ export const personalApi = {
   // La voz es la misma de la tienda: convertir texto en audio no sabe de ninguna asistente.
   urlVoz: (texto) => `${URL_API}/ai/voz?t=${encodeURIComponent(texto)}`,
 
+  // ── El panel web dentro de la app (solo el administrador) ──
+
+  /*
+   * Un pase de un solo uso (vence en un minuto) para abrir el panel ya con la
+   * sesión puesta, sin volver a pedir contraseña ni código. Ver PanelWeb.js.
+   */
+  paseDelPanel: (token) =>
+    peticion('/loginAdmin/pase-app', { metodo: 'POST', cabeceras: conToken(token), tiempoMaximo: 45000 }),
+
   // ── Reparto ──
 
   // Todos los pedidos (la misma lista del panel); el Reparto se queda con los de domicilio.
