@@ -24,12 +24,32 @@ import { personalApi } from '../api/personalApi';
 
 const PersonalContext = createContext(null);
 const LLAVE_SESION = llave('cartify', 'sesion-personal');
+// La paleta que el administrador eligió en el panel (ver utils/paletaPanel.js).
+const LLAVE_PALETA = llave('cartify', 'paleta-panel');
 // La del modo administrador de antes, que solo dejaba entrar al dueño.
 const LLAVE_VIEJA = llave('cartify', 'sesion-admin');
 
 export const PersonalProvider = ({ children }) => {
   const [sesion, setSesion] = useState(null); // { token, tipo: 'admin'|'employee', nombre, email }
   const [cargando, setCargando] = useState(true);
+  /*
+   * La paleta del panel, tal como la mandó (ver PanelWeb.js). Se guarda en el
+   * teléfono para que la app abra ya con ella, y se olvida al salir: quien
+   * entre después trae su propia vista.
+   */
+  const [paletaPanel, setPaletaPanel] = useState(null);
+
+  useEffect(() => {
+    leer(LLAVE_PALETA)
+      .then((crudo) => { try { if (crudo) setPaletaPanel(JSON.parse(crudo)); } catch { /* ilegible */ } })
+      .catch(() => null);
+  }, []);
+
+  const cambiarPaletaPanel = useCallback((datos) => {
+    setPaletaPanel(datos);
+    if (datos) guardar(LLAVE_PALETA, JSON.stringify(datos));
+    else borrar(LLAVE_PALETA);
+  }, []);
 
   useEffect(() => {
     let vivo = true;
@@ -70,6 +90,8 @@ export const PersonalProvider = ({ children }) => {
   const salir = useCallback(() => {
     setSesion(null);
     borrar(LLAVE_SESION);
+    setPaletaPanel(null);
+    borrar(LLAVE_PALETA);
     personalApi.salir();
   }, []);
 
@@ -79,7 +101,9 @@ export const PersonalProvider = ({ children }) => {
     esAdmin: sesion?.tipo === 'admin',
     iniciar,
     salir,
-  }), [sesion, cargando, iniciar, salir]);
+    paletaPanel,
+    cambiarPaletaPanel,
+  }), [sesion, cargando, iniciar, salir, paletaPanel, cambiarPaletaPanel]);
 
   return <PersonalContext.Provider value={valor}>{children}</PersonalContext.Provider>;
 };

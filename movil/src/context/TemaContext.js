@@ -53,7 +53,13 @@ export const PALETA_BASE = {
   acento: '#009AEB',
 };
 
-export const TemaProvider = ({ children }) => {
+/*
+ * `marcaFija`: los colores de marca que mandan sí o sí, pase lo que pase con
+ * la temporada. Lo usa el modo del personal cuando el administrador eligió una
+ * paleta en el panel (ver utils/paletaPanel.js): sus botones y pestañas van
+ * del color del panel, no de la Navidad de la tienda.
+ */
+export const TemaProvider = ({ children, marcaFija }) => {
   // En modo oscuro la temporada (o la marca, si no hay) se pinta con su
   // versión para fondo oscuro. Por eso TemaProvider va DENTRO de ModoProvider.
   const { oscuro } = useModo();
@@ -116,18 +122,19 @@ export const TemaProvider = ({ children }) => {
   const valor = useMemo(() => {
     // La paleta ya resuelta: siempre completa, haya temporada o no.
     const clara = tema ? { ...PALETA_BASE, ...tema.colores } : PALETA_BASE;
+    const fija = marcaFija ? { ...PALETA_BASE, ...marcaFija } : null;
     return {
       // El tema crudo, para quien necesite su clave o su saludo.
       tema,
       activo: !!tema,
       // marcaTexto: la marca cuando es letra. Ver theme/colores.js.
-      colores: oscuro ? paletaOscura(clara) : { ...clara, marcaTexto: clara.marca },
+      colores: fija || (oscuro ? paletaOscura(clara) : { ...clara, marcaTexto: clara.marca }),
       /*
        * La de siempre aunque rija el modo oscuro. Solo para lo que es arte a
        * sangre con texto blanco encima (la introducción): ahí el azul hondo
        * ya es el fondo oscuro, y aclararlo le quitaba contraste al texto.
        */
-      coloresClaros: { ...clara, marcaTexto: clara.marca },
+      coloresClaros: fija || { ...clara, marcaTexto: clara.marca },
       decoracion: tema && decoracionEncendida ? tema.decoracion : null,
       // El saludo de los días sin temporada. En blanco no sale cinta.
       saludoNormal: (temporada?.saludoNormal || '').trim(),
@@ -136,7 +143,7 @@ export const TemaProvider = ({ children }) => {
       // Para jalar para recargar: vuelve a traer la temporada.
       recargarAjustes,
     };
-  }, [tema, decoracionEncendida, temporada, oscuro, recargarAjustes]);
+  }, [tema, decoracionEncendida, temporada, oscuro, recargarAjustes, marcaFija]);
 
   return <TemaContext.Provider value={valor}>{children}</TemaContext.Provider>;
 };

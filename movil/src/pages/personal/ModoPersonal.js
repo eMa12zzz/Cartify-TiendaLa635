@@ -218,7 +218,7 @@ const ModoPersonal = () => {
                 >
                   {SECCIONES.map(({ clave, nombre, Icono }) => (
                     <View key={clave} style={estilos.opcion}>
-                      {etiqueta(clave, nombre, Icono, '#FFFFFF')}
+                      {etiqueta(clave, nombre, Icono, COLORES.sobreMarca)}
                     </View>
                   ))}
                 </Animated.View>

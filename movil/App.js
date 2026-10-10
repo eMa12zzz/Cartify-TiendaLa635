@@ -80,7 +80,9 @@ import LimiteDeError from './src/components/UI/LimiteDeError';
 import BurbujaPedido from './src/components/Tienda/BurbujaPedido';
 import PedidoDetalleFlotante from './src/components/Tienda/PedidoDetalleFlotante';
 import VueloAlCarrito from './src/components/Tienda/VueloAlCarrito';
-import { ModoProvider, useModo } from './src/context/ModoContext';
+import { useMemo } from 'react';
+import { ConPaleta, ModoProvider, useModo } from './src/context/ModoContext';
+import { paletaDesdePanel } from './src/utils/paletaPanel';
 import { IdiomaProvider } from './src/context/IdiomaContext';
 import { View } from 'react-native';
 // Quien trabaja en la tienda: la app entera pasa a ser su herramienta de trabajo.
@@ -133,14 +135,25 @@ const LaTienda = () => (
  * el carrito, ni los avisos de pedidos de cliente): no es una pestaña más, es
  * otra app. Ver context/PersonalContext.js.
  */
-const ModoDelPersonal = () => (
-  <TemaProvider>
-    <BarraDeEstado />
-    <LimiteDeError>
-      <ModoPersonal />
-    </LimiteDeError>
-  </TemaProvider>
-);
+const ModoDelPersonal = () => {
+  /*
+   * El administrador ve el modo del personal con la paleta que eligió en el
+   * panel (Lectura, Calma, Modo oscuro...): toda esta parte de la app se viste
+   * igual que el panel. La tienda no se toca. Ver utils/paletaPanel.js.
+   */
+  const { esAdmin, paletaPanel } = usePersonal();
+  const paleta = useMemo(() => (esAdmin ? paletaDesdePanel(paletaPanel) : null), [esAdmin, paletaPanel]);
+  return (
+    <ConPaleta paleta={paleta}>
+      <TemaProvider marcaFija={paleta?.marca}>
+        <BarraDeEstado />
+        <LimiteDeError>
+          <ModoPersonal />
+        </LimiteDeError>
+      </TemaProvider>
+    </ConPaleta>
+  );
+};
 
 const Contenido = () => {
   const { sesion, cargando } = usePersonal();

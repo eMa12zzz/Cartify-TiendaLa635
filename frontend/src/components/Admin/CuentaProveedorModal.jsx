@@ -41,17 +41,21 @@ const CuentaProveedorModal = ({ isOpen, onClose, proveedor }) => {
    * avise). No se puede escribir directo en el calendario del sistema desde una
    * web; ver utils/calendario.js.
    */
-  const agregarAlCalendario = (p) => {
+  const agregarAlCalendario = async (p) => {
     const nombre = cuenta?.supplier?.name || proveedor?.name || 'proveedor';
-    descargarEventoIcs({
-      titulo: `Pagar a ${nombre}: ${dinero(p.pendiente)}`,
-      descripcion: `Crédito con ${nombre}. Factura ${p.reference || 's/n'}, ${dinero(p.pendiente)}. Vence el ${fecha(p.dueDate)}.`,
-      fecha: p.dueDate,
-      diasAntes: 1,
-      uid: String(p._id),
-      ahora: new Date(),
-    });
-    toast.success('Descargamos el recordatorio. Ábralo para agregarlo a su calendario.');
+    try {
+      await descargarEventoIcs({
+        titulo: `Pagar a ${nombre}: ${dinero(p.pendiente)}`,
+        descripcion: `Crédito con ${nombre}. Factura ${p.reference || 's/n'}, ${dinero(p.pendiente)}. Vence el ${fecha(p.dueDate)}.`,
+        fecha: p.dueDate,
+        diasAntes: 1,
+        uid: String(p._id),
+        ahora: new Date(),
+      });
+      toast.success('Descargamos el recordatorio. Ábralo para agregarlo a su calendario.');
+    } catch {
+      toast.error('No se pudo descargar el recordatorio. Intente de nuevo.');
+    }
   };
 
   /*
