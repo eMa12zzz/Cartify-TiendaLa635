@@ -32,6 +32,7 @@ import { iconoDeModulo, flujoDeModulo } from '../../utils/modulos';
 import { navegarA } from '../../navigation/navigationRef';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import { useIdioma } from '../../context/IdiomaContext';
+import { hojaCentrada } from '../../theme/pantalla';
 
 const Opcion = ({ Icono, texto, activa, colores, onPress }) => {
   const COLORES = useColores();
@@ -211,6 +212,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   panel: {
+    ...hojaCentrada,
     backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,

@@ -29,6 +29,7 @@ import { duiEsValido } from '../../utils/validaciones';
 import { formatearDui, LARGO_DUI } from '../../utils/mascaras';
 import { EDAD_MINIMA } from '../../utils/edad';
 import { useIdioma } from '../../context/IdiomaContext';
+import { hojaCentrada } from '../../theme/pantalla';
 
 const ModalConfirmarEdad = ({ alCerrar, alConfirmar }) => {
   const { t } = useIdioma();
@@ -204,6 +205,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   panel: {
+    ...hojaCentrada,
     backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,

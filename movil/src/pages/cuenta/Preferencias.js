@@ -23,6 +23,7 @@ import { useTema } from '../../context/TemaContext';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import { useIdioma } from '../../context/IdiomaContext';
 import { IDIOMAS } from '../../utils/idioma';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 /*
  * Los colores de los dibujitos van FIJOS a propósito: la miniatura de "Claro"
@@ -172,6 +173,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     backgroundColor: COLORES.fondo,
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
     paddingBottom: 30,
   },

@@ -39,6 +39,7 @@ import Boton from '../../components/UI/Boton';
 import ModalMapaDireccion from '../../components/UI/ModalMapaDireccion';
 import ModalConfirmar from '../../components/UI/ModalConfirmar';
 import { useIdioma } from '../../context/IdiomaContext';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 /*
  * Las direcciones viejas son texto suelto y las nuevas son un objeto. Se
@@ -276,6 +277,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     textAlign: 'center',
   },
   lista: {
+    ...contenidoCentrado,
     padding: 16,
     gap: 10,
   },

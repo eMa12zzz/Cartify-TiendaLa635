@@ -24,7 +24,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Mascota, { CargandoMascota } from '../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { useAireBarraFlotante } from '../components/UI/BarraInferior';
-import { ALTURA_ESTADO } from '../theme/pantalla';
+import { ALTURA_ESTADO, contenidoCentrado } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { usePedidoActivoCtx } from '../context/PedidoActivoContext';
@@ -368,6 +368,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     textAlign: 'center',
   },
   lista: {
+    ...contenidoCentrado,
     padding: 16,
     gap: 12,
   },

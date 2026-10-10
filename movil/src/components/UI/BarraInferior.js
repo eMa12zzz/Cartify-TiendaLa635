@@ -48,6 +48,7 @@ import { Mic, Package, Store, User } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useIdioma } from '../../context/IdiomaContext';
+import { ANCHO_BARRA_INFERIOR } from '../../theme/pantalla';
 
 // Las medidas de la píldora flotante, juntas porque las usa el StyleSheet
 // de aquí abajo para armar el mismo tamaño en más de un lugar — y porque
@@ -261,6 +262,11 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   barra: {
     flexDirection: 'row',
     alignItems: 'center',
+    // En la tablet no atraviesa la pantalla entera: cuatro iconos repartidos
+    // en 1.200 px quedaban lejísimos uno de otro. En el teléfono no llega al tope.
+    width: '100%',
+    maxWidth: ANCHO_BARRA_INFERIOR,
+    alignSelf: 'center',
     backgroundColor: COLORES.papelAlto,
     borderRadius: 30,
     paddingVertical: RELLENO_VERTICAL_BARRA,

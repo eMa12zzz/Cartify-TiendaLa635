@@ -3,7 +3,7 @@
  * FAVORITOS — lo que el cliente marcó con el corazón
  * ============================================================
  * El equivalente de `frontend/src/pages/cliente/Favoritos.jsx`, con la misma
- * cuadrícula de dos columnas que el resto de la app.
+ * cuadrícula que el resto de la app (2 columnas en el teléfono, más en la tablet).
  *
  * ── No pide nada al servidor, y es a propósito ──
  *
@@ -37,9 +37,12 @@ import TarjetaProducto from '../../components/Tienda/TarjetaProducto';
 import ModalProducto from '../../components/Tienda/ModalProducto';
 import { avisarActividad } from '../../utils/actividadUsuario';
 import { useIdioma } from '../../context/IdiomaContext';
+import { useDisposicion } from '../../hooks/useDisposicion';
 
 const Favoritos = ({ alVolver }) => {
   const { t } = useIdioma();
+  // Las mismas columnas que la portada: 2 en el teléfono, más en la tablet.
+  const { columnas, anchoCelda } = useDisposicion();
   // Lo que hay que dejarle libre abajo a la píldora flotante.
   const aireAbajo = useAireBarraFlotante();
   const estilos = useEstilos(crearEstilos);
@@ -71,9 +74,10 @@ const Favoritos = ({ alVolver }) => {
         </View>
       ) : (
         <FlatList
+          key={`favoritos-${columnas}`}
           data={marcados}
           keyExtractor={(p) => p.id}
-          numColumns={2}
+          numColumns={columnas}
           columnWrapperStyle={estilos.fila}
           contentContainerStyle={[estilos.lista, { paddingBottom: aireAbajo }]}
           onScrollBeginDrag={avisarActividad}
@@ -88,7 +92,7 @@ const Favoritos = ({ alVolver }) => {
              * `flex: 1` a secas, un producto solo abajo se estira a lo ancho de
              * la pantalla. Mismo criterio que la portada.
              */
-            <View style={estilos.celda}>
+            <View style={[estilos.celda, { maxWidth: anchoCelda }]}>
               <TarjetaProducto
                 producto={item}
                 alVerDetalle={setProductoAbierto}
@@ -151,9 +155,9 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
+  // El tope de ancho lo pone useDisposicion (anchoCelda).
   celda: {
     flex: 1,
-    maxWidth: '48.5%',
   },
 });
 

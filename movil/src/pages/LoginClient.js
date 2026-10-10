@@ -59,6 +59,7 @@ import { useIdioma } from '../context/IdiomaContext';
 import { sinErrores, validarContrasena, validarCorreo, validarFormulario } from '../utils/validaciones';
 import { URL_WEB_LEGAL } from '../utils/legales';
 import SelectorIdioma from '../components/UI/SelectorIdioma';
+import { contenidoCentrado } from '../theme/pantalla';
 
 const LoginClient = ({ irARegistro, irATienda, irAPersonal }) => {
   const { t } = useIdioma();
@@ -339,6 +340,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 24,
     paddingTop: 28,
     paddingBottom: 48,

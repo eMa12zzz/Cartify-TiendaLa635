@@ -27,6 +27,7 @@ import { useAviso } from '../../context/AvisoContext';
 import { DIRECCION_EN_UNA_LINEA, enlaceWhatsApp } from '../../utils/tienda';
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import { useIdioma } from '../../context/IdiomaContext';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 const SALUDO_WHATSAPP = 'Hola, vengo de la app y necesito ayuda con mi pedido.';
 
@@ -128,6 +129,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     backgroundColor: COLORES.fondo,
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
     paddingBottom: 30,
   },

@@ -22,6 +22,7 @@ import TiquiColgada from '../../components/Tiqui/TiquiColgada';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { useTiquiAdmin } from '../../hooks/useTiquiAdmin';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 // Por dónde empezar, para quien no sabe qué pedirle.
 const SUGERENCIAS = ['¿Cómo vamos hoy?', '¿Qué pedidos esperan?', '¿Qué se está acabando?', '¿Cuánto les debemos a los proveedores?'];
@@ -194,7 +195,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     position: 'absolute', top: 6, right: 10, zIndex: 2,
     width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
   },
-  cuerpo: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
+  cuerpo: { ...contenidoCentrado, alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
   tiqui: { marginBottom: 6 },
   estado: { fontSize: 16, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
   transcripcion: { fontSize: 14, fontStyle: 'italic', color: COLORES.textoSuave, textAlign: 'center', marginBottom: 8 },

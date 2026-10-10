@@ -42,6 +42,7 @@ import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import { Estrella } from '../../components/UI/Iconos';
 import { useIdioma } from '../../context/IdiomaContext';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 const Puntos = ({ alVolver }) => {
   const { t, locale } = useIdioma();
@@ -235,6 +236,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     alignSelf: 'stretch',
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
     paddingBottom: 32,
   },

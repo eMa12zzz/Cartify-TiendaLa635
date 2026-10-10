@@ -53,7 +53,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, Clock, CreditCard, Gift, MapPin, Package, Store as Tienda, TriangleAlert, Wallet } from 'lucide-react-native';
 import { useColores, useEstilos } from '../context/ModoContext';
-import { ALTURA_ESTADO } from '../theme/pantalla';
+import { ALTURA_ESTADO, contenidoCentrado } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
@@ -817,6 +817,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     textAlign: 'center',
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
     paddingBottom: 24,
   },

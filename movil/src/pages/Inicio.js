@@ -53,6 +53,7 @@ import JalarParaRecargar from '../components/Tienda/JalarParaRecargar';
 import { useAviso } from '../context/AvisoContext';
 import { useIdioma } from '../context/IdiomaContext';
 import { soltarProductoPedido, useProductoPedido } from '../utils/enlaces';
+import { useDisposicion } from '../hooks/useDisposicion';
 
 const Inicio = ({ irACarrito, irASeccion }) => {
   const { t } = useIdioma();
@@ -94,6 +95,8 @@ const Inicio = ({ irACarrito, irASeccion }) => {
 
   const [productoAbierto, setProductoAbierto] = useState(null);
   const { avisar } = useAviso();
+  // En la tablet caben más columnas (ver hooks/useDisposicion.js).
+  const { columnas, anchoCelda } = useDisposicion();
 
   /*
    * Jalar para recargar: los productos Y la temporada (si el dueño la cambió
@@ -302,10 +305,13 @@ const Inicio = ({ irACarrito, irASeccion }) => {
         {({ alDesplazar, propsLista }) => (
         <FlatList
           {...propsLista}
+          // FlatList no deja cambiar las columnas en caliente: al girar la
+          // tablet se vuelve a montar con las nuevas.
+          key={`catalogo-${columnas}`}
           onScroll={alDesplazar}
           data={productosFiltrados}
           keyExtractor={(p) => p.id}
-          numColumns={2}
+          numColumns={columnas}
           ListHeaderComponent={encabezado}
           ListEmptyComponent={vacio}
           columnWrapperStyle={estilos.fila}
@@ -317,10 +323,10 @@ const Inicio = ({ irACarrito, irASeccion }) => {
              * `flex: 1` a secas —que es lo que la tarjeta necesita para que
              * las dos de una fila midan igual— un producto solo en la última
              * fila se estiraba a lo ancho de la pantalla, del doble de tamaño
-             * que todos los demás. El 48.5% es el ancho que ya tiene cuando
+             * que todos los demás. El tope es el ancho que ya tiene cuando
              * está acompañado, así que en las filas completas no cambia nada.
              */
-            <View style={estilos.celda}>
+            <View style={[estilos.celda, { maxWidth: anchoCelda }]}>
               <TarjetaProducto producto={item} alVerDetalle={verDetalle} alAgregar={agregarAlCarrito} indice={index} />
             </View>
           )}
@@ -425,9 +431,9 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
+  // El tope de ancho lo pone useDisposicion (anchoCelda), según cuántas columnas quepan.
   celda: {
     flex: 1,
-    maxWidth: '48.5%',
   },
   filaPromoActiva: {
     flexDirection: 'row',

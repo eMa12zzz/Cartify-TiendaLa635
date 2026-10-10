@@ -30,7 +30,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { FileUp, FileText, Image as ImagenIcono, AlertTriangle } from 'lucide-react-native';
 import { useColores, useEstilos } from '../context/ModoContext';
-import { ALTURA_ESTADO } from '../theme/pantalla';
+import { ALTURA_ESTADO, contenidoCentrado } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useTema } from '../context/TemaContext';
 import { useAviso } from '../context/AvisoContext';
@@ -430,6 +430,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     color: COLORES.tituloFuerte,
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
   },
   pasoTitulo: {
