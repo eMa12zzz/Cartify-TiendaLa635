@@ -5,10 +5,11 @@ import SubidorArchivo from '../components/UI/SubidorArchivo';
 import ConfiguracionEnvio from '../components/Admin/ConfiguracionEnvio';
 import ServicioTarifa from '../components/Admin/ServicioTarifa';
 import TemporadasPropias from '../components/Admin/TemporadasPropias';
+import EditorDisfrazTiqui from '../components/Admin/EditorDisfrazTiqui';
 import DatosNegocio from '../components/Admin/DatosNegocio';
 import { TEMAS_DE_TEMPORADA, temaDeLaFecha, temaActivo, todosLosTemas } from '../utils/temporadas';
 import Mascota from '../components/UI/Mascota';
-import { disfrazDeTema, NOMBRE_DEL_DISFRAZ } from '../utils/disfracesTiqui';
+import { disfrazDeTema, describirDisfraz } from '../utils/disfracesTiqui';
 
 /*
  * Los apartados de la izquierda. Antes todo era un scroll largo de tarjetas que
@@ -506,8 +507,9 @@ const Personalizacion = () => {
                 const elegido = temporada.modo === 'manual' && temporada.tema === tema.clave;
                 const esElDeHoy = porCalendario?.clave === tema.clave;
                 const seleccionable = temporada.modo === 'manual';
-                // Cómo se viste Tiqui en esta temporada. Ver utils/disfracesTiqui.js.
-                const disfraz = disfrazDeTema(tema);
+                // Cómo se viste Tiqui en esta temporada (el de fábrica o el que
+                // armó el dueño). Ver utils/disfracesTiqui.js.
+                const disfraz = disfrazDeTema(tema, temporada.disfraces);
 
                 return (
                   <button
@@ -555,7 +557,7 @@ const Personalizacion = () => {
                       </div>
                       {disfraz && (
                         <div className="text-xs mt-0.5" style={{ color: 'var(--theme-text-muted)' }}>
-                          Tiqui se pone {NOMBRE_DEL_DISFRAZ[disfraz.tipo]}
+                          Tiqui se pone {describirDisfraz(disfraz)}
                         </div>
                       )}
                     </div>
@@ -614,6 +616,9 @@ const Personalizacion = () => {
 
           {/* ── Apariencia (3.ª parte): las temporadas que crea el dueño ── */}
           <TemporadasPropias temporada={temporada} guardar={guardar} guardando={guardando} />
+
+          {/* ── Apariencia: cómo se viste Tiqui en cada temporada ── */}
+          <EditorDisfrazTiqui temporada={temporada} guardar={guardar} guardando={guardando} />
 
           {/* ── Apariencia (4.ª parte): el saludo de cada temporada ── */}
           <div className="p-6 rounded-2xl shadow-sm border mt-6" style={tarjeta}>

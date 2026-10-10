@@ -1,4 +1,5 @@
 import storeSettingsModel, { CLAVE_UNICA, FIGURAS_DE_TEMPORADA } from "../models/storeSettings.js";
+import { limpiarDisfraces } from "../utils/disfracesTiqui.js";
 
 /*
  * ============================================================
@@ -206,7 +207,7 @@ storeSettingsController.updateSettings = async (req, res) => {
      * y deja en paz a la hermana, que es lo que prometen los guardas de abajo.
      */
     if (req.body.temporada && typeof req.body.temporada === "object") {
-      const { modo, tema, decoracion, saludos, saludoNormal, personalizados } = req.body.temporada;
+      const { modo, tema, decoracion, saludos, saludoNormal, personalizados, disfraces } = req.body.temporada;
 
       if (modo !== undefined) {
         if (!MODOS_DE_TEMPORADA.includes(modo)) {
@@ -238,6 +239,16 @@ storeSettingsController.updateSettings = async (req, res) => {
 
       if (saludoNormal !== undefined) {
         cambios["temporada.saludoNormal"] = String(saludoNormal ?? "").trim().slice(0, 160);
+      }
+
+      /*
+       * Los disfraces de Tiqui, uno por temporada. Igual que los saludos, se
+       * manda el objeto completo cada vez.
+       */
+      if (disfraces !== undefined) {
+        const limpios = limpiarDisfraces(disfraces);
+        if (limpios.error) return res.status(400).json({ message: limpios.error });
+        cambios["temporada.disfraces"] = limpios.disfraces;
       }
 
       if (personalizados !== undefined) {
