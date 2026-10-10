@@ -24,12 +24,24 @@
  */
 
 import { tAhora } from '../utils/idioma';
+import { URL_WEB_LEGAL } from '../utils/legales';
 
 const HOST_MANUAL = null;
 
 const HOST_RENDER = 'https://cartify-tiendala635.onrender.com/api';
 
 export const URL_API = HOST_MANUAL || HOST_RENDER;
+
+/*
+ * La web del panel, que el administrador abre dentro de la app
+ * (pages/personal/PanelWeb.js). Si HOST_MANUAL apunta a un backend local,
+ * aquí va la web que habla con ESE backend: el pase con el que se abre el
+ * panel solo lo reconoce el servidor que lo dio.
+ * Ejemplo: const WEB_MANUAL = 'http://192.168.1.23:5173';
+ */
+const WEB_MANUAL = null;
+
+export const URL_WEB = WEB_MANUAL || URL_WEB_LEGAL;
 
 /*
  * El token de sesión vigente, para mandarlo por Authorization en cada
