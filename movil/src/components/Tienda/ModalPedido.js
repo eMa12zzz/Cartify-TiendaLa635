@@ -16,6 +16,7 @@ import ValoracionPedido from '../Cuenta/ValoracionPedido';
 import ValoracionServicio from '../Cuenta/ValoracionServicio';
 import { useIdioma } from '../../context/IdiomaContext';
 import { foto, ANCHO } from '../../utils/fotos';
+import { hojaCentrada } from '../../theme/pantalla';
 
 /*
  * Una fila por producto, con su propio estado de "la imagen no cargó": cada
@@ -474,6 +475,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   panel: {
+    ...hojaCentrada,
     backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,

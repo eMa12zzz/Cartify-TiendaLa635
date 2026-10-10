@@ -58,6 +58,7 @@ import Boton from './Boton';
 import CampoTexto from './CampoTexto';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from './BarraInferior';
 import { useIdioma } from '../../context/IdiomaContext';
+import { hojaCentrada } from '../../theme/pantalla';
 
 const ALTO_MAPA = 260;
 
@@ -337,6 +338,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   panel: {
+    ...hojaCentrada,
     maxHeight: '92%',
     backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,

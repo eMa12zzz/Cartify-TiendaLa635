@@ -44,6 +44,7 @@ import { HAY_PUSH, registrarParaAvisos, tokenActual } from '../../utils/notifica
 import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import { useIdioma } from '../../context/IdiomaContext';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 // Los mismos valores por defecto que la web, para que un cliente nuevo vea lo
 // mismo en los dos lados antes de tocar nada.
@@ -314,6 +315,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     alignSelf: 'stretch',
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
     gap: 10,
   },

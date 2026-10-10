@@ -34,6 +34,7 @@ import BarraCuenta from '../../components/Cuenta/BarraCuenta';
 import Boton from '../../components/UI/Boton';
 import { Estrella } from '../../components/UI/Iconos';
 import { useIdioma } from '../../context/IdiomaContext';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 // Mismas tres formas de pago que Checkout.js, con el mismo texto que ahí.
 const PAGO = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', saldo: 'Mi saldo' };
@@ -213,6 +214,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     textAlign: 'center',
   },
   lista: {
+    ...contenidoCentrado,
     padding: 16,
     gap: 12,
   },

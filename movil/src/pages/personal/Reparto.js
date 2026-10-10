@@ -26,6 +26,7 @@ import { Bike, MapPin, Navigation, Phone, Radio, Signpost, TriangleAlert } from 
 import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
+import { hojaCentrada, contenidoCentrado } from '../../theme/pantalla';
 
 const dinero = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 const hora = (iso) => (iso ? new Date(iso).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' }) : '');
@@ -351,7 +352,7 @@ const Reparto = ({ reparto }) => {
 const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: COLORES.fondo },
   flexible: { flex: 1 },
-  cuerpo: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
+  cuerpo: { ...contenidoCentrado, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
   titulo: { fontSize: 24, fontWeight: '800', color: COLORES.tituloFuerte, letterSpacing: -0.4 },
   bajada: { fontSize: 14, lineHeight: 20, color: COLORES.textoSuave, marginTop: 2, marginBottom: 14 },
   aviso: {
@@ -385,6 +386,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   // ── La ventana del código ──
   velo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   hoja: {
+    ...hojaCentrada,
     backgroundColor: COLORES.fondo, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingHorizontal: 22, paddingTop: 22, paddingBottom: 30, gap: 10,
   },

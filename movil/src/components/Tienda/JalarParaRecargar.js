@@ -34,29 +34,48 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import TiquiColgada from '../Tiqui/TiquiColgada';
 import { useColoresTiqui } from '../Tiqui/piezas';
 import { useIdioma } from '../../context/IdiomaContext';
+import { useDisposicion } from '../../hooks/useDisposicion';
 
-// Cuánto hay que jalar (ya con la resistencia) para que recargue.
+// Cuánto hay que jalar (ya con la resistencia) para que recargue. Es lo
+// mismo en el teléfono y en la tablet: el dedo recorre lo mismo.
 const PUNTO = 96;
 // Hasta dónde cuenta el jalón como mucho.
 const TOPE = 160;
-// El alto de Tiqui colgada, cordón incluido, y cuánto cordón lleva: poco,
+// Cuánto cordón lleva dibujado (en unidades del dibujo de TiquiColgada): poco,
 // para que al llegar al punto ya se vea entera, sombrero incluido.
-const ALTO_TIQUI = 112;
 const LARGO_CORDON = 40;
+
 /*
- * Tiqui baja más rápido que el dedo: a mitad del jalón ya asoma entera,
- * colgando justo del broche, y desde ahí lo que crece es el cordón.
+ * Las medidas de Tiqui, según el aparato. En la tablet la del teléfono se veía
+ * diminuta (quedaba a la altura de las pastillas de categoría): ahí es un 45 %
+ * más grande (ver hooks/useDisposicion.js).
+ *
+ *   alto       Tiqui colgada, en píxeles
+ *   velocidad  Tiqui baja más rápido que el dedo: al llegar al punto ya se ve
+ *              entera y colgando con un poco de cordón; desde ahí lo que crece
+ *              es el cordón. En el teléfono da 1,5, como antes.
+ *   cordonMax  el cordón que se estira, en píxeles: un tope holgado
+ *   grosor     el del cordón dibujado (7 unidades del dibujo)
  */
-const VELOCIDAD_TIQUI = 1.5;
-// El cordón que se estira, en píxeles: un tope holgado (nunca pasa de
-// TOPE × VELOCIDAD − ALTO) y su grosor, el mismo del cordón dibujado
-// (7 unidades del dibujo).
-const CORDON_MAX = TOPE * VELOCIDAD_TIQUI;
-const GROSOR = (7 * ALTO_TIQUI) / (398 + LARGO_CORDON + 6);
+const medidasPara = (escala) => {
+  const alto = Math.round(112 * escala);
+  const velocidad = (alto + 32 * escala) / PUNTO;
+  return {
+    alto,
+    velocidad,
+    cordonMax: TOPE * velocidad,
+    grosor: (7 * alto) / (398 + LARGO_CORDON + 6),
+  };
+};
 
 const JalarParaRecargar = ({ alRecargar, children }) => {
   const { t } = useIdioma();
   const c = useColoresTiqui();
+  const { escala } = useDisposicion();
+  const { alto: ALTO_TIQUI, velocidad: VELOCIDAD_TIQUI, cordonMax: CORDON_MAX, grosor: GROSOR } = useMemo(
+    () => medidasPara(escala),
+    [escala]
+  );
   // Dónde va Tiqui (la lista se queda quieta).
   const tiquiY = useRef(new Animated.Value(-ALTO_TIQUI)).current;
   /*
@@ -71,7 +90,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
       outputRange: [0.001, 1],
       extrapolate: 'clamp',
     }),
-    [tiquiY]
+    [tiquiY, CORDON_MAX]
   );
   const [cara, setCara] = useState('jalada');
   const [visible, setVisible] = useState(false);
@@ -110,7 +129,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
       setCara('jalada');
     });
     if (alcanzo) recargar();
-  }, [tiquiY, recargar]);
+  }, [tiquiY, recargar, ALTO_TIQUI]);
 
   const gestoNativo = useMemo(() => Gesture.Native(), []);
   const gesto = useMemo(
@@ -149,7 +168,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
           soltar(false);
         }
       }),
-    [gestoNativo, tiquiY, soltar]
+    [gestoNativo, tiquiY, soltar, VELOCIDAD_TIQUI, ALTO_TIQUI]
   );
 
   return (

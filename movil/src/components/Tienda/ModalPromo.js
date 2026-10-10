@@ -28,6 +28,7 @@ import TarjetaPromo from './TarjetaPromo';
 import TarjetaProducto from './TarjetaProducto';
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import { useIdioma } from '../../context/IdiomaContext';
+import { hojaCentrada } from '../../theme/pantalla';
 
 // Solo se abre desde Inicio (el carrusel de promos de la tienda), así que a
 // diferencia de ModalProducto no hace falta un prop: la píldora flotante
@@ -241,6 +242,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   panel: {
+    ...hojaCentrada,
     backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,

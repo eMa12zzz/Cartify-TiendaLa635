@@ -21,6 +21,7 @@ import { useTema } from '../context/TemaContext';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { verificarCodigoCorreo } from '../api/authApi';
 import { useIdioma } from '../context/IdiomaContext';
+import { contenidoCentrado } from '../theme/pantalla';
 
 const LARGO = 6;
 
@@ -158,6 +159,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     backgroundColor: COLORES.fondo,
   },
   cuerpo: {
+    ...contenidoCentrado,
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 24,

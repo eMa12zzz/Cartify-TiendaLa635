@@ -39,6 +39,7 @@ import { cantidadConUnidad, esPorLibra, esSoloAdultos, pasoDe, piezasEnTexto, aj
 import { AIRE_ABAJO_MINIMO, ALTURA_BARRA_FLOTANTE } from '../UI/BarraInferior';
 import { useIdioma } from '../../context/IdiomaContext';
 import { foto, ANCHO } from '../../utils/fotos';
+import { hojaCentrada } from '../../theme/pantalla';
 
 /*
  * `conBarraFlotante`: true solo cuando quien abre este detalle vive DENTRO
@@ -407,6 +408,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   panel: {
+    ...hojaCentrada,
     backgroundColor: COLORES.papelAlto,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
