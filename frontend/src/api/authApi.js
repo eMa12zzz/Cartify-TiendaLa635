@@ -109,6 +109,23 @@ export const verify2FAAdmin = async (data) => {
   return response.json();
 };
 
+// 3c- El panel dentro de la app del teléfono: canjea el pase de un solo uso que
+// trae la dirección y el backend abre la sesión del administrador, sin pedir
+// otra vez contraseña ni código (ver backend/src/utils/pasesPanel.js).
+export const canjearPaseApp = async (pase) => {
+  const response = await fetch(`${API}/loginAdmin/pase-app/canjear`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pase }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'No se pudo abrir el panel');
+  }
+  return response.json();
+};
+
 // 4- Login de clientes: valida correo y contraseña. Requiere cuenta verificada y activa.
 export const loginClientDB = async (data) => {
   const response = await fetch(`${API}/loginClient/login`, {

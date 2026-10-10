@@ -7,8 +7,37 @@ import crypto from "crypto";
 import { config } from "../../../config.js";
 import HTML2FAEmail from "../../utils/sendMail2FA.js";
 import { sendEmail } from "../../utils/sendMailMailjet.js";
+import { crearPase, canjearPase } from "../../utils/pasesPanel.js";
 
 const loginAdminController = {};
+
+const TREINTA_DIAS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/*
+ * Abre la sesión del personal: firma el token, deja la cookie y arma lo que
+ * espera el login del panel. La usan el código del correo y el pase de la app.
+ */
+const abrirSesion = (res, cuenta, rol, vidaMs = TREINTA_DIAS_MS) => {
+  const token = jsonwebtoken.sign(
+    { id: cuenta._id, userType: rol },
+    config.JWT.secret,
+    { expiresIn: Math.floor(vidaMs / 1000) }
+  );
+  res.cookie("authCookie", token, opcionesCookie(vidaMs));
+  return {
+    message: "Sesión iniciada",
+    token,
+    // Minúscula: es lo que espera AuthContext.login(token, tipo, datos) del
+    // frontend para saber en qué cajón guardar la sesión y qué ve cada quien.
+    tipo: rol === "Employee" ? "employee" : "admin",
+    admin: {
+      id: cuenta._id,
+      email: cuenta.email,
+      userName: cuenta.userName,
+      image: cuenta.image,
+    },
+  };
+};
 
 // La huella del código de acceso: HMAC con la clave del servidor. Sin la
 // clave no se puede ir de la huella al código.
@@ -200,30 +229,42 @@ loginAdminController.verify2FA = async (req, res) => {
       return res.status(403).json({ message: "La cuenta ya no está disponible" });
     }
 
-    const token = jsonwebtoken.sign(
-      { id: cuenta._id, userType: rol },
-      config.JWT.secret,
-      { expiresIn: "30d" }
-    );
-
-    res.cookie("authCookie", token, opcionesCookie(30 * 24 * 60 * 60 * 1000));
+    const sesion = abrirSesion(res, cuenta, rol);
     res.clearCookie("twofaCookie");
-
-    return res.status(200).json({
-      message: "Sesión iniciada",
-      token,
-      // Minúscula: es lo que espera AuthContext.login(token, tipo, datos) del
-      // frontend para saber en qué cajón guardar la sesión y qué ve cada quien.
-      tipo: rol === "Employee" ? "employee" : "admin",
-      admin: {
-        id: cuenta._id,
-        email: cuenta.email,
-        userName: cuenta.userName,
-        image: cuenta.image,
-      },
-    });
+    return res.status(200).json(sesion);
   } catch (error) {
     console.log("Error verificando 2FA personal:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+/*
+ * ── EL PANEL DENTRO DE LA APP ── (ver utils/pasesPanel.js)
+ *
+ * La sesión que abre el pase dura medio día y no un mes: la app pide un pase
+ * nuevo cada vez que abre el panel, así que no hace falta que la de la web
+ * dure más que una jornada de trabajo.
+ */
+const DOCE_HORAS_MS = 12 * 60 * 60 * 1000;
+
+// La app pide el pase con su sesión (soloAdmin ya la revisó).
+loginAdminController.paseApp = (req, res) =>
+  res.status(200).json({ pase: crearPase(req.usuario.id) });
+
+// El panel web lo canjea y queda con la sesión abierta.
+loginAdminController.canjearPaseApp = async (req, res) => {
+  const id = canjearPase(req.body?.pase);
+  if (!id) {
+    return res.status(400).json({ message: "El acceso venció. Vuelva a abrir el panel desde la app." });
+  }
+  try {
+    const cuenta = await adminModel.findById(id);
+    if (!cuenta || !cuenta.isActive) {
+      return res.status(403).json({ message: "La cuenta ya no está disponible" });
+    }
+    return res.status(200).json(abrirSesion(res, cuenta, "Admin", DOCE_HORAS_MS));
+  } catch (error) {
+    console.log("Error canjeando el pase del panel:", error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };

@@ -52,6 +52,7 @@ const PantallaCargando = () => (
 // --- Autenticación ---
 const LoginClient = lazy(() => import('./pages/LoginClient'));    // Login de clientes ("/")
 const LoginAdmin = lazy(() => import('./pages/LoginAdmin'));      // Login de administradores ("/admin")
+const PanelDesdeApp = lazy(() => import('./pages/PanelDesdeApp')); // El panel abierto desde la app ("/admin/desde-app")
 const Register = lazy(() => import('./pages/Register'));          // Registro de nuevos clientes
 const Verification = lazy(() => import('./pages/Verification')); // Verificación de código (registro, 2FA, recuperación)
 const CreatePassword = lazy(() => import('./pages/CreatePassword')); // Paso final de recuperación de contraseña
@@ -281,6 +282,7 @@ function App() {
           {/* Lo que abre el teléfono al escanear el QR del kiosco */}
           <Route path="/vincular/:codigo" element={<VincularKiosco />} />
           <Route path="/admin"           element={<LoginAdmin />} />       {/* Login de administradores */}
+          <Route path="/admin/desde-app" element={<PanelDesdeApp />} />    {/* El panel dentro de la app del teléfono */}
           <Route path="/register"        element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verification"    element={<Verification />} />     {/* Código de verificación */}
