@@ -2,7 +2,7 @@
  * ============================================================
  * SECCIÓN — el "Ver todos" de una fila de la portada
  * ============================================================
- * La misma cuadrícula de dos columnas de la portada, con los productos de una
+ * La misma cuadrícula de la portada (2 columnas en el teléfono, más en la tablet), con los productos de una
  * sola sección. Existe porque una fila deslizable muestra 12 y las secciones
  * suelen tener más: sin esta pantalla, "Ver todos (24)" no llevaría a ningún
  * lado y los otros 12 serían inalcanzables.
@@ -21,11 +21,14 @@ import { ChevronIzquierda } from '../components/UI/Iconos';
 import TarjetaProducto from '../components/Tienda/TarjetaProducto';
 import { avisarActividad } from '../utils/actividadUsuario';
 import { useIdioma } from '../context/IdiomaContext';
+import { useDisposicion } from '../hooks/useDisposicion';
 
 const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
   const { t } = useIdioma();
   const { colores } = useTema();
   const estilos = useEstilos(crearEstilos);
+  // Las mismas columnas que la portada: 2 en el teléfono, más en la tablet.
+  const { columnas, anchoCelda } = useDisposicion();
   const productos = seccion?.todos || seccion?.productos || [];
 
   return (
@@ -53,14 +56,15 @@ const Seccion = ({ seccion, alVolver, alVerDetalle, alAgregar }) => {
       </View>
 
       <FlatList
+        key={`seccion-${columnas}`}
         data={productos}
         keyExtractor={(p) => p.id}
-        numColumns={2}
+        numColumns={columnas}
         columnWrapperStyle={estilos.fila}
         contentContainerStyle={estilos.lista}
         onScrollBeginDrag={avisarActividad}
         renderItem={({ item, index }) => (
-          <View style={estilos.celda}>
+          <View style={[estilos.celda, { maxWidth: anchoCelda }]}>
             <TarjetaProducto producto={item} alVerDetalle={alVerDetalle} alAgregar={alAgregar} indice={index} />
           </View>
         )}
@@ -112,9 +116,9 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
+  // El tope de ancho lo pone useDisposicion (anchoCelda).
   celda: {
     flex: 1,
-    maxWidth: '48.5%',
   },
 });
 

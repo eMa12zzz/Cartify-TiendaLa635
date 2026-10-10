@@ -82,6 +82,7 @@ import {
   soloDigitos,
   vencimientoEnTexto,
 } from '../../utils/tarjetas';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 const FORM_VACIO = { tipo: 'credito', numero: '', titular: '', vencimiento: '', alias: '' };
 
@@ -619,6 +620,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     alignSelf: 'stretch',
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
     paddingBottom: 30,
     gap: 14,

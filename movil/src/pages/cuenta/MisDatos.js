@@ -70,6 +70,7 @@ import {
   validarFormulario,
   sinErrores,
 } from '../../utils/validaciones';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 /*
  * La fecha es OPCIONAL aquí (en el registro sí es obligatoria): quien se
@@ -395,6 +396,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     justifyContent: 'center',
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 20,
     paddingBottom: 32,
   },

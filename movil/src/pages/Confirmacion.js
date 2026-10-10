@@ -33,7 +33,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bike, Check, Package } from 'lucide-react-native';
 import Mascota from '../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../context/ModoContext';
-import { ALTURA_ESTADO } from '../theme/pantalla';
+import { ALTURA_ESTADO, contenidoCentrado } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
 import { useBotonAtras } from '../hooks/useBotonAtras';
@@ -379,6 +379,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     backgroundColor: COLORES.fondo,
   },
   cuerpo: {
+    ...contenidoCentrado,
     paddingHorizontal: 20,
     paddingBottom: 26,
     alignItems: 'center',

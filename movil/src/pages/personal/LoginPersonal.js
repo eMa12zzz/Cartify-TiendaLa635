@@ -35,6 +35,7 @@ import { usePersonal } from '../../context/PersonalContext';
 import { useTema } from '../../context/TemaContext';
 import { useEstilos } from '../../context/ModoContext';
 import { validarCorreo } from '../../utils/validaciones';
+import { contenidoCentrado } from '../../theme/pantalla';
 
 const LoginPersonal = ({ alVolver, correoInicial = '' }) => {
   const estilos = useEstilos(crearEstilos);
@@ -193,7 +194,7 @@ const LoginPersonal = ({ alVolver, correoInicial = '' }) => {
 const crearEstilos = (COLORES) => StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: COLORES.fondo },
   flexible: { flex: 1 },
-  cuerpo: { padding: 24, paddingTop: 28, paddingBottom: 48 },
+  cuerpo: { ...contenidoCentrado, padding: 24, paddingTop: 28, paddingBottom: 48 },
   tiqui: { alignItems: 'center', marginTop: -28, marginBottom: 10 },
   titulo: {
     fontSize: 24,

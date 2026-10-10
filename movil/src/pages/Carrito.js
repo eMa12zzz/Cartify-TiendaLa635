@@ -38,7 +38,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShoppingBag, Store, Trash2 } from 'lucide-react-native';
 import { useColores, useEstilos } from '../context/ModoContext';
-import { ALTURA_ESTADO } from '../theme/pantalla';
+import { ALTURA_ESTADO, contenidoCentrado } from '../theme/pantalla';
 import { useTienda } from '../context/TiendaContext';
 import { useTema } from '../context/TemaContext';
 import Boton from '../components/UI/Boton';
@@ -373,6 +373,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     alignSelf: 'stretch',
   },
   lista: {
+    ...contenidoCentrado,
     paddingHorizontal: 16,
     paddingBottom: 20,
   },

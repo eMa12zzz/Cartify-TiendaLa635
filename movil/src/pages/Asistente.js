@@ -16,7 +16,7 @@ import { useColores, useEstilos } from '../context/ModoContext';
 import TiquiColgada from '../components/Tiqui/TiquiColgada';
 import { LLAVE_TIQUI_PRESENTADO } from './ConoceATiqui';
 import { leer } from '../utils/almacen';
-import { ALTURA_ESTADO } from '../theme/pantalla';
+import { ALTURA_ESTADO, contenidoCentrado } from '../theme/pantalla';
 import { useTema } from '../context/TemaContext';
 import { useTienda } from '../context/TiendaContext';
 import { useAsistenteVoz } from '../hooks/useAsistenteVoz';
@@ -306,6 +306,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     marginTop: 8,
   },
   chatContenido: {
+    ...contenidoCentrado,
     gap: 8,
     paddingBottom: 12,
   },

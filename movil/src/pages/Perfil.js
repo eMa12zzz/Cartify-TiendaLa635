@@ -56,7 +56,7 @@ import {
 } from 'lucide-react-native';
 import { useColores, useEstilos } from '../context/ModoContext';
 import { useAireBarraFlotante } from '../components/UI/BarraInferior';
-import { ALTURA_ESTADO } from '../theme/pantalla';
+import { ALTURA_ESTADO, contenidoCentrado } from '../theme/pantalla';
 import { useAuth } from '../hooks/useAuth';
 import { useBotonAtras } from '../hooks/useBotonAtras';
 import { useTema } from '../context/TemaContext';
@@ -372,6 +372,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     justifyContent: 'center',
   },
   cuerpo: {
+    ...contenidoCentrado,
     padding: 16,
     paddingBottom: 30,
   },

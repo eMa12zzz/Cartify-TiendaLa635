@@ -96,6 +96,7 @@ import {
   validarFormulario,
   validarTelefono,
 } from '../utils/validaciones';
+import { contenidoCentrado } from '../theme/pantalla';
 
 const VALORES_INICIALES = {
   fullName: '',
@@ -581,6 +582,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
     flex: 1,
   },
   cuerpo: {
+    ...contenidoCentrado,
     paddingHorizontal: 20,
     paddingTop: 28,
     paddingBottom: 48,

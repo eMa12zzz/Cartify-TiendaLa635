@@ -35,6 +35,12 @@ const MARGEN = 16;   // el mismo que el resto de la portada
 const SEPARACION = 12;
 // Cuánto asoma la siguiente. Es el aviso de que el carrusel sigue.
 const ASOMO = 34;
+/*
+ * El alto de la tarjeta sale de su ancho (ver TarjetaPromo). En una tablet
+ * acostada, una tarjeta de orilla a orilla medía más de 600 px de alto y se
+ * comía la pantalla entera: con este tope caben dos o tres lado a lado.
+ */
+const ANCHO_MAX_TARJETA = 520;
 
 // Ancho del punto en reposo y de la píldora activa.
 const ANCHO_PUNTO = 8;
@@ -53,8 +59,10 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
    * Con una sola promoción no hay nada que asomar, así que ocupa el ancho
    * entero: dejarle el hueco del asomo la haría ver descentrada.
    */
-  const anchoTarjeta = anchoPantalla - MARGEN * 2 - (unaSola ? 0 : ASOMO);
+  const anchoTarjeta = Math.min(ANCHO_MAX_TARJETA, anchoPantalla - MARGEN * 2 - (unaSola ? 0 : ASOMO));
   const paso = anchoTarjeta + SEPARACION;
+  // Sola y más angosta que la pantalla (en la tablet), va al centro.
+  const centrada = unaSola && anchoTarjeta < anchoPantalla - MARGEN * 2;
 
   /*
    * El ancho se relee al rotar el teléfono. Dimensions.get() se evalúa una vez
@@ -130,7 +138,10 @@ const CarruselPromos = ({ promos, alElegirPromo }) => {
         decelerationRate="fast"
         disableIntervalMomentum
         onMomentumScrollEnd={alTerminarDeDeslizar}
-        contentContainerStyle={{ paddingHorizontal: MARGEN, gap: SEPARACION }}
+        contentContainerStyle={[
+          { paddingHorizontal: MARGEN, gap: SEPARACION },
+          centrada && { flexGrow: 1, justifyContent: 'center' },
+        ]}
         // Sin más de una, deslizar no lleva a ningún lado.
         scrollEnabled={!unaSola}
       >
