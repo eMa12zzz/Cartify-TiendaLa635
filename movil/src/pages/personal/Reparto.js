@@ -18,10 +18,11 @@
  * ============================================================
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bike, MapPin, Navigation, Phone, Radio, Signpost, TriangleAlert } from 'lucide-react-native';
 import { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { useColores, useEstilos } from '../../context/ModoContext';
@@ -69,6 +70,14 @@ const ModalEntrega = ({ pedido, alCerrar, alEntregar }) => {
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  const [enfocado, setEnfocado] = useState(false);
+  const campo = useRef(null);
+  /*
+   * La app va de borde a borde: la ventana se dibuja también detrás de la
+   * barra del sistema (en la tablet, la barra de tareas), y ahí quedaba
+   * escondido "Marcar entregado".
+   */
+  const { bottom } = useSafeAreaInsets();
 
   const tieneCodigo = pedido?.tieneCodigoEntrega !== false;
   const listo = sinCodigo || !tieneCodigo ? true : codigo.length === 4;
@@ -91,7 +100,7 @@ const ModalEntrega = ({ pedido, alCerrar, alEntregar }) => {
   return (
     <Modal visible transparent animationType="slide" onRequestClose={alCerrar}>
       <Pressable style={estilos.velo} onPress={alCerrar} accessibilityLabel="Cerrar" />
-      <View style={estilos.hoja}>
+      <View style={[estilos.hoja, { paddingBottom: 30 + bottom }]}>
         <Text style={estilos.hojaTitulo} accessibilityRole="header">
           Entregar el pedido #{String(pedido._id).slice(-6).toUpperCase()}
         </Text>
@@ -100,17 +109,41 @@ const ModalEntrega = ({ pedido, alCerrar, alEntregar }) => {
         ) : !sinCodigo ? (
           <>
             <Text style={estilos.hojaTexto}>Pídale al cliente los 4 dígitos que ve en su pedido.</Text>
-            <TextInput
-              value={codigo}
-              onChangeText={(t) => setCodigo(t.replace(/\D/g, '').slice(0, 4))}
-              keyboardType="number-pad"
-              maxLength={4}
-              autoFocus
-              placeholder="0000"
-              placeholderTextColor={COLORES.textoTenue}
-              accessibilityLabel="Código de entrega de 4 dígitos"
-              style={estilos.codigo}
-            />
+            {/*
+              Cuatro casillas subrayadas, una por dígito, como el código que ve
+              el cliente. Antes era un campo con borde: en la tablet el borde se
+              dibujaba más alto que los números y se veía un recuadro vacío
+              encima del texto. El campo de verdad sigue ahí (lo que se escribe
+              y lo que lee el lector de pantalla), invisible encima de las
+              casillas: tocarlas abre el teclado.
+            */}
+            <Pressable style={estilos.casillas} onPress={() => campo.current?.focus()} accessible={false}>
+              {[0, 1, 2, 3].map((i) => (
+                <View
+                  key={i}
+                  style={[
+                    estilos.casilla,
+                    { borderBottomColor: enfocado && i === Math.min(codigo.length, 3) ? colores.marca : COLORES.borde },
+                  ]}
+                >
+                  <Text style={estilos.digito}>{codigo[i] || ''}</Text>
+                </View>
+              ))}
+              <TextInput
+                ref={campo}
+                value={codigo}
+                onChangeText={(t) => setCodigo(t.replace(/\D/g, '').slice(0, 4))}
+                onFocus={() => setEnfocado(true)}
+                onBlur={() => setEnfocado(false)}
+                keyboardType="number-pad"
+                maxLength={4}
+                autoFocus
+                caretHidden
+                contextMenuHidden
+                accessibilityLabel="Código de entrega de 4 dígitos"
+                style={estilos.codigoInvisible}
+              />
+            </Pressable>
             <Text style={[estilos.enlace, { color: colores.marcaTexto }]} onPress={() => setSinCodigo(true)} accessibilityRole="button">
               El cliente no tiene el código
             </Text>
@@ -271,7 +304,7 @@ const Reparto = ({ reparto }) => {
                     accessibilityRole="button"
                     style={({ pressed }) => [estilos.boton, { backgroundColor: pressed ? colores.marcaOscuro : colores.marca }]}
                   >
-                    <Navigation size={17} color="#FFFFFF" strokeWidth={2.2} />
+                    <Navigation size={17} color={COLORES.sobreMarca} strokeWidth={2.2} />
                     <Text style={estilos.botonTextoClaro}>Cómo llegar</Text>
                   </Pressable>
 
@@ -381,7 +414,8 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   botonBorde: { borderWidth: 1.5, borderColor: COLORES.borde, backgroundColor: COLORES.fondo },
   botonAncho: { marginTop: 10 },
   botonTexto: { fontSize: 14.5, fontWeight: '800', color: COLORES.tituloFuerte },
-  botonTextoClaro: { fontSize: 14.5, fontWeight: '800', color: '#FFFFFF' },
+  // Encima de la marca: blanco, salvo con las paletas oscuras del panel.
+  botonTextoClaro: { fontSize: 14.5, fontWeight: '800', color: COLORES.sobreMarca },
 
   // ── La ventana del código ──
   velo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
@@ -392,10 +426,11 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   },
   hojaTitulo: { fontSize: 19, fontWeight: '800', color: COLORES.tituloFuerte },
   hojaTexto: { fontSize: 14.5, lineHeight: 21, color: COLORES.textoSuave },
-  codigo: {
-    fontSize: 34, fontWeight: '800', letterSpacing: 12, textAlign: 'center', color: COLORES.tituloFuerte,
-    borderWidth: 1.5, borderColor: COLORES.borde, borderRadius: 16, paddingVertical: 12,
-  },
+  casillas: { flexDirection: 'row', justifyContent: 'center', gap: 14, paddingVertical: 6 },
+  casilla: { width: 52, height: 62, alignItems: 'center', justifyContent: 'flex-end', borderBottomWidth: 3, paddingBottom: 6 },
+  digito: { fontSize: 34, fontWeight: '800', color: COLORES.tituloFuerte, includeFontPadding: false },
+  // Encima de las casillas y transparente: recibe lo que se escribe, no se ve.
+  codigoInvisible: { ...StyleSheet.absoluteFillObject, opacity: 0.01, color: 'transparent' },
   motivo: {
     minHeight: 80, fontSize: 15, color: COLORES.tituloFuerte, textAlignVertical: 'top',
     borderWidth: 1.5, borderColor: COLORES.borde, borderRadius: 14, padding: 12,

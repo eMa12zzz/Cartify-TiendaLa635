@@ -36,6 +36,7 @@ import supplierCreditRoutes from "./src/routes/supplierCredit.js";
 import wompiRoutes from "./src/routes/wompi.js"
 import storeSettingsRoutes from "./src/routes/storeSettings.js";
 import loginAdminRoutes from "./src/routes/loginAdmin.js";
+import descargasPanelRoutes from "./src/routes/descargasPanel.js";
 import logoutAdminRoutes from "./src/routes/logoutAdmin.js";
 import perfilRoutes from "./src/routes/perfil.js";
 import erroresRoutes from "./src/routes/errores.js";
@@ -136,6 +137,8 @@ app.use("/api/credito", supplierCreditRoutes);
 app.use("/api/storeSettings", storeSettingsRoutes);
 app.use("/api/wompi", wompiRoutes);
 app.use("/api/loginAdmin", loginAdminRoutes);
+// Los reportes del panel que se bajan desde la app (ver utils/descargasPanel.js).
+app.use("/api/descargas", descargasPanelRoutes);
 app.use("/api/logoutAdmin", logoutAdminRoutes);
 // Foto de perfil del personal conectado (admin o empleado).
 app.use("/api/perfil", perfilRoutes);
