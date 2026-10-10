@@ -9,7 +9,10 @@
  *     jalando). Cuelga de un broche FIJO en el borde de arriba: lo que se
  *     estira es el cordón, como una etiqueta de verdad;
  *   · la lista NO se mueve: Tiqui baja por encima de la tienda. Antes la
- *     lista bajaba con el dedo y dejaba un hueco blanco arriba, y no gustó;
+ *     lista bajaba con el dedo y dejaba un hueco blanco arriba, y no gustó.
+ *     Y mientras se jala, la lista tampoco se desplaza: si el dedo subía un
+ *     poco a medio jalón, la tienda se iba para arriba con Tiqui colgando
+ *     encima y todo brincaba (se vio en la tablet);
  *   · al soltar pasado el punto, pone cara de contenta, sube y desaparece,
  *     y la lista se recarga detrás;
  *   · si se suelta antes, vuelve a subir y no pasa nada.
@@ -94,6 +97,8 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
   );
   const [cara, setCara] = useState('jalada');
   const [visible, setVisible] = useState(false);
+  // Mientras el dedo jala a Tiqui, la lista no se desplaza.
+  const [jalando, setJalando] = useState(false);
 
   // Dónde va la lista y si el gesto empezó arriba del todo.
   const desplazado = useRef(0);
@@ -116,6 +121,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
 
   // Tiqui sube hasta perderse arriba, recogiendo el cordón.
   const soltar = useCallback((alcanzo) => {
+    setJalando(false);
     setCara(alcanzo ? 'soltada' : 'normal');
     Animated.timing(tiquiY, {
       toValue: -ALTO_TIQUI - 30,
@@ -146,6 +152,7 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
         if (empezoArriba.current) {
           setCara('jalada');
           setVisible(true);
+          setJalando(true);
         }
       })
       .onUpdate((e) => {
@@ -205,7 +212,12 @@ const JalarParaRecargar = ({ alRecargar, children }) => {
             {children({
               alDesplazar,
               // Sin el rebote de iOS ni el brillo de Android: el que baja es Tiqui.
-              propsLista: { bounces: false, overScrollMode: Platform.OS === 'android' ? 'never' : undefined, scrollEventThrottle: 16 },
+              propsLista: {
+                bounces: false,
+                overScrollMode: Platform.OS === 'android' ? 'never' : undefined,
+                scrollEventThrottle: 16,
+                scrollEnabled: !jalando,
+              },
             })}
           </GestureDetector>
         </View>

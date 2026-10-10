@@ -23,6 +23,18 @@
  *
  * El botón atrás de Android va hacia atrás DENTRO del panel mientras se pueda.
  * Los enlaces que no son del panel (WhatsApp, correo, mapas) se abren fuera.
+ *
+ * LOS REPORTES. El panel arma sus PDF en la página; dentro de la app los sube
+ * un momento al servidor y navega a su dirección, y este WebView le pasa la
+ * descarga al gestor de Android, que la deja en Descargas con su aviso (ver
+ * frontend/src/utils/descargar.js). Por eso las direcciones del servidor
+ * también cuentan como "del panel".
+ *
+ * LA PALETA. Lo que el administrador elige en el panel (Lectura, Calma, Modo
+ * oscuro...) el panel se lo avisa a la app, y la app pinta con eso todo su
+ * modo del personal (ver utils/paletaPanel.js). Al abrir, el panel arranca con
+ * la que la app tiene guardada: el navegador de adentro es de incógnito y no
+ * siempre la recuerda.
  * ============================================================
  */
 
@@ -33,7 +45,7 @@ import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { usePersonal } from '../../context/PersonalContext';
 import { personalApi } from '../../api/personalApi';
-import { URL_WEB } from '../../api/api';
+import { URL_API, URL_WEB } from '../../api/api';
 import { useBotonAtras } from '../../hooks/useBotonAtras';
 import Mascota, { CargandoMascota } from '../../components/Tiqui/Mascota';
 import { direccionConPase, esDelPanel, queHacerCon } from '../../utils/panelWeb';
@@ -50,7 +62,26 @@ const PanelWeb = forwardRef(({ activo }, ref) => {
   const estilos = useEstilos(crearEstilos);
   const COLORES = useColores();
   const { colores } = useTema();
-  const { sesion, salir } = usePersonal();
+  const { sesion, salir, paletaPanel, cambiarPaletaPanel } = usePersonal();
+
+  /*
+   * Antes de que cargue la página: la paleta guardada en el teléfono, para que
+   * el panel no arranque en "Mi marca" y le cambie los colores a la app.
+   * Solo una palabra de letras y guiones: nada que se pueda colar como código.
+   */
+  const paletaGuardada = /^[a-z0-9-]{1,30}$/.test(paletaPanel?.id || '') ? paletaPanel.id : '';
+  const antesDeCargar = paletaGuardada
+    ? `try { localStorage.setItem('theme-palette', '${paletaGuardada}'); } catch (e) {} true;`
+    : 'true;';
+
+  // Lo que avisa el panel. Por ahora, la paleta que se eligió.
+  const alRecibir = useCallback((evento) => {
+    let mensaje;
+    try { mensaje = JSON.parse(evento.nativeEvent.data); } catch { return; }
+    if (mensaje?.tipo === 'paleta-panel') {
+      cambiarPaletaPanel(mensaje.id === 'marca' ? null : { id: mensaje.id, oscuro: mensaje.oscuro, colores: mensaje.colores });
+    }
+  }, [cambiarPaletaPanel]);
 
   const vista = useRef(null);
   const [direccion, setDireccion] = useState(null);
@@ -99,7 +130,8 @@ const PanelWeb = forwardRef(({ activo }, ref) => {
   }, [abrir]);
 
   const alIrA = useCallback((pedido) => {
-    if (esDelPanel(pedido.url, URL_WEB)) return true;
+    // Del panel, o del servidor (las descargas de los reportes).
+    if (esDelPanel(pedido.url, URL_WEB) || esDelPanel(pedido.url, URL_API)) return true;
     Linking.openURL(pedido.url).catch(() => null);
     return false;
   }, []);
@@ -148,6 +180,10 @@ const PanelWeb = forwardRef(({ activo }, ref) => {
           thirdPartyCookiesEnabled
           setSupportMultipleWindows={false}
           originWhitelist={['*']}
+          injectedJavaScriptBeforeContentLoaded={antesDeCargar}
+          onMessage={alRecibir}
+          downloadingMessage="Descargando el archivo…"
+          lackPermissionToDownloadMessage="Sin permiso para guardar el archivo en el teléfono."
           onShouldStartLoadWithRequest={alIrA}
           onNavigationStateChange={alCambiar}
           onLoadEnd={() => setEstado((e) => (e === 'cargando' ? 'listo' : e))}
@@ -175,7 +211,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   avisoTexto: { fontSize: 14.5, lineHeight: 21, color: COLORES.textoSuave, textAlign: 'center' },
   boton: { marginTop: 10, paddingHorizontal: 26, minHeight: 46, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   presionado: { opacity: 0.85 },
-  botonTexto: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  botonTexto: { color: COLORES.sobreMarca, fontSize: 15, fontWeight: '800' },
 });
 
 export default PanelWeb;

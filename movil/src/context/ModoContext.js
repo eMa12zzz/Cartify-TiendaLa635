@@ -92,6 +92,20 @@ const SIN_PROVEEDOR = { modo: 'claro', setModo: () => {}, oscuro: false, colores
 
 export const useModo = () => useContext(ModoContext) || SIN_PROVEEDOR;
 
+/*
+ * Otra paleta para un pedazo de la app: el modo del personal se pinta con la
+ * paleta que el administrador eligió en el panel (ver utils/paletaPanel.js).
+ * `paleta` es lo que devuelve paletaDesdePanel; sin ella, nada cambia.
+ */
+export const ConPaleta = ({ paleta, children }) => {
+  const base = useModo();
+  const valor = useMemo(
+    () => (paleta ? { ...base, oscuro: paleta.colores.oscuro, colores: paleta.colores, clave: paleta.clave } : base),
+    [base, paleta]
+  );
+  return <ModoContext.Provider value={valor}>{children}</ModoContext.Provider>;
+};
+
 // La paleta neutra del modo que rige. La de marca (temporada) sigue en useTema().
 export const useColores = () => useModo().colores;
 
@@ -103,13 +117,14 @@ export const useColores = () => useModo().colores;
 const hojas = new WeakMap();
 
 export const useEstilos = (crear) => {
-  const { oscuro, colores } = useModo();
+  const { oscuro, colores, clave: claveDePaleta } = useModo();
   let par = hojas.get(crear);
   if (!par) {
     par = {};
     hojas.set(crear, par);
   }
-  const clave = oscuro ? 'oscuro' : 'claro';
+  // Las paletas del panel tienen su propia hoja, aparte de la clara y la oscura.
+  const clave = claveDePaleta || (oscuro ? 'oscuro' : 'claro');
   if (!par[clave]) par[clave] = crear(colores);
   return par[clave];
 };

@@ -129,7 +129,7 @@ const TiquiAdmin = () => {
                     : { alignSelf: 'flex-start', backgroundColor: COLORES.papelGris },
                 ]}
               >
-                <Text style={[estilos.burbujaTexto, m.quien === 'persona' && { color: '#FFFFFF' }]}>{m.texto}</Text>
+                <Text style={[estilos.burbujaTexto, m.quien === 'persona' && { color: COLORES.sobreMarca }]}>{m.texto}</Text>
               </View>
             ))}
 
@@ -180,7 +180,7 @@ const TiquiAdmin = () => {
             (!texto.trim() || t.pensando) && { opacity: 0.5 },
           ]}
         >
-          <SendHorizontal size={19} color="#FFFFFF" strokeWidth={2.2} />
+          <SendHorizontal size={19} color={COLORES.sobreMarca} strokeWidth={2.2} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -218,7 +218,7 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   },
   botonNoTexto: { fontSize: 15, fontWeight: '700', color: COLORES.tituloFuerte },
   botonSi: { minHeight: 44, paddingHorizontal: 22, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  botonSiTexto: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
+  botonSiTexto: { fontSize: 15, fontWeight: '800', color: COLORES.sobreMarca },
   escribir: {
     flexDirection: 'row',
     alignItems: 'center',

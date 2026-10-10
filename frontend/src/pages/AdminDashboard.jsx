@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
+import { descargarArchivo } from '../utils/descargar';
 import autoTable from 'jspdf-autotable';
 import StatCard from '../components/UI/StatCard';
 import { useDashboard } from '../hooks/useDashboard';
@@ -226,7 +227,8 @@ const AdminDashboard = () => {
       }
 
       pintarPiePagina(doc);
-      doc.save(`reporte-la635-${new Date().toISOString().slice(0, 10)}.pdf`);
+      // No doc.save(): dentro de la app del teléfono no descargaría nada (ver utils/descargar.js).
+      await descargarArchivo(doc.output('blob'), `reporte-la635-${new Date().toISOString().slice(0, 10)}.pdf`);
       setModal(null);
     } catch (error) {
       console.error('Error generando el reporte:', error);
@@ -272,7 +274,7 @@ const AdminDashboard = () => {
       });
 
       pintarPiePagina(doc);
-      doc.save(`inventario-la635-${new Date().toISOString().slice(0, 10)}.pdf`);
+      await descargarArchivo(doc.output('blob'), `inventario-la635-${new Date().toISOString().slice(0, 10)}.pdf`);
       setModal(null);
     } catch (error) {
       console.error('Error generando el inventario:', error);

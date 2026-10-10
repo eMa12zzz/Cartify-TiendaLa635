@@ -64,7 +64,10 @@ const ModalConfirmar = ({
    * paleta), y ahí el texto blanco encima se lee mal: sobre ese rojo claro
    * la letra va oscura. En claro, y en el botón de marca, sigue siendo blanca.
    */
-  const colorTextoAccion = destructivo && COLORES.oscuro ? COLORES.sobreTinta : '#FFFFFF';
+  const colorTextoAccion = destructivo
+    ? (COLORES.oscuro ? COLORES.sobreTinta : '#FFFFFF')
+    // Sobre la marca: blanco, salvo con las paletas oscuras del panel (modo del personal).
+    : COLORES.sobreMarca;
 
   return (
     <View style={estilos.capa}>

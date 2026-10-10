@@ -15,6 +15,8 @@
  * ============================================================
  */
 
+import { descargarArchivo } from './descargar';
+
 // Escapa comas, punto y coma, barras y saltos de línea, como pide el formato.
 const escapar = (texto = '') =>
   String(texto)
@@ -106,15 +108,8 @@ export const descargarEventoIcs = ({ titulo, descripcion = '', fecha, diasAntes 
     .filter(Boolean)
     .join('\r\n');
 
-  // Se entrega como descarga; el teléfono lo abre con su calendario.
+  // Se entrega como descarga; el teléfono lo abre con su calendario. Dentro
+  // de la app va por el servidor (ver utils/descargar.js).
   const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `recordatorio-${(titulo || 'evento').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  // Se libera el objeto un momento después, cuando ya arrancó la descarga.
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  return descargarArchivo(blob, `recordatorio-${(titulo || 'evento').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}.ics`);
 };

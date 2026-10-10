@@ -46,6 +46,13 @@ export const COLORES_CLARO = {
    * encima y como letra sobre el fondo oscuro no se leía.
    */
   marcaTexto: '#003049',
+  /*
+   * La letra encima de un botón de la marca. Blanca aquí y en oscuro; solo
+   * cambia con las paletas del panel en el modo del personal (Modo oscuro y
+   * Calma noche tienen un principal claro y llevan letra oscura encima; ver
+   * utils/paletaPanel.js).
+   */
+  sobreMarca: '#FFFFFF',
 
   fondo: '#FFFFFF',
   texto: '#000000',
@@ -137,6 +144,7 @@ export const COLORES_OSCURO = {
   marcaApagado: '#2E3A42',
   marcaSuave: '#112D3D',
   marcaTexto: '#4AB7F0',
+  sobreMarca: '#FFFFFF',
 
   fondo: '#121417',
   texto: '#ECEEF0',

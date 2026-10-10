@@ -1,4 +1,8 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { avisarALaApp } from '../utils/puenteApp';
+
+// Las paletas de fondo oscuro: la app pinta su barra de estado con letras claras.
+const PALETAS_OSCURAS = ['dark', 'calma-noche'];
 
 /**
  * LAS PALETAS DEL PANEL — todas pensadas para la vista de quien lo usa.
@@ -345,6 +349,18 @@ export const ThemeProvider = ({ children }) => {
       // Convert camelCase to kebab-case
       const cssVar = `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
       root.style.setProperty(cssVar, value);
+    });
+
+    /*
+     * Dentro de la app del teléfono, la app se viste igual que el panel: todo
+     * su modo del personal (Tiqui, el Reparto, los avisos) toma esta paleta.
+     * Fuera de la app no pasa nada. Ver utils/puenteApp.js.
+     */
+    avisarALaApp({
+      tipo: 'paleta-panel',
+      id: palette.id,
+      oscuro: PALETAS_OSCURAS.includes(palette.id),
+      colores: palette.colors,
     });
   }, [paletteId, palette]);
 
