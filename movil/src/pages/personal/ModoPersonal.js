@@ -27,13 +27,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Bike, LayoutDashboard, LogOut, RotateCw, Sparkles } from 'lucide-react-native';
+import { Bike, Download, LayoutDashboard, LogOut, RotateCw, Sparkles } from 'lucide-react-native';
 import { useColores, useEstilos } from '../../context/ModoContext';
 import { useTema } from '../../context/TemaContext';
 import { usePersonal } from '../../context/PersonalContext';
 import { useRepartoPersonal } from '../../hooks/useRepartoPersonal';
 import { useMovimientoReducido } from '../../hooks/useMovimientoReducido';
 import { useDisposicion } from '../../hooks/useDisposicion';
+import { useActualizacionApp } from '../../hooks/useActualizacionApp';
 import { ALTURA_ESTADO } from '../../theme/pantalla';
 import ModalConfirmar from '../../components/UI/ModalConfirmar';
 import TiquiAdmin from './TiquiAdmin';
@@ -137,6 +138,19 @@ const ModoPersonal = () => {
     salir();
   };
 
+  /*
+   * La versión nueva de la app, en cuanto está lista (ver
+   * hooks/useActualizacionApp.js). Se aplica con un toque y no sola: si
+   * alguien va repartiendo, reiniciar le cortaría el viaje un momento, y eso
+   * se pregunta antes.
+   */
+  const actualizacion = useActualizacionApp();
+  const [confirmarActualizar, setConfirmarActualizar] = useState(false);
+  const actualizar = () => {
+    if (reparto.enViaje.length) setConfirmarActualizar(true);
+    else actualizacion.aplicar();
+  };
+
   return (
     <View style={estilos.pantalla}>
       <View style={[estilos.barra, { paddingTop: ALTURA_ESTADO + 10 }]}>
@@ -146,6 +160,8 @@ const ModoPersonal = () => {
               {sesion?.nombre ? `Hola, ${sesion.nombre}` : 'Personal de la tienda'}
             </Text>
             <Text style={estilos.subtitulo}>{esAdmin ? 'Administración' : 'Equipo de la tienda'}</Text>
+            {/* Qué versión corre: para comprobar que ya llegó un arreglo sin adivinar. */}
+            <Text style={estilos.version}>Versión de la app: {actualizacion.version}</Text>
           </View>
           {actual === 'panel' && (
             <TouchableOpacity
@@ -226,6 +242,19 @@ const ModoPersonal = () => {
             )}
           </View>
         )}
+
+        {actualizacion.lista && (
+          <Pressable
+            onPress={actualizar}
+            accessibilityRole="button"
+            style={({ pressed }) => [estilos.avisoVersion, pressed && { opacity: 0.6 }]}
+          >
+            <Download size={17} color={colores.marcaTexto} strokeWidth={2} />
+            <Text style={[estilos.avisoVersionTexto, { color: colores.marcaTexto }]}>
+              Hay una versión nueva de la app. Toque aquí para estrenarla.
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {esAdmin && (
@@ -250,6 +279,17 @@ const ModoPersonal = () => {
           textoCancelar="Ahora no"
           alConfirmar={abrirPanel}
           alCerrar={() => setAvisoPanel(false)}
+        />
+      )}
+
+      {confirmarActualizar && (
+        <ModalConfirmar
+          titulo="¿Actualizar la app ahora?"
+          mensaje="La app se reinicia unos segundos y mientras tanto deja de compartir su ubicación con el cliente. Al volver, vuelva a compartirla desde el Reparto."
+          textoConfirmar="Actualizar"
+          textoCancelar="Después"
+          alConfirmar={actualizacion.aplicar}
+          alCerrar={() => setConfirmarActualizar(false)}
         />
       )}
 
@@ -287,6 +327,10 @@ const crearEstilos = (COLORES) => StyleSheet.create({
   fila: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   titulo: { fontSize: 21, fontWeight: '800', color: COLORES.tituloFuerte, letterSpacing: -0.4 },
   subtitulo: { fontSize: 13, color: COLORES.textoSuave, marginTop: 1 },
+  version: { fontSize: 11, color: COLORES.textoTenue, marginTop: 2 },
+  // La versión nueva lista: una línea y no un recuadro, que no tape el trabajo.
+  avisoVersion: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  avisoVersionTexto: { flex: 1, fontSize: 13.5, fontWeight: '700' },
   accion: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   selector: {
     flexDirection: 'row',
