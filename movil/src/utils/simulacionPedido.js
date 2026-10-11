@@ -22,6 +22,7 @@
  */
 
 import { avisoLocal } from './notificaciones';
+import { distanciaMetros } from './geo';
 
 // El id del pedido de prueba. No es un id de Mongo: si por error llegara al
 // servidor, lo rechazaría sin tocar nada.
@@ -164,23 +165,58 @@ export const pedidoSimulado = () => {
   };
 };
 
+/*
+ * El camino del repartidor de prueba: dos calles en L y no una línea recta,
+ * para que se vea la ruta como la dibuja el servidor (ver
+ * backend/src/utils/rutaReparto.js). Devuelve dónde va según el avance (0 a 1)
+ * y la ruta que le falta, con la misma forma que la del servidor.
+ */
+const sobreElCamino = (avance) => {
+  const camino = [sim.salida, { lat: sim.salida.lat, lng: sim.destino.lng }, sim.destino];
+  const tramos = camino.slice(1).map((p, i) => distanciaMetros(camino[i], p) || 0);
+  const total = tramos.reduce((suma, m) => suma + m, 0);
+  let recorrido = total * avance;
+  let i = 0;
+  while (i < tramos.length - 1 && recorrido > tramos[i]) {
+    recorrido -= tramos[i];
+    i += 1;
+  }
+  const t = tramos[i] ? Math.min(1, recorrido / tramos[i]) : 1;
+  const desde = camino[i];
+  const hasta = camino[i + 1];
+  const punto = { lat: desde.lat + (hasta.lat - desde.lat) * t, lng: desde.lng + (hasta.lng - desde.lng) * t };
+  const metros = Math.round(total * (1 - avance));
+  return {
+    punto,
+    ruta: {
+      puntos: [[punto.lng, punto.lat], ...camino.slice(i + 1).map((p) => [p.lng, p.lat])],
+      metros,
+      // A 18 km/h, la moto de barrio de utils/geo.js.
+      segundos: Math.round(metros / 5),
+    },
+  };
+};
+
 // Lo mismo que devuelve GET /order/:id/courier, con el repartidor avanzando.
 export const repartidorSimulado = () => {
-  if (!sim) return { status: 'cancelado', deliveryType: 'delivery', destino: null, courier: null };
-  if (sim.tipo === 'retiro') return { status: estadoActual(), deliveryType: 'retiro', destino: null, courier: null };
+  if (!sim) return { status: 'cancelado', deliveryType: 'delivery', destino: null, courier: null, ruta: null };
+  if (sim.tipo === 'retiro') return { status: estadoActual(), deliveryType: 'retiro', destino: null, courier: null, ruta: null };
   const status = estadoActual();
   let courier = null;
+  let ruta = null;
   if (status === 'en_camino') {
     const avance = Math.min(1, (segundos() - EN_CAMINO_EN) / DURACION_VIAJE);
+    const enCamino = sobreElCamino(avance);
+    ruta = enCamino.ruta;
     courier = {
       active: true,
-      lat: sim.salida.lat + (sim.destino.lat - sim.salida.lat) * avance,
-      lng: sim.salida.lng + (sim.destino.lng - sim.salida.lng) * avance,
+      lat: enCamino.punto.lat,
+      lng: enCamino.punto.lng,
       name: 'Carlos (prueba)',
       updatedAt: new Date().toISOString(),
     };
   }
-  return { status, deliveryType: 'delivery', destino: sim.destino, courier };
+  return { status, deliveryType: 'delivery', destino: sim.destino, courier, ruta };
 };
 
 /*

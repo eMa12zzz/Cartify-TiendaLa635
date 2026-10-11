@@ -210,6 +210,7 @@ const BurbujaPedido = () => {
               <MapaSeguimiento
                 punto={seguimiento.punto}
                 destino={seguimiento.destino}
+                ruta={seguimiento.ruta}
                 alto={132}
                 borde="transparent"
                 interactivo={false}

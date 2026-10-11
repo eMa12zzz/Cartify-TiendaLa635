@@ -127,6 +127,7 @@ const SeguimientoCompacto = ({ pedido }) => {
           <MapaSeguimiento
             punto={seguimiento.punto}
             destino={seguimiento.destino}
+            ruta={seguimiento.ruta}
             alto={170}
             borde={c.cardBorder}
           />
