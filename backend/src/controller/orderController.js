@@ -16,6 +16,8 @@ import { construirMapaPromo, precioDeRenglon } from "../utils/precioPedido.js";
 import { generarCodigoEntrega } from "../utils/codigoEntrega.js";
 import { cambiarEstadoDePedido } from "../utils/estadoPedido.js";
 import storeSettingsModel, { CLAVE_UNICA } from "../models/storeSettings.js";
+import { rutaDelRepartidor, olvidarRuta } from "../utils/rutaReparto.js";
+import { config } from "../../config.js";
 
 const orderController = {};
 
@@ -816,6 +818,7 @@ orderController.updateCourierPosition = async (req, res) => {
     // Apagar el compartir: se borra el punto, no se deja el último quieto.
     if (activo === false) {
       await orderModel.findByIdAndUpdate(req.params.id, { courier: { active: false } });
+      olvidarRuta(req.params.id);
       return res.status(200).json({ message: "Seguimiento detenido" });
     }
 
@@ -881,13 +884,35 @@ orderController.getCourierPosition = async (req, res) => {
       return res.status(403).json({ message: "No tiene permiso para esta acción" });
     }
 
+    const destino = (pedido.deliveryLat != null && pedido.deliveryLng != null)
+      ? { lat: pedido.deliveryLat, lng: pedido.deliveryLng }
+      : null;
+    const courier = pedido.courier?.active ? pedido.courier : null;
+
+    /*
+     * La línea por las calles que le falta al repartidor, mientras va en
+     * camino: { puntos: [[lng, lat]…], metros, segundos }. Null sin llave del
+     * servicio de rutas, sin destino o si no encontró camino. Al terminar el
+     * viaje se olvida. Ver utils/rutaReparto.js.
+     */
+    let ruta = null;
+    if (pedido.status === "en_camino" && courier?.lat != null && destino) {
+      ruta = await rutaDelRepartidor({
+        pedidoId: pedido._id,
+        desde: { lat: courier.lat, lng: courier.lng },
+        hacia: destino,
+        llave: config.rutas.llave,
+      });
+    } else {
+      olvidarRuta(pedido._id);
+    }
+
     return res.status(200).json({
       status: pedido.status,
       deliveryType: pedido.deliveryType,
-      destino: (pedido.deliveryLat != null && pedido.deliveryLng != null)
-        ? { lat: pedido.deliveryLat, lng: pedido.deliveryLng }
-        : null,
-      courier: pedido.courier?.active ? pedido.courier : null,
+      destino,
+      courier,
+      ruta,
     });
 
   } catch (error) {

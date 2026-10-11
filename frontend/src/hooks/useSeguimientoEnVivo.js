@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { ICONOS } from '../utils/iconosAviso';
 import { orderService } from '../api/orderService';
@@ -130,6 +130,12 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
           destino: data?.destino || null,
           courier,
           velocidad,
+          /*
+           * La ruta por las calles que le falta al repartidor (el servidor la
+           * calcula y la va recortando; ver backend/src/utils/rutaReparto.js).
+           * Null sin servicio de rutas: el mapa queda con sus dos puntos.
+           */
+          ruta: data?.ruta?.puntos?.length > 1 ? data.ruta : null,
         });
       } catch {
         /*
@@ -168,10 +174,23 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
 
   const senalFria = desdeUltimoDato != null && desdeUltimoDato > SENAL_FRIA_MS;
 
-  const metrosFaltantes = punto && actual?.destino
-    ? distanciaMetros(punto, actual.destino)
-    : null;
-  const minutos = minutosDeViaje(metrosFaltantes, actual?.velocidad);
+  /*
+   * Con la ruta por las calles, lo que falta es lo que mide ESA línea y la
+   * espera sale de su tiempo; sin ella, la línea recta de siempre con la
+   * velocidad medida. Una ruta con la señal fría no se muestra: sería dibujar
+   * el camino desde un punto donde el repartidor ya no está.
+   */
+  const ruta = punto && !senalFria ? actual?.ruta : null;
+  const lineaDeRuta = useMemo(
+    () => (ruta ? ruta.puntos.map(([lng, lat]) => ({ lat, lng })) : null),
+    [ruta]
+  );
+
+  const metrosFaltantes = ruta?.metros
+    ?? (punto && actual?.destino ? distanciaMetros(punto, actual.destino) : null);
+  const minutos = ruta?.segundos != null
+    ? Math.max(1, Math.round(ruta.segundos / 60))
+    : minutosDeViaje(metrosFaltantes, actual?.velocidad);
 
   return {
     // Solo se considera "en vivo" si hay punto Y la señal está fresca.
@@ -179,6 +198,8 @@ export const useSeguimientoEnVivo = (pedidoId, activo = true) => {
     estado: actual?.status || null,
     punto,
     destino: actual?.destino || null,
+    // La línea por las calles que le falta, como [{lat,lng}…], o null.
+    ruta: lineaDeRuta,
     repartidor: courier?.name || '',
     senalFria,
     minutosDesdeUltimoDato: desdeUltimoDato != null ? Math.floor(desdeUltimoDato / 60000) : null,

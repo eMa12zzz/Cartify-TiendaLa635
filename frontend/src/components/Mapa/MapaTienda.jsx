@@ -1,7 +1,7 @@
 import '../../lib/maplibreWorker';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useModo } from '../../hooks/useModo';
-import { Map, MapMarker, MarkerContent, MapControls, useMap } from '../mapcn/map';
+import { Map, MapMarker, MarkerContent, MapControls, MapRoute, useMap } from '../mapcn/map';
 
 /*
  * ============================================================
@@ -181,6 +181,8 @@ const CreditoPlegado = () => {
  * @param interactivo si se puede arrastrar y hacer zoom (falso en miniaturas:
  *                    en un mapa chico el dedo quiere desplazar la PÁGINA).
  * @param controles   muestra los botones de zoom.
+ * @param ruta        [{lat,lng}…] una línea por las calles (la que le falta al
+ *                    repartidor). Va debajo de los pines.
  */
 const MapaTienda = ({
   centro,
@@ -191,11 +193,16 @@ const MapaTienda = ({
   encuadrar,
   interactivo = true,
   controles = false,
+  ruta,
   className,
 }) => {
   const inicio = valido(centro) ? centro : { lat: 13.6929, lng: -89.2182 };
   // En modo oscuro, las calles oscuras de CARTO (no un mapa blanco en medio de la pantalla).
   const { oscuro } = useModo();
+  const lineaDeRuta = useMemo(
+    () => (Array.isArray(ruta) ? ruta.filter(valido).map((p) => [Number(p.lng), Number(p.lat)]) : []),
+    [ruta]
+  );
 
   return (
     <Map
@@ -208,6 +215,17 @@ const MapaTienda = ({
       {onTocar && <AlTocar onTocar={onTocar} />}
       <Camara encuadrar={encuadrar} seguir={seguir} />
       <CreditoPlegado />
+
+      {/*
+        La ruta, en el azul del punto del repartidor (es SU camino), con un
+        borde del color de las calles debajo para que se despegue del mapa.
+      */}
+      {lineaDeRuta.length > 1 && (
+        <>
+          <MapRoute id="ruta-borde" coordinates={lineaDeRuta} color={oscuro ? '#0F172A' : '#FFFFFF'} width={8} opacity={0.95} interactive={false} />
+          <MapRoute id="ruta" coordinates={lineaDeRuta} color="#2563eb" width={4.5} opacity={0.95} interactive={false} />
+        </>
+      )}
 
       {pines.filter(valido).map((pin) => (
         <MapMarker

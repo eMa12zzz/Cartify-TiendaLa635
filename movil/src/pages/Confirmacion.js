@@ -235,6 +235,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
               key={mapaGrande ? 'grande' : 'chica'}
               punto={enCamino ? seguimiento.punto : null}
               destino={seguimiento.destino}
+              ruta={enCamino ? seguimiento.ruta : null}
               alto={180}
               colorMarca={colores.marca}
               alAgrandar={() => setMapaGrande(true)}
@@ -354,6 +355,7 @@ const Confirmacion = ({ respuesta, alCerrar }) => {
         <ModalMapaSeguimiento
           punto={enCamino ? seguimiento.punto : null}
           destino={seguimiento.destino}
+          ruta={enCamino ? seguimiento.ruta : null}
           colorMarca={colores.marca}
           alCerrar={() => setMapaGrande(false)}
         />

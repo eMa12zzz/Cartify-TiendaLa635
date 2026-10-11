@@ -425,6 +425,7 @@ const BurbujaPedido = () => {
                     key={mapaGrande ? 'grande' : 'chica'}
                     punto={seguimiento.punto}
                     destino={seguimiento.destino}
+                    ruta={seguimiento.ruta}
                     alto={132}
                     colorMarca={colores.marca}
                     alAgrandar={() => setMapaGrande(true)}
@@ -563,6 +564,7 @@ const BurbujaPedido = () => {
       <ModalMapaSeguimiento
         punto={seguimiento.punto}
         destino={seguimiento.destino}
+        ruta={seguimiento.ruta}
         colorMarca={colores.marca}
         alCerrar={() => setMapaGrande(false)}
       />
